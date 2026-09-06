@@ -27,14 +27,16 @@ class EncoderVL(nn.Module):
         self.num_input_actions = args.num_input_actions
 
         # encodings
-        self.enc_pos = PosEncoding(args.demb)
-        self.enc_pos_map = MapPosEncoding(args.demb)
-        self.enc_pos_can = CanPosEncoding(args.demb)
+        self.enc_pos = PosEncoding(args.demb)           # 未使用，基础位置编码
+        self.enc_pos_map = MapPosEncoding(args.demb)    # 真正使用，加入地图的位置编码
+        self.enc_pos_can = CanPosEncoding(args.demb)    # 未使用，加入中心点的位置编码
+        
         self.enc_pos_learn = None
         self.enc_token = None
         self.enc_layernorm = nn.LayerNorm(args.demb)
         self.enc_dropout = nn.Dropout(args.dropout_emb, inplace=True)
 
+    # 被定义但未使用，主要用于处理不包含地图信息的情况
     def forward(
             self,
             emb_lang,
@@ -98,7 +100,7 @@ class EncoderVL(nn.Module):
         # output = self.enc_transformer(emb_all.transpose(0, 1), mask_attn, mask_pad).transpose(0, 1)
         # return output, mask_pad
 
-
+    # 主要被使用，增加了对地图信息的处理
     def forward_with_map(
             self,
             emb_lang,
@@ -114,7 +116,9 @@ class EncoderVL(nn.Module):
         length_max = emb_positions.shape[1]
         # emb_lang is processed on each GPU separately so they size can vary
         length_lang = emb_lang.shape[1]
+        
         # create a mask for padded elements
+        # 3 是 emb_frames, emb_directions, emb_maps
         length_mask_pad = length_lang + 3 + length_max
         mask_pad = torch.zeros((len(emb_lang), length_mask_pad), device=emb_lang.device).bool()
         # for i, l in enumerate(lengths):
@@ -142,6 +146,7 @@ class EncoderVL(nn.Module):
         output = self.enc_transformer(emb_all.transpose(0, 1), mask_attn, mask_pad).transpose(0, 1)
         return output, mask_pad
 
+    # 被定义但未被使用，主要用于处理包含地图信息和候选中心点的情况
     def forward_with_centroids(
             self,
             emb_lang,

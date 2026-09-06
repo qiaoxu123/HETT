@@ -176,8 +176,6 @@ class CanPosEncoding(nn.Module):
         return lang, frames, directions, maps, positions, centroids
 
 
-
-
 class LearnedEncoding(nn.Module):
     """
     Learned additive encoding implemented on top of nn.Embedding

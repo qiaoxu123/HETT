@@ -129,8 +129,11 @@ class NavCMTAgent:
         self.default_gpu = is_default_gpu(self.args)
         self.rank = rank
 
-        # Models
-
+        # --------------- 0. 模型初始化：语言编码器 / 视觉编码器 / ET 策略网络 -----------------
+        # 其中：
+        # - lang_model: 把自然语言指令编码成 token 表示
+        # - vision_model: 把 RGB 图像编码成 visual feature
+        # - vln_model: 即 ET，负责把语言、视觉、地图和历史记忆融合，输出动作与目标预测
         self.tokenizer = BertTokenizerFast.from_pretrained('/cver/xcding/code/tokenizer_files/bert-base-uncase')
         self.lang_model = CustomBERTModel().cuda()
 
@@ -138,6 +141,7 @@ class NavCMTAgent:
 
         self.vision_model = Darknet(self.args.darknet_model_file, 224).cuda()
 
+        # 视觉编码器加载预训练权重
         new_state = torch.load(self.args.darknet_weight_file)
         state = self.vision_model.state_dict()
         model_keys = set(state.keys())
@@ -145,14 +149,13 @@ class NavCMTAgent:
         state.update(state_dict)
         self.vision_model.load_state_dict(state)
 
-
-
         # create the et model
         self.vln_model = ET(self.args).cuda()
         # self.map_encoder = MapEncoder(240)
         # self.goal_predictpr = GoalPredictor(240, 7)
         self.progress_regression = nn.MSELoss(reduction='sum')
 
+        # --------------- 1. 分布式训练包裹：DDP -----------------
         if self.args.world_size > 1 and allow_ngpus:
             self.lang_model = DDP(self.lang_model, broadcast_buffers=False, find_unused_parameters=True,
                                   device_ids=[self.args.local_rank], output_device=self.args.local_rank)
@@ -168,7 +171,6 @@ class NavCMTAgent:
             self.vision_model_without_ddp = self.vision_model.module
             self.vln_model_without_ddp = self.vln_model.module
 
-
         else:
             self.lang_model_without_ddp = self.lang_model
             self.vision_model_without_ddp = self.vision_model
@@ -178,7 +180,11 @@ class NavCMTAgent:
         #     self.args, 
         #     self.vision_model).cuda()
 
-        # optimizer        
+        # --------------- 2. 优化器：分别训练语言 / 视觉 / ET 模型 -----------------
+        # 这里的三个优化器对应了三部分参数：
+        # - lang_model_optimizer: 训练语言编码器
+        # - vision_model_optimizer: 训练视觉编码器
+        # - et_optimizer: 训练 ET 及其 Transformer + decoder heads
         assert args.optim in ("adam", "adamW")
         OptimizerClass = torch.optim.Adam if args.optim == "adam" else torch.optim.AdamW
         self.et_optimizer = OptimizerClass(filter(lambda p: p.requires_grad, self.vln_model.parameters()),
@@ -275,6 +281,8 @@ class NavCMTAgent:
 
     def train(self, loader, n_epochs, feedback='student', nss_w_weighting=1, **kwargs):
         ''' Train for a given number of epochs '''
+        # --------------- 0. 训练入口：控制三套模型同步更新 -----------------
+        # 在本函数中，语言模型 / 视觉模型 / ET 策略模型都会被设为 train 模式，并且梯度会被统一回传。
         self.feedback = feedback
 
         self.lang_model.train()
@@ -291,11 +299,21 @@ class NavCMTAgent:
                 # if idx >= 100:
                 #     break
                 # train_loop_start_time = time.time()
+
+                # --------------- 1. 清零梯度：每个 batch 都重新开始 -----------------
+                # 这里必须分别清零 lang/vision/et 三个优化器对应的梯度，否则会累积历史梯度。
                 self.lang_model_optimizer.zero_grad()
                 self.vision_model_optimizer.zero_grad()
                 self.et_optimizer.zero_grad()
                 self.loss = 0
 
+                # --------------- 2. 进行一个 rollout：构造当前 batch 的观测与动作 -----------------
+                # rollout 内部会执行：
+                # - tokenize instruction
+                # - encode vision
+                # - build map / candidates / direction input
+                # - self.vln_model(...) 触发 ET.forward
+                # - 计算方向、进度、目标、候选目标损失
                 if feedback == 'teacher':
                     self.feedback = 'teacher'
                     self.rollout(train_ml=self.args.teacher_weight)
@@ -314,9 +332,16 @@ class NavCMTAgent:
                 # print(self.rank, epoch, self.loss)
                 # torch.autograd.set_detect_anomaly(True)
 
+                # --------------- 3. 反向传播：梯度从 loss 回到整个模型 -----------------
+                # 这里 self.loss 是在 rollout 中累积的总损失，最终会流回：
+                # - language encoder
+                # - vision encoder
+                # - ET transformer + decoder heads
                 self.loss.backward()
                 # print('suc')
 
+                # --------------- 4. 梯度裁剪与更新参数 -----------------
+                # 对 ET 的参数做裁剪，避免爆炸梯度；随后三个优化器分别更新对应模块。
                 torch.nn.utils.clip_grad_norm_(self.vln_model.parameters(), 40.)
 
                 self.lang_model_optimizer.step()
@@ -340,12 +365,24 @@ class NavCMTAgent:
 
     def rollout(self, train_ml=None, visualize=False):
 
+        # --------------- 0. 一个 batch 的 rollout 入口 -----------------
+        # 这里的核心想法是：
+        # 1. 先从环境中取出一批观测 obs
+        # 2. 对 instruction 做 tokenization + language encoding
+        # 3. 对 RGB / map / pose / candidate 组织成 ET 的输入
+        # 4. 调用 self.vln_model(...) -> 进入 ET.forward
+        # 5. 计算损失并输出动作/目标/进度更新环境状态
         # rollout_start_time = time.time()
 
         obs = self.env._get_obs(random_direction=(self.feedback == 'teacher'))
         batch_size = len(obs)
 
-        # Language input
+        # --------------- 1. 语言输入：instruction -> token ids -> BERT embedding -----------------
+        # lang_inputs: list[str]，长度= batch_size
+        # encoding: {'input_ids': [B, L], 'attention_mask': [B, L]}
+        # lang_features: [B, L, 768]
+        # linear_cls: [B, 49]，用于视觉特征的注意力加权
+        # cls_hidden: [B, hidden]，保留句子级特征
         lang_inputs = []
         for i, ob in enumerate(obs):
             # if self.args.vision_only:
@@ -363,7 +400,10 @@ class NavCMTAgent:
 
         # print(lang_features.size()) # batch_size*sequence_length*768
 
-        # Record starting points of the current batch
+        # --------------- 2. 当前时刻的 pose / position / trajectory 记录 -----------------
+        # current_directions: [B]，表示当前 yaw 角
+        # current_positions: [B, 2]，表示当前 agent 位置
+        # direction_t: [B]，position_t: [B, 2]
         current_directions = [np.array(ob['pose'].yaw, dtype=np.float32) for ob in obs]
         current_positions = [np.array(ob['position'], dtype=np.float32) for ob in obs]
         poses = [ob['pose'] for ob in obs]
@@ -438,29 +478,25 @@ class NavCMTAgent:
             im_feature = im_feature.view(im_feature.size(0), im_feature.size(1), -1)
 
 
-
-
-
-
             current_direct = direction_t.view(-1, 1).cuda()
             current_pos = position_t.view(-1, 2).cuda()
             direction = torch.concat(
                 (torch.sin(current_direct), torch.cos(current_direct), current_pos), axis=1)
 
+            # --------------- 3. 把环境中的 pose / frames / maps 组装成 ET 输入 -----------------
             # if self.args.no_direction:
             #     input['directions'] = torch.hstack((input['directions'], torch.zeros_like(direction.view(-1, 1, 2))))
             # else:
-            input['directions'] = direction.view(-1, 1, 4)
+            input['directions'] = direction.view(-1, 1, 4)    # [B, 1, 4]
             # if self.args.language_only:
             #     input['frames'] = torch.hstack((input['frames'], torch.zeros_like(im_feature.view(-1, 1, 512, 49))))
             # else:
             # print(input['frames'].shape, im_feature.shape)
-            input['frames'] = im_feature.view(-1, 1, 512, 49)
-            input['maps'] = torch.from_numpy(np.array([ob['maps'] for ob in obs], dtype=np.float32)).cuda()
-
+            input['frames'] = im_feature.view(-1, 1, 512, 49) # [B, 1, 512, 49]
+            input['maps'] = torch.from_numpy(np.array([ob['maps'] for ob in obs], dtype=np.float32)).cuda() # [B, H, W, C] or [B, C, H, W]
 
             centroid_lens = np.array(len(ob['centroids']) for ob in obs)
-            input['centroids'] = torch.from_numpy(np.array([ob['centroids'] for ob in obs], dtype=np.float32)).cuda()
+            input['centroids'] = torch.from_numpy(np.array([ob['centroids'] for ob in obs], dtype=np.float32)).cuda() # [B, N_centroid, 2]
             # input['directions'] = direction.view(-1,1,2)
             # input['frames'] = im_feature.view(-1,1, 512,49)
 
@@ -468,25 +504,28 @@ class NavCMTAgent:
                 if not ended[i]:
                     input['lenths'][i] += 1
 
-            # print('.')
-
-
-
-
-
+            # --------------- 4. 调用 ET 模型：触发 ET.forward -----------------
+            # 输出：
+            # - pred_direction: [B, 2]
+            # - pred_progress: [B, 1]
+            # - pred_goals: [B, 2]
+            # - pred_logits: [B, N_cand, 1]
+            # - grid_ft: [B, N_hist+1, 768]
             pred_direction, pred_progress, pred_goals, pred_logits, grid_ft = self.vln_model(
-                directions=input['directions'],
-                frames=input['frames'],
-                lenths=input['lenths'],
-                grid_fts=input['grid_fts'],
-                grid_index=input['grid_index'],
-                maps=input['maps'],
-                lang=input['lang'],
-                candidates=input['candidates'],
-                centroids=input['centroids'],
-                lang_cls=input['lang_cls']
+                directions=input['directions'],     # [B, 1, 4]
+                frames=input['frames'],             # [B, T_frame, 512, 49]
+                lenths=input['lenths'],             # [B]
+                grid_fts=input['grid_fts'],         # [B, N_hist, 768]
+                grid_index=input['grid_index'],     # [B, N_hist]
+                maps=input['maps'],                 # [B, ...]
+                lang=input['lang'],                 # [B, L_lang, 768]
+                candidates=input['candidates'],     # [B, N_cand, 2]
+                centroids=input['centroids'],       # [B, N_centroid, 2]
+                lang_cls=input['lang_cls']          # [B, 49]
             )
 
+            # --------------- 5. 更新历史网格记忆：grid_fts / grid_index -----------------
+            # 这里把当前 step 的输出特征追加到历史记忆里，供下一步 rollout 使用，从而形成 historical grid map。
             input['grid_fts'] = torch.cat((input['grid_fts'], grid_ft), dim=1)
             grid_index = torch.tensor(np.array([ob['cur_grid'] for ob in obs])).unsqueeze(1).cuda()
             # print(input['grid_index'], grid_index)
