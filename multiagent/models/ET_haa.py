@@ -62,6 +62,62 @@ class SoftDotAttention(nn.Module):
         return lang_embeds, attn
 
 
+class BidirectionalCrossAttention(nn.Module):
+    """Exchange information between target and motion task tokens."""
+
+    def __init__(self, d_model, num_heads, dropout=0.1):
+        super().__init__()
+        self.target_from_motion = nn.MultiheadAttention(
+            d_model, num_heads, dropout=dropout, batch_first=True
+        )
+        self.motion_from_target = nn.MultiheadAttention(
+            d_model, num_heads, dropout=dropout, batch_first=True
+        )
+
+        self.target_attn_norm = nn.LayerNorm(d_model)
+        self.motion_attn_norm = nn.LayerNorm(d_model)
+        self.target_ffn_norm = nn.LayerNorm(d_model)
+        self.motion_ffn_norm = nn.LayerNorm(d_model)
+        self.dropout = nn.Dropout(dropout)
+
+        # 与当前 EncoderVL 的 dim_feedforward 保持一致，避免引入过大的参数量。
+        self.target_ffn = nn.Sequential(
+            nn.Linear(d_model, d_model),
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            nn.Linear(d_model, d_model),
+        )
+        self.motion_ffn = nn.Sequential(
+            nn.Linear(d_model, d_model),
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            nn.Linear(d_model, d_model),
+        )
+
+    def forward(self, target_tokens, motion_tokens):
+        # 两个方向都从交互前的特征并行计算，避免某一方向先更新造成顺序偏置。
+        target_delta, _ = self.target_from_motion(
+            query=target_tokens,
+            key=motion_tokens,
+            value=motion_tokens,
+            need_weights=False,
+        )
+        motion_delta, _ = self.motion_from_target(
+            query=motion_tokens,
+            key=target_tokens,
+            value=target_tokens,
+            need_weights=False,
+        )
+
+        target_tokens = self.target_attn_norm(target_tokens + self.dropout(target_delta))
+        motion_tokens = self.motion_attn_norm(motion_tokens + self.dropout(motion_delta))
+
+        target_tokens = self.target_ffn_norm(target_tokens + self.dropout(self.target_ffn(target_tokens)))
+        motion_tokens = self.motion_ffn_norm(motion_tokens + self.dropout(self.motion_ffn(motion_tokens)))
+
+        return target_tokens, motion_tokens
+
+
 class ET(nn.Module):
     def __init__(self, args):
         """
@@ -152,6 +208,13 @@ class ET(nn.Module):
         self.text_proj = nn.Linear(768, 768)
         self.grid_proj = nn.Linear(768, 768)
 
+        # target 侧包含 map/goal token 与所有 candidate tokens；motion 侧包含 action/progress tokens。
+        self.task_interaction = BidirectionalCrossAttention(
+            d_model=self.args.demb,
+            num_heads=self.args.encoder_heads,
+            dropout=self.args.dropout_transformer_encoder,
+        )
+
     def forward(self, **inputs):
         """
         forward the model for multiple time-steps (used for training)
@@ -224,7 +287,7 @@ class ET(nn.Module):
         grid_map_embeds = torch.zeros(batch_size, max_cell_num, 768).to(grid_fts[0].device) # [B, max_cell_num, 768]
 
         # 将历史空间记忆叠加进候选特征中，形成历史感知的目标候选表示
-        emb_candidates = emb_candidates + grid_map_input # [B, N_cand, d_model]
+        emb_candidates = emb_candidates + grid_map_input        # [B, N_cand, d_model]
 
         # --------------- 6. Transformer 融合：把所有模态拼接后做跨模态 self-attention -----------------
         encoder_out, _ = self.encoder_vl.forward_with_map(
@@ -235,36 +298,36 @@ class ET(nn.Module):
             emb_candidates,     # [B, N_cand, d]
         )
 
-        # --------------- 7. 从融合后的 token 中挑出不同任务所需的特征 -----------------
-        # 根据 token 顺序取出不同模态对应的输出 token
-        # encoder_out_visual: [B, d]
-        encoder_out_visual = encoder_out[:, emb_lang.shape[1]]
-        # encoder_out_direction: [B, d]
-        encoder_out_direction = encoder_out[:, emb_lang.shape[1] + 1]
-        # encoder_out_candidates: [B, N_cand, d]
-        encoder_out_candidates = encoder_out[:, emb_lang.shape[1] + 3:]
-        # encoder_out_centroids: [B, d]
-        encoder_out_centroids = encoder_out[:, emb_lang.shape[1] + 2]
+        # --------------- 7. 按真实 token 长度切分 Transformer 输出 -----------------
+        lang_end = emb_lang.shape[1]
+        frame_end = lang_end + emb_frames.shape[1]
+        direction_end = frame_end + emb_directions.shape[1]
+        map_end = direction_end + emb_maps.shape[1]
 
-        # --------------- 8. 多头输出：direction / progress / goal / target -----------------
-        # decoder_input: [B, d_model] -> progress head
-        decoder_input = encoder_out_visual.reshape(-1, self.args.demb)
-        # action_decoder_input: [B, d_model] -> action head
-        action_decoder_input = encoder_out_direction.reshape(-1, self.args.demb)
-        # goal_decoder_input: [B, d_model] -> goal head
-        goal_decoder_input = encoder_out_centroids.reshape(-1, self.args.demb)
-        # target_decoder_input: [B, N_cand, d_model] -> target logits head
-        target_decoder_input = encoder_out_candidates.reshape(-1, max_cell_num, self.args.demb)
+        encoder_out_frames = encoder_out[:, lang_end:frame_end]
+        encoder_out_directions = encoder_out[:, frame_end:direction_end]
+        encoder_out_maps = encoder_out[:, direction_end:map_end]
+        encoder_out_candidates = encoder_out[:, map_end:]
 
-        
+        # 当前 rollout 只输入一个 frame/direction/map token；取最后一个也兼容后续历史扩展。
+        encoder_out_visual = encoder_out_frames[:, -1]          # [B, d_model]
+        encoder_out_direction = encoder_out_directions[:, -1]   # [B, d_model]
+        encoder_out_map = encoder_out_maps[:, -1]               # [B, d_model]
 
+        # --------------- 8. target 与 action/progress 双向交互 -----------------
+        target_tokens = torch.cat((encoder_out_map.unsqueeze(1), encoder_out_candidates), dim=1)  # [B, 1 + N_cand, d_model]
+        motion_tokens = torch.stack((encoder_out_direction, encoder_out_visual), dim=1)           # [B, 2, d_model]
+        target_tokens, motion_tokens = self.task_interaction(target_tokens, motion_tokens)
 
-        # output: [B, 2] 方向向量
-        output = self.decoder_2_action_full(action_decoder_input)
-        # pred_goals: [B, 2] 归一化目标位置
-        pred_goals = self.decoder_2_goal_full(goal_decoder_input)
-        # 归一化方向向量：避免长度为 0
-        norm = torch.norm(output, dim=1, keepdim=True) + 1e-6
+        # --------------- 9. 多头输出：direction / progress / goal / target -----------------
+        goal_decoder_input = target_tokens[:, 0]               # [B, d_model]
+        target_decoder_input = target_tokens[:, 1:]            # [B, N_cand, d_model]
+        action_decoder_input = motion_tokens[:, 0]             # [B, d_model]
+        decoder_input = motion_tokens[:, 1]                    # [B, d_model]
+
+        output = self.decoder_2_action_full(action_decoder_input) # [B, 2] 归一化方向向量
+        pred_goals = self.decoder_2_goal_full(goal_decoder_input) # [B, 2] 归一化目标位置
+        norm = torch.norm(output, dim=1, keepdim=True) + 1e-6     # 避免除零
         direction = output / norm
 
         # progress: [B, 1]
