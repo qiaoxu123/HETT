@@ -127,6 +127,11 @@ def final_analysis_command(selected, output_dir):
     return command
 
 
+def completion_audit_command(output):
+    return [PYTHON, str(ROOT / '00-control/scripts/audit_experiment_completion.py'),
+            '--output', str(output)]
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--run-dir', type=Path, required=True)
@@ -177,9 +182,23 @@ def main():
         write(args.run_dir / 'status.json', {'time': stamp(), 'phase': 'failed',
                                              'job': 'analysis', 'exit_code': result.returncode})
         raise SystemExit(result.returncode)
+    audit = completion_audit_command(args.run_dir / 'completion_audit/report.json')
+    write(args.run_dir / 'completion_audit_command.json', audit)
+    write(args.run_dir / 'status.json', {'time': stamp(), 'phase': 'auditing',
+                                         'frozen_variant': selected})
+    with (args.run_dir / 'completion_audit.log').open('w') as log:
+        result = subprocess.run(audit, cwd=ROOT / '00-control', stdout=log,
+                                stderr=subprocess.STDOUT)
+    if result.returncode:
+        write(args.run_dir / 'status.json', {'time': stamp(), 'phase': 'failed',
+                                             'job': 'completion_audit',
+                                             'exit_code': result.returncode})
+        raise SystemExit(result.returncode)
     write(args.run_dir / 'status.json', {'time': stamp(), 'phase': 'complete',
                                          'frozen_variant': selected,
-                                         'analysis': str(args.run_dir / 'analysis')})
+                                         'analysis': str(args.run_dir / 'analysis'),
+                                         'completion_audit': str(
+                                             args.run_dir / 'completion_audit/report.json')})
 
 
 if __name__ == '__main__':

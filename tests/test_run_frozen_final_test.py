@@ -1,7 +1,7 @@
 import unittest
 
 from scripts.run_frozen_final_test import (
-    evaluation_command, final_analysis_command, freeze_candidate,
+    completion_audit_command, evaluation_command, final_analysis_command, freeze_candidate,
 )
 
 
@@ -49,6 +49,9 @@ class FrozenFinalTest(unittest.TestCase):
         analysis = final_analysis_command('grounding', '/tmp/final-analysis')
         self.assertEqual(sum(value == '--run' for value in analysis), 6)
         self.assertIn('corrected:grounding', analysis)
+        audit = completion_audit_command('/tmp/completion/report.json')
+        self.assertIn('audit_experiment_completion.py', ' '.join(audit))
+        self.assertEqual(audit[-1], '/tmp/completion/report.json')
 
 
 if __name__ == '__main__':
