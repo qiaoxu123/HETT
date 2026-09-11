@@ -4,8 +4,8 @@ from pathlib import Path
 import tempfile
 
 from scripts.audit_experiment_completion import (
-    EVAL_VARIANTS, EXPECTED_HEADS, QUEUE_RESULTS, SEEDS, TRAIN_VARIANTS, digest, run_path,
-    validate_checkpoint_hashes,
+    EVAL_VARIANTS, EXPECTED_HEADS, QUEUE_RESULTS, SEEDS, TRAIN_VARIANTS,
+    command_arguments, digest, run_path, validate_checkpoint_hashes,
 )
 
 
@@ -58,6 +58,13 @@ class CompletionAuditTest(unittest.TestCase):
             passed, evidence = validate_checkpoint_hashes(run)
             self.assertFalse(passed)
             self.assertFalse(evidence['files']['best_val_unseen']['sha256_match'])
+
+    def test_command_argument_audit_checks_nested_commands_not_json_substrings(self):
+        commands = {'train': ['bash', 'train.sh'],
+                    'evaluation': ['bash', 'eval.sh', '--include_test_unseen'],
+                    'environment_overrides': {'NOTE': 'not an argument'}}
+        self.assertIn('--include_test_unseen', command_arguments(commands))
+        self.assertNotIn('--include_test', command_arguments(commands))
 
 
 if __name__ == '__main__':

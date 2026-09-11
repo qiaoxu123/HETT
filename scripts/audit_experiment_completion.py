@@ -93,6 +93,16 @@ def validate_checkpoint_hashes(run):
     return passed, evidence
 
 
+def command_arguments(value):
+    if isinstance(value, str):
+        return [value]
+    if isinstance(value, list):
+        return [token for item in value for token in command_arguments(item)]
+    if isinstance(value, dict):
+        return [token for item in value.values() for token in command_arguments(item)]
+    return []
+
+
 def run_path(mapping, name, seed):
     worktree, prefix = mapping[name]
     return ROOT / worktree / 'runs' / f'{prefix}_s{seed}'
@@ -229,6 +239,19 @@ def audit():
               for path in development_runs
               if (path / 'evaluation/test_unseen_predictions.pt').exists()]
     add(checks, 'no declared development run touched test_unseen', not leaked, leaked)
+    development_command_violations = []
+    for path in development_runs:
+        commands = read_json(path / 'commands.json')
+        tokens = (command_arguments({key: commands.get(key, [])
+                                     for key in ('train', 'evaluation')})
+                  if commands else [])
+        if not commands or '--include_test_unseen' in tokens:
+            development_command_violations.append({
+                'run': str(path), 'commands_exist': commands is not None,
+                'contains_include_test_unseen': '--include_test_unseen' in tokens,
+            })
+    add(checks, 'development commands never request test_unseen',
+        not development_command_violations, development_command_violations)
 
     required_analysis = [
         CONTROL / 'runs/bugfix_analysis_20260911/training/summary.json',
@@ -306,6 +329,12 @@ def audit():
                 target = run / 'evaluation/test_unseen_predictions.pt'
                 final_outputs.append(target)
                 add(checks, f'final test {name} seed {seed}', target.is_file(), str(target))
+                commands = read_json(run / 'commands.json')
+                arguments = command_arguments(commands.get('evaluation', [])) if commands else []
+                add(checks, f'final test {name} seed {seed} explicitly requests test_unseen',
+                    '--include_test_unseen' in arguments,
+                    {'commands': str(run / 'commands.json'),
+                     'contains_include_test_unseen': '--include_test_unseen' in arguments})
         if final_outputs:
             freeze_time = (final_dir / 'freeze.json').stat().st_mtime_ns
             add(checks, 'freeze predates every final test output', all(

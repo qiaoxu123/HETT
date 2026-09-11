@@ -34,6 +34,8 @@ grounding 的监督覆盖：train_seen 10,734 个状态中可见 63.49%，val_un
 
 开发评估默认只构建 `val_seen` 和 `val_unseen`；`test_unseen` 现在必须显式传 `--include_test_unseen`，仅供方案冻结后的最终报告。旧等待链在真正训练/评估前已停止并移动到 `*.pre_val_only_20260911_2248` 归档，新链的 teacher 源码快照确认来自 `d837182`。
 
+完工审计会从两个方向核验 test 卫生：所有开发运行既不能出现 test 预测文件，实际保存的命令中也不能包含 `--include_test_unseen`；冻结后的最终运行则必须在命令中明确包含该参数。这样不会仅依赖“没看到某个文件”来证明没有提前测试。
+
 原版基线的训练快照早于上述 split 修复，其独立 post-training eval 原本仍会默认加载 test。已在不重启训练的情况下，仅将该运行快照的最终评估列表改为 val-seen/val-unseen；训练 Python PID 785921 自 17:41 起未变化。修改前后 SHA-256、PID、时间和原因保存在原版 run 的 `evaluation_hygiene.json` 与 `EVALUATION_HYGIENE.md`，当前确认尚未生成 test 输出。
 
 数据划分审计通过并保存输入哈希：train_seen 21,878、val_seen 2,470、val_unseen 2,697、test_unseen 5,281 条；跨 split 无 `(map, object, description)` 或起点重复，val_unseen 4 张地图、test_unseen 6 张地图均与训练地图分离。
