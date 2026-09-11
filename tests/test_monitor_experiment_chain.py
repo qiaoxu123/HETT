@@ -8,6 +8,7 @@ class ChainMonitorTest(unittest.TestCase):
         value = {
             'units': {'unit': {'ActiveState': 'active'}},
             'run_statuses': {'unit': {'phase': 'training', 'time': 'first'}},
+            'experiments': {'experiment': {'phase': 'training', 'time': 'first'}},
             'baseline_status': {'phase': 'training', 'gpu': '10'},
             'baseline_completed_epochs': 1,
             'alerts': [],
@@ -15,6 +16,7 @@ class ChainMonitorTest(unittest.TestCase):
         first = signature(value)
         value['baseline_status']['gpu'] = '90'
         value['run_statuses']['unit']['time'] = 'second'
+        value['experiments']['experiment']['time'] = 'second'
         self.assertEqual(first, signature(value))
         value['baseline_completed_epochs'] = 2
         self.assertNotEqual(first, signature(value))

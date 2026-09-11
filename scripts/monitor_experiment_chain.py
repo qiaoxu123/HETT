@@ -10,6 +10,7 @@ import time
 
 PYTHON = '/home/tenant2/miniconda3/envs/AirVLN39/bin/python'
 CONTROL = Path('/home/tenant2/Workspace/hett-experiments/00-control')
+ROOT = CONTROL.parent
 BASELINE = Path('/home/tenant2/Workspace/hett-crotonyl/runs/hett_baseline_fixed_20260911')
 UNITS = (
     'hett-baseline-20260911.service',
@@ -30,6 +31,25 @@ RUN_STATUS = {
     'hett-bidir-validation-20260911.service': CONTROL / 'runs/bidir_validation_queue_20260911/status.json',
     'hett-loss-ablation-20260911.service': CONTROL / 'runs/loss_ablation_queue_20260911/status.json',
     'hett-corrected-baseline-full-s0-20260911.service': CONTROL / 'runs/full_corrected_baseline_queue_s0_20260911/status.json',
+}
+EXPERIMENT_STATUS = {
+    'teacher_fix_smoke': ROOT / '01-teacher-fix/runs/teacher_fix_smoke_s0/status.json',
+    'recovery_off_smoke': ROOT / '02-recovery/runs/recovery_off_smoke_s0/status.json',
+    'recovery_on_smoke': ROOT / '02-recovery/runs/recovery_on_smoke_s0/status.json',
+    'grounding_smoke': ROOT / '03-grounding/runs/grounding_smoke_s0/status.json',
+    'grounding_off_smoke': ROOT / '03-grounding/runs/grounding_off_smoke_s0/status.json',
+    'grounding_shuffle_language_smoke': ROOT / '03-grounding/runs/grounding_shuffle_language_smoke_s0/status.json',
+    'grounding_shuffle_visual_smoke': ROOT / '03-grounding/runs/grounding_shuffle_visual_smoke_s0/status.json',
+    'combined_smoke': ROOT / '04-combined/runs/combined_smoke_s0/status.json',
+    'multi_hypothesis_smoke': ROOT / '05-hypotheses/runs/multi_hypothesis_smoke_s0/status.json',
+    'hypothesis_off_smoke': ROOT / '05-hypotheses/runs/hypothesis_off_smoke_s0/status.json',
+    'hypothesis_no_temporal_smoke': ROOT / '05-hypotheses/runs/hypothesis_no_temporal_smoke_s0/status.json',
+    'bidir_smoke': ROOT / '06-bidir/runs/bidir_smoke_s0/status.json',
+    'loss_released_smoke': ROOT / '07-loss-ablation/runs/loss_released_smoke_s0/status.json',
+    'loss_paper_only_smoke': ROOT / '07-loss-ablation/runs/loss_paper_only_smoke_s0/status.json',
+    'loss_no_progress_smoke': ROOT / '07-loss-ablation/runs/loss_no_progress_smoke_s0/status.json',
+    'loss_neither_smoke': ROOT / '07-loss-ablation/runs/loss_neither_smoke_s0/status.json',
+    'teacher_fix_full_s0': ROOT / '01-teacher-fix/runs/teacher_fix_full_s0/status.json',
 }
 
 
@@ -78,6 +98,7 @@ def snapshot():
     batches = json_lines(BASELINE / 'checkpoints/batch_metrics.jsonl')
     units = {unit: unit_state(unit) for unit in UNITS}
     run_statuses = {unit: read_json(path) for unit, path in RUN_STATUS.items()}
+    experiments = {name: read_json(path) for name, path in EXPERIMENT_STATUS.items()}
     alerts = list(baseline_status.get('alerts', []))
     for unit, state in units.items():
         if state.get('ActiveState') == 'failed' or (
@@ -87,8 +108,17 @@ def snapshot():
             result = run_statuses[unit]
             if not result or result.get('phase') != 'complete':
                 alerts.append(f'{unit}: stopped without phase=complete result: {result}')
+    for name, status in experiments.items():
+        if not status:
+            continue
+        for alert in status.get('alerts', []):
+            alerts.append(f'{name}: {alert}')
+        if status.get('phase') in ('failed', 'blocked', 'stopped'):
+            detail = {key: status[key] for key in ('exit_code', 'reason') if key in status}
+            alerts.append(f'{name}: terminal phase={status.get("phase")}: {detail}')
     return {
         'time': stamp(), 'units': units, 'run_statuses': run_statuses,
+        'experiments': experiments,
         'baseline_status': baseline_status,
         'baseline_completed_epochs': len(epochs),
         'baseline_latest_epoch': epochs[-1] if epochs else None,
@@ -110,6 +140,7 @@ def signature(value):
     return json.dumps({
         'units': value['units'],
         'run_statuses': compact_run_statuses(value['run_statuses']),
+        'experiments': compact_run_statuses(value['experiments']),
         'baseline_phase': value['baseline_status'].get('phase'),
         'baseline_completed_epochs': value['baseline_completed_epochs'],
         'alerts': value['alerts'],
