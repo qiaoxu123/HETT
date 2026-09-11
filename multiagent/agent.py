@@ -361,6 +361,13 @@ class NavCMTAgent:
                     self.lang_model_optimizer.step()
                     self.vision_model_optimizer.step()
                     self.et_optimizer.step()
+                    if self.default_gpu and hasattr(self.args, 'output_dir') and (acc <= grad_accum or acc % 100 == 0 or acc == num_batches):
+                        with open(os.path.join(self.args.output_dir, 'batch_metrics.jsonl'), 'a') as stream:
+                            stream.write(json.dumps(dict(time=time.time(), batch=acc, batches=num_batches,
+                                epoch=getattr(self, 'current_epoch', None),
+                                recent_il_loss=float(np.mean(self.logs['IL_loss'][-2:])),
+                                grad_norm=float(grad_norm),
+                                peak_gpu_gib=torch.cuda.max_memory_allocated()/2**30)) + '\n')
                 # print("---------- One iter takes %s seconds ---" % (time.time() - train_loop_start_time))
 
                 if self.default_gpu:

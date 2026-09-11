@@ -120,6 +120,10 @@ def train(args, train_env, val_envs, rank=-1):
         write_to_record_file(str(args) + '\n\n', record_file)
 
     best_val = {'val_unseen': {"sr": 0., "state": ""}, 'val_unseen_full_traj': {"sr": 0., "state": ""}}
+    best_metrics_path = os.path.join(GOAL_PREDICTOR_CHECKPOINT_DIR, 'best_metrics.json')
+    if args.checkpoint and os.path.exists(best_metrics_path):
+        with open(best_metrics_path) as stream:
+            best_val = json.load(stream)
 
     # first evaluation
     if args.eval_first:
@@ -185,6 +189,7 @@ def train(args, train_env, val_envs, rank=-1):
 
     # zero_start_iter = 0
     for idx in range(start_epoch, args.epochs):
+        agent.current_epoch = idx + 1
         agent.logs = defaultdict(list)
 
         # iter = idx + interval
@@ -229,6 +234,13 @@ def train(args, train_env, val_envs, rank=-1):
             loss_str = "\nepoch {}".format(idx)
 
             agent.save(idx, os.path.join(GOAL_PREDICTOR_CHECKPOINT_DIR, "latest"))
+            # Immutable per-epoch archive, sharing disk blocks with latest.
+            archive = os.path.join(GOAL_PREDICTOR_CHECKPOINT_DIR, 'epoch_%02d.pt' % (idx + 1))
+            os.link(os.path.join(GOAL_PREDICTOR_CHECKPOINT_DIR, 'latest'), archive)
+            epoch_metrics = dict(epoch=idx + 1, elapsed_seconds=time.time()-start,
+                                 il_loss=ml_loss, direction_loss=direction_loss,
+                                 progress_loss=progress_loss, goal_loss=goal_predict_loss,
+                                 validation={})
             # Reuse the trained modules: avoid a second BERT/Darknet/ET on one GPU.
             agent_eval = agent
             for env_name, env in val_envs.items():
@@ -240,6 +252,7 @@ def train(args, train_env, val_envs, rank=-1):
                 pred_results = agent_eval.get_results()
 
                 score_summary, result = env.eval_metrics(pred_results)
+                epoch_metrics['validation'][env_name] = score_summary
                 stage1_step = sum(agent_eval.logs['stage1_step']) / max(len(agent_eval.logs['stage1_step']), 1)
                 stage2_step = sum(agent_eval.logs['stage2_step']) / max(len(agent_eval.logs['stage2_step']), 1)
                 stage2_rotate = sum(agent_eval.logs['stage2_rotate']) / max(len(agent_eval.logs['stage2_rotate']), 1)
@@ -258,6 +271,12 @@ def train(args, train_env, val_envs, rank=-1):
                         best_val[env_name]['sr'] = score_summary['sr']
                         best_val[env_name]['state'] = 'Epoch %d %s' % (idx, loss_str)
                         agent_eval.save(idx, os.path.join(GOAL_PREDICTOR_CHECKPOINT_DIR, "best_%s" % (env_name)))
+
+            with open(os.path.join(GOAL_PREDICTOR_CHECKPOINT_DIR, 'epoch_metrics.jsonl'), 'a') as stream:
+                stream.write(json.dumps(epoch_metrics) + '\n')
+            with open(best_metrics_path + '.tmp', 'w') as stream:
+                json.dump(best_val, stream, indent=2)
+            os.replace(best_metrics_path + '.tmp', best_metrics_path)
 
             write_to_record_file(
                 ('\n%s (%d %d%%) %s' % (
@@ -295,6 +314,9 @@ def valid(args, val_envs, rank=-1):
             pred_results = agent_eval.get_results()
 
             score_summary, result = env.eval_metrics(pred_results)
+            with open(os.path.join(GOAL_PREDICTOR_CHECKPOINT_DIR, env_name + '_metrics.json'), 'w') as stream:
+                json.dump(score_summary, stream, indent=2)
+            torch.save(pred_results, os.path.join(GOAL_PREDICTOR_CHECKPOINT_DIR, env_name + '_predictions.pt'))
             stage1_step = sum(agent_eval.logs['stage1_step']) / max(len(agent_eval.logs['stage1_step']), 1)
             stage2_step = sum(agent_eval.logs['stage2_step']) / max(len(agent_eval.logs['stage2_step']), 1)
             stage2_rotate = sum(agent_eval.logs['stage2_rotate']) / max(len(agent_eval.logs['stage2_rotate']), 1)
