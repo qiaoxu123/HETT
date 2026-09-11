@@ -79,7 +79,8 @@
 | 跨方案 checkpoint 兼容性 | `b6107e4` | 各方案最新提交 | 不训练 | `runs/checkpoint_compatibility_20260911/` | grounding→combined 精确兼容；关闭模块时仅有预期的新模块参数被忽略 |
 | 论文参数一致性 | `d3bef88` | 六个结构分支 | 不训练 | `runs/training_protocol_audit_20260911/` | 六分支协议一致；论文核心参数匹配；单卡用 2×累积4，另标明发布代码额外 target-grid loss |
 | 数据划分审计 | `5821366` | 最新 CityNav 输入哈希 | 不训练 | `runs/dataset_split_audit_20260911/` | 四个 split 无目标描述键/起点重叠；两个 unseen 地图集合与训练隔离 |
-| Loss 消融协议 | `078c74c` | `b01add8` | 四组权重；seed 0 起步 | `07-loss-ablation/runs/` | 14/14 CPU 测试通过；真实训练未开始 |
+| Loss 消融协议 | `9b50ad4` | `b01add8` | 四组权重；seed 0 起步 | `07-loss-ablation/runs/` | 16/16 CPU 测试通过；真实训练未开始 |
 | 总队列监控 | `c3c0c76` | 八个后台服务 | 60 秒心跳 | `runs/chain_monitor_20260911/` | 同时检查服务状态与最终结果文件；时间戳变化不会重复记录事件 |
-| 完整 seed-0 矩阵 | 待本次提交 | 修复后完整基线 | seed 0；20 epochs；全量 train/val | `runs/full_seed0_matrix_20260911/` | 11 个任务和 11 组配对比较已由测试锁定；等待前置运行 |
-| 三种子确认矩阵 | 待本次提交 | 完整 seed-0 矩阵 | seeds 17/42；20 epochs；全量 train/val | `runs/multiseed_confirmation_20260911/` | 20 个任务已由测试锁定；加上 seed 0 后每项主张均有 3 个种子 |
+| 完整 seed-0 矩阵 | `140a4f8` | 修复后完整基线 | seed 0；20 epochs；全量 train/val | `runs/full_seed0_matrix_20260911/` | 11 个任务和 11 组配对比较已由测试锁定；等待前置运行 |
+| 三种子确认矩阵 | `04b5c19`；汇总器 `6d71cdf` | 完整 seed-0 矩阵 | seeds 17/42；20 epochs；全量 train/val | `runs/multiseed_confirmation_20260911/` | 20 个任务已由测试锁定；加上 seed 0 后每项主张均有 3 个种子 |
+| 冻结后最终测试 | `8918a76` | 三种子 val-unseen 汇总 | 先冻结，后首次读取 test | `runs/frozen_final_test_20260911/` | 无候选过门槛则冻结修复基线；禁止根据 test 重新选型 |
