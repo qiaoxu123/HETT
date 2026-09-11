@@ -2,6 +2,7 @@ import unittest
 from types import SimpleNamespace
 
 import torch
+from torch.nn import functional as F
 
 from multiagent.models.ET_haa import ET
 
@@ -49,6 +50,21 @@ class FullETForwardTest(unittest.TestCase):
         output = model(**inputs())
         self.assertEqual(tuple(output[4].shape), (2, 1, 768))
         self.assertIsNone(output[5])
+
+    def test_region_ce_reaches_visual_features_and_every_grounding_parameter(self):
+        model = ET(args(True))
+        sample = inputs()
+        logits = model(**sample)[5]
+        # Cover one visible patch and the outside class in the same batch.
+        F.cross_entropy(logits, torch.tensor([0, 49])).backward()
+        frame_gradient = sample['frames'].grad
+        self.assertIsNotNone(frame_gradient)
+        self.assertTrue(torch.isfinite(frame_gradient).all())
+        self.assertGreater(frame_gradient.norm().item(), 0)
+        for name, parameter in model.region_grounding.named_parameters():
+            self.assertIsNotNone(parameter.grad, name)
+            self.assertTrue(torch.isfinite(parameter.grad).all(), name)
+            self.assertGreater(parameter.grad.norm().item(), 0, name)
 
 
 if __name__ == '__main__':
