@@ -208,6 +208,7 @@ __marimo__/
 
 # Local HETT datasets, weights, run snapshots and generated results
 /data/
+/data
 /weights
 /checkpoints/
 /multiagent/checkpoints/
