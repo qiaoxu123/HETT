@@ -1,6 +1,6 @@
 # HETT 验证状态
 
-更新时间：2026-09-11 23:16 +08:00
+更新时间：2026-09-12 00:09 +08:00
 
 ## 当前结论
 
@@ -30,11 +30,11 @@ grounding 的监督覆盖：train_seen 10,734 个状态中可见 63.49%，val_un
 
 历史 `reference_baseline` 已做只读审计：`train_rep.log.gz` 连续记录 epoch 0–11，`train_epoch12_20.log.gz` 记录 resume epoch 11–19，`valid.txt` 含完整 split 指标；但归档不含 checkpoint，也不能证明两段属于唯一连续 lineage。更关键的是，`htnav-repro` 旧代码将 action loss 权重写死为 1.0，而论文和当前受控训练为 1.5，因此旧 loss 曲线不可直接比较，只保留为导航指标量级旁证。报告和图位于 `runs/reference_baseline_audit_20260911/`，监控器会在当前基线每完成一个 epoch 后自动刷新。
 
-原版基线当前处于 epoch 2，最新记录为 8,500/10,939 batch（约 77.7%）；GPU、日志、磁盘均无告警。它使用启动时源码快照，不受这些 worktree 提交影响。
+原版基线已完整跑完前 2 个 epoch，当前进入 epoch 3，最新记录为 200/10,939 batch；GPU、日志、磁盘均无告警。它使用启动时源码快照，不受这些 worktree 提交影响。
 
-梯度日志已明确标注为“ET 主体裁剪前范数”：epoch 1 的 p95 为 33.55，epoch 2 截至 8,200 batch 的 p95 为 107.98，分别有 1/111 和 5/83 个采样点超过 100；所有记录的 loss 和范数均为有限值，ET 实际裁剪到 40。该数值不覆盖语言/视觉两个独立优化器，暂不能仅凭它判断发散；分位数与限制已写入实时报告并持续更新。
+梯度日志已明确标注为“ET 主体裁剪前范数”：epoch 1 的中位数/p95/最大值为 18.79/33.55/101.23，epoch 2 为 30.41/87.25/163.66；超过 100 的采样点分别为 1/111 和 5/111，所有记录的 loss 和范数均为有限值。epoch 2 的长尾明显抬高，需继续观察，但 ET 实际梯度会裁剪到 40，且该数值不覆盖语言/视觉两个独立优化器，不能据此直接判断已经发散。分位数与限制已写入实时报告并持续更新。
 
-阶段诊断已加入逐 episode 和 epoch 汇总。原版基线 epoch 1 全量 val-unseen 的粗阶段终点 NE 为 57.20m，fine 阶段后最终 NE 为 60.57m（平均恶化 3.37m），但 SR 从 12.31% 提升到 16.28%（+3.97pp）；val-seen 的 NE 同样恶化 4.64m，SR 提升 2.59pp。这说明 fine refinement 当前是“救回部分临界样本，但总体位置误差反而增大”，不能只看 SR 宣称稳定有效。独立阶段图保存为 `runs/live_baseline_report_20260911/stage_diagnostics.png`。
+阶段诊断已加入逐 episode 和 epoch 汇总。第 2 轮相对第 1 轮，val-unseen SR 从 16.28% 升至 17.39%（+1.11pp），NE 从 60.57m 降至 54.41m（改善 6.16m），但 SPL 从 13.19% 降至 12.57%（-0.62pp），对应平均路径明显变长。第 2 轮 fine refinement 在 val-unseen 将 SR 再提高 3.63pp、NE 改善 1.30m；在 val-seen 则提高 SR 2.35pp 但让 NE 略差 0.31m，说明它真实参与且能救回部分样本，但效果尚不稳定。自动更新的图和逐轮可读报告保存在 `runs/chain_monitor_20260911/baseline_report/`。
 
 开发评估默认只构建 `val_seen` 和 `val_unseen`；`test_unseen` 现在必须显式传 `--include_test_unseen`，仅供方案冻结后的最终报告。旧等待链在真正训练/评估前已停止并移动到 `*.pre_val_only_20260911_2248` 归档，新链的 teacher 源码快照确认来自 `d837182`。
 

@@ -91,6 +91,59 @@ def stage_diagnostics(validation):
     return result
 
 
+def render_markdown(report):
+    rows = report['completed_epochs']
+    lines = [
+        '# 原版结构基线：实时训练报告', '',
+        '轮次按已完成数量从 1 起。SR/SPL 越高越好，NE 越低越好。',
+        'loss 占比只描述数值尺度，不代表因果重要性。', '',
+        '| 完成轮次 | IL loss | val-seen SR/SPL/NE | val-unseen SR/SPL/NE |',
+        '| ---: | ---: | ---: | ---: |',
+    ]
+    for item in rows:
+        seen = item['validation']['val_seen']
+        unseen = item['validation']['val_unseen']
+        lines.append(
+            f"| {item['epoch']} | {item['loss']['reconstructed_il_loss']:.4f} | "
+            f"{seen['sr']:.2f} / {seen['spl']:.2f} / {seen['ne']:.2f}m | "
+            f"{unseen['sr']:.2f} / {unseen['spl']:.2f} / {unseen['ne']:.2f}m |")
+    if not rows:
+        lines.extend(['', '尚无完整轮次。', ''])
+        return '\n'.join(lines)
+    latest = rows[-1]
+    lines.extend(['', f"## 最新完整轮次：{latest['epoch']}", ''])
+    if len(rows) > 1:
+        previous = rows[-2]
+        lines.extend(['相对上一轮：', '',
+                      f"- IL loss：{latest['loss']['reconstructed_il_loss'] - previous['loss']['reconstructed_il_loss']:+.4f}"])
+        for split in ('val_seen', 'val_unseen'):
+            old, new = previous['validation'][split], latest['validation'][split]
+            lines.append(
+                f"- {split}：SR {new['sr'] - old['sr']:+.2f}pp，"
+                f"SPL {new['spl'] - old['spl']:+.2f}pp，NE {new['ne'] - old['ne']:+.2f}m。")
+    lines.extend(['', 'fine refinement 对粗阶段终点的变化：', ''])
+    for split in ('val_seen', 'val_unseen'):
+        values = latest['stage_diagnostics'][split]
+        lines.append(
+            f"- {split}：SR {values['fine_refinement_sr_change_pp']:+.2f}pp，"
+            f"NE {values['fine_refinement_ne_change_m']:+.2f}m，"
+            f"stage2 路径占比 {values['stage2_path_share_percent']:.2f}%。")
+    shares = latest['loss']['share_percent']
+    lines.extend(['', '最新加权 loss 数值占比：', '',
+                  '- ' + '，'.join(f'{name} {shares[name]:.2f}%'
+                                  for name in ('direction', 'progress', 'goal', 'target')) + '。'])
+    health = report['gradient_health'].get(str(latest['epoch']), {})
+    if health:
+        lines.extend(['',
+                      f"梯度采样：p95={health['grad_p95']:.2f}，最大={health['grad_max']:.2f}，"
+                      f"全部有限={health['all_finite']}。日志是 ET 主体裁剪前范数，实际阈值为 40。"])
+    lines.extend(['', '## 解读边界', '',
+                  '- 单轮变化不是统计显著性结论，最终以完整 20 轮、三个 seed 和冻结后的 test 为准。',
+                  '- fine 阶段可能提高边界样本成功率，同时拉长路径或恶化平均终点；必须同时看 SR、SPL、NE。',
+                  ''])
+    return '\n'.join(lines)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--run-dir', type=Path, required=True)
@@ -119,6 +172,7 @@ def main():
                    'the separate language/vision optimizer gradients'),
     }
     (args.output_dir / 'report.json').write_text(json.dumps(report, indent=2, ensure_ascii=False) + '\n')
+    (args.output_dir / 'REPORT.md').write_text(render_markdown(report))
 
     plt.rcParams.update({'axes.spines.top': False, 'axes.spines.right': False,
                          'figure.facecolor': '#f8fafc', 'axes.facecolor': 'white'})

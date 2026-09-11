@@ -57,6 +57,7 @@
 - [x] Test 双向卫生检查：开发阶段同时要求无 test 输出且实际命令不含 `--include_test_unseen`；冻结后的最终任务反向要求命令显式包含该参数。
 - [x] 实际评估命令审计：逐 run 核对 checkpoint 来源与 seed、全量 episode、模块/消融开关和 test 范围，确保 recovery/combined 等评估没有接错权重。
 - [x] 阶段行为诊断：从已有轨迹派生切换次数、切换时真实目标距离、stage1/stage2 动作数、progress 提前停止及停止误判，不要求改模型或重跑已有预测。
+- [x] 原版基线逐轮可读报告：每完成一轮自动更新 loss、SR/SPL/NE、fine 阶段变化、加权 loss 占比、梯度健康和解读边界。
 - [x] 训练动态汇总：7 个训练方案 × 3 seeds 自动汇总 loss、SR/SPL/NE 曲线、加权 loss 组成、耗时、最佳 epoch 与峰值显存；纯评估控制策略不混入训练曲线。
 - [x] Bug 修复独立归因：修复后 seed0 基线完成即单独比较原版 buggy run，输出 loss/验证曲线及逐 episode 配对结果，不把收益计入任何创新方案。
 - [x] 历史基线审计：确认旧归档含两段 0–19 epoch 日志和完整评测文本，但缺 checkpoint/单一连续 provenance；旧代码 action 权重 1.0，不与论文/当前 1.5 的 loss 直接比较。

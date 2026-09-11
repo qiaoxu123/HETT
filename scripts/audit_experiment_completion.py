@@ -250,6 +250,13 @@ def audit():
     baseline_hashes_valid, baseline_hash_evidence = validate_checkpoint_hashes(BASELINE)
     add(checks, 'original baseline checkpoint contents match recorded hashes',
         baseline_hashes_valid, baseline_hash_evidence)
+    live_report_dir = CONTROL / 'runs/chain_monitor_20260911/baseline_report'
+    live_report_artifacts = [live_report_dir / name for name in
+                             ('report.json', 'REPORT.md', 'overview.png',
+                              'stage_diagnostics.png')]
+    add(checks, 'original baseline live report artifacts',
+        all(path.is_file() and path.stat().st_size > 0 for path in live_report_artifacts),
+        [str(path) for path in live_report_artifacts])
     for split in ('val_seen', 'val_unseen'):
         path = BASELINE / 'evaluation' / f'{split}_predictions.pt'
         add(checks, f'original baseline {split} predictions', path.is_file(), str(path))

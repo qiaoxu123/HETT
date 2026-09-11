@@ -1,6 +1,8 @@
 import unittest
 
-from scripts.report_live_baseline import gradient_health, loss_breakdown, stage_diagnostics
+from scripts.report_live_baseline import (
+    gradient_health, loss_breakdown, render_markdown, stage_diagnostics,
+)
 
 
 class LiveBaselineReportTest(unittest.TestCase):
@@ -39,6 +41,25 @@ class LiveBaselineReportTest(unittest.TestCase):
                'goal_loss': 0.0}
         with self.assertRaises(ValueError):
             loss_breakdown(row)
+
+    def test_readable_report_keeps_metric_directions_and_caveats(self):
+        validation = {
+            'val_seen': {'sr': 20., 'spl': 10., 'ne': 40., 'stage1_ne': 39.,
+                         'sr1': 18., 'oracle_sr': 30., 'stage2_length': 10., 'lengths': 100.},
+            'val_unseen': {'sr': 15., 'spl': 9., 'ne': 50., 'stage1_ne': 52.,
+                           'sr1': 12., 'oracle_sr': 25., 'stage2_length': 20., 'lengths': 100.},
+        }
+        item = {'epoch': 1, 'loss': {'reconstructed_il_loss': 8.,
+                                     'share_percent': {'direction': 90., 'progress': 1.,
+                                                       'goal': 4., 'target': 5.}},
+                'validation': validation, 'stage_diagnostics': stage_diagnostics(validation)}
+        report = {'completed_epochs': [item],
+                  'gradient_health': {'1': {'grad_p95': 20., 'grad_max': 30.,
+                                            'all_finite': True}}}
+        text = render_markdown(report)
+        self.assertIn('val-unseen SR/SPL/NE', text)
+        self.assertIn('SR +3.00pp，NE -2.00m', text)
+        self.assertIn('三个 seed', text)
 
 
 if __name__ == '__main__':
