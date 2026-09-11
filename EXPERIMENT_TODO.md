@@ -55,6 +55,7 @@
 - [x] 自动可读报告：三种子开发验证和冻结后的最终测试均输出同格式 `REPORT.md`，包含 SR/SPL/NE、seed 标准差、95% 区间、配对变化、案例文件及适用边界。
 - [x] 冻结后最终测试协议：先按三种子 val-unseen 的预声明门槛写入 `freeze.json`，之后才显式读取 test；只比较冻结方案与修复基线，不再根据 test 调整。
 - [x] Test 双向卫生检查：开发阶段同时要求无 test 输出且实际命令不含 `--include_test_unseen`；冻结后的最终任务反向要求命令显式包含该参数。
+- [x] 实际评估命令审计：逐 run 核对 checkpoint 来源与 seed、全量 episode、模块/消融开关和 test 范围，确保 recovery/combined 等评估没有接错权重。
 - [x] 阶段行为诊断：从已有轨迹派生切换次数、切换时真实目标距离、stage1/stage2 动作数、progress 提前停止及停止误判，不要求改模型或重跑已有预测。
 - [x] 训练动态汇总：7 个训练方案 × 3 seeds 自动汇总 loss、SR/SPL/NE 曲线、加权 loss 组成、耗时、最佳 epoch 与峰值显存；纯评估控制策略不混入训练曲线。
 - [x] Bug 修复独立归因：修复后 seed0 基线完成即单独比较原版 buggy run，输出 loss/验证曲线及逐 episode 配对结果，不把收益计入任何创新方案。

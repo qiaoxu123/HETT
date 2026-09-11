@@ -57,6 +57,30 @@ TRAINING_VARIANT_ARGS = {
     'neither_auxiliary': {'disable_task_interaction': True,
                           'progress_loss_weight': 0.0, 'target_loss_weight': 0.0},
 }
+EVALUATION_BOOL_FLAGS = {
+    'corrected': {'--disable_task_interaction'},
+    'recovery_off': {'--disable_task_interaction'},
+    'recovery_on': {'--disable_task_interaction', '--enable_stage_recovery'},
+    'grounding': {'--disable_task_interaction', '--enable_region_grounding'},
+    'combined': {'--disable_task_interaction', '--enable_region_grounding',
+                 '--enable_stage_recovery'},
+    'hypothesis': {'--disable_task_interaction', '--enable_multi_hypothesis'},
+    'bidirectional': set(),
+    'paper_loss_only': {'--disable_task_interaction'},
+    'no_progress': {'--disable_task_interaction'},
+    'neither_auxiliary': {'--disable_task_interaction'},
+}
+EVALUATION_OPTIONS = {
+    'paper_loss_only': {'--target_loss_weight': 0.0},
+    'no_progress': {'--progress_loss_weight': 0.0},
+    'neither_auxiliary': {'--progress_loss_weight': 0.0,
+                          '--target_loss_weight': 0.0},
+}
+ALL_EVALUATION_OPTIONS = {'--progress_loss_weight', '--target_loss_weight'}
+ALL_MODULE_FLAGS = {
+    '--disable_task_interaction', '--enable_stage_recovery',
+    '--enable_region_grounding', '--enable_multi_hypothesis',
+}
 QUEUE_RESULTS = {
     'smoke': CONTROL / 'runs/gpu_validation_queue_20260911/status.json',
     'grounding_ablations': CONTROL / 'runs/post_smoke_ablations_20260911/status.json',
@@ -136,6 +160,70 @@ def validate_training_args(run, variant, seed):
     }
     return not mismatches, {'path': str(run / 'checkpoints/training_args.json'),
                             'expected': expected, 'mismatches': mismatches}
+
+
+def evaluation_checkpoint(variant, seed):
+    if variant in ('corrected', 'recovery_off', 'recovery_on'):
+        path = ROOT / f'01-teacher-fix/runs/teacher_fix_full_s{seed}'
+    elif variant in ('grounding', 'combined'):
+        path = ROOT / f'03-grounding/runs/grounding_full_s{seed}'
+    elif variant == 'hypothesis':
+        path = ROOT / f'05-hypotheses/runs/hypothesis_full_s{seed}'
+    elif variant == 'bidirectional':
+        path = ROOT / f'06-bidir/runs/bidir_full_s{seed}'
+    elif variant in ('paper_loss_only', 'no_progress', 'neither_auxiliary'):
+        prefix = {'paper_loss_only': 'loss_paper_only_full',
+                  'no_progress': 'loss_no_progress_full',
+                  'neither_auxiliary': 'loss_neither_full'}[variant]
+        path = ROOT / f'07-loss-ablation/runs/{prefix}_s{seed}'
+    else:
+        raise KeyError(variant)
+    return path / 'checkpoints/best_val_unseen'
+
+
+def option_value(tokens, option):
+    try:
+        return tokens[tokens.index(option) + 1]
+    except (ValueError, IndexError):
+        return None
+
+
+def validate_evaluation_command(run, variant, seed, include_test):
+    commands = read_json(run / 'commands.json')
+    tokens = commands.get('evaluation', []) if commands else []
+    mismatches = {}
+    expected_checkpoint = str(evaluation_checkpoint(variant, seed))
+    if option_value(tokens, '--checkpoint') != expected_checkpoint:
+        mismatches['checkpoint'] = {'expected': expected_checkpoint,
+                                    'actual': option_value(tokens, '--checkpoint')}
+    if option_value(tokens, '--seed') != str(seed):
+        mismatches['seed'] = {'expected': str(seed), 'actual': option_value(tokens, '--seed')}
+    if option_value(tokens, '--max_episodes') != '0':
+        mismatches['max_episodes'] = {'expected': '0',
+                                      'actual': option_value(tokens, '--max_episodes')}
+    expected_flags = EVALUATION_BOOL_FLAGS[variant]
+    actual_flags = ALL_MODULE_FLAGS & set(tokens)
+    if actual_flags != expected_flags:
+        mismatches['module_flags'] = {'expected': sorted(expected_flags),
+                                      'actual': sorted(actual_flags)}
+    actual_test = '--include_test_unseen' in tokens
+    if actual_test != include_test:
+        mismatches['include_test_unseen'] = {'expected': include_test, 'actual': actual_test}
+    expected_options = EVALUATION_OPTIONS.get(variant, {})
+    actual_option_names = ALL_EVALUATION_OPTIONS & set(tokens)
+    if actual_option_names != set(expected_options):
+        mismatches['loss_option_names'] = {'expected': sorted(expected_options),
+                                           'actual': sorted(actual_option_names)}
+    for option, expected in expected_options.items():
+        actual = option_value(tokens, option)
+        try:
+            matches = float(actual) == expected
+        except (TypeError, ValueError):
+            matches = False
+        if not matches:
+            mismatches[option] = {'expected': expected, 'actual': actual}
+    return not mismatches, {'path': str(run / 'commands.json'), 'variant': variant,
+                            'seed': seed, 'mismatches': mismatches}
 
 
 def run_path(mapping, name, seed):
@@ -228,6 +316,10 @@ def audit():
             args_valid, args_evidence = validate_training_args(path, name, seed)
             add(checks, f'{name} seed {seed} actual training arguments match protocol',
                 args_valid, args_evidence)
+            eval_valid, eval_evidence = validate_evaluation_command(
+                path, name, seed, include_test=False)
+            add(checks, f'{name} seed {seed} validation command matches protocol',
+                eval_valid, eval_evidence)
             for artifact in ('provenance.json', 'commands.json', 'checkpoint_hashes.jsonl'):
                 target = path / artifact
                 add(checks, f'{name} seed {seed} {artifact}', target.is_file(), str(target))
@@ -247,6 +339,10 @@ def audit():
             variant_provenance[name].append(read_json(path / 'provenance.json'))
             add(checks, f'{name} seed {seed} complete', status is not None and
                 status.get('phase') == 'complete', status)
+            eval_valid, eval_evidence = validate_evaluation_command(
+                path, name, seed, include_test=False)
+            add(checks, f'{name} seed {seed} evaluation command matches protocol',
+                eval_valid, eval_evidence)
             for split in ('val_seen', 'val_unseen'):
                 target = path / 'evaluation' / f'{split}_predictions.pt'
                 add(checks, f'{name} seed {seed} {split}', target.is_file(), str(target))
@@ -276,6 +372,10 @@ def audit():
         status = read_json(path / 'status.json')
         add(checks, f'{path.name} complete', status is not None and
             status.get('phase') == 'complete', status)
+        eval_valid, eval_evidence = validate_evaluation_command(
+            path, 'corrected', 0, include_test=False)
+        add(checks, f'{path.name} evaluation command matches protocol',
+            eval_valid, eval_evidence)
 
     leaked = [str(path / 'evaluation/test_unseen_predictions.pt')
               for path in development_runs
@@ -377,6 +477,10 @@ def audit():
                     '--include_test_unseen' in arguments,
                     {'commands': str(run / 'commands.json'),
                      'contains_include_test_unseen': '--include_test_unseen' in arguments})
+                eval_valid, eval_evidence = validate_evaluation_command(
+                    run, name, seed, include_test=True)
+                add(checks, f'final test {name} seed {seed} command matches frozen protocol',
+                    eval_valid, eval_evidence)
         if final_outputs:
             freeze_time = (final_dir / 'freeze.json').stat().st_mtime_ns
             add(checks, 'freeze predates every final test output', all(

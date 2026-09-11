@@ -6,7 +6,7 @@ import tempfile
 from scripts.audit_experiment_completion import (
     EVAL_VARIANTS, EXPECTED_HEADS, QUEUE_RESULTS, SEEDS, TRAINING_VARIANT_ARGS,
     TRAIN_VARIANTS, command_arguments, digest, run_path, validate_checkpoint_hashes,
-    validate_training_args,
+    evaluation_checkpoint, validate_evaluation_command, validate_training_args,
 )
 
 
@@ -83,6 +83,27 @@ class CompletionAuditTest(unittest.TestCase):
             passed, evidence = validate_training_args(run, 'paper_loss_only', 17)
             self.assertFalse(passed)
             self.assertEqual(evidence['mismatches']['target_loss_weight']['expected'], 0.0)
+
+    def test_evaluation_command_audit_checks_checkpoint_seed_flags_and_test_scope(self):
+        with tempfile.TemporaryDirectory() as directory:
+            run = Path(directory)
+            command = ['bash', 'eval.sh', '--checkpoint',
+                       str(evaluation_checkpoint('recovery_on', 42)),
+                       '--seed', '42', '--max_episodes', '0', '--disable_task_interaction',
+                       '--enable_stage_recovery']
+            (run / 'commands.json').write_text(json.dumps({'evaluation': command}))
+            self.assertTrue(validate_evaluation_command(
+                run, 'recovery_on', 42, include_test=False)[0])
+            command.append('--include_test_unseen')
+            (run / 'commands.json').write_text(json.dumps({'evaluation': command}))
+            self.assertTrue(validate_evaluation_command(
+                run, 'recovery_on', 42, include_test=True)[0])
+            command[command.index('--seed') + 1] = '0'
+            (run / 'commands.json').write_text(json.dumps({'evaluation': command}))
+            passed, evidence = validate_evaluation_command(
+                run, 'recovery_on', 42, include_test=True)
+            self.assertFalse(passed)
+            self.assertIn('seed', evidence['mismatches'])
 
 
 if __name__ == '__main__':
