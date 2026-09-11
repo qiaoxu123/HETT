@@ -16,6 +16,7 @@
 | 4 | 04-combined | codex/verify-grounding-recovery | 验证定位与恢复是否互补 |
 | 5 | 05-hypotheses | codex/verify-multi-hypothesis | 备选：多目标假设与观测证据更新 |
 | 6 | 06-bidir | codex/verify-bidirectional-attention | 独立验证双向注意力，不与其他结构混算 |
+| 7 | 07-loss-ablation | codex/verify-loss-ablation | 独立验证 progress 与额外 target-grid loss，不与结构改动混算 |
 
 ## 隔离与公平性约定
 
@@ -43,6 +44,7 @@
 - [ ] 5：若主要方案效果不足，再验证多假设方案；不在测试集反复选结构。
 - [ ] 最终：至少 3 个训练种子，完整 unseen 集，按地图配对统计及置信区间，保存失败案例和绘图。
 - [ ] 双向注意力：整网双向梯度已验证；待真实数据单卡开/关短训及完整对照。
+- [ ] Loss 消融：四组权重协议与命令行已验证；待真实数据短跑及独立完整训练。
 
 ## 每次实验必须保存
 
@@ -70,3 +72,5 @@
 | --- | --- | --- | --- | --- | --- |
 | 隔离环境建立 | 公共工具 e582afb；隔离配置见各分支后续提交 | 51a1828 | 不训练 | 各 worktree | 输入链接和输出隔离检查；不代表模型验证完成 |
 | 跨方案 checkpoint 兼容性 | `b6107e4` | 各方案最新提交 | 不训练 | `runs/checkpoint_compatibility_20260911/` | grounding→combined 精确兼容；关闭模块时仅有预期的新模块参数被忽略 |
+| 论文参数一致性 | `d3bef88` | 六个结构分支 | 不训练 | `runs/training_protocol_audit_20260911/` | 六分支协议一致；论文核心参数匹配；单卡用 2×累积4，另标明发布代码额外 target-grid loss |
+| Loss 消融协议 | `078c74c` | `b01add8` | 四组权重；seed 0 起步 | `07-loss-ablation/runs/` | 14/14 CPU 测试通过；真实训练未开始 |

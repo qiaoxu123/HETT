@@ -14,10 +14,13 @@
 | combined | `e21e0eb` | 两模块合并；28 项测试；整网 CPU 前后向 | 同 checkpoint 配对评估 |
 | hypotheses | `af0c95b` | 时序证据与 top-k；14 项测试；整网 CPU 前后向 | 单卡短跑、完整对照 |
 | bidirectional attention | `b01add8` | 10 项测试；整网两方向均有非零有限梯度，四个任务头均受影响 | 真实数据单卡开/关短训与完整对照 |
+| loss ablation | `078c74c` | 四组独立训练协议；14 项测试 | 真实数据短跑、独立完整训练 |
 
 grounding 的监督覆盖：train_seen 10,734 个状态中可见 63.49%，val_unseen 5,376 个状态中可见 46.88%。因此 outside 类是必要项。
 
-最新六分支 CPU 回归合计 100/100 通过。跨分支 checkpoint 审计也通过：grounding 与 combined 的参数键完全一致；关闭 grounding / 多假设时仅忽略对应新增模块；双向注意力开关不改变参数键。
+最新六个结构分支 CPU 回归合计 101/101 通过，loss 消融分支另有 14/14 通过。跨分支 checkpoint 审计也通过：grounding 与 combined 的参数键完全一致；关闭 grounding / 多假设时仅忽略对应新增模块；双向注意力开关不改变参数键。
+
+论文参数机器审计通过：20 epochs、batch 2、1e-4、AdamW、grid 5、三项主 loss 权重 2.0/1.5/0.1 均匹配；单卡用累积 4 保持有效 episode batch 8。发布代码额外的 target-grid 权重 0.1 未写入论文三项 loss，因此已建立独立消融，不把它默认当作论文结论。
 
 原版基线当前处于 epoch 2，最近观测约完成 55%，GPU、日志、磁盘均无告警。它使用启动时源码快照，不受这些 worktree 提交影响。
 
