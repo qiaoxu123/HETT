@@ -2,6 +2,7 @@
 
 import argparse
 import json
+import math
 from pathlib import Path
 import signal
 import subprocess
@@ -135,6 +136,33 @@ def unit_state(unit):
                       'MainPID': '0', 'ExecMainStatus': str(result.returncode)}
 
 
+def batch_health(rows):
+    if not rows:
+        return {'epoch': None, 'samples': 0, 'nonfinite_samples': 0,
+                'trailing_grad_over_100': 0}
+    epoch = max(row.get('epoch', -1) for row in rows)
+    current = [row for row in rows if row.get('epoch') == epoch]
+    finite = [
+        math.isfinite(row.get('recent_il_loss', math.nan)) and
+        math.isfinite(row.get('grad_norm', math.nan))
+        for row in current
+    ]
+    trailing = 0
+    for row in reversed(current):
+        grad = row.get('grad_norm', math.nan)
+        if math.isfinite(grad) and grad > 100:
+            trailing += 1
+        else:
+            break
+    return {
+        'epoch': epoch,
+        'samples': len(current),
+        'latest_batch': current[-1].get('batch') if current else None,
+        'nonfinite_samples': finite.count(False),
+        'trailing_grad_over_100': trailing,
+    }
+
+
 def snapshot():
     baseline_status = read_json(BASELINE / 'status.json') or {}
     epochs = json_lines(BASELINE / 'checkpoints/epoch_metrics.jsonl')
@@ -143,6 +171,13 @@ def snapshot():
     run_statuses = {unit: read_json(path) for unit, path in RUN_STATUS.items()}
     experiments = {name: read_json(path) for name, path in EXPERIMENT_STATUS.items()}
     alerts = list(baseline_status.get('alerts', []))
+    health = batch_health(batches)
+    if health['nonfinite_samples']:
+        alerts.append(f'baseline epoch {health["epoch"]}: '
+                      f'{health["nonfinite_samples"]} non-finite batch samples')
+    if health['trailing_grad_over_100'] >= 3:
+        alerts.append(f'baseline epoch {health["epoch"]}: pre-clip gradient exceeded 100 '
+                      f'for {health["trailing_grad_over_100"]} consecutive samples')
     for unit, state in units.items():
         if state.get('ActiveState') == 'failed' or (
                 state.get('ActiveState') == 'inactive' and state.get('ExecMainStatus') not in ('0', '')):
@@ -166,6 +201,7 @@ def snapshot():
         'baseline_completed_epochs': len(epochs),
         'baseline_latest_epoch': epochs[-1] if epochs else None,
         'baseline_latest_batch': batches[-1] if batches else None,
+        'baseline_batch_health': health,
         'alerts': alerts,
     }
 
