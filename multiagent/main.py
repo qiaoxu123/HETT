@@ -236,9 +236,10 @@ def train(args, train_env, val_envs, rank=-1):
             loss_str = "\nepoch {}".format(idx)
 
             agent.save(idx, os.path.join(GOAL_PREDICTOR_CHECKPOINT_DIR, "latest"))
-            # Immutable per-epoch archive, sharing disk blocks with latest.
-            archive = os.path.join(GOAL_PREDICTOR_CHECKPOINT_DIR, 'epoch_%02d.pt' % (idx + 1))
-            os.link(os.path.join(GOAL_PREDICTOR_CHECKPOINT_DIR, 'latest'), archive)
+            # Keep only requested immutable epochs. The final epoch is always retained.
+            if (idx + 1) % args.save_every == 0 or idx + 1 == args.epochs:
+                archive = os.path.join(GOAL_PREDICTOR_CHECKPOINT_DIR, 'epoch_%02d.pt' % (idx + 1))
+                os.link(os.path.join(GOAL_PREDICTOR_CHECKPOINT_DIR, 'latest'), archive)
             epoch_metrics = dict(epoch=idx + 1, elapsed_seconds=time.time()-start,
                                  il_loss=ml_loss, direction_loss=direction_loss,
                                  progress_loss=progress_loss, goal_loss=goal_predict_loss,
@@ -252,7 +253,7 @@ def train(args, train_env, val_envs, rank=-1):
                 agent_eval.env = env
                 loader = DataLoader(env, batch_size=1)
                 # Get validation distance from goal under test evaluation conditions
-                agent_eval.test(loader, feedback='student')
+                agent_eval.test(loader, env_name=env_name, feedback='student')
                 pred_results = agent_eval.get_results()
 
                 score_summary, result = env.eval_metrics(pred_results)
@@ -314,7 +315,7 @@ def valid(args, val_envs, rank=-1):
             agent_eval.env = env
             loader = DataLoader(env, batch_size=1)
             # Get validation distance from goal under test evaluation conditions
-            agent_eval.test(loader, feedback='student')
+            agent_eval.test(loader, env_name=env_name, feedback='student')
             pred_results = agent_eval.get_results()
 
             score_summary, result = env.eval_metrics(pred_results)
