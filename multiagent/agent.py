@@ -29,6 +29,7 @@ from multiagent.observation import cropclient
 from multiagent.space import Pose4D, Point2D, Point3D
 from multiagent.teacher.algorithm.lookahead import lookahead_discrete_action
 from multiagent.teacher.trajectory import _moved_pose
+from multiagent.stage_control import advance_teacher_stage1
 from models.vln_model import CustomBERTModel
 from models.ET_haa import ET
 from transformers import AutoModel, BertTokenizerFast
@@ -465,7 +466,7 @@ class NavCMTAgent:
         goal_predict_loss = 0.
         target_predict_loss = 0.
 
-        stage1_step = 0
+        stage1_steps = [0] * batch_size
         stage2_step = 0
         stage2_rotate = 0
 
@@ -684,7 +685,6 @@ class NavCMTAgent:
                 # if pred_progress_t[i] > 0.9 and not stage1_ended[i]:
                 #     stage1_ended[i] = True
                 if dst.dist_to(poses[i].xy) > 5 and not stage1_ended[i]:
-                    stage1_step += 1
                     traj[i]['pred_goal'].append(dst)
                     # pred_goal_xys = [
                     #     unnormalize_position(global_position[goal_id] / args.grid_size, eps.map_name, args.map_meters)
@@ -692,10 +692,15 @@ class NavCMTAgent:
                     # dst = Point2D(obs[i]['centroid_goal'][0], obs[i]['centroid_goal'][1])
                     # dst = self.env.unnormalize_position(global_position[cpu_goal[i]], obs[i]['map_name'], self.args.map_meters)
                     if self.feedback == 'teacher':
-                        cur_step = stage1_step * self.args.move_iteration
-                        cur_step = cur_step if cur_step < len(obs[i]['trajectory']) else -1
+                        cur_step = advance_teacher_stage1(
+                            stage1_steps,
+                            i,
+                            self.args.move_iteration,
+                            len(obs[i]['trajectory']),
+                        )
                         poses[i] = obs[i]['trajectory'][cur_step]
                     else:
+                        stage1_steps[i] += 1
                         poses[i] = self.move(poses[i], dst,
                                          self.args.move_iteration)
                     if not ended[i]:
@@ -775,7 +780,7 @@ class NavCMTAgent:
 
         # if t==0:
         #     self.logs
-        self.logs['stage1_step'].append(float(stage1_step) / batch_size)
+        self.logs['stage1_step'].append(float(sum(stage1_steps)) / batch_size)
         self.logs['stage2_step'].append(float(stage2_step) / batch_size)
         self.logs['stage2_rotate'].append(float(stage2_rotate) / batch_size)
 
