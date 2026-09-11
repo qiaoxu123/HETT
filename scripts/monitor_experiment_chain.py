@@ -1,0 +1,137 @@
+"""Monitor the complete HETT service chain without acquiring the GPU lock."""
+
+import argparse
+import json
+from pathlib import Path
+import signal
+import subprocess
+import time
+
+
+PYTHON = '/home/tenant2/miniconda3/envs/AirVLN39/bin/python'
+CONTROL = Path('/home/tenant2/Workspace/hett-experiments/00-control')
+BASELINE = Path('/home/tenant2/Workspace/hett-crotonyl/runs/hett_baseline_fixed_20260911')
+UNITS = (
+    'hett-baseline-20260911.service',
+    'hett-validation-queue-20260911.service',
+    'hett-post-smoke-ablations-20260911.service',
+    'hett-hypothesis-ablations-20260911.service',
+    'hett-grounding-contrast-20260911.service',
+    'hett-bidir-validation-20260911.service',
+    'hett-loss-ablation-20260911.service',
+    'hett-corrected-baseline-full-s0-20260911.service',
+)
+
+
+def stamp():
+    return time.strftime('%Y-%m-%dT%H:%M:%S%z')
+
+
+def read_json(path):
+    try:
+        return json.loads(path.read_text())
+    except (FileNotFoundError, json.JSONDecodeError):
+        return None
+
+
+def json_lines(path):
+    try:
+        lines = path.read_text().splitlines()
+    except FileNotFoundError:
+        return []
+    rows = []
+    for line in lines:
+        try:
+            rows.append(json.loads(line))
+        except json.JSONDecodeError:
+            pass
+    return rows
+
+
+def unit_state(unit):
+    result = subprocess.run(
+        ['systemctl', '--user', 'show', unit, '--property=ActiveState,SubState,MainPID,ExecMainStatus'],
+        capture_output=True, text=True,
+    )
+    values = {}
+    for line in result.stdout.splitlines():
+        if '=' in line:
+            key, value = line.split('=', 1)
+            values[key] = value
+    return values or {'ActiveState': 'not-found', 'SubState': 'not-found',
+                      'MainPID': '0', 'ExecMainStatus': str(result.returncode)}
+
+
+def snapshot():
+    baseline_status = read_json(BASELINE / 'status.json') or {}
+    epochs = json_lines(BASELINE / 'checkpoints/epoch_metrics.jsonl')
+    batches = json_lines(BASELINE / 'checkpoints/batch_metrics.jsonl')
+    units = {unit: unit_state(unit) for unit in UNITS}
+    alerts = list(baseline_status.get('alerts', []))
+    for unit, state in units.items():
+        if state.get('ActiveState') == 'failed' or (
+                state.get('ActiveState') == 'inactive' and state.get('ExecMainStatus') not in ('0', '')):
+            alerts.append(f'{unit}: {state}')
+    return {
+        'time': stamp(), 'units': units, 'baseline_status': baseline_status,
+        'baseline_completed_epochs': len(epochs),
+        'baseline_latest_epoch': epochs[-1] if epochs else None,
+        'baseline_latest_batch': batches[-1] if batches else None,
+        'alerts': alerts,
+    }
+
+
+def signature(value):
+    return json.dumps({
+        'units': value['units'],
+        'baseline_phase': value['baseline_status'].get('phase'),
+        'baseline_completed_epochs': value['baseline_completed_epochs'],
+        'alerts': value['alerts'],
+    }, sort_keys=True, ensure_ascii=False)
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--output-dir', type=Path, required=True)
+    parser.add_argument('--interval', type=int, default=60)
+    args = parser.parse_args()
+    if args.interval < 10:
+        parser.error('interval must be at least 10 seconds')
+    args.output_dir.mkdir(parents=True, exist_ok=False)
+    stopping = False
+
+    def stop(*unused):
+        nonlocal stopping
+        stopping = True
+
+    signal.signal(signal.SIGTERM, stop)
+    signal.signal(signal.SIGINT, stop)
+    previous_signature = None
+    plotted_epochs = -1
+    while not stopping:
+        current = snapshot()
+        temporary = args.output_dir / 'status.json.tmp'
+        temporary.write_text(json.dumps(current, indent=2, ensure_ascii=False) + '\n')
+        temporary.replace(args.output_dir / 'status.json')
+        current_signature = signature(current)
+        if current_signature != previous_signature:
+            with (args.output_dir / 'events.jsonl').open('a') as stream:
+                stream.write(json.dumps(current, ensure_ascii=False) + '\n')
+            previous_signature = current_signature
+        if current['alerts']:
+            with (args.output_dir / 'alerts.jsonl').open('a') as stream:
+                stream.write(json.dumps(current, ensure_ascii=False) + '\n')
+        if current['baseline_completed_epochs'] != plotted_epochs:
+            report = [PYTHON, str(CONTROL / 'scripts/report_live_baseline.py'),
+                      '--run-dir', str(BASELINE),
+                      '--output-dir', str(args.output_dir / 'baseline_report')]
+            subprocess.run(report, cwd=CONTROL, check=True)
+            plotted_epochs = current['baseline_completed_epochs']
+        time.sleep(args.interval)
+    final = snapshot()
+    final['monitor_phase'] = 'stopped'
+    (args.output_dir / 'status.json').write_text(json.dumps(final, indent=2, ensure_ascii=False) + '\n')
+
+
+if __name__ == '__main__':
+    main()
