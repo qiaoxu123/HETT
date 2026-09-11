@@ -68,7 +68,9 @@ def build_val_dataset(args, rank=0):
     # print(rank)
     dataset_class = CityNavBatch
 
-    val_env_names = ['val_seen', 'val_unseen', 'test_unseen', ]  # 'test_unseen'
+    val_env_names = ['val_seen', 'val_unseen']
+    if args.include_test_unseen:
+        val_env_names.append('test_unseen')
     # val_env_names = ['visualization' ]  # 'test_unseen'
 
     val_envs = {}

@@ -169,6 +169,8 @@ def parse_args():
 
     # eval params
     parser.add_argument('--eval_every', type=int, default=1)
+    parser.add_argument('--include_test_unseen', action='store_true',
+                        help='explicit final-report opt-in; development evaluation is validation-only')
     parser.add_argument('--eval_first', action='store_true', default=False)
     parser.add_argument('--max_action_len', type=int, default=20)
     parser.add_argument('--eval_client', type=str, choices=['crop', 'airsim'], default='crop')
