@@ -1,6 +1,6 @@
 import unittest
 
-from scripts.run_multiseed_confirmation import MIN_FREE_GIB, SEEDS, build_jobs
+from scripts.run_multiseed_confirmation import MIN_FREE_GIB, SEEDS, analysis_command, build_jobs
 
 
 class MultiSeedConfirmationTest(unittest.TestCase):
@@ -27,6 +27,17 @@ class MultiSeedConfirmationTest(unittest.TestCase):
                 self.assertIn('--phase', command)
                 self.assertIn('--checkpoint', command)
         self.assertGreaterEqual(MIN_FREE_GIB, 12)
+
+    def test_analysis_uses_all_three_seeds_without_test(self):
+        command = analysis_command('/tmp/multiseed-analysis')
+        runs = [command[index + 1] for index, value in enumerate(command) if value == '--run']
+        pairs = [command[index + 1] for index, value in enumerate(command) if value == '--pair']
+        self.assertEqual(len(runs), 30)
+        self.assertEqual(len(pairs), 9)
+        for seed in (0, 17, 42):
+            self.assertIn(f'corrected:{seed}=', ' '.join(runs))
+            self.assertIn(f'bidirectional:{seed}=', ' '.join(runs))
+        self.assertNotIn('test_unseen', ' '.join(command))
 
 
 if __name__ == '__main__':

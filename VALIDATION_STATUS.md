@@ -41,7 +41,7 @@ grounding 的监督覆盖：train_seen 10,734 个状态中可见 63.49%，val_un
 - Loss 消融 smoke 服务：`hett-loss-ablation-20260911.service`，等待双向注意力验证完成。
 - 修复后完整基线 seed 0：`hett-corrected-baseline-full-s0-20260911.service`，等待所有 smoke 成功完成后启动；20 epochs、全数据、`save_every=20`。
 - 完整 seed-0 对照矩阵：`hett-full-seed0-matrix-20260911.service`，等待修复后完整基线成功后启动；包含 11 个预声明任务和配对分析，训练任务均为 20 epochs、全数据、`save_every=20`。
-- 三种子确认矩阵：`hett-multiseed-confirmation-20260911.service`，将在 seed-0 矩阵成功后运行 seed 17、42；每个种子含 10 个完整任务，每项启动前检查至少 16 GiB 可用磁盘。
+- 三种子确认矩阵：`hett-multiseed-confirmation-20260911.service`，将在 seed-0 矩阵成功后运行 seed 17、42；每个种子含 10 个完整任务，每项启动前检查至少 16 GiB 可用磁盘。完成后自动汇总 seeds 0/17/42，报告均值、样本标准差、95% 区间和逐 seed 配对变化，并生成两张比较图。
 - 总监控器：`hett-chain-monitor-20260911.service`；不占 GPU，每 60 秒记录服务/训练状态，每完成一个 epoch 自动刷新图，输出在 `runs/chain_monitor_20260911/`。监控同时核验外层服务退出结果和 48 个内部子实验状态，只有状态实质变化才追加事件；跨心跳实测状态文件刷新而事件数保持为 1。
 - 队列状态：`/home/tenant2/Workspace/hett-experiments/00-control/runs/gpu_validation_queue_20260911/`
 - 当前等待文件：`/home/tenant2/Workspace/hett-experiments/01-teacher-fix/runs/teacher_fix_smoke_s0/status.json`

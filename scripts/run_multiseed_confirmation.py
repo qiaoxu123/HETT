@@ -87,6 +87,35 @@ def build_jobs():
     return [job for seed in SEEDS for job in jobs_for_seed(seed)]
 
 
+def analysis_command(output_dir):
+    variants = {
+        'corrected': ('01-teacher-fix', 'teacher_fix_full'),
+        'recovery_off': ('02-recovery', 'recovery_off_full_eval'),
+        'recovery_on': ('02-recovery', 'recovery_on_full_eval'),
+        'grounding': ('03-grounding', 'grounding_full'),
+        'combined': ('04-combined', 'combined_full_eval'),
+        'hypothesis': ('05-hypotheses', 'hypothesis_full'),
+        'bidirectional': ('06-bidir', 'bidir_full'),
+        'paper_loss_only': ('07-loss-ablation', 'loss_paper_only_full'),
+        'no_progress': ('07-loss-ablation', 'loss_no_progress_full'),
+        'neither_auxiliary': ('07-loss-ablation', 'loss_neither_full'),
+    }
+    command = [PYTHON, str(ROOT / '00-control/scripts/analyze_multiseed.py')]
+    for name, (worktree, run_prefix) in variants.items():
+        for seed in (0, *SEEDS):
+            path = ROOT / worktree / 'runs' / f'{run_prefix}_s{seed}'
+            command.extend(['--run', f'{name}:{seed}={path}'])
+    for pair in [
+            'corrected:recovery_off', 'recovery_off:recovery_on',
+            'corrected:grounding', 'grounding:combined',
+            'corrected:hypothesis', 'corrected:bidirectional',
+            'corrected:paper_loss_only', 'corrected:no_progress',
+            'corrected:neither_auxiliary']:
+        command.extend(['--pair', pair])
+    command.extend(['--output-dir', str(output_dir)])
+    return command
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--run-dir', type=Path, required=True)
@@ -126,8 +155,19 @@ def main():
             write(args.run_dir / 'status.json', {'time': stamp(), 'phase': 'failed',
                                                  'job': name, 'exit_code': result.returncode})
             raise SystemExit(result.returncode)
+    analysis = analysis_command(args.run_dir / 'analysis')
+    write(args.run_dir / 'analysis_command.json', analysis)
+    write(args.run_dir / 'status.json', {'time': stamp(), 'phase': 'analyzing'})
+    with (args.run_dir / 'analysis.log').open('w') as log:
+        result = subprocess.run(analysis, cwd=ROOT / '00-control', stdout=log,
+                                stderr=subprocess.STDOUT)
+    if result.returncode:
+        write(args.run_dir / 'status.json', {'time': stamp(), 'phase': 'failed',
+                                             'job': 'analysis', 'exit_code': result.returncode})
+        raise SystemExit(result.returncode)
     write(args.run_dir / 'status.json', {'time': stamp(), 'phase': 'complete',
-                                         'seeds': list(SEEDS)})
+                                         'seeds': [0, *SEEDS],
+                                         'analysis': str(args.run_dir / 'analysis')})
 
 
 if __name__ == '__main__':
