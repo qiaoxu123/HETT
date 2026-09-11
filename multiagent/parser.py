@@ -187,6 +187,8 @@ def parse_args():
         parser.error('stage_recovery_distance must be greater than stage_enter_distance')
     if args.stage_recovery_patience < 1 or args.progress_stop_patience < 1:
         parser.error('stage recovery/stop patience must be positive')
+    if args.mode == 'train' and args.enable_stage_recovery:
+        parser.error('stage recovery is evaluation-only; training-policy changes require a separate ablation')
     if args.save_every < 1:
         parser.error('save_every must be positive')
     if args.checkpoint and not Path(args.checkpoint).is_absolute():

@@ -1,6 +1,10 @@
 import ast
 from pathlib import Path
+import sys
 import unittest
+from unittest.mock import patch
+
+from multiagent.parser import parse_args
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -23,6 +27,13 @@ class ExperimentHygieneTest(unittest.TestCase):
                     for child in ast.walk(node)):
                 guarded_links.append(ast.unparse(node.test))
         self.assertTrue(any('save_every' in condition for condition in guarded_links))
+
+    def test_recovery_cannot_silently_change_training_policy(self):
+        with patch.object(sys, 'argv', ['test', '--mode', 'train', '--enable_stage_recovery']):
+            with self.assertRaises(SystemExit):
+                parse_args()
+        with patch.object(sys, 'argv', ['test', '--mode', 'eval', '--enable_stage_recovery']):
+            self.assertTrue(parse_args().enable_stage_recovery)
 
 
 if __name__ == '__main__':
