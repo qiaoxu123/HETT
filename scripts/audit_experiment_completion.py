@@ -36,6 +36,7 @@ QUEUE_RESULTS = {
     'full_seed0': CONTROL / 'runs/full_seed0_matrix_20260911/status.json',
     'multiseed': CONTROL / 'runs/multiseed_confirmation_20260911/status.json',
     'final_test': CONTROL / 'runs/frozen_final_test_20260911/status.json',
+    'bugfix_analysis': CONTROL / 'runs/bugfix_analysis_20260911/status.json',
 }
 
 
@@ -148,6 +149,11 @@ def audit():
     add(checks, 'no declared development run touched test_unseen', not leaked, leaked)
 
     required_analysis = [
+        CONTROL / 'runs/bugfix_analysis_20260911/training/summary.json',
+        CONTROL / 'runs/bugfix_analysis_20260911/training/training_curves.png',
+        CONTROL / 'runs/bugfix_analysis_20260911/training/weighted_loss_components.png',
+        CONTROL / 'runs/bugfix_analysis_20260911/navigation/summary.json',
+        CONTROL / 'runs/bugfix_analysis_20260911/navigation/comparison.png',
         CONTROL / 'runs/multiseed_confirmation_20260911/analysis/summary.json',
         CONTROL / 'runs/multiseed_confirmation_20260911/analysis/multiseed_metrics.png',
         CONTROL / 'runs/multiseed_confirmation_20260911/analysis/multiseed_paired_deltas.png',

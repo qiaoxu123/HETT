@@ -28,10 +28,11 @@ class CompletionAuditTest(unittest.TestCase):
         self.assertEqual(len(paths), 30)
 
     def test_queue_manifest_reaches_frozen_final_test(self):
-        self.assertEqual(len(QUEUE_RESULTS), 10)
+        self.assertEqual(len(QUEUE_RESULTS), 11)
         self.assertIn('smoke', QUEUE_RESULTS)
         self.assertIn('multiseed', QUEUE_RESULTS)
         self.assertIn('final_test', QUEUE_RESULTS)
+        self.assertIn('bugfix_analysis', QUEUE_RESULTS)
 
 
 if __name__ == '__main__':

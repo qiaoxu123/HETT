@@ -24,6 +24,7 @@ UNITS = (
     'hett-full-seed0-matrix-20260911.service',
     'hett-multiseed-confirmation-20260911.service',
     'hett-frozen-final-test-20260911.service',
+    'hett-bugfix-analysis-20260911.service',
 )
 RUN_STATUS = {
     'hett-baseline-20260911.service': BASELINE / 'status.json',
@@ -37,6 +38,7 @@ RUN_STATUS = {
     'hett-full-seed0-matrix-20260911.service': CONTROL / 'runs/full_seed0_matrix_20260911/status.json',
     'hett-multiseed-confirmation-20260911.service': CONTROL / 'runs/multiseed_confirmation_20260911/status.json',
     'hett-frozen-final-test-20260911.service': CONTROL / 'runs/frozen_final_test_20260911/status.json',
+    'hett-bugfix-analysis-20260911.service': CONTROL / 'runs/bugfix_analysis_20260911/status.json',
 }
 EXPERIMENT_STATUS = {
     'teacher_fix_smoke': ROOT / '01-teacher-fix/runs/teacher_fix_smoke_s0/status.json',
