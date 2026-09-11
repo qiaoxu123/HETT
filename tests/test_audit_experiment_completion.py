@@ -4,8 +4,9 @@ from pathlib import Path
 import tempfile
 
 from scripts.audit_experiment_completion import (
-    EVAL_VARIANTS, EXPECTED_HEADS, QUEUE_RESULTS, SEEDS, TRAIN_VARIANTS,
-    command_arguments, digest, run_path, validate_checkpoint_hashes,
+    EVAL_VARIANTS, EXPECTED_HEADS, QUEUE_RESULTS, SEEDS, TRAINING_VARIANT_ARGS,
+    TRAIN_VARIANTS, command_arguments, digest, run_path, validate_checkpoint_hashes,
+    validate_training_args,
 )
 
 
@@ -32,6 +33,7 @@ class CompletionAuditTest(unittest.TestCase):
                           (*TRAIN_VARIANTS.values(), *EVAL_VARIANTS.values())},
                          set(EXPECTED_HEADS))
         self.assertTrue(all(len(head) == 40 for head in EXPECTED_HEADS.values()))
+        self.assertEqual(set(TRAIN_VARIANTS), set(TRAINING_VARIANT_ARGS))
 
     def test_queue_manifest_reaches_frozen_final_test(self):
         self.assertEqual(len(QUEUE_RESULTS), 11)
@@ -65,6 +67,22 @@ class CompletionAuditTest(unittest.TestCase):
                     'environment_overrides': {'NOTE': 'not an argument'}}
         self.assertIn('--include_test_unseen', command_arguments(commands))
         self.assertNotIn('--include_test', command_arguments(commands))
+
+    def test_actual_training_argument_audit_is_variant_and_seed_specific(self):
+        with tempfile.TemporaryDirectory() as directory:
+            run = Path(directory)
+            checkpoint = run / 'checkpoints'
+            checkpoint.mkdir()
+            from scripts.audit_experiment_completion import COMMON_TRAINING_ARGS
+            arguments = {**COMMON_TRAINING_ARGS,
+                         **TRAINING_VARIANT_ARGS['paper_loss_only'], 'seed': 17}
+            (checkpoint / 'training_args.json').write_text(json.dumps(arguments))
+            self.assertTrue(validate_training_args(run, 'paper_loss_only', 17)[0])
+            arguments['target_loss_weight'] = 0.1
+            (checkpoint / 'training_args.json').write_text(json.dumps(arguments))
+            passed, evidence = validate_training_args(run, 'paper_loss_only', 17)
+            self.assertFalse(passed)
+            self.assertEqual(evidence['mismatches']['target_loss_weight']['expected'], 0.0)
 
 
 if __name__ == '__main__':

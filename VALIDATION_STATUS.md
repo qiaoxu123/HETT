@@ -24,6 +24,8 @@ grounding 的监督覆盖：train_seen 10,734 个状态中可见 63.49%，val_un
 
 七个实验 worktree 的论文参数机器审计通过：20 epochs、batch 2、1e-4、AdamW、grid 5、三项主 loss 权重 2.0/1.5/0.1 均匹配；单卡用累积 4 保持有效 episode batch 8。发布代码额外的 target-grid 权重 0.1 未写入论文三项 loss，因此已建立独立消融，不把它默认当作论文结论。
 
+最终审计不仅检查静态脚本，还会逐个读取所有完整训练实际写出的 `training_args.json`，核对 seed、20 epochs、batch 2、累积 4、单卡、学习率、优化器、rollout 设置、loss 权重和对应模块开关，防止调度命令与预声明协议不一致。
+
 历史 `reference_baseline` 已做只读审计：`train_rep.log.gz` 连续记录 epoch 0–11，`train_epoch12_20.log.gz` 记录 resume epoch 11–19，`valid.txt` 含完整 split 指标；但归档不含 checkpoint，也不能证明两段属于唯一连续 lineage。更关键的是，`htnav-repro` 旧代码将 action loss 权重写死为 1.0，而论文和当前受控训练为 1.5，因此旧 loss 曲线不可直接比较，只保留为导航指标量级旁证。报告和图位于 `runs/reference_baseline_audit_20260911/`，监控器会在当前基线每完成一个 epoch 后自动刷新。
 
 原版基线当前处于 epoch 2，最新记录为 8,500/10,939 batch（约 77.7%）；GPU、日志、磁盘均无告警。它使用启动时源码快照，不受这些 worktree 提交影响。

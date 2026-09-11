@@ -34,6 +34,29 @@ EXPECTED_HEADS = {
     '06-bidir': 'b76f9b659dc496583ddcb27745f58a09883cb746',
     '07-loss-ablation': '9b50ad4a636f4985c4392f2cc799c9cf44d46907',
 }
+COMMON_TRAINING_ARGS = {
+    'epochs': 20, 'batch_size': 2, 'grad_accum': 4, 'world_size': 1,
+    'learning_rate': 1e-4, 'optim': 'adamW', 'grid_size': 5,
+    'move_iteration': 10, 'max_action_len': 20, 'feedback': 'student',
+    'train_trajectory_type': 'mturk', 'max_episodes': 0, 'altitude': 50.0,
+    'direction_loss_weight': 1.5, 'goal_loss_weight': 2.0,
+}
+TRAINING_VARIANT_ARGS = {
+    'corrected': {'disable_task_interaction': True,
+                  'progress_loss_weight': 0.1, 'target_loss_weight': 0.1},
+    'grounding': {'disable_task_interaction': True, 'enable_region_grounding': True,
+                  'progress_loss_weight': 0.1, 'target_loss_weight': 0.1},
+    'hypothesis': {'disable_task_interaction': True, 'enable_multi_hypothesis': True,
+                   'progress_loss_weight': 0.1, 'target_loss_weight': 0.1},
+    'bidirectional': {'disable_task_interaction': False,
+                      'progress_loss_weight': 0.1, 'target_loss_weight': 0.1},
+    'paper_loss_only': {'disable_task_interaction': True,
+                        'progress_loss_weight': 0.1, 'target_loss_weight': 0.0},
+    'no_progress': {'disable_task_interaction': True,
+                    'progress_loss_weight': 0.0, 'target_loss_weight': 0.1},
+    'neither_auxiliary': {'disable_task_interaction': True,
+                          'progress_loss_weight': 0.0, 'target_loss_weight': 0.0},
+}
 QUEUE_RESULTS = {
     'smoke': CONTROL / 'runs/gpu_validation_queue_20260911/status.json',
     'grounding_ablations': CONTROL / 'runs/post_smoke_ablations_20260911/status.json',
@@ -103,6 +126,18 @@ def command_arguments(value):
     return []
 
 
+def validate_training_args(run, variant, seed):
+    arguments = read_json(run / 'checkpoints/training_args.json')
+    expected = {**COMMON_TRAINING_ARGS, **TRAINING_VARIANT_ARGS[variant], 'seed': seed}
+    mismatches = {
+        name: {'expected': value, 'actual': arguments.get(name) if arguments else None}
+        for name, value in expected.items()
+        if arguments is None or arguments.get(name) != value
+    }
+    return not mismatches, {'path': str(run / 'checkpoints/training_args.json'),
+                            'expected': expected, 'mismatches': mismatches}
+
+
 def run_path(mapping, name, seed):
     worktree, prefix = mapping[name]
     return ROOT / worktree / 'runs' / f'{prefix}_s{seed}'
@@ -120,6 +155,10 @@ def audit():
         baseline_status.get('phase') == 'complete', baseline_status)
     add(checks, 'original baseline has 20 epochs', len(baseline_epochs) == 20,
         {'epochs': len(baseline_epochs)})
+    baseline_args_valid, baseline_args_evidence = validate_training_args(
+        BASELINE, 'corrected', 0)
+    add(checks, 'original baseline actual training arguments match declared protocol',
+        baseline_args_valid, baseline_args_evidence)
     baseline_hashes_valid, baseline_hash_evidence = validate_checkpoint_hashes(BASELINE)
     add(checks, 'original baseline checkpoint contents match recorded hashes',
         baseline_hashes_valid, baseline_hash_evidence)
@@ -186,6 +225,9 @@ def audit():
                 status.get('phase') == 'complete', status)
             add(checks, f'{name} seed {seed} has 20 epochs', len(epochs) == 20,
                 {'epochs': len(epochs), 'path': str(path)})
+            args_valid, args_evidence = validate_training_args(path, name, seed)
+            add(checks, f'{name} seed {seed} actual training arguments match protocol',
+                args_valid, args_evidence)
             for artifact in ('provenance.json', 'commands.json', 'checkpoint_hashes.jsonl'):
                 target = path / artifact
                 add(checks, f'{name} seed {seed} {artifact}', target.is_file(), str(target))
