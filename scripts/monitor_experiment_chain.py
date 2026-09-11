@@ -21,6 +21,7 @@ UNITS = (
     'hett-bidir-validation-20260911.service',
     'hett-loss-ablation-20260911.service',
     'hett-corrected-baseline-full-s0-20260911.service',
+    'hett-full-seed0-matrix-20260911.service',
 )
 RUN_STATUS = {
     'hett-baseline-20260911.service': BASELINE / 'status.json',
@@ -31,6 +32,7 @@ RUN_STATUS = {
     'hett-bidir-validation-20260911.service': CONTROL / 'runs/bidir_validation_queue_20260911/status.json',
     'hett-loss-ablation-20260911.service': CONTROL / 'runs/loss_ablation_queue_20260911/status.json',
     'hett-corrected-baseline-full-s0-20260911.service': CONTROL / 'runs/full_corrected_baseline_queue_s0_20260911/status.json',
+    'hett-full-seed0-matrix-20260911.service': CONTROL / 'runs/full_seed0_matrix_20260911/status.json',
 }
 EXPERIMENT_STATUS = {
     'teacher_fix_smoke': ROOT / '01-teacher-fix/runs/teacher_fix_smoke_s0/status.json',
@@ -50,6 +52,17 @@ EXPERIMENT_STATUS = {
     'loss_no_progress_smoke': ROOT / '07-loss-ablation/runs/loss_no_progress_smoke_s0/status.json',
     'loss_neither_smoke': ROOT / '07-loss-ablation/runs/loss_neither_smoke_s0/status.json',
     'teacher_fix_full_s0': ROOT / '01-teacher-fix/runs/teacher_fix_full_s0/status.json',
+    'recovery_off_full_eval_s0': ROOT / '02-recovery/runs/recovery_off_full_eval_s0/status.json',
+    'recovery_on_full_eval_s0': ROOT / '02-recovery/runs/recovery_on_full_eval_s0/status.json',
+    'grounding_disabled_full_eval_s0': ROOT / '03-grounding/runs/grounding_disabled_full_eval_s0/status.json',
+    'grounding_full_s0': ROOT / '03-grounding/runs/grounding_full_s0/status.json',
+    'combined_full_eval_s0': ROOT / '04-combined/runs/combined_full_eval_s0/status.json',
+    'hypothesis_disabled_full_eval_s0': ROOT / '05-hypotheses/runs/hypothesis_disabled_full_eval_s0/status.json',
+    'hypothesis_full_s0': ROOT / '05-hypotheses/runs/hypothesis_full_s0/status.json',
+    'bidir_full_s0': ROOT / '06-bidir/runs/bidir_full_s0/status.json',
+    'loss_paper_only_full_s0': ROOT / '07-loss-ablation/runs/loss_paper_only_full_s0/status.json',
+    'loss_no_progress_full_s0': ROOT / '07-loss-ablation/runs/loss_no_progress_full_s0/status.json',
+    'loss_neither_full_s0': ROOT / '07-loss-ablation/runs/loss_neither_full_s0/status.json',
 }
 
 
