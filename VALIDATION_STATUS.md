@@ -1,6 +1,6 @@
 # HETT 验证状态
 
-更新时间：2026-09-11 22:38 +08:00
+更新时间：2026-09-11 22:47 +08:00
 
 ## 当前结论
 
@@ -9,16 +9,18 @@
 | 分支 | 当前提交 | 已完成 | 待完成 |
 | --- | --- | --- | --- |
 | teacher fix | `b01add8` | 每 episode 独立索引；10 项核心/卫生/整网测试 | 单卡短跑、完整基线 |
-| recovery | `80c9909` | 历史失败量化；16 项测试 | checkpoint 配对短评估、完整 unseen |
-| grounding | `428ea22` | 49 区域＋outside；22 项测试；整网 CPU 前后向；16,110 状态审计；16 组 hard contrast | 单卡、完整训练和 checkpoint 消融 |
-| combined | `e21e0eb` | 两模块合并；28 项测试；整网 CPU 前后向 | 同 checkpoint 配对评估 |
-| hypotheses | `af0c95b` | 时序证据与 top-k；14 项测试；整网 CPU 前后向 | 单卡短跑、完整对照 |
+| recovery | `769d5ab` | 历史失败量化；17 项测试；强制仅评估启用 | checkpoint 配对短评估、完整 unseen |
+| grounding | `e821342` | 49 区域＋outside；24 项测试；region CE 非零梯度；16,110 状态审计；16 组 hard contrast | 单卡、完整训练和 checkpoint 消融 |
+| combined | `ce5fc58` | 两模块合并；30 项测试；region CE 非零梯度；recovery 仅评估 | 同 checkpoint 配对评估 |
+| hypotheses | `0f965c1` | 时序证据与 top-k；15 项测试；offset 监督非零梯度 | 单卡短跑、完整对照 |
 | bidirectional attention | `b01add8` | 10 项测试；整网两方向均有非零有限梯度，四个任务头均受影响 | 真实数据单卡开/关短训与完整对照 |
 | loss ablation | `078c74c` | 四组独立训练协议；14 项测试 | 真实数据短跑、独立完整训练 |
 
 grounding 的监督覆盖：train_seen 10,734 个状态中可见 63.49%，val_unseen 5,376 个状态中可见 46.88%。因此 outside 类是必要项。
 
-最新六个结构分支 CPU 回归合计 101/101 通过，loss 消融分支另有 14/14 通过。跨分支 checkpoint 审计也通过：grounding 与 combined 的参数键完全一致；关闭 grounding / 多假设时仅忽略对应新增模块；双向注意力开关不改变参数键。
+最新六个结构分支 CPU 回归合计 106/106 通过，loss 消融分支另有 14/14 通过。跨分支 checkpoint 审计也通过：grounding 与 combined 的参数键完全一致；关闭 grounding / 多假设时仅忽略对应新增模块；双向注意力开关不改变参数键。
+
+辅助监督的反向路径已单独验证：region CE 同时覆盖可见 patch/outside 时，视觉输入及每个 grounding 参数都有非零有限梯度；真实 cell offset MSE 对多假设偏移头及上游语言特征也有非零有限梯度。recovery 被限制为 eval-only，避免 teacher 的 GT 轨迹改变训练分布后与纯控制收益混算。
 
 论文参数机器审计通过：20 epochs、batch 2、1e-4、AdamW、grid 5、三项主 loss 权重 2.0/1.5/0.1 均匹配；单卡用累积 4 保持有效 episode batch 8。发布代码额外的 target-grid 权重 0.1 未写入论文三项 loss，因此已建立独立消融，不把它默认当作论文结论。
 
