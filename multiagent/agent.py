@@ -29,7 +29,7 @@ from multiagent.observation import cropclient
 from multiagent.space import Pose4D, Point2D, Point3D
 from multiagent.teacher.algorithm.lookahead import lookahead_discrete_action
 from multiagent.teacher.trajectory import _moved_pose
-from multiagent.stage_control import advance_teacher_stage1
+from multiagent.stage_control import advance_teacher_stage1, RecoveryState, update_recovery_state
 from models.vln_model import CustomBERTModel
 from models.ET_haa import ET
 from transformers import AutoModel, BertTokenizerFast
@@ -484,6 +484,7 @@ class NavCMTAgent:
         }
 
         stage1_ended = np.array([False] * batch_size)
+        recovery_states = [RecoveryState() for _ in range(batch_size)]
 
         for t in range(self.args.max_action_len):
             direction_t = torch.tensor([ob['pose'].yaw for ob in obs], dtype=torch.float32)
@@ -666,7 +667,9 @@ class NavCMTAgent:
                 #     continue
 
 
-                elif pred_progress_t[i] > 0.95 and self.feedback == 'student' and stage1_ended[i]:
+                elif (not self.args.enable_stage_recovery
+                      and pred_progress_t[i] > 0.95
+                      and self.feedback == 'student' and stage1_ended[i]):
                     # Updated 'ended' list and make environment action
                     ended[i] = True
                     continue
@@ -684,7 +687,27 @@ class NavCMTAgent:
 
                 # if pred_progress_t[i] > 0.9 and not stage1_ended[i]:
                 #     stage1_ended[i] = True
-                if dst.dist_to(poses[i].xy) > 5 and not stage1_ended[i]:
+                predicted_goal_distance = dst.dist_to(poses[i].xy)
+                if self.args.enable_stage_recovery:
+                    phase = update_recovery_state(
+                        recovery_states[i],
+                        predicted_goal_distance,
+                        float(pred_progress_t[i]),
+                        enter_distance=self.args.stage_enter_distance,
+                        recover_distance=self.args.stage_recovery_distance,
+                        recovery_patience=self.args.stage_recovery_patience,
+                        stop_threshold=self.args.progress_stop_threshold,
+                        stop_patience=self.args.progress_stop_patience,
+                    )
+                    stage1_ended[i] = recovery_states[i].fine
+                    traj[i]['control_events'].append(phase)
+                    if phase == 'stop' and self.feedback == 'student':
+                        ended[i] = True
+                        continue
+
+                enter_distance = (self.args.stage_enter_distance
+                                  if self.args.enable_stage_recovery else 5.0)
+                if predicted_goal_distance > enter_distance and not stage1_ended[i]:
                     traj[i]['pred_goal'].append(dst)
                     # pred_goal_xys = [
                     #     unnormalize_position(global_position[goal_id] / args.grid_size, eps.map_name, args.map_meters)
@@ -707,6 +730,8 @@ class NavCMTAgent:
                         traj[i]['stage1_trajectory'].append(poses[i])
 
                 elif abs(a_t[i]) < np.pi / 12:
+                    if not self.args.enable_stage_recovery and not stage1_ended[i]:
+                        recovery_states[i].switches += 1
                     stage1_ended[i] = True
                     stage2_step += 1
                     poses[i] = _moved_pose(poses[i], *Action(5, 0, 0))
@@ -715,6 +740,8 @@ class NavCMTAgent:
                     if not ended[i]:
                         traj[i]['stage2_trajectory'].append(poses[i])
                 else:
+                    if not self.args.enable_stage_recovery and not stage1_ended[i]:
+                        recovery_states[i].switches += 1
                     stage1_ended[i] = True
                     stage2_rotate += 1
                     poses[i] = _moved_pose(poses[i], *Action(0, a_t[i], 0))
@@ -783,6 +810,10 @@ class NavCMTAgent:
         self.logs['stage1_step'].append(float(sum(stage1_steps)) / batch_size)
         self.logs['stage2_step'].append(float(stage2_step) / batch_size)
         self.logs['stage2_rotate'].append(float(stage2_rotate) / batch_size)
+        self.logs['stage_switches'].append(
+            float(sum(state.switches for state in recovery_states)) / batch_size)
+        self.logs['stage_recoveries'].append(
+            float(sum(state.recoveries for state in recovery_states)) / batch_size)
 
         # print('[3]')
         # debug_memory()
