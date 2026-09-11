@@ -181,6 +181,8 @@ def parse_args():
         parser.error('grad_accum/batch_size must be positive; max_episodes must be nonnegative')
     if args.region_loss_weight < 0:
         parser.error('region_loss_weight must be nonnegative')
+    if args.save_every < 1:
+        parser.error('save_every must be positive')
     if args.checkpoint and not Path(args.checkpoint).is_absolute():
         args.checkpoint = str(PROJECT_ROOT / args.checkpoint)
     output_dir = Path(args.output_dir)
