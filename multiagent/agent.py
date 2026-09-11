@@ -30,6 +30,7 @@ from multiagent.space import Pose4D, Point2D, Point3D
 from multiagent.teacher.algorithm.lookahead import lookahead_discrete_action
 from multiagent.teacher.trajectory import _moved_pose
 from multiagent.stage_control import advance_teacher_stage1
+from multiagent.hypothesis_control import TemporalHypothesisTracker
 from models.vln_model import CustomBERTModel
 from models.ET_haa import ET
 from transformers import AutoModel, BertTokenizerFast
@@ -465,6 +466,7 @@ class NavCMTAgent:
         progress_loss = 0.
         goal_predict_loss = 0.
         target_predict_loss = 0.
+        hypothesis_offset_loss = 0.
 
         stage1_steps = [0] * batch_size
         stage2_step = 0
@@ -484,6 +486,13 @@ class NavCMTAgent:
         }
 
         stage1_ended = np.array([False] * batch_size)
+        hypothesis_trackers = [
+            TemporalHypothesisTracker(
+                self.args.grid_size ** 2,
+                top_k=self.args.hypothesis_top_k,
+                decay=self.args.hypothesis_decay,
+            ) for _ in range(batch_size)
+        ] if self.args.enable_multi_hypothesis else None
 
         for t in range(self.args.max_action_len):
             direction_t = torch.tensor([ob['pose'].yaw for ob in obs], dtype=torch.float32)
@@ -535,7 +544,7 @@ class NavCMTAgent:
             # - pred_goals: [B, 2]
             # - pred_logits: [B, N_cand, 1]
             # - grid_ft: [B, N_hist+1, 768]
-            pred_direction, pred_progress, pred_goals, pred_logits, grid_ft = self.vln_model(
+            pred_direction, pred_progress, pred_goals, pred_logits, grid_ft, hypothesis_offsets = self.vln_model(
                 directions=input['directions'],     # [B, 1, 4]
                 frames=input['frames'],             # [B, T_frame, 512, 49]
                 lenths=input['lenths'],             # [B]
@@ -607,6 +616,13 @@ class NavCMTAgent:
                         progress_loss += self.progress_regression(pred_progress[i].view(-1),
                                                                   gt_progress[i].view(-1).cuda())
                         goal_predict_loss += F.mse_loss(pred_goals[i].view(-1), gt_goal[i].view(-1).cuda())
+                        if hypothesis_offsets is not None:
+                            cell = int(gt_target[i])
+                            cell_origin = global_positions[i, cell]
+                            true_offset = (gt_goal[i].cuda() - cell_origin).clamp(0, 1 / self.args.grid_size)
+                            hypothesis_offset_loss += F.mse_loss(
+                                hypothesis_offsets[i, cell], true_offset
+                            )
                         # print(pred_goals[i], gt_goal[i], goal_predict_loss)
 
                     # ml_loss += direction_loss
@@ -639,6 +655,20 @@ class NavCMTAgent:
             elif self.feedback == 'student':  # student
                 a_t = at_direction
                 at_goal = pred_goals
+                if hypothesis_trackers is not None:
+                    refined_candidates = (
+                        global_positions + hypothesis_offsets
+                    ).clamp(0.0, 1.0)
+                    tracked_goals = []
+                    for i in range(batch_size):
+                        tracked_goal, hypothesis_info = hypothesis_trackers[i].update(
+                            pred_logits[i], refined_candidates[i]
+                        )
+                        tracked_goals.append(tracked_goal)
+                        traj[i]['hypothesis_indices'].append(hypothesis_info['indices'])
+                        traj[i]['hypothesis_probabilities'].append(hypothesis_info['probabilities'])
+                        traj[i]['hypothesis_confidence'].append(hypothesis_info['confidence'])
+                    at_goal = torch.stack(tracked_goals).to(pred_goals.device)
 
                 # _, at_goal = pred_logits.max(1)
                 # at_goal = at_goal.squeeze(1)
@@ -761,7 +791,8 @@ class NavCMTAgent:
             ml_loss = (self.args.direction_loss_weight * direction_loss
                        + self.args.progress_loss_weight * progress_loss
                        + self.args.goal_loss_weight * goal_predict_loss
-                       + self.args.target_loss_weight * target_predict_loss)
+                       + self.args.target_loss_weight * target_predict_loss
+                       + self.args.hypothesis_offset_loss_weight * hypothesis_offset_loss)
             # ml_loss = progress_loss + goal_predict_loss
             self.loss += ml_loss * train_ml / batch_size
 
@@ -771,6 +802,9 @@ class NavCMTAgent:
             self.logs['progress_loss'].append((progress_loss * train_ml / batch_size).item())
             self.logs['goal_predict_loss'].append((goal_predict_loss * train_ml / batch_size).item())
             self.logs['target_predict_loss'].append((target_predict_loss * train_ml / batch_size).item())
+            self.logs['hypothesis_offset_loss'].append(
+                (hypothesis_offset_loss * train_ml / batch_size).item()
+                if torch.is_tensor(hypothesis_offset_loss) else 0.0)
             self.logs['IL_loss'].append((ml_loss * train_ml / batch_size).item())
 
         if type(self.loss) is int:  # For safety, it will be activated if no losses are added

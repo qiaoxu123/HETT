@@ -118,6 +118,11 @@ def parse_args():
     parser.add_argument('--target_loss_weight', type=float, default=0.1,
                         help='auxiliary grid loss from released code (not specified in paper)')
     parser.add_argument('--disable_task_interaction', action='store_true')
+    parser.add_argument('--enable_multi_hypothesis', action='store_true',
+                        help='aggregate current/past target-grid evidence before coarse motion')
+    parser.add_argument('--hypothesis_top_k', type=int, default=3)
+    parser.add_argument('--hypothesis_decay', type=float, default=0.8)
+    parser.add_argument('--hypothesis_offset_loss_weight', type=float, default=2.0)
 
     # logger
     parser.add_argument('--log_every', type=int, default=1)
@@ -176,6 +181,12 @@ def parse_args():
     args = parser.parse_args()
     if args.grad_accum < 1 or args.batch_size < 1 or args.max_episodes < 0:
         parser.error('grad_accum/batch_size must be positive; max_episodes must be nonnegative')
+    if not 1 <= args.hypothesis_top_k <= args.grid_size ** 2:
+        parser.error('hypothesis_top_k must be within the target grid')
+    if not 0 <= args.hypothesis_decay < 1:
+        parser.error('hypothesis_decay must be in [0, 1)')
+    if args.hypothesis_offset_loss_weight < 0:
+        parser.error('hypothesis_offset_loss_weight must be nonnegative')
     if args.checkpoint and not Path(args.checkpoint).is_absolute():
         args.checkpoint = str(PROJECT_ROOT / args.checkpoint)
     output_dir = Path(args.output_dir)

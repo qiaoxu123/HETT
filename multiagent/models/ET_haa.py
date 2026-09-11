@@ -183,6 +183,13 @@ class ET(nn.Module):
             nn.ReLU(),
             nn.Linear(self.args.demb // 2, 1),
         )
+        if getattr(self.args, 'enable_multi_hypothesis', False):
+            self.hypothesis_offset_head = nn.Sequential(
+                nn.Linear(self.args.demb, self.args.demb // 2),
+                nn.ReLU(),
+                nn.Linear(self.args.demb // 2, 2),
+                nn.Sigmoid(),
+            )
 
         # goal head: 预测归一化目标位置 [x, y]，输出 [B, 2]
         self.decoder_2_goal_full = nn.Sequential(
@@ -341,4 +348,9 @@ class ET(nn.Module):
         # target_logits: [B, N_cand, 1]
         target_logits = self.decoder_2_logits_full(target_decoder_input)
 
-        return direction, progress, pred_goals, target_logits, emb_frames + emb_directions
+        hypothesis_offsets = None
+        if getattr(self.args, 'enable_multi_hypothesis', False):
+            hypothesis_offsets = self.hypothesis_offset_head(target_decoder_input) / self.args.grid_size
+
+        return (direction, progress, pred_goals, target_logits,
+                emb_frames + emb_directions, hypothesis_offsets)

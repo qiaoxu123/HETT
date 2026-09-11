@@ -212,12 +212,14 @@ def train(args, train_env, val_envs, rank=-1):
 
             progress_loss = sum(agent.logs['progress_loss']) / max(len(agent.logs['progress_loss']), 1)
             goal_predict_loss = sum(agent.logs['goal_predict_loss']) / max(len(agent.logs['goal_predict_loss']), 1)
-            # target_predict_loss = sum(agent.logs['target_predict_loss']) / max(len(agent.logs['target_predict_loss']), 1)
+            target_predict_loss = sum(agent.logs['target_predict_loss']) / max(len(agent.logs['target_predict_loss']), 1)
+            hypothesis_offset_loss = sum(agent.logs['hypothesis_offset_loss']) / max(len(agent.logs['hypothesis_offset_loss']), 1)
             # writer.add_scalar("loss/IL_loss", IL_loss, iter)
 
             write_to_record_file(
-                "\nIL_loss %.4f direction_loss %.4f progress_loss %.4f goal_predict_loss %.4f" % (
-                    ml_loss, direction_loss, progress_loss, goal_predict_loss),
+                "\nIL_loss %.4f direction_loss %.4f progress_loss %.4f goal_predict_loss %.4f target_predict_loss %.4f hypothesis_offset_loss %.4f" % (
+                    ml_loss, direction_loss, progress_loss, goal_predict_loss,
+                    target_predict_loss, hypothesis_offset_loss),
                 record_file
             )
             stage1_step = sum(agent.logs['stage1_step']) / max(len(agent.logs['stage1_step']), 1)
@@ -240,6 +242,8 @@ def train(args, train_env, val_envs, rank=-1):
             epoch_metrics = dict(epoch=idx + 1, elapsed_seconds=time.time()-start,
                                  il_loss=ml_loss, direction_loss=direction_loss,
                                  progress_loss=progress_loss, goal_loss=goal_predict_loss,
+                                 target_loss=target_predict_loss,
+                                 hypothesis_offset_loss=hypothesis_offset_loss,
                                  validation={})
             # Reuse the trained modules: avoid a second BERT/Darknet/ET on one GPU.
             agent_eval = agent
