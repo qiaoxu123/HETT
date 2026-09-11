@@ -415,6 +415,11 @@ class NavCMTAgent:
         input_ids = encoding['input_ids'].cuda()
         attention_mask = encoding['attention_mask'].cuda()
         lang_features, linear_cls, cls_hidden = self.lang_model(input_ids, attention_mask)
+        if self.args.grounding_ablation == 'shuffle_language':
+            permutation = torch.roll(torch.arange(batch_size, device=lang_features.device), 1)
+            lang_features = lang_features[permutation]
+            linear_cls = linear_cls[permutation]
+            attention_mask = attention_mask[permutation]
 
         # lang_features --> 768
         # linear_cls --> 49 (used to attend to img features)
@@ -496,6 +501,8 @@ class NavCMTAgent:
             for i in range(len(obs)):
                 images.append(obs[i]['rgb'].copy())
             images = np.stack(images)[:, :, :, ::-1].transpose(0, 3, 1, 2)  # W x H x C to C x W x H
+            if self.args.grounding_ablation == 'shuffle_visual':
+                images = np.roll(images, 1, axis=0).copy()
             images = np.ascontiguousarray(images, dtype=np.float32)
             images -= self.rgb_mean
             images /= self.rgb_std
@@ -636,6 +643,13 @@ class NavCMTAgent:
                         traj[i]['gt_progress'].append(gt_progress[i].item())
                         traj[i]['gt_goal'].append(gt_goal[i])
                     traj[i]['progress'].append(pred_progress[i].item())
+                    if region_logits is not None:
+                        probabilities = torch.softmax(region_logits[i], dim=0)
+                        confidence, prediction = probabilities.max(dim=0)
+                        traj[i]['region_prediction'].append(int(prediction))
+                        traj[i]['region_confidence'].append(float(confidence))
+                        if 'test' not in self.env_name:
+                            traj[i]['gt_region'].append(int(gt_region[i]))
 
             if self.feedback == 'teacher':
                 at_goal = gt_goal

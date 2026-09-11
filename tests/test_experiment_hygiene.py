@@ -24,6 +24,11 @@ class ExperimentHygieneTest(unittest.TestCase):
                 guarded_links.append(ast.unparse(node.test))
         self.assertTrue(any('save_every' in condition for condition in guarded_links))
 
+    def test_test_split_does_not_store_region_ground_truth(self):
+        source = (ROOT / 'multiagent/agent.py').read_text()
+        self.assertIn("if 'test' not in self.env_name", source)
+        self.assertIn("traj[i]['gt_region'].append", source)
+
 
 if __name__ == '__main__':
     unittest.main()
