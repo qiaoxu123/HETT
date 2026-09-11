@@ -50,6 +50,26 @@ def loss_breakdown(row):
     }
 
 
+def gradient_health(rows):
+    result = {}
+    for epoch in sorted({row['epoch'] for row in rows}):
+        values = np.asarray([row['grad_norm'] for row in rows if row['epoch'] == epoch], dtype=float)
+        losses = np.asarray([row['recent_il_loss'] for row in rows if row['epoch'] == epoch], dtype=float)
+        result[str(epoch)] = {
+            'samples': len(values),
+            'all_finite': bool(np.isfinite(values).all() and np.isfinite(losses).all()),
+            'grad_p50': float(np.percentile(values, 50)),
+            'grad_p95': float(np.percentile(values, 95)),
+            'grad_p99': float(np.percentile(values, 99)),
+            'grad_max': float(values.max()),
+            'above_clip_40': int((values > 40).sum()),
+            'above_100': int((values > 100).sum()),
+            'loss_p95': float(np.percentile(losses, 95)),
+            'loss_max': float(losses.max()),
+        }
+    return result
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--run-dir', type=Path, required=True)
@@ -70,8 +90,11 @@ def main():
         'status': status,
         'completed_epochs': completed,
         'latest_batch': batches[-1] if batches else None,
+        'gradient_health': gradient_health(batches),
         'method': ('target raw loss = (IL - 1.5*direction - 0.1*progress - 2.0*goal) / 0.1; '
-                   'weighted loss share is a scale diagnostic, not causal importance'),
+                   'weighted loss share is a scale diagnostic, not causal importance; '
+                   'logged gradient norm is ET-only before clipping at 40 and does not measure '
+                   'the separate language/vision optimizer gradients'),
     }
     (args.output_dir / 'report.json').write_text(json.dumps(report, indent=2, ensure_ascii=False) + '\n')
 
