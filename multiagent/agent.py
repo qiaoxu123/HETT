@@ -406,11 +406,12 @@ class NavCMTAgent:
         # linear_cls: [B, 49]，用于视觉特征的注意力加权
         # cls_hidden: [B, hidden]，保留句子级特征
         lang_inputs = []
+        instruction_overrides = getattr(self, 'instruction_overrides', {})
         for i, ob in enumerate(obs):
             # if self.args.vision_only:
             #     lang_inputs.append('')
             # else:
-            lang_inputs.append(ob['instruction'])
+            lang_inputs.append(instruction_overrides.get(ob['id'], ob['instruction']))
         encoding = self.tokenizer(lang_inputs, padding=True, return_tensors="pt")
         input_ids = encoding['input_ids'].cuda()
         attention_mask = encoding['attention_mask'].cuda()
@@ -682,6 +683,7 @@ class NavCMTAgent:
                 # dst = Point2D(obs[i]['centroid_goal'][0], obs[i]['centroid_goal'][1])
                 if ended[i]:
                     continue
+                traj[i]['all_pred_goal'].append(dst)
                 # if dst.dist_to(poses[i].xy) < 10:
                 #     ended[i] = True
                 #     continue

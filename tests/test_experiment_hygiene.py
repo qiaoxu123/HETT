@@ -29,6 +29,10 @@ class ExperimentHygieneTest(unittest.TestCase):
         self.assertIn("if 'test' not in self.env_name", source)
         self.assertIn("traj[i]['gt_region'].append", source)
 
+    def test_instruction_override_is_explicit_and_keyed_by_episode(self):
+        source = (ROOT / 'multiagent/agent.py').read_text()
+        self.assertIn("instruction_overrides.get(ob['id'], ob['instruction'])", source)
+
 
 if __name__ == '__main__':
     unittest.main()
