@@ -1,6 +1,6 @@
 # HETT 验证状态
 
-更新时间：2026-09-11 22:28 +08:00
+更新时间：2026-09-11 22:30 +08:00
 
 ## 当前结论
 
@@ -10,9 +10,9 @@
 | --- | --- | --- | --- |
 | teacher fix | `543ddfd` | 每 episode 独立索引；6 项核心/卫生测试 | 单卡短跑、完整基线 |
 | recovery | `80c9909` | 历史失败量化；14 项测试 | checkpoint 配对短评估、完整 unseen |
-| grounding | `bc0d1f7` | 49 区域＋outside；20 项测试；16,110 状态审计；16 组 hard contrast | 单卡前后向、完整训练和 checkpoint 消融 |
-| combined | `46c0b8c` | 两模块合并；26 项测试 | 同 checkpoint 配对评估 |
-| hypotheses | `8d0e57d` | 时序证据与 top-k；10 项测试 | 单卡短跑、完整对照 |
+| grounding | `428ea22` | 49 区域＋outside；22 项测试；整网 CPU 前后向；16,110 状态审计；16 组 hard contrast | 单卡、完整训练和 checkpoint 消融 |
+| combined | `e21e0eb` | 两模块合并；28 项测试；整网 CPU 前后向 | 同 checkpoint 配对评估 |
+| hypotheses | `af0c95b` | 时序证据与 top-k；14 项测试；整网 CPU 前后向 | 单卡短跑、完整对照 |
 
 grounding 的监督覆盖：train_seen 10,734 个状态中可见 63.49%，val_unseen 5,376 个状态中可见 46.88%。因此 outside 类是必要项。
 
