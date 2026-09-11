@@ -295,7 +295,10 @@ class ET(nn.Module):
         batch_size = emb_lang.shape[0]
 
         # --------------- 5. 历史 grid map：将过去的空间记忆压成 5x5 结构化 token -----------------
-        grid_map_input = torch.zeros(batch_size, self.args.grid_size ** 2, 768).cuda() # [B, grid_size^2, 768]
+        grid_map_input = torch.zeros(
+            batch_size, self.args.grid_size ** 2, self.args.demb,
+            device=emb_lang.device, dtype=emb_lang.dtype,
+        )
 
         text_fts = self.text_proj(emb_lang).permute(0, 2, 1) # [B, 768, L_lang]，用于和历史网格特征做相似度计算
         grid_masks = [[] for b in range(batch_size)]
