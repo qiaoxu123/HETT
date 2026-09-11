@@ -3,7 +3,7 @@ from pathlib import Path
 import tempfile
 
 from scripts.analyze_multiseed import (
-    aggregate, plot, plot_failure_rates, select_failure_cases, statistics,
+    aggregate, plot, plot_failure_rates, render_report, select_failure_cases, statistics,
 )
 
 
@@ -45,6 +45,10 @@ class MultiSeedAnalysisTest(unittest.TestCase):
         self.assertEqual(paired['success_delta_pp']['mean'], 25)
         self.assertEqual(set(paired['per_seed']), {'0', '17', '42'})
         self.assertEqual(paired['success_wins_total'], 3)
+        report = render_report(result)
+        self.assertIn('base:new', report)
+        self.assertIn('95% CI', report)
+        self.assertIn('救回/退化', report)
 
         with tempfile.TemporaryDirectory() as directory:
             plot(result, Path(directory))

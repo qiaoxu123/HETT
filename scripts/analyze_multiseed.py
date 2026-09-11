@@ -163,6 +163,50 @@ def plot_failure_rates(loaded, output):
     plt.close(fig)
 
 
+def metric_text(metric, digits=2):
+    low, high = metric['ci95']
+    return (f"{metric['mean']:.{digits}f} ± {metric['std']:.{digits}f} "
+            f"(95% CI {low:.{digits}f}…{high:.{digits}f})")
+
+
+def render_report(result):
+    lines = [
+        '# HETT 三种子导航结果', '',
+        '这里的均值和标准差按训练 seed 计算；95% 区间使用小样本 t 区间。',
+        '导航效果以闭环 SR/SPL/NE 为准，loss 大小不等于任务贡献。', '',
+        '## 各方案', '',
+        '| 方案 | split | SR (%) | SPL (%) | NE (m) |',
+        '| --- | --- | ---: | ---: | ---: |',
+    ]
+    for name, splits in result['runs'].items():
+        for split, metrics in splits.items():
+            if not all(key in metrics for key in ('sr', 'spl', 'ne')):
+                continue
+            lines.append(
+                f"| {name} | {split} | {metric_text(metrics['sr'])} | "
+                f"{metric_text(metrics['spl'])} | {metric_text(metrics['ne'])} |")
+    lines.extend(['', '## 配对变化', '',
+                  '正的 SR 变化代表右侧方案更好；NE 变化为负代表终点更近。', '',
+                  '| 对比（左→右） | split | SR 变化 (pp) | 地图平衡 SR 变化 (pp) | NE 变化 (m) | 救回/退化 |',
+                  '| --- | --- | ---: | ---: | ---: | ---: |'])
+    for name, splits in result['pairs'].items():
+        for split, values in splits.items():
+            lines.append(
+                f"| {name} | {split} | {metric_text(values['success_delta_pp'])} | "
+                f"{metric_text(values['map_balanced_success_delta_pp'])} | "
+                f"{metric_text(values['mean_final_distance_delta_m'])} | "
+                f"{values['success_wins_total']}/{values['success_losses_total']} |")
+    lines.extend([
+        '', '## 配套文件', '',
+        '- `summary.json`：完整统计与逐 seed 数值。',
+        '- `failure_cases.json`：最差终点、错误停止、到达后丢失以及配对救回/退化案例索引。',
+        '- `multiseed_metrics.png`、`multiseed_paired_deltas.png`、`failure_cases.png`：结果图。',
+        '', '注意：只有冻结流程生成的 test-unseen 表才能作为最终测试结论；开发阶段的 val-unseen 不应被写成 test 结果。',
+        '',
+    ])
+    return '\n'.join(lines)
+
+
 def plot(result, output_dir):
     names = list(result['runs'])
     available = [name for name in names if 'val_unseen' in result['runs'][name]]
@@ -218,6 +262,7 @@ def main():
     (args.output_dir / 'failure_cases.json').write_text(
         json.dumps(failures, indent=2, ensure_ascii=False) + '\n')
     plot_failure_rates(loaded, args.output_dir / 'failure_cases.png')
+    (args.output_dir / 'REPORT.md').write_text(render_report(result))
     print(json.dumps(result, indent=2, ensure_ascii=False))
 
 
