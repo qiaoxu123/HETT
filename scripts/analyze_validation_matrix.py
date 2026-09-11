@@ -35,8 +35,23 @@ def episode_rows(predictions, success_distance=20.0):
         gt_length = path_length(item.get('gt_trajectory', []))
         actual_length = path_length(trajectory)
         events = item.get('control_events', [])
+        previous_events = ['coarse', *events[:-1]]
+        switches = sum(previous != 'fine' and current == 'fine'
+                       for previous, current in zip(previous_events, events))
         recoveries = sum(previous == 'fine' and current == 'coarse'
-                         for previous, current in zip(events[:-1], events[1:]))
+                         for previous, current in zip(previous_events, events))
+        switch_distances = [distance(trajectory[min(index, len(trajectory) - 1)], goal)
+                            for index, (previous, current) in enumerate(
+                                zip(previous_events, events))
+                            if previous != 'fine' and current == 'fine']
+        stage1 = item.get('stage1_trajectory', [])
+        stage2 = item.get('stage2_trajectory', [])
+        if not events and stage2:
+            switches = 1
+            switch_distances = [distance(stage2[0], goal)]
+        actions = max(0, len(trajectory) - 1)
+        progress = item.get('progress', [])
+        stopped = bool((events and events[-1] == 'stop') or len(progress) > actions)
         row = {
             'id': str(episode_id),
             'map': episode_id[0] if isinstance(episode_id, tuple) else str(episode_id).split(',')[0],
@@ -45,10 +60,21 @@ def episode_rows(predictions, success_distance=20.0):
             'hit_then_lost': any_success and not final_success,
             'final_distance': float(distances[-1]),
             'best_distance': float(distances.min()),
-            'actions': max(0, len(trajectory) - 1),
+            'actions': actions,
+            'stage1_actions': max(0, len(stage1) - 1),
+            'stage2_actions': max(0, len(stage2) - 1),
             'path_length': actual_length,
             'spl': float(final_success * gt_length / max(gt_length, actual_length, 1e-12)),
+            'switches': int(switches),
             'recoveries': int(recoveries),
+            'switch_distance_sum': float(sum(switch_distances)),
+            'switch_distance_count': len(switch_distances),
+            'stopped': stopped,
+            'false_stop': stopped and not final_success,
+            'stop_distance_sum': float(distances[-1]) if stopped else 0.0,
+            'stop_count': int(stopped),
+            'progress_at_stop_sum': float(progress[-1]) if stopped and progress else 0.0,
+            'progress_at_stop_count': int(stopped and bool(progress)),
         }
         region_prediction = item.get('region_prediction', [])
         region_target = item.get('gt_region', [])
@@ -82,6 +108,11 @@ def ratio(rows, numerator, denominator=None):
     return float(top / bottom) if bottom else None
 
 
+def percent_ratio(rows, numerator, denominator=None):
+    value = ratio(rows, numerator, denominator)
+    return None if value is None else 100 * value
+
+
 def summarize_rows(rows):
     return {
         'episodes': len(rows),
@@ -91,15 +122,28 @@ def summarize_rows(rows):
         'mean_final_distance': ratio(rows, 'final_distance'),
         'mean_best_distance': ratio(rows, 'best_distance'),
         'mean_actions': ratio(rows, 'actions'),
+        'mean_stage1_actions': ratio(rows, 'stage1_actions'),
+        'mean_stage2_actions': ratio(rows, 'stage2_actions'),
         'mean_spl_percent': 100 * ratio(rows, 'spl'),
+        'mean_switches': ratio(rows, 'switches'),
         'mean_recoveries': ratio(rows, 'recoveries'),
-        'region_accuracy_percent': (100 * ratio(rows, 'region_correct', 'region_count')
+        'mean_switch_distance_m': ratio(rows, 'switch_distance_sum', 'switch_distance_count'),
+        'stopped_percent': percent_ratio(rows, 'stopped'),
+        'false_stop_percent_of_episodes': percent_ratio(rows, 'false_stop'),
+        'false_stop_percent_of_stops': percent_ratio(rows, 'false_stop', 'stop_count'),
+        'mean_stop_distance_m': ratio(rows, 'stop_distance_sum', 'stop_count'),
+        'mean_predicted_progress_at_stop': ratio(
+            rows, 'progress_at_stop_sum', 'progress_at_stop_count'),
+        'region_accuracy_percent': (percent_ratio(rows, 'region_correct', 'region_count')
                                     if any('region_count' in row for row in rows.values()) else None),
-        'region_visible_accuracy_percent': (100 * ratio(rows, 'region_visible_correct', 'region_visible_count')
+        'region_visible_accuracy_percent': (percent_ratio(
+                                            rows, 'region_visible_correct', 'region_visible_count')
                                             if any('region_count' in row for row in rows.values()) else None),
-        'region_outside_accuracy_percent': (100 * ratio(rows, 'region_outside_correct', 'region_outside_count')
+        'region_outside_accuracy_percent': (percent_ratio(
+                                            rows, 'region_outside_correct', 'region_outside_count')
                                             if any('region_count' in row for row in rows.values()) else None),
-        'hypothesis_map_change_percent': (100 * ratio(rows, 'hypothesis_map_changes', 'hypothesis_transitions')
+        'hypothesis_map_change_percent': (percent_ratio(
+                                          rows, 'hypothesis_map_changes', 'hypothesis_transitions')
                                           if any('hypothesis_steps' in row for row in rows.values()) else None),
         'mean_hypothesis_confidence': (ratio(rows, 'hypothesis_confidence_sum', 'hypothesis_steps')
                                        if any('hypothesis_steps' in row for row in rows.values()) else None),

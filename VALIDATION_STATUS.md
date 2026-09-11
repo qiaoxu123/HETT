@@ -28,6 +28,8 @@ grounding 的监督覆盖：train_seen 10,734 个状态中可见 63.49%，val_un
 
 梯度日志已明确标注为“ET 主体裁剪前范数”：epoch 1 的 p95 为 33.55，epoch 2 截至 8,200 batch 的 p95 为 107.98，分别有 1/111 和 5/83 个采样点超过 100；所有记录的 loss 和范数均为有限值，ET 实际裁剪到 40。该数值不覆盖语言/视觉两个独立优化器，暂不能仅凭它判断发散；分位数与限制已写入实时报告并持续更新。
 
+阶段诊断已加入逐 episode 和 epoch 汇总。原版基线 epoch 1 全量 val-unseen 的粗阶段终点 NE 为 57.20m，fine 阶段后最终 NE 为 60.57m（平均恶化 3.37m），但 SR 从 12.31% 提升到 16.28%（+3.97pp）；val-seen 的 NE 同样恶化 4.64m，SR 提升 2.59pp。这说明 fine refinement 当前是“救回部分临界样本，但总体位置误差反而增大”，不能只看 SR 宣称稳定有效。独立阶段图保存为 `runs/live_baseline_report_20260911/stage_diagnostics.png`。
+
 开发评估默认只构建 `val_seen` 和 `val_unseen`；`test_unseen` 现在必须显式传 `--include_test_unseen`，仅供方案冻结后的最终报告。旧等待链在真正训练/评估前已停止并移动到 `*.pre_val_only_20260911_2248` 归档，新链的 teacher 源码快照确认来自 `d837182`。
 
 数据划分审计通过并保存输入哈希：train_seen 21,878、val_seen 2,470、val_unseen 2,697、test_unseen 5,281 条；跨 split 无 `(map, object, description)` 或起点重复，val_unseen 4 张地图、test_unseen 6 张地图均与训练地图分离。

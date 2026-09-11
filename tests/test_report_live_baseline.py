@@ -1,9 +1,19 @@
 import unittest
 
-from scripts.report_live_baseline import gradient_health, loss_breakdown
+from scripts.report_live_baseline import gradient_health, loss_breakdown, stage_diagnostics
 
 
 class LiveBaselineReportTest(unittest.TestCase):
+    def test_stage_diagnostics_separates_success_gain_from_distance_degradation(self):
+        result = stage_diagnostics({'val_unseen': {
+            'lengths': 100, 'stage2_length': 20, 'stage1_ne': 57.2, 'ne': 60.57,
+            'sr1': 12.31, 'sr': 16.28, 'oracle_sr': 38.08,
+        }})['val_unseen']
+        self.assertAlmostEqual(result['fine_refinement_ne_change_m'], 3.37)
+        self.assertAlmostEqual(result['fine_refinement_sr_change_pp'], 3.97)
+        self.assertAlmostEqual(result['oracle_to_final_sr_gap_pp'], 21.8)
+        self.assertEqual(result['stage2_path_share_percent'], 20)
+
     def test_gradient_health_records_long_tail_without_calling_it_divergence(self):
         result = gradient_health([
             {'epoch': 1, 'grad_norm': 20, 'recent_il_loss': 8},

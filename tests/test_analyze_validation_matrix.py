@@ -13,8 +13,11 @@ class ValidationAnalysisTest(unittest.TestCase):
         predictions = {('map_a', 1, 1): {
             'goal': Point2D(0, 0),
             'trajectory': [pose(30), pose(10), pose(25)],
+            'stage1_trajectory': [pose(30)],
+            'stage2_trajectory': [pose(30), pose(10)],
             'gt_trajectory': [pose(30), pose(0)],
             'control_events': ['fine', 'coarse', 'coarse'],
+            'progress': [.2, .4, .5],
             'region_prediction': [2, 49],
             'gt_region': [2, 49],
             'hypothesis_indices': [[1, 2], [2, 1]],
@@ -23,11 +26,33 @@ class ValidationAnalysisTest(unittest.TestCase):
         rows = episode_rows(predictions)
         row = next(iter(rows.values()))
         self.assertTrue(row['hit_then_lost'])
+        self.assertEqual(row['switches'], 1)
         self.assertEqual(row['recoveries'], 1)
+        self.assertEqual(row['switch_distance_sum'], 30)
+        self.assertTrue(row['stopped'])
+        self.assertTrue(row['false_stop'])
         summary = summarize_rows(rows)
+        self.assertEqual(summary['mean_switch_distance_m'], 30)
+        self.assertEqual(summary['false_stop_percent_of_stops'], 100)
+        self.assertEqual(summary['mean_predicted_progress_at_stop'], .5)
         self.assertEqual(summary['region_accuracy_percent'], 100)
         self.assertEqual(summary['hypothesis_map_change_percent'], 100)
         self.assertAlmostEqual(summary['mean_hypothesis_confidence'], .5)
+
+    def test_original_one_way_stage_metrics_are_derived_without_new_trace_fields(self):
+        predictions = {('map_a', 1, 2): {
+            'goal': Point2D(0, 0),
+            'trajectory': [pose(30), pose(20), pose(10)],
+            'stage1_trajectory': [pose(30), pose(20)],
+            'stage2_trajectory': [pose(20), pose(10)],
+            'gt_trajectory': [pose(30), pose(0)],
+            'progress': [.2, .7],
+        }}
+        row = next(iter(episode_rows(predictions).values()))
+        self.assertEqual(row['switches'], 1)
+        self.assertEqual(row['switch_distance_sum'], 20)
+        self.assertFalse(row['stopped'])
+        self.assertFalse(row['false_stop'])
 
     def test_paired_result_counts_wins_and_losses(self):
         left = {'a': {'success': False, 'final_distance': 30., 'map': 'm1'},

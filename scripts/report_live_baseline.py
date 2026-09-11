@@ -70,6 +70,27 @@ def gradient_health(rows):
     return result
 
 
+def stage_diagnostics(validation):
+    result = {}
+    for split, metrics in validation.items():
+        total_length = float(metrics['lengths'])
+        result[split] = {
+            'coarse_endpoint_ne_m': float(metrics['stage1_ne']),
+            'final_ne_m': float(metrics['ne']),
+            'fine_refinement_ne_change_m': float(metrics['ne'] - metrics['stage1_ne']),
+            'coarse_sr_percent': float(metrics['sr1']),
+            'final_sr_percent': float(metrics['sr']),
+            'fine_refinement_sr_change_pp': float(metrics['sr'] - metrics['sr1']),
+            'oracle_to_final_sr_gap_pp': float(metrics['oracle_sr'] - metrics['sr']),
+            'stage2_path_share_percent': (100 * float(metrics['stage2_length']) / total_length
+                                          if total_length else None),
+            'interpretation': ('coarse endpoint NE is the available aggregate proxy for true '
+                               'switch distance; positive refinement NE change means final '
+                               'navigation ended farther from the real goal'),
+        }
+    return result
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--run-dir', type=Path, required=True)
@@ -82,7 +103,8 @@ def main():
     completed = []
     for row in epochs:
         item = {'epoch': row['epoch'], 'elapsed_seconds': row['elapsed_seconds'],
-                'loss': loss_breakdown(row), 'validation': row['validation']}
+                'loss': loss_breakdown(row), 'validation': row['validation'],
+                'stage_diagnostics': stage_diagnostics(row['validation'])}
         completed.append(item)
 
     report = {
@@ -135,6 +157,29 @@ def main():
     fig.suptitle('Original baseline: live read-only report')
     fig.savefig(args.output_dir / 'overview.png', dpi=180)
     plt.close(fig)
+
+    if completed:
+        fig, axes = plt.subplots(1, 2, figsize=(13, 4.8), constrained_layout=True)
+        x = np.array([item['epoch'] for item in completed])
+        for split, color in [('val_seen', '#2563eb'), ('val_unseen', '#d97706')]:
+            diagnostics = [item['stage_diagnostics'][split] for item in completed]
+            axes[0].plot(x, [item['coarse_endpoint_ne_m'] for item in diagnostics],
+                         marker='o', color=color, linestyle='--', label=f'{split} coarse end')
+            axes[0].plot(x, [item['final_ne_m'] for item in diagnostics],
+                         marker='s', color=color, label=f'{split} final')
+            axes[1].plot(x, [item['coarse_sr_percent'] for item in diagnostics],
+                         marker='o', color=color, linestyle='--', label=f'{split} coarse SR')
+            axes[1].plot(x, [item['final_sr_percent'] for item in diagnostics],
+                         marker='s', color=color, label=f'{split} final SR')
+        axes[0].set(title='Does fine refinement reduce true-goal error?', xlabel='epoch',
+                    ylabel='meters (lower is better)')
+        axes[1].set(title='Does fine refinement recover success?', xlabel='epoch',
+                    ylabel='percent (higher is better)')
+        for axis in axes:
+            axis.grid(alpha=.15)
+            axis.legend(fontsize=8)
+        fig.savefig(args.output_dir / 'stage_diagnostics.png', dpi=180)
+        plt.close(fig)
     print(json.dumps({'completed_epochs': len(completed),
                       'batch_samples': len(batches),
                       'output': str(args.output_dir)}, ensure_ascii=False))
