@@ -147,7 +147,7 @@ def train(args, train_env, val_envs, rank=-1):
                 # sampler = DistributedSampler(env, num_replicas=args.world_size, rank=rank)
                 loader = DataLoader(env, batch_size=1)
                 # Get validation distance from goal under test evaluation conditions
-                agent_eval.test(loader, feedback='student')
+                agent_eval.test(loader, env_name=env_name, feedback='student')
                 pred_results = agent_eval.get_results()
 
                 score_summary, result = env.eval_metrics(pred_results)
@@ -212,12 +212,14 @@ def train(args, train_env, val_envs, rank=-1):
 
             progress_loss = sum(agent.logs['progress_loss']) / max(len(agent.logs['progress_loss']), 1)
             goal_predict_loss = sum(agent.logs['goal_predict_loss']) / max(len(agent.logs['goal_predict_loss']), 1)
-            # target_predict_loss = sum(agent.logs['target_predict_loss']) / max(len(agent.logs['target_predict_loss']), 1)
+            target_predict_loss = sum(agent.logs['target_predict_loss']) / max(len(agent.logs['target_predict_loss']), 1)
+            region_grounding_loss = sum(agent.logs['region_grounding_loss']) / max(len(agent.logs['region_grounding_loss']), 1)
             # writer.add_scalar("loss/IL_loss", IL_loss, iter)
 
             write_to_record_file(
-                "\nIL_loss %.4f direction_loss %.4f progress_loss %.4f goal_predict_loss %.4f" % (
-                    ml_loss, direction_loss, progress_loss, goal_predict_loss),
+                "\nIL_loss %.4f direction_loss %.4f progress_loss %.4f goal_predict_loss %.4f target_predict_loss %.4f region_grounding_loss %.4f" % (
+                    ml_loss, direction_loss, progress_loss, goal_predict_loss,
+                    target_predict_loss, region_grounding_loss),
                 record_file
             )
             stage1_step = sum(agent.logs['stage1_step']) / max(len(agent.logs['stage1_step']), 1)
@@ -240,6 +242,8 @@ def train(args, train_env, val_envs, rank=-1):
             epoch_metrics = dict(epoch=idx + 1, elapsed_seconds=time.time()-start,
                                  il_loss=ml_loss, direction_loss=direction_loss,
                                  progress_loss=progress_loss, goal_loss=goal_predict_loss,
+                                 target_loss=target_predict_loss,
+                                 region_grounding_loss=region_grounding_loss,
                                  validation={})
             # Reuse the trained modules: avoid a second BERT/Darknet/ET on one GPU.
             agent_eval = agent
@@ -310,7 +314,7 @@ def valid(args, val_envs, rank=-1):
             agent_eval.env = env
             loader = DataLoader(env, batch_size=1)
             # Get validation distance from goal under test evaluation conditions
-            agent_eval.test(loader, feedback='student')
+            agent_eval.test(loader, env_name=env_name, feedback='student')
             pred_results = agent_eval.get_results()
 
             score_summary, result = env.eval_metrics(pred_results)

@@ -125,6 +125,9 @@ def parse_args():
     parser.add_argument('--stage_recovery_patience', type=int, default=2)
     parser.add_argument('--progress_stop_threshold', type=float, default=0.95)
     parser.add_argument('--progress_stop_patience', type=int, default=2)
+    parser.add_argument('--enable_region_grounding', action='store_true',
+                        help='retain 7x7 visual regions and supervise visible/outside grounding')
+    parser.add_argument('--region_loss_weight', type=float, default=0.1)
 
     # logger
     parser.add_argument('--log_every', type=int, default=1)
@@ -187,6 +190,8 @@ def parse_args():
         parser.error('stage_recovery_distance must be greater than stage_enter_distance')
     if args.stage_recovery_patience < 1 or args.progress_stop_patience < 1:
         parser.error('stage recovery/stop patience must be positive')
+    if args.region_loss_weight < 0:
+        parser.error('region_loss_weight must be nonnegative')
     if args.checkpoint and not Path(args.checkpoint).is_absolute():
         args.checkpoint = str(PROJECT_ROOT / args.checkpoint)
     output_dir = Path(args.output_dir)

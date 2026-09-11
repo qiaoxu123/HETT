@@ -465,6 +465,7 @@ class NavCMTAgent:
         progress_loss = 0.
         goal_predict_loss = 0.
         target_predict_loss = 0.
+        region_grounding_loss = 0.
 
         stage1_steps = [0] * batch_size
         stage2_step = 0
@@ -536,7 +537,7 @@ class NavCMTAgent:
             # - pred_goals: [B, 2]
             # - pred_logits: [B, N_cand, 1]
             # - grid_ft: [B, N_hist+1, 768]
-            pred_direction, pred_progress, pred_goals, pred_logits, grid_ft = self.vln_model(
+            pred_direction, pred_progress, pred_goals, pred_logits, grid_ft, region_logits = self.vln_model(
                 directions=input['directions'],     # [B, 1, 4]
                 frames=input['frames'],             # [B, T_frame, 512, 49]
                 lenths=input['lenths'],             # [B]
@@ -584,6 +585,7 @@ class NavCMTAgent:
             gt_goal = torch.from_numpy(np.array([ob['normalized_goal'] for ob in obs], dtype=np.float32))
             gt_progress = torch.from_numpy(np.array([ob['progress'] for ob in obs], dtype=np.float32))
             gt_target = torch.from_numpy(np.array([ob['grid_goal'] for ob in obs], dtype=np.int64))
+            gt_region = torch.from_numpy(np.array([ob['region_target'] for ob in obs], dtype=np.int64))
             # there is no ground truth in unseen_test set
             if not 'test' in self.env_name:
                 # Get ground truth
@@ -608,6 +610,10 @@ class NavCMTAgent:
                         progress_loss += self.progress_regression(pred_progress[i].view(-1),
                                                                   gt_progress[i].view(-1).cuda())
                         goal_predict_loss += F.mse_loss(pred_goals[i].view(-1), gt_goal[i].view(-1).cuda())
+                        if region_logits is not None:
+                            region_grounding_loss += F.cross_entropy(
+                                region_logits[i].view(1, -1), gt_region[i].view(1).cuda()
+                            )
                         # print(pred_goals[i], gt_goal[i], goal_predict_loss)
 
                     # ml_loss += direction_loss
@@ -788,7 +794,8 @@ class NavCMTAgent:
             ml_loss = (self.args.direction_loss_weight * direction_loss
                        + self.args.progress_loss_weight * progress_loss
                        + self.args.goal_loss_weight * goal_predict_loss
-                       + self.args.target_loss_weight * target_predict_loss)
+                       + self.args.target_loss_weight * target_predict_loss
+                       + self.args.region_loss_weight * region_grounding_loss)
             # ml_loss = progress_loss + goal_predict_loss
             self.loss += ml_loss * train_ml / batch_size
 
@@ -798,6 +805,9 @@ class NavCMTAgent:
             self.logs['progress_loss'].append((progress_loss * train_ml / batch_size).item())
             self.logs['goal_predict_loss'].append((goal_predict_loss * train_ml / batch_size).item())
             self.logs['target_predict_loss'].append((target_predict_loss * train_ml / batch_size).item())
+            self.logs['region_grounding_loss'].append(
+                (region_grounding_loss * train_ml / batch_size).item()
+                if torch.is_tensor(region_grounding_loss) else 0.0)
             self.logs['IL_loss'].append((ml_loss * train_ml / batch_size).item())
 
         if type(self.loss) is int:  # For safety, it will be activated if no losses are added

@@ -55,6 +55,40 @@ def crop_image(map_name: str, pose: Pose4D, shape: Tuple[int, int], type: Litera
     return cropped_image
 
 
+def project_colrow_to_crop(view_corners_colrow, point_colrow, shape):
+    """Project one map pixel into the current crop without reading an image."""
+    img_row, img_col = shape
+    image_corners = np.array(
+        [(0, 0), (img_col - 1, 0), (img_col - 1, img_row - 1), (0, img_row - 1)],
+        dtype=np.float32,
+    )
+    transform = cv2.getPerspectiveTransform(
+        np.asarray(view_corners_colrow, dtype=np.float32), image_corners
+    )
+    point = np.asarray(point_colrow, dtype=np.float32).reshape(1, 1, 2)
+    projected = cv2.perspectiveTransform(point, transform).reshape(2)
+    inside = bool(0 <= projected[0] <= img_col - 1 and 0 <= projected[1] <= img_row - 1)
+    return projected, inside
+
+
+def project_world_to_crop(map_name, pose, point, shape):
+    """Project a world XY point into the rendered crop coordinate system."""
+    corners_rowcol = _compute_view_area_corners_rowcol(map_name, pose)
+    corners_colrow = np.flip(corners_rowcol, axis=-1)
+    row, col = _raster_cache[map_name].index(point.x, point.y)
+    return project_colrow_to_crop(corners_colrow, (col, row), shape)
+
+
+def region_target_from_crop(projected, visible, shape, grid_size=7):
+    """Convert a projected target to a patch id; the final id means outside."""
+    if not visible:
+        return grid_size ** 2
+    img_row, img_col = shape
+    col = min(max(int(projected[0] * grid_size / img_col), 0), grid_size - 1)
+    row = min(max(int(projected[1] * grid_size / img_row), 0), grid_size - 1)
+    return row * grid_size + col
+
+
 
 def _compute_view_area_corners_rowcol(map_name: str, pose: Pose4D):
     """Returns the [front-left, front-right, back-right, back-left] corners of

@@ -118,6 +118,45 @@ class BidirectionalCrossAttention(nn.Module):
         return target_tokens, motion_tokens
 
 
+class RegionGrounding(nn.Module):
+    """Keep all 7x7 visual regions and align them with the instruction."""
+
+    def __init__(self, visual_dim, d_model, grid_size=7):
+        super().__init__()
+        self.grid_size = grid_size
+        self.visual_projection = nn.Linear(visual_dim, d_model)
+        self.position_projection = nn.Linear(2, d_model)
+        self.query_projection = nn.Linear(d_model, d_model)
+        self.outside_head = nn.Sequential(
+            nn.Linear(d_model * 2, d_model), nn.ReLU(), nn.Linear(d_model, 1)
+        )
+        axis = torch.linspace(-1.0, 1.0, grid_size)
+        yy, xx = torch.meshgrid(axis, axis, indexing='ij')
+        self.register_buffer('region_coordinates', torch.stack((xx, yy), dim=-1).reshape(-1, 2))
+
+    def embed(self, frames):
+        if frames.shape[1] != 1 or frames.shape[-1] != self.grid_size ** 2:
+            raise ValueError('region grounding expects one current 7x7 visual feature map')
+        regions = frames[:, 0].transpose(1, 2)
+        return self.visual_projection(regions) + self.position_projection(self.region_coordinates)[None]
+
+    def ground(self, encoded_regions, language, language_mask=None):
+        if language_mask is None:
+            query = language.mean(dim=1)
+        else:
+            weights = language_mask.to(language.dtype).unsqueeze(-1)
+            query = (language * weights).sum(dim=1) / weights.sum(dim=1).clamp_min(1.0)
+        query = F.normalize(self.query_projection(query), dim=-1)
+        normalized_regions = F.normalize(encoded_regions, dim=-1)
+        region_logits = torch.einsum('bnd,bd->bn', normalized_regions, query)
+        outside_logit = self.outside_head(
+            torch.cat((encoded_regions.mean(dim=1), query), dim=-1)
+        )
+        logits = torch.cat((region_logits, outside_logit), dim=1)
+        pooled = torch.sum(torch.softmax(region_logits, dim=1).unsqueeze(-1) * encoded_regions, dim=1)
+        return logits, pooled
+
+
 class ET(nn.Module):
     def __init__(self, args):
         """
@@ -214,6 +253,8 @@ class ET(nn.Module):
             num_heads=self.args.encoder_heads,
             dropout=self.args.dropout_transformer_encoder,
         )
+        if getattr(self.args, 'enable_region_grounding', False):
+            self.region_grounding = RegionGrounding(512, self.args.demb)
 
     def forward(self, **inputs):
         """
@@ -235,12 +276,14 @@ class ET(nn.Module):
 
         # --------------- 3. 视觉帧注意力：语言关注每一帧 -----------------
         im_feature = inputs["frames"]  # [B, T_frame, 512, 49]
-        att_frame_feature = torch.zeros((im_feature.shape[0], 0, 49)).cuda() # [B, T_frame, 49]
-        for i in range(im_feature.shape[1]):
-            att_single_frame_feature, beta = self.attention_layer_vision(inputs["lang_cls"], im_feature[:, i, :, :]) # [B, 49], [B, 49]
-            att_frame_feature = torch.concat((att_frame_feature, att_single_frame_feature.unsqueeze(1)), axis=1) # [B, T_frame, 49]
-
-        emb_frames = self.fc2(att_frame_feature.view(-1, 49)).view(*im_feature.shape[:2], -1) # [B, T_frame, d_model]
+        if getattr(self.args, 'enable_region_grounding', False):
+            emb_frames = self.region_grounding.embed(im_feature)  # [B, 49, d_model]
+        else:
+            att_frame_feature = torch.zeros((im_feature.shape[0], 0, 49), device=im_feature.device)
+            for i in range(im_feature.shape[1]):
+                att_single_frame_feature, beta = self.attention_layer_vision(inputs["lang_cls"], im_feature[:, i, :, :])
+                att_frame_feature = torch.concat((att_frame_feature, att_single_frame_feature.unsqueeze(1)), axis=1)
+            emb_frames = self.fc2(att_frame_feature.view(-1, 49)).view(*im_feature.shape[:2], -1)
 
         # --------------- 4. 地图特征与方向特征编码 -----------------
         emb_maps = self.fc_map(map_feat).view(im_feature.shape[0], -1, 768) # [B, N_map, d_model]
@@ -314,7 +357,13 @@ class ET(nn.Module):
         encoder_out_candidates = encoder_out[:, map_end:]
 
         # 当前 rollout 只输入一个 frame/direction/map token；取最后一个也兼容后续历史扩展。
-        encoder_out_visual = encoder_out_frames[:, -1]          # [B, d_model]
+        region_logits = None
+        if getattr(self.args, 'enable_region_grounding', False):
+            region_logits, encoder_out_visual = self.region_grounding.ground(
+                encoder_out_frames, emb_lang, inputs.get('lang_mask')
+            )
+        else:
+            encoder_out_visual = encoder_out_frames[:, -1]      # [B, d_model]
         encoder_out_direction = encoder_out_directions[:, -1]   # [B, d_model]
         encoder_out_map = encoder_out_maps[:, -1]               # [B, d_model]
 
@@ -341,4 +390,7 @@ class ET(nn.Module):
         # target_logits: [B, N_cand, 1]
         target_logits = self.decoder_2_logits_full(target_decoder_input)
 
-        return direction, progress, pred_goals, target_logits, emb_frames + emb_directions
+        history_feature = (encoder_out_visual.unsqueeze(1) + emb_directions[:, -1:]
+                           if getattr(self.args, 'enable_region_grounding', False)
+                           else emb_frames + emb_directions)
+        return direction, progress, pred_goals, target_logits, history_feature, region_logits
