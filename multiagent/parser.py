@@ -118,6 +118,13 @@ def parse_args():
     parser.add_argument('--target_loss_weight', type=float, default=0.1,
                         help='auxiliary grid loss from released code (not specified in paper)')
     parser.add_argument('--disable_task_interaction', action='store_true')
+    parser.add_argument('--enable_stage_recovery', action='store_true',
+                        help='allow cautious fine-to-coarse recovery using model predictions')
+    parser.add_argument('--stage_enter_distance', type=float, default=5.0)
+    parser.add_argument('--stage_recovery_distance', type=float, default=20.0)
+    parser.add_argument('--stage_recovery_patience', type=int, default=2)
+    parser.add_argument('--progress_stop_threshold', type=float, default=0.95)
+    parser.add_argument('--progress_stop_patience', type=int, default=2)
 
     # logger
     parser.add_argument('--log_every', type=int, default=1)
@@ -176,6 +183,10 @@ def parse_args():
     args = parser.parse_args()
     if args.grad_accum < 1 or args.batch_size < 1 or args.max_episodes < 0:
         parser.error('grad_accum/batch_size must be positive; max_episodes must be nonnegative')
+    if args.stage_enter_distance < 0 or args.stage_recovery_distance <= args.stage_enter_distance:
+        parser.error('stage_recovery_distance must be greater than stage_enter_distance')
+    if args.stage_recovery_patience < 1 or args.progress_stop_patience < 1:
+        parser.error('stage recovery/stop patience must be positive')
     if args.checkpoint and not Path(args.checkpoint).is_absolute():
         args.checkpoint = str(PROJECT_ROOT / args.checkpoint)
     output_dir = Path(args.output_dir)
