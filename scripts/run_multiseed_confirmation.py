@@ -116,6 +116,25 @@ def analysis_command(output_dir):
     return command
 
 
+def training_analysis_command(output_dir):
+    variants = {
+        'corrected': ('01-teacher-fix', 'teacher_fix_full'),
+        'grounding': ('03-grounding', 'grounding_full'),
+        'hypothesis': ('05-hypotheses', 'hypothesis_full'),
+        'bidirectional': ('06-bidir', 'bidir_full'),
+        'paper_loss_only': ('07-loss-ablation', 'loss_paper_only_full'),
+        'no_progress': ('07-loss-ablation', 'loss_no_progress_full'),
+        'neither_auxiliary': ('07-loss-ablation', 'loss_neither_full'),
+    }
+    command = [PYTHON, str(ROOT / '00-control/scripts/analyze_training_dynamics.py')]
+    for name, (worktree, run_prefix) in variants.items():
+        for seed in (0, *SEEDS):
+            path = ROOT / worktree / 'runs' / f'{run_prefix}_s{seed}'
+            command.extend(['--run', f'{name}:{seed}={path}'])
+    command.extend(['--output-dir', str(output_dir)])
+    return command
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--run-dir', type=Path, required=True)
@@ -155,19 +174,25 @@ def main():
             write(args.run_dir / 'status.json', {'time': stamp(), 'phase': 'failed',
                                                  'job': name, 'exit_code': result.returncode})
             raise SystemExit(result.returncode)
-    analysis = analysis_command(args.run_dir / 'analysis')
-    write(args.run_dir / 'analysis_command.json', analysis)
-    write(args.run_dir / 'status.json', {'time': stamp(), 'phase': 'analyzing'})
-    with (args.run_dir / 'analysis.log').open('w') as log:
-        result = subprocess.run(analysis, cwd=ROOT / '00-control', stdout=log,
-                                stderr=subprocess.STDOUT)
-    if result.returncode:
-        write(args.run_dir / 'status.json', {'time': stamp(), 'phase': 'failed',
-                                             'job': 'analysis', 'exit_code': result.returncode})
-        raise SystemExit(result.returncode)
+    analyses = [
+        ('navigation_analysis', analysis_command(args.run_dir / 'analysis')),
+        ('training_analysis', training_analysis_command(args.run_dir / 'training_analysis')),
+    ]
+    write(args.run_dir / 'analysis_commands.json', {
+        name: command for name, command in analyses})
+    for name, command in analyses:
+        write(args.run_dir / 'status.json', {'time': stamp(), 'phase': 'analyzing', 'job': name})
+        with (args.run_dir / f'{name}.log').open('w') as log:
+            result = subprocess.run(command, cwd=ROOT / '00-control', stdout=log,
+                                    stderr=subprocess.STDOUT)
+        if result.returncode:
+            write(args.run_dir / 'status.json', {'time': stamp(), 'phase': 'failed',
+                                                 'job': name, 'exit_code': result.returncode})
+            raise SystemExit(result.returncode)
     write(args.run_dir / 'status.json', {'time': stamp(), 'phase': 'complete',
                                          'seeds': [0, *SEEDS],
-                                         'analysis': str(args.run_dir / 'analysis')})
+                                         'analysis': str(args.run_dir / 'analysis'),
+                                         'training_analysis': str(args.run_dir / 'training_analysis')})
 
 
 if __name__ == '__main__':

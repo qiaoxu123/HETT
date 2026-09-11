@@ -1,6 +1,8 @@
 import unittest
 
-from scripts.run_multiseed_confirmation import MIN_FREE_GIB, SEEDS, analysis_command, build_jobs
+from scripts.run_multiseed_confirmation import (
+    MIN_FREE_GIB, SEEDS, analysis_command, build_jobs, training_analysis_command,
+)
 
 
 class MultiSeedConfirmationTest(unittest.TestCase):
@@ -38,6 +40,13 @@ class MultiSeedConfirmationTest(unittest.TestCase):
             self.assertIn(f'corrected:{seed}=', ' '.join(runs))
             self.assertIn(f'bidirectional:{seed}=', ' '.join(runs))
         self.assertNotIn('test_unseen', ' '.join(command))
+
+        training = training_analysis_command('/tmp/training-analysis')
+        training_runs = [training[index + 1] for index, value in enumerate(training)
+                         if value == '--run']
+        self.assertEqual(len(training_runs), 21)
+        self.assertNotIn('recovery', ' '.join(training_runs))
+        self.assertNotIn('combined', ' '.join(training_runs))
 
 
 if __name__ == '__main__':
