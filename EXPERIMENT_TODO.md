@@ -32,6 +32,7 @@
 
 - [x] 建立公共诊断工具快照，保留主目录未提交脚本。
 - [x] 验证所有 worktree、输入路径、独立输出目录以及主目录状态；诊断脚本语法检查通过。
+- [x] 审计数据划分：跨 split 无 episode key/起点重复，val/test unseen 地图与训练隔离；开发评估默认不加载 test。
 - [x] 建立串行、失败即停的 GPU 短跑队列；当前等待原版基线正常结束。
 - [x] 1a：teacher 计数单元测试：batch=1/2、不同 episode 提前结束、轨迹越界；每条轨迹独立推进。
 - [ ] 1b：修复 teacher 索引；CPU 回归测试及单卡短跑，检查有限 loss、梯度、保存恢复。
@@ -73,4 +74,5 @@
 | 隔离环境建立 | 公共工具 e582afb；隔离配置见各分支后续提交 | 51a1828 | 不训练 | 各 worktree | 输入链接和输出隔离检查；不代表模型验证完成 |
 | 跨方案 checkpoint 兼容性 | `b6107e4` | 各方案最新提交 | 不训练 | `runs/checkpoint_compatibility_20260911/` | grounding→combined 精确兼容；关闭模块时仅有预期的新模块参数被忽略 |
 | 论文参数一致性 | `d3bef88` | 六个结构分支 | 不训练 | `runs/training_protocol_audit_20260911/` | 六分支协议一致；论文核心参数匹配；单卡用 2×累积4，另标明发布代码额外 target-grid loss |
+| 数据划分审计 | `5821366` | 最新 CityNav 输入哈希 | 不训练 | `runs/dataset_split_audit_20260911/` | 四个 split 无目标描述键/起点重叠；两个 unseen 地图集合与训练隔离 |
 | Loss 消融协议 | `078c74c` | `b01add8` | 四组权重；seed 0 起步 | `07-loss-ablation/runs/` | 14/14 CPU 测试通过；真实训练未开始 |
