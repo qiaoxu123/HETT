@@ -2,6 +2,7 @@ import unittest
 from types import SimpleNamespace
 
 import torch
+from torch.nn import functional as F
 
 from multiagent.models.ET_haa import ET
 
@@ -49,6 +50,22 @@ class FullHypothesisETForwardTest(unittest.TestCase):
         output = model(**inputs())
         self.assertEqual(tuple(output[4].shape), (2, 1, 768))
         self.assertIsNone(output[5])
+
+    def test_selected_cell_offset_supervision_reaches_head_and_language(self):
+        model = ET(args(True))
+        sample = inputs()
+        offsets = model(**sample)[5]
+        cells = torch.tensor([0, 24])
+        predictions = offsets[torch.arange(2), cells]
+        targets = torch.tensor([[0.03, 0.12], [0.18, 0.06]])
+        F.mse_loss(predictions, targets).backward()
+        for name, parameter in model.hypothesis_offset_head.named_parameters():
+            self.assertIsNotNone(parameter.grad, name)
+            self.assertTrue(torch.isfinite(parameter.grad).all(), name)
+            self.assertGreater(parameter.grad.norm().item(), 0, name)
+        self.assertIsNotNone(sample['lang'].grad)
+        self.assertTrue(torch.isfinite(sample['lang'].grad).all())
+        self.assertGreater(sample['lang'].grad.norm().item(), 0)
 
 
 if __name__ == '__main__':
