@@ -9,6 +9,7 @@ import time
 
 
 ROOT = Path('/home/tenant2/Workspace/hett-experiments')
+STORAGE_ROOT = Path('/home/tenant2/dataext/hett-multiseed-20260911')
 PYTHON = '/home/tenant2/miniconda3/envs/AirVLN39/bin/python'
 PREDECESSOR_UNIT = 'hett-full-seed0-matrix-20260911'
 PREDECESSOR_STATUS = ROOT / '00-control/runs/full_seed0_matrix_20260911/status.json'
@@ -87,6 +88,41 @@ def build_jobs():
     return [job for seed in SEEDS for job in jobs_for_seed(seed)]
 
 
+def externalize_run(command):
+    """Place additional-seed artifacts on dataext without changing logical paths."""
+    actual = list(command)
+    index = actual.index('--run-dir') + 1
+    logical = Path(actual[index])
+    relative = logical.relative_to(ROOT)
+    physical = STORAGE_ROOT / relative
+    actual[index] = str(physical)
+    return actual, logical, physical
+
+
+def publish_logical_run(logical, physical):
+    if logical.exists() or logical.is_symlink():
+        raise FileExistsError(f'logical run path already exists: {logical}')
+    if not physical.is_dir():
+        raise FileNotFoundError(f'physical run did not complete: {physical}')
+    logical.parent.mkdir(parents=True, exist_ok=True)
+    logical.symlink_to(physical, target_is_directory=True)
+
+
+def prepare_queue_dir(path):
+    if not path.exists():
+        path.mkdir(parents=True)
+        return
+    status_path = path / 'status.json'
+    try:
+        status = json.loads(status_path.read_text())
+    except (FileNotFoundError, json.JSONDecodeError):
+        raise FileExistsError(f'cannot safely resume queue directory: {path}')
+    started_artifacts = ('events.jsonl', 'jobs.json', 'storage_manifest.json')
+    if status.get('phase') != 'waiting' or any((path / name).exists()
+                                                for name in started_artifacts):
+        raise FileExistsError(f'queue directory already started: {path}')
+
+
 def analysis_command(output_dir):
     variants = {
         'corrected': ('01-teacher-fix', 'teacher_fix_full'),
@@ -139,7 +175,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--run-dir', type=Path, required=True)
     args = parser.parse_args()
-    args.run_dir.mkdir(parents=True, exist_ok=False)
+    prepare_queue_dir(args.run_dir)
     while subprocess.run(['systemctl', '--user', 'is-active', '--quiet',
                           PREDECESSOR_UNIT]).returncode == 0:
         write(args.run_dir / 'status.json', {'time': stamp(), 'phase': 'waiting',
@@ -152,19 +188,39 @@ def main():
         raise SystemExit('full seed-0 matrix did not complete')
 
     jobs = build_jobs()
-    write(args.run_dir / 'jobs.json', [{'name': name, 'command': command}
-                                        for name, command in jobs])
+    STORAGE_ROOT.mkdir(parents=True, exist_ok=True)
+    execution_jobs = []
     for name, command in jobs:
-        free_gib = shutil.disk_usage(ROOT).free / 2**30
+        actual, logical, physical = externalize_run(command)
+        execution_jobs.append((name, actual, logical, physical))
+    write(args.run_dir / 'jobs.json', [
+        {'name': name, 'logical_run': str(logical), 'physical_run': str(physical),
+         'command': command}
+        for name, command, logical, physical in execution_jobs
+    ])
+    write(args.run_dir / 'storage_manifest.json', {
+        'storage_root': str(STORAGE_ROOT),
+        'logical_root': str(ROOT),
+        'runs': [{'name': name, 'logical': str(logical), 'physical': str(physical)}
+                 for name, unused, logical, physical in execution_jobs],
+    })
+    for name, command, logical, physical in execution_jobs:
+        physical.parent.mkdir(parents=True, exist_ok=True)
+        free_gib = shutil.disk_usage(STORAGE_ROOT).free / 2**30
         if free_gib < MIN_FREE_GIB:
             write(args.run_dir / 'status.json', {
                 'time': stamp(), 'phase': 'blocked', 'job': name,
-                'reason': f'only {free_gib:.2f} GiB free; requires {MIN_FREE_GIB} GiB'})
+                'reason': (f'only {free_gib:.2f} GiB free on {STORAGE_ROOT}; '
+                           f'requires {MIN_FREE_GIB} GiB')})
             raise SystemExit('insufficient disk for next full training')
         write(args.run_dir / 'status.json', {
-            'time': stamp(), 'phase': 'running', 'job': name, 'disk_free_gib': free_gib})
+            'time': stamp(), 'phase': 'running', 'job': name,
+            'logical_run': str(logical), 'physical_run': str(physical),
+            'disk_free_gib': free_gib})
         append(args.run_dir / 'events.jsonl', {
-            'time': stamp(), 'event': 'started', 'job': name, 'disk_free_gib': free_gib})
+            'time': stamp(), 'event': 'started', 'job': name,
+            'logical_run': str(logical), 'physical_run': str(physical),
+            'disk_free_gib': free_gib})
         with (args.run_dir / f'{name}.log').open('w') as log:
             result = subprocess.run(command, cwd=ROOT / '00-control', stdout=log,
                                     stderr=subprocess.STDOUT)
@@ -174,6 +230,7 @@ def main():
             write(args.run_dir / 'status.json', {'time': stamp(), 'phase': 'failed',
                                                  'job': name, 'exit_code': result.returncode})
             raise SystemExit(result.returncode)
+        publish_logical_run(logical, physical)
     analyses = [
         ('navigation_analysis', analysis_command(args.run_dir / 'analysis')),
         ('training_analysis', training_analysis_command(args.run_dir / 'training_analysis')),

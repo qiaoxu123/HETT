@@ -28,6 +28,8 @@ grounding 的监督覆盖：train_seen 10,734 个状态中可见 63.49%，val_un
 
 所有训练后验证、纯控制评估和冻结后 test 的实际 `commands.json` 也会逐 run 检查：checkpoint 必须来自正确方案与相同 seed，`max_episodes=0`，模块/消融开关必须精确一致，并按阶段禁止或要求 test 参数。
 
+磁盘预算已按当前 checkpoint 实测大小重新核算：每份约 1.9GB，若全部写入系统盘会在多种子阶段耗尽空间。原版、smoke 和 seed 0 保持原位置；seed 17/42 的 20 个运行写入 `/home/tenant2/dataext/hett-multiseed-20260911`，并在原 worktree 路径发布透明软链接。这样不删除已有产物，也不改变训练参数、数据或分析入口；完工审计会解析链接并核对实际 checkpoint。
+
 历史 `reference_baseline` 已做只读审计：`train_rep.log.gz` 连续记录 epoch 0–11，`train_epoch12_20.log.gz` 记录 resume epoch 11–19，`valid.txt` 含完整 split 指标；但归档不含 checkpoint，也不能证明两段属于唯一连续 lineage。更关键的是，`htnav-repro` 旧代码将 action loss 权重写死为 1.0，而论文和当前受控训练为 1.5，因此旧 loss 曲线不可直接比较，只保留为导航指标量级旁证。报告和图位于 `runs/reference_baseline_audit_20260911/`，监控器会在当前基线每完成一个 epoch 后自动刷新。
 
 原版基线已完整跑完前 2 个 epoch，当前进入 epoch 3，最新记录为 200/10,939 batch；GPU、日志、磁盘均无告警。它使用启动时源码快照，不受这些 worktree 提交影响。

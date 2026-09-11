@@ -6,7 +6,8 @@ import tempfile
 from scripts.audit_experiment_completion import (
     EVAL_VARIANTS, EXPECTED_HEADS, QUEUE_RESULTS, SEEDS, TRAINING_VARIANT_ARGS,
     TRAIN_VARIANTS, command_arguments, digest, run_path, validate_checkpoint_hashes,
-    evaluation_checkpoint, validate_evaluation_command, validate_training_args,
+    evaluation_checkpoint, same_file_path, validate_evaluation_command,
+    validate_training_args,
 )
 
 
@@ -104,6 +105,17 @@ class CompletionAuditTest(unittest.TestCase):
                 run, 'recovery_on', 42, include_test=True)
             self.assertFalse(passed)
             self.assertIn('seed', evidence['mismatches'])
+
+    def test_checkpoint_path_audit_accepts_a_transparent_storage_symlink(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            physical = root / 'physical/checkpoint.pt'
+            physical.parent.mkdir()
+            physical.write_bytes(b'checkpoint')
+            logical = root / 'logical.pt'
+            logical.symlink_to(physical)
+            self.assertTrue(same_file_path(str(physical), str(logical)))
+            self.assertFalse(same_file_path(str(root / 'missing'), str(logical)))
 
 
 if __name__ == '__main__':

@@ -188,12 +188,21 @@ def option_value(tokens, option):
         return None
 
 
+def same_file_path(actual, expected):
+    if actual is None:
+        return False
+    try:
+        return Path(actual).resolve(strict=True) == Path(expected).resolve(strict=True)
+    except (FileNotFoundError, OSError):
+        return actual == expected
+
+
 def validate_evaluation_command(run, variant, seed, include_test):
     commands = read_json(run / 'commands.json')
     tokens = commands.get('evaluation', []) if commands else []
     mismatches = {}
     expected_checkpoint = str(evaluation_checkpoint(variant, seed))
-    if option_value(tokens, '--checkpoint') != expected_checkpoint:
+    if not same_file_path(option_value(tokens, '--checkpoint'), expected_checkpoint):
         mismatches['checkpoint'] = {'expected': expected_checkpoint,
                                     'actual': option_value(tokens, '--checkpoint')}
     if option_value(tokens, '--seed') != str(seed):
@@ -306,6 +315,17 @@ def audit():
         accepted = {'complete'} if name != 'final_test' else {'complete', 'auditing'}
         add(checks, f'queue {name} complete', status is not None and
             status.get('phase') in accepted, status)
+
+    storage = read_json(CONTROL / 'runs/multiseed_confirmation_20260911/storage_manifest.json')
+    storage_runs = (storage or {}).get('runs', [])
+    add(checks, 'additional seeds use declared secondary storage',
+        storage is not None and
+        storage.get('storage_root') == '/home/tenant2/dataext/hett-multiseed-20260911' and
+        len(storage_runs) == 20 and
+        all(item.get('logical') and item.get('physical') and
+            Path(item['logical']).is_symlink() and
+            Path(item['logical']).resolve() == Path(item['physical']).resolve()
+            for item in storage_runs), storage)
 
     development_runs = []
     variant_provenance = {}

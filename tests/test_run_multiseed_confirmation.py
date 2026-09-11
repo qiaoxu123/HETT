@@ -1,7 +1,11 @@
 import unittest
+from pathlib import Path
+import tempfile
 
 from scripts.run_multiseed_confirmation import (
-    MIN_FREE_GIB, SEEDS, analysis_command, build_jobs, training_analysis_command,
+    MIN_FREE_GIB, ROOT, SEEDS, STORAGE_ROOT, analysis_command, build_jobs,
+    externalize_run, prepare_queue_dir, publish_logical_run,
+    training_analysis_command,
 )
 
 
@@ -47,6 +51,38 @@ class MultiSeedConfirmationTest(unittest.TestCase):
         self.assertEqual(len(training_runs), 21)
         self.assertNotIn('recovery', ' '.join(training_runs))
         self.assertNotIn('combined', ' '.join(training_runs))
+
+    def test_additional_seed_runs_are_externalized_without_changing_protocol(self):
+        for unused_name, command in build_jobs():
+            actual, logical, physical = externalize_run(command)
+            self.assertEqual(logical, Path(command[command.index('--run-dir') + 1]))
+            self.assertTrue(logical.is_relative_to(ROOT))
+            self.assertTrue(physical.is_relative_to(STORAGE_ROOT))
+            self.assertEqual(actual[actual.index('--epochs') + 1], '20')
+            self.assertEqual(actual[actual.index('--max-episodes') + 1], '0')
+            self.assertEqual(command[command.index('--run-dir') + 1], str(logical))
+
+    def test_completed_physical_run_is_published_as_a_logical_symlink(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            physical = root / 'storage/run'
+            physical.mkdir(parents=True)
+            (physical / 'status.json').write_text('{}')
+            logical = root / 'worktree/runs/run'
+            publish_logical_run(logical, physical)
+            self.assertTrue(logical.is_symlink())
+            self.assertEqual(logical.resolve(), physical.resolve())
+            self.assertTrue((logical / 'status.json').is_file())
+
+    def test_queue_restart_is_allowed_only_before_any_job_started(self):
+        with tempfile.TemporaryDirectory() as directory:
+            queue = Path(directory) / 'queue'
+            queue.mkdir()
+            (queue / 'status.json').write_text('{"phase": "waiting"}')
+            prepare_queue_dir(queue)
+            (queue / 'events.jsonl').write_text('started\n')
+            with self.assertRaises(FileExistsError):
+                prepare_queue_dir(queue)
 
 
 if __name__ == '__main__':
