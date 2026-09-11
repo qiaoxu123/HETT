@@ -54,6 +54,7 @@
 - [x] 阶段行为诊断：从已有轨迹派生切换次数、切换时真实目标距离、stage1/stage2 动作数、progress 提前停止及停止误判，不要求改模型或重跑已有预测。
 - [x] 训练动态汇总：7 个训练方案 × 3 seeds 自动汇总 loss、SR/SPL/NE 曲线、加权 loss 组成、耗时、最佳 epoch 与峰值显存；纯评估控制策略不混入训练曲线。
 - [x] Bug 修复独立归因：修复后 seed0 基线完成即单独比较原版 buggy run，输出 loss/验证曲线及逐 episode 配对结果，不把收益计入任何创新方案。
+- [x] 历史基线审计：确认旧归档含两段 0–19 epoch 日志和完整评测文本，但缺 checkpoint/单一连续 provenance；旧代码 action 权重 1.0，不与论文/当前 1.5 的 loss 直接比较。
 - [x] 机器完工审计：最终服务只有在全部队列、epoch、checkpoint、预测、点云负结果、无 test 泄漏、卫生补丁哈希、冻结顺序及图表检查通过后才允许标记完成；最终项数随冻结方案动态确定。
 
 ## 每次实验必须保存
@@ -89,3 +90,4 @@
 | 完整 seed-0 矩阵 | `140a4f8` | 修复后完整基线 | seed 0；20 epochs；全量 train/val | `runs/full_seed0_matrix_20260911/` | 11 个任务和 11 组配对比较已由测试锁定；等待前置运行 |
 | 三种子确认矩阵 | `04b5c19`；汇总器 `6d71cdf` | 完整 seed-0 矩阵 | seeds 17/42；20 epochs；全量 train/val | `runs/multiseed_confirmation_20260911/` | 20 个任务已由测试锁定；加上 seed 0 后每项主张均有 3 个种子 |
 | 冻结后最终测试 | `8918a76` | 三种子 val-unseen 汇总 | 先冻结，后首次读取 test | `runs/frozen_final_test_20260911/` | 无候选过门槛则冻结修复基线；禁止根据 test 重新选型 |
+| 历史基线完整性/可比性 | 本次提交 | `reference_baseline` 七个归档文件 | 只读解析，不训练 | `runs/reference_baseline_audit_20260911/` | 日志轮次基本完整但无 checkpoint；旧 action 权重 1.0，当前/论文为 1.5，只作量级旁证 |
