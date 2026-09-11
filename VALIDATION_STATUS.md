@@ -50,7 +50,7 @@ grounding 的监督覆盖：train_seen 10,734 个状态中可见 63.49%，val_un
 - 三种子确认矩阵：`hett-multiseed-confirmation-20260911.service`，将在 seed-0 矩阵成功后运行 seed 17、42；每个种子含 10 个完整任务，每项启动前检查至少 16 GiB 可用磁盘。完成后自动汇总 seeds 0/17/42，报告均值、样本标准差、95% 区间和逐 seed 配对变化，并生成两张比较图。
 - 训练动态分析与三种子结果一起自动执行：覆盖 7 个真实训练方案，输出 loss 和 val-unseen SR/SPL/NE 的均值±seed 标准差曲线、四项加权 loss 组成、每 seed 耗时、最佳 epoch 和峰值显存。recovery/combined 只做控制评估，不伪造训练曲线。
 - 冻结后最终测试：`hett-frozen-final-test-20260911.service`，等待三种子验证完成；只根据 val-unseen 按“SR 至少 +3pp 且 SPL 下降不超过 1pp”冻结方案，先写 `freeze.json`，再首次显式读取 test-unseen。若没有候选过门槛，冻结修复基线。
-- 完工审计共 204 项：检查所有队列终态、20-epoch 完整性、checkpoint 哈希、来源快照、逐 episode 预测、三种子/训练图、hard contrast、真实 GPU 双向梯度、开发阶段无 test 输出、原版 eval 卫生补丁哈希以及冻结早于最终 test。最终服务只有审计全通过才会标记完成。
+- 完工审计检查所有队列终态、20-epoch 完整性、checkpoint 哈希、来源快照、逐 episode 预测、三种子/训练图、点云局部几何负结果、hard contrast、真实 GPU 双向梯度、开发阶段无 test 输出、原版 eval 卫生补丁哈希以及冻结早于最终 test。预冻结阶段有 210 项，最终项数会按冻结方案动态增加；最终服务只有全部通过才会标记完成。
 - 总监控器：`hett-chain-monitor-20260911.service`；不占 GPU，每 60 秒记录服务/训练状态，每完成一个 epoch 自动刷新图，输出在 `runs/chain_monitor_20260911/`。监控同时核验外层服务退出结果和 75 个内部子实验状态，只有状态实质变化才追加事件；跨心跳实测状态文件刷新而事件数保持为 1。
 - 队列状态：`/home/tenant2/Workspace/hett-experiments/00-control/runs/gpu_validation_queue_20260911/`
 - 当前等待文件：`/home/tenant2/Workspace/hett-experiments/01-teacher-fix/runs/teacher_fix_smoke_s0/status.json`

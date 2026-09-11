@@ -165,6 +165,40 @@ def audit():
     add(checks, 'real GPU bidirectional gradient check', bidir_log.is_file() and
         'GPU_CHECK' in bidir_log.read_text() if bidir_log.exists() else False, str(bidir_log))
 
+    geometry = Path('/home/tenant2/Workspace/hett-crotonyl/runs/local_geometry_probe_20260911')
+    geometry_required = ('REPORT.md', 'summary.json', 'metrics.json', 'comparison.png',
+                         'cases.png', 'protocol.json', 'fit_protocol.json')
+    missing_geometry = [name for name in geometry_required
+                        if not (geometry / name).is_file() or (geometry / name).stat().st_size == 0]
+    add(checks, 'local geometry result artifacts', not missing_geometry, missing_geometry)
+    data_audit = read_json(geometry / 'data_audit.json')
+    add(checks, 'local geometry train/unseen split and finite features',
+        data_audit is not None and not data_audit.get('map_overlap') and
+        not data_audit.get('ply_length_failures') and
+        all(item.get('finite_features') for item in data_audit.get('checks', [])), data_audit)
+    perturbation = read_json(geometry / 'gt_perturbation_audit.json')
+    add(checks, 'local geometry student control ignores perturbed GT fields',
+        perturbation is not None and perturbation.get('episodes', 0) > 0 and
+        all(value == 0 for value in perturbation.get('max_trajectory_difference', [])),
+        perturbation)
+    usage = read_json(geometry / 'geometry_usage_audit.json')
+    usage_checks = (usage or {}).get('checks', [])
+    add(checks, 'local geometry branch is active and language-sensitive',
+        len(usage_checks) == 3 and all(
+            item.get('max_geometry_weight_change', 0) > 0 and
+            item.get('max_logits_change_zero_geometry', 0) > 0 and
+            item.get('positions_changed_by_shuffled_text', 0) > 0
+            for item in usage_checks), usage)
+    geometry_protocol = read_json(geometry / 'protocol.json')
+    fit_protocol = read_json(geometry / 'fit_protocol.json')
+    add(checks, 'local geometry excludes world coordinates and semantic labels',
+        geometry_protocol is not None and
+        geometry_protocol.get('world_coords_input') is False and
+        geometry_protocol.get('semantic_labels_input') is False, geometry_protocol)
+    add(checks, 'local geometry uses three fixed seeds and last-epoch selection',
+        fit_protocol is not None and len(fit_protocol.get('seeds', [])) == 3 and
+        fit_protocol.get('selection', '').startswith('last epoch'), fit_protocol)
+
     final_dir = CONTROL / 'runs/frozen_final_test_20260911'
     freeze = read_json(final_dir / 'freeze.json')
     add(checks, 'candidate frozen from validation only', freeze is not None and
