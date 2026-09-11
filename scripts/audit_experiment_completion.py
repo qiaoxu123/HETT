@@ -1,6 +1,7 @@
 """Fail unless the complete HETT experiment campaign has authoritative artifacts."""
 
 import argparse
+import hashlib
 import json
 from pathlib import Path
 import sys
@@ -52,6 +53,14 @@ def json_lines(path):
         return []
 
 
+def digest(path):
+    value = hashlib.sha256()
+    with path.open('rb') as stream:
+        for block in iter(lambda: stream.read(1024 * 1024), b''):
+            value.update(block)
+    return value.hexdigest()
+
+
 def run_path(mapping, name, seed):
     worktree, prefix = mapping[name]
     return ROOT / worktree / 'runs' / f'{prefix}_s{seed}'
@@ -75,6 +84,19 @@ def audit():
     baseline_test = BASELINE / 'evaluation/test_unseen_predictions.pt'
     add(checks, 'original baseline did not evaluate test before freeze',
         not baseline_test.exists(), str(baseline_test))
+    hygiene = read_json(BASELINE / 'evaluation_hygiene.json')
+    source = BASELINE / 'source/multiagent/main.py'
+    provenance = read_json(BASELINE / 'provenance.json')
+    add(checks, 'baseline evaluation hygiene record exists', hygiene is not None, hygiene)
+    add(checks, 'baseline evaluation source matches recorded hygiene hash',
+        hygiene is not None and source.is_file() and digest(source) == hygiene.get('sha256_after'),
+        {'actual': digest(source) if source.is_file() else None,
+         'expected': hygiene.get('sha256_after') if hygiene else None})
+    original_hash = (provenance or {}).get('source_sha256', {}).get('multiagent/main.py')
+    add(checks, 'baseline original training hash preserved in provenance',
+        hygiene is not None and original_hash == hygiene.get('sha256_before'),
+        {'provenance': original_hash,
+         'expected': hygiene.get('sha256_before') if hygiene else None})
 
     for name, path in QUEUE_RESULTS.items():
         status = read_json(path)

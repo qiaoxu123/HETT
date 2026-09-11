@@ -1,11 +1,20 @@
 import unittest
+from pathlib import Path
+import tempfile
 
 from scripts.audit_experiment_completion import (
-    EVAL_VARIANTS, QUEUE_RESULTS, SEEDS, TRAIN_VARIANTS, run_path,
+    EVAL_VARIANTS, QUEUE_RESULTS, SEEDS, TRAIN_VARIANTS, digest, run_path,
 )
 
 
 class CompletionAuditTest(unittest.TestCase):
+    def test_digest_is_content_addressed(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'evidence'
+            path.write_bytes(b'baseline evaluation hygiene')
+            self.assertEqual(digest(path),
+                             '568ebf9ecad1fec4e13914ce7e9403348c5d730dd333574884400f1f60d46cc9')
+
     def test_manifest_covers_every_three_seed_claim(self):
         self.assertEqual(SEEDS, (0, 17, 42))
         self.assertEqual(set(TRAIN_VARIANTS), {
