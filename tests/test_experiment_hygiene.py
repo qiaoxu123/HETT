@@ -1,6 +1,10 @@
 import ast
 from pathlib import Path
+import sys
 import unittest
+from unittest.mock import patch
+
+from multiagent.parser import parse_args
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -32,6 +36,13 @@ class ExperimentHygieneTest(unittest.TestCase):
     def test_instruction_override_is_explicit_and_keyed_by_episode(self):
         source = (ROOT / 'multiagent/agent.py').read_text()
         self.assertIn("instruction_overrides.get(ob['id'], ob['instruction'])", source)
+
+    def test_recovery_cannot_silently_change_training_policy(self):
+        with patch.object(sys, 'argv', ['test', '--mode', 'train', '--enable_stage_recovery']):
+            with self.assertRaises(SystemExit):
+                parse_args()
+        with patch.object(sys, 'argv', ['test', '--mode', 'eval', '--enable_stage_recovery']):
+            self.assertTrue(parse_args().enable_stage_recovery)
 
 
 if __name__ == '__main__':

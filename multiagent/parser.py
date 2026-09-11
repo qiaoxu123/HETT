@@ -192,6 +192,8 @@ def parse_args():
         parser.error('stage_recovery_distance must be greater than stage_enter_distance')
     if args.stage_recovery_patience < 1 or args.progress_stop_patience < 1:
         parser.error('stage recovery/stop patience must be positive')
+    if args.mode == 'train' and args.enable_stage_recovery:
+        parser.error('stage recovery is evaluation-only; training-policy changes require a separate ablation')
     if args.region_loss_weight < 0:
         parser.error('region_loss_weight must be nonnegative')
     if args.mode == 'train' and args.grounding_ablation != 'none':
