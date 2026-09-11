@@ -110,6 +110,9 @@ def audit():
         baseline_status.get('phase') == 'complete', baseline_status)
     add(checks, 'original baseline has 20 epochs', len(baseline_epochs) == 20,
         {'epochs': len(baseline_epochs)})
+    baseline_hashes_valid, baseline_hash_evidence = validate_checkpoint_hashes(BASELINE)
+    add(checks, 'original baseline checkpoint contents match recorded hashes',
+        baseline_hashes_valid, baseline_hash_evidence)
     for split in ('val_seen', 'val_unseen'):
         path = BASELINE / 'evaluation' / f'{split}_predictions.pt'
         add(checks, f'original baseline {split} predictions', path.is_file(), str(path))
