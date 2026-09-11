@@ -23,6 +23,7 @@ UNITS = (
     'hett-corrected-baseline-full-s0-20260911.service',
     'hett-full-seed0-matrix-20260911.service',
     'hett-multiseed-confirmation-20260911.service',
+    'hett-frozen-final-test-20260911.service',
 )
 RUN_STATUS = {
     'hett-baseline-20260911.service': BASELINE / 'status.json',
@@ -35,6 +36,7 @@ RUN_STATUS = {
     'hett-corrected-baseline-full-s0-20260911.service': CONTROL / 'runs/full_corrected_baseline_queue_s0_20260911/status.json',
     'hett-full-seed0-matrix-20260911.service': CONTROL / 'runs/full_seed0_matrix_20260911/status.json',
     'hett-multiseed-confirmation-20260911.service': CONTROL / 'runs/multiseed_confirmation_20260911/status.json',
+    'hett-frozen-final-test-20260911.service': CONTROL / 'runs/frozen_final_test_20260911/status.json',
 }
 EXPERIMENT_STATUS = {
     'teacher_fix_smoke': ROOT / '01-teacher-fix/runs/teacher_fix_smoke_s0/status.json',
@@ -79,6 +81,15 @@ for _seed in (17, 42):
         f'loss_no_progress_full_s{_seed}': ROOT / f'07-loss-ablation/runs/loss_no_progress_full_s{_seed}/status.json',
         f'loss_neither_full_s{_seed}': ROOT / f'07-loss-ablation/runs/loss_neither_full_s{_seed}/status.json',
     })
+for _variant, _worktree in {
+        'corrected': '01-teacher-fix', 'recovery_on': '02-recovery',
+        'grounding': '03-grounding', 'combined': '04-combined',
+        'hypothesis': '05-hypotheses', 'bidirectional': '06-bidir',
+        'paper_loss_only': '07-loss-ablation', 'no_progress': '07-loss-ablation',
+        'neither_auxiliary': '07-loss-ablation'}.items():
+    for _seed in (0, 17, 42):
+        EXPERIMENT_STATUS[f'final_test_{_variant}_s{_seed}'] = (
+            ROOT / f'{_worktree}/runs/final_test_{_variant}_s{_seed}/status.json')
 
 
 def stamp():
