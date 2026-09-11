@@ -28,3 +28,16 @@ val_unseen , sr: 13.0, ne: 49.0
     rows = MODULE.training_curve(path)
     assert [row["epoch"] for row in rows] == [0, 1]
     assert rows[0]["val_unseen"]["sr"] == 11.0
+
+
+def test_live_epoch_indices_align_one_based_telemetry_with_legacy_logs():
+    assert MODULE.live_epoch_indices([{"epoch": 1}, {"epoch": 2}]) == [0, 1]
+
+
+def test_live_epoch_indices_reject_gaps_or_zero_based_input():
+    try:
+        MODULE.live_epoch_indices([{"epoch": 0}])
+    except ValueError as error:
+        assert "one-based" in str(error)
+    else:
+        raise AssertionError("zero-based structured telemetry was silently accepted")

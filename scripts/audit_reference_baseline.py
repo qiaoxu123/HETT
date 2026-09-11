@@ -64,6 +64,19 @@ def json_lines(path):
     return rows
 
 
+def live_epoch_indices(rows):
+    """Map one-based structured telemetry to the zero-based legacy log index."""
+    indices = []
+    for position, row in enumerate(rows, start=1):
+        epoch = int(row["epoch"])
+        if epoch != position:
+            raise ValueError(
+                f"live epoch telemetry must be contiguous and one-based: "
+                f"position={position}, epoch={epoch}")
+        indices.append(epoch - 1)
+    return indices
+
+
 def sha256(path):
     digest = hashlib.sha256()
     with path.open("rb") as stream:
@@ -83,6 +96,7 @@ def main():
     archive_a = training_curve(args.reference_dir / "train_rep.log.gz")
     archive_b = training_curve(args.reference_dir / "train_epoch12_20.log.gz")
     live = json_lines(args.live_run / "checkpoints/epoch_metrics.jsonl")
+    live_zero_based = live_epoch_indices(live)
     files = sorted(path for path in args.reference_dir.iterdir() if path.is_file())
     report = {
         "reference_dir": str(args.reference_dir.resolve()),
@@ -91,6 +105,7 @@ def main():
         "archive_a": archive_a,
         "archive_b": archive_b,
         "live_completed_epochs": live,
+        "live_plot_epochs_zero_based": live_zero_based,
         "audit": {
             "has_epoch_0_to_11_log": [row["epoch"] for row in archive_a] == list(range(12)),
             "has_epoch_11_to_19_resume_log": [row["epoch"] for row in archive_b] == list(range(11, 20)),
@@ -98,6 +113,11 @@ def main():
             "has_checkpoint": any("checkpoint" in path.name.lower() for path in files),
             "single_continuous_lineage": False,
             "strict_paper_loss_match": False,
+            "epoch_index_alignment": {
+                "archive": "zero-based log index",
+                "live": "one-based completed-epoch count",
+                "plot": "live epoch minus one",
+            },
         },
         "comparability": {
             "archive_action_weight": 1.0,
@@ -124,7 +144,7 @@ def main():
         axes[1].plot(x, [row["val_unseen"]["ne"] for row in rows], "o-",
                      label=label, color=color)
     if live:
-        x = [row["epoch"] for row in live]
+        x = live_zero_based
         axes[0].plot(x, [row["validation"]["val_unseen"]["sr"] for row in live],
                      "s-", label="controlled live", color="#2563eb", linewidth=2.5)
         axes[1].plot(x, [row["validation"]["val_unseen"]["ne"] for row in live],
@@ -142,7 +162,9 @@ def main():
     live_summary = "暂无完整 epoch。"
     if live0:
         metric = live0["validation"]["val_unseen"]
-        live_summary = f"epoch 0: SR {metric['sr']:.2f}, SPL {metric['spl']:.2f}, NE {metric['ne']:.2f}。"
+        live_summary = (f"已完成第 {live0['epoch']} 轮（对应历史零基索引 epoch "
+                        f"{live0['epoch'] - 1}）：SR {metric['sr']:.2f}, "
+                        f"SPL {metric['spl']:.2f}, NE {metric['ne']:.2f}。")
     markdown = f"""# 历史 reference_baseline 审计
 
 ## 结论
@@ -151,6 +173,7 @@ def main():
 - 复现实物不完整：归档内没有 checkpoint，也没有能把两段证明为同一连续运行的不可变 provenance。
 - 不能直接比较 loss：历史代码 action 权重为 1.0；论文与当前受控训练为 1.5。
 - 历史评测还存在两套 epoch-11 数字及 checkpoint 后续覆盖风险，所以只作量级参考。
+- 图中历史日志使用零基 epoch；当前结构化日志使用已完成轮数（从 1 起），绘图时已减一对齐。
 - 当前受控训练 {live_summary}
 
 ## 是否需要重跑
