@@ -125,6 +125,13 @@ def audit():
         reference_audit.get('strict_paper_loss_match') is False,
         reference_audit)
 
+    protocol = read_json(CONTROL / 'runs/training_protocol_audit_20260911/report.json')
+    protocol_checks = (protocol or {}).get('checks', {})
+    protocol_variants = (protocol or {}).get('variants', {})
+    add(checks, 'all seven worktrees pass paper protocol audit',
+        len(protocol_variants) == 7 and protocol_checks and all(protocol_checks.values()),
+        {'variants': sorted(protocol_variants), 'checks': protocol_checks})
+
     for name, path in QUEUE_RESULTS.items():
         status = read_json(path)
         accepted = {'complete'} if name != 'final_test' else {'complete', 'auditing'}

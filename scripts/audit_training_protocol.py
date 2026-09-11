@@ -11,7 +11,8 @@ import subprocess
 ROOT = Path('/home/tenant2/Workspace/hett-experiments')
 PYTHON = '/home/tenant2/miniconda3/envs/AirVLN39/bin/python'
 WORKTREES = ('01-teacher-fix', '02-recovery', '03-grounding',
-             '04-combined', '05-hypotheses', '06-bidir')
+             '04-combined', '05-hypotheses', '06-bidir',
+             '07-loss-ablation')
 
 
 def sha256(path):
