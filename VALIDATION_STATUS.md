@@ -55,7 +55,7 @@ grounding 的监督覆盖：train_seen 10,734 个状态中可见 63.49%，val_un
 - 同一个汇总器还会自动生成可读 `REPORT.md`，集中列出 SR/SPL/NE 的三 seed 均值、标准差、95% 区间及配对变化；开发验证和最终 test 使用同一模板，但文档会明确禁止把 val 写成 test 结论。
 - Bug 修复独立报告：`hett-bugfix-analysis-20260911.service` 等待修复后 seed0 基线完成，随后比较原版 buggy 与 corrected 的 loss/验证曲线和逐 episode 结果。两者均关闭双向注意力，该报告不与 grounding/recovery 等创新收益混算。
 - 冻结后最终测试：`hett-frozen-final-test-20260911.service`，等待三种子验证完成；只根据 val-unseen 按“SR 至少 +3pp 且 SPL 下降不超过 1pp”冻结方案，先写 `freeze.json`，再首次显式读取 test-unseen。若没有候选过门槛，冻结修复基线。
-- 完工审计检查所有队列终态、七分支论文参数、20-epoch 完整性、checkpoint 哈希、来源快照、逐 episode 预测、三种子/训练图、历史基线可比性、每个方案三个 seed 的固定提交与源码哈希一致性、点云局部几何负结果、hard contrast、真实 GPU 双向梯度、开发阶段无 test 输出、原版 eval 卫生补丁哈希以及冻结早于最终 test。最终项数会按冻结方案动态增加，只有全部通过才会标记完成。
+- 完工审计检查所有队列终态、七分支论文参数、20-epoch 完整性、checkpoint 文件重新计算后的大小/SHA-256 与训练时记录一致、来源快照、逐 episode 预测、三种子/训练图、历史基线可比性、每个方案三个 seed 的固定提交与源码哈希一致性、点云局部几何负结果、hard contrast、真实 GPU 双向梯度、开发阶段无 test 输出、原版 eval 卫生补丁哈希以及冻结早于最终 test。最终项数会按冻结方案动态增加，只有全部通过才会标记完成。
 - 总监控器：`hett-chain-monitor-20260911.service`；不占 GPU，每 60 秒记录服务/训练状态，每完成一个 epoch 自动刷新图，输出在 `runs/chain_monitor_20260911/`。监控同时核验外层服务退出结果和 75 个内部子实验状态，只有状态实质变化才追加事件；跨心跳实测状态文件刷新而事件数保持为 1。
 - 队列状态：`/home/tenant2/Workspace/hett-experiments/00-control/runs/gpu_validation_queue_20260911/`
 - 当前等待文件：`/home/tenant2/Workspace/hett-experiments/01-teacher-fix/runs/teacher_fix_smoke_s0/status.json`

@@ -71,6 +71,28 @@ def digest(path):
     return value.hexdigest()
 
 
+def validate_checkpoint_hashes(run):
+    records = json_lines(run / 'checkpoint_hashes.jsonl')
+    latest = {row.get('file'): row for row in records if row.get('file')}
+    required = ('epoch_20.pt', 'best_val_unseen')
+    evidence = {'records': len(records), 'files': {}}
+    passed = all(name in latest for name in required)
+    for name in required:
+        record = latest.get(name)
+        path = run / 'checkpoints' / name
+        item = {'path': str(path), 'record': record, 'exists': path.is_file()}
+        if record and path.is_file():
+            item['actual_bytes'] = path.stat().st_size
+            item['bytes_match'] = item['actual_bytes'] == record.get('bytes')
+            item['actual_sha256'] = digest(path)
+            item['sha256_match'] = item['actual_sha256'] == record.get('sha256')
+            passed = passed and item['bytes_match'] and item['sha256_match']
+        else:
+            passed = False
+        evidence['files'][name] = item
+    return passed, evidence
+
+
 def run_path(mapping, name, seed):
     worktree, prefix = mapping[name]
     return ROOT / worktree / 'runs' / f'{prefix}_s{seed}'
@@ -154,6 +176,9 @@ def audit():
             for artifact in ('provenance.json', 'commands.json', 'checkpoint_hashes.jsonl'):
                 target = path / artifact
                 add(checks, f'{name} seed {seed} {artifact}', target.is_file(), str(target))
+            hashes_valid, hash_evidence = validate_checkpoint_hashes(path)
+            add(checks, f'{name} seed {seed} checkpoint contents match recorded hashes',
+                hashes_valid, hash_evidence)
             variant_provenance[name].append(read_json(path / 'provenance.json'))
             for split in ('val_seen', 'val_unseen'):
                 target = path / 'evaluation' / f'{split}_predictions.pt'

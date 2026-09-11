@@ -1,9 +1,11 @@
+import json
 import unittest
 from pathlib import Path
 import tempfile
 
 from scripts.audit_experiment_completion import (
     EVAL_VARIANTS, EXPECTED_HEADS, QUEUE_RESULTS, SEEDS, TRAIN_VARIANTS, digest, run_path,
+    validate_checkpoint_hashes,
 )
 
 
@@ -37,6 +39,25 @@ class CompletionAuditTest(unittest.TestCase):
         self.assertIn('multiseed', QUEUE_RESULTS)
         self.assertIn('final_test', QUEUE_RESULTS)
         self.assertIn('bugfix_analysis', QUEUE_RESULTS)
+
+    def test_checkpoint_hash_audit_detects_later_overwrite(self):
+        with tempfile.TemporaryDirectory() as directory:
+            run = Path(directory)
+            checkpoint = run / 'checkpoints'
+            checkpoint.mkdir()
+            rows = []
+            for name, content in [('epoch_20.pt', b'epoch'),
+                                  ('best_val_unseen', b'best')]:
+                path = checkpoint / name
+                path.write_bytes(content)
+                rows.append({'file': name, 'bytes': len(content), 'sha256': digest(path)})
+            (run / 'checkpoint_hashes.jsonl').write_text(
+                ''.join(json.dumps(row) + '\n' for row in rows))
+            self.assertTrue(validate_checkpoint_hashes(run)[0])
+            (checkpoint / 'best_val_unseen').write_bytes(b'overwritten')
+            passed, evidence = validate_checkpoint_hashes(run)
+            self.assertFalse(passed)
+            self.assertFalse(evidence['files']['best_val_unseen']['sha256_match'])
 
 
 if __name__ == '__main__':
