@@ -15,6 +15,7 @@ ROOT = CONTROL.parent
 BASELINE = Path('/home/tenant2/Workspace/hett-crotonyl/runs/hett_baseline_fixed_20260911')
 REFERENCE = Path('/home/tenant2/Workspace/hett-crotonyl/reference_baseline')
 REFERENCE_REPORT = CONTROL / 'runs/reference_baseline_audit_20260911'
+HOLD_PATH = CONTROL / 'MULTISEED_HOLD.json'
 UNITS = (
     'hett-baseline-20260911.service',
     'hett-validation-queue-20260911.service',
@@ -170,6 +171,9 @@ def snapshot():
     units = {unit: unit_state(unit) for unit in UNITS}
     run_statuses = {unit: read_json(path) for unit, path in RUN_STATUS.items()}
     experiments = {name: read_json(path) for name, path in EXPERIMENT_STATUS.items()}
+    hold = read_json(HOLD_PATH) or {}
+    held_units = (set(hold.get('held_units', []))
+                  if hold.get('status') == 'held' else set())
     alerts = list(baseline_status.get('alerts', []))
     health = batch_health(batches)
     if health['nonfinite_samples']:
@@ -182,7 +186,7 @@ def snapshot():
         if state.get('ActiveState') == 'failed' or (
                 state.get('ActiveState') == 'inactive' and state.get('ExecMainStatus') not in ('0', '')):
             alerts.append(f'{unit}: {state}')
-        if state.get('ActiveState') in ('inactive', 'not-found'):
+        if state.get('ActiveState') in ('inactive', 'not-found') and unit not in held_units:
             result = run_statuses[unit]
             if not result or result.get('phase') != 'complete':
                 alerts.append(f'{unit}: stopped without phase=complete result: {result}')
@@ -202,6 +206,7 @@ def snapshot():
         'baseline_latest_epoch': epochs[-1] if epochs else None,
         'baseline_latest_batch': batches[-1] if batches else None,
         'baseline_batch_health': health,
+        'campaign_hold': hold,
         'alerts': alerts,
     }
 
@@ -222,6 +227,7 @@ def signature(value):
         'experiments': compact_run_statuses(value['experiments']),
         'baseline_phase': value['baseline_status'].get('phase'),
         'baseline_completed_epochs': value['baseline_completed_epochs'],
+        'campaign_hold': value.get('campaign_hold'),
         'alerts': value['alerts'],
     }, sort_keys=True, ensure_ascii=False)
 

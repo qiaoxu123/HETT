@@ -30,6 +30,7 @@ class ChainMonitorTest(unittest.TestCase):
             'experiments': {'experiment': {'phase': 'training', 'time': 'first'}},
             'baseline_status': {'phase': 'training', 'gpu': '10'},
             'baseline_completed_epochs': 1,
+            'campaign_hold': {'status': 'held'},
             'alerts': [],
         }
         first = signature(value)
@@ -43,6 +44,10 @@ class ChainMonitorTest(unittest.TestCase):
         second = signature(value)
         value['run_statuses']['unit']['phase'] = 'complete'
         self.assertNotEqual(second, signature(value))
+
+        third = signature(value)
+        value['campaign_hold']['status'] = 'released'
+        self.assertNotEqual(third, signature(value))
 
 
 if __name__ == '__main__':

@@ -1,0 +1,11 @@
+{
+  "status": "held",
+  "created": "2026-09-12T07:07:00+0800",
+  "reason": "User requested that original and follow-up multi-seed runs wait until the final single-seed design is formally confirmed.",
+  "held_units": [
+    "hett-multiseed-confirmation-20260911.service",
+    "hett-frozen-final-test-20260911.service"
+  ],
+  "resume_condition": "Explicit user confirmation after reviewing the complete seed-0 matrix.",
+  "completed_additional_seed_runs": 0
+}
