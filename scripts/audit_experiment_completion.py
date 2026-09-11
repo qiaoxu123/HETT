@@ -211,6 +211,8 @@ def audit():
         CONTROL / 'runs/multiseed_confirmation_20260911/analysis/summary.json',
         CONTROL / 'runs/multiseed_confirmation_20260911/analysis/multiseed_metrics.png',
         CONTROL / 'runs/multiseed_confirmation_20260911/analysis/multiseed_paired_deltas.png',
+        CONTROL / 'runs/multiseed_confirmation_20260911/analysis/failure_cases.json',
+        CONTROL / 'runs/multiseed_confirmation_20260911/analysis/failure_cases.png',
         CONTROL / 'runs/multiseed_confirmation_20260911/training_analysis/summary.json',
         CONTROL / 'runs/multiseed_confirmation_20260911/training_analysis/training_curves.png',
         CONTROL / 'runs/multiseed_confirmation_20260911/training_analysis/weighted_loss_components.png',
@@ -282,6 +284,11 @@ def audit():
                 {'freeze_mtime_ns': freeze_time})
         final_summary = final_dir / 'analysis/summary.json'
         add(checks, 'final test analysis', final_summary.is_file(), str(final_summary))
+        for name in ('failure_cases.json', 'failure_cases.png'):
+            target = final_dir / 'analysis' / name
+            add(checks, f'final test {name}',
+                target.is_file() and target.stat().st_size > 0 if target.exists() else False,
+                str(target))
 
     failed = [check for check in checks if not check['passed']]
     return {'complete': not failed, 'checks': checks, 'failed_count': len(failed),

@@ -69,6 +69,100 @@ def aggregate(loaded, pairs):
     return result
 
 
+CASE_FIELDS = (
+    'id', 'map', 'success', 'any_success', 'hit_then_lost', 'false_stop',
+    'stopped', 'final_distance', 'best_distance', 'actions', 'stage1_actions',
+    'stage2_actions', 'switches', 'recoveries',
+)
+
+
+def compact_case(row):
+    return {name: row.get(name) for name in CASE_FIELDS}
+
+
+def select_failure_cases(loaded, pairs, limit=20):
+    """Build readable indices into the preserved per-episode trajectories."""
+    output = {'runs': {}, 'pairs': {}}
+    for name, seeds in loaded.items():
+        output['runs'][name] = {}
+        for seed, run in sorted(seeds.items()):
+            output['runs'][name][str(seed)] = {}
+            for split, values in run.items():
+                rows = list(values['episodes'].values())
+                worst = sorted(rows, key=lambda row: row['final_distance'], reverse=True)[:limit]
+                hit_lost = sorted((row for row in rows if row.get('hit_then_lost')),
+                                  key=lambda row: row['final_distance'], reverse=True)[:limit]
+                false_stop = sorted((row for row in rows if row.get('false_stop')),
+                                    key=lambda row: row['final_distance'], reverse=True)[:limit]
+                output['runs'][name][str(seed)][split] = {
+                    'episodes': len(rows),
+                    'worst_final_distance': [compact_case(row) for row in worst],
+                    'hit_then_lost': [compact_case(row) for row in hit_lost],
+                    'false_stops': [compact_case(row) for row in false_stop],
+                }
+    for left, right in pairs:
+        identity = f'{left}:{right}'
+        output['pairs'][identity] = {}
+        for seed in sorted(set(loaded[left]) & set(loaded[right])):
+            output['pairs'][identity][str(seed)] = {}
+            splits = sorted(set(loaded[left][seed]) & set(loaded[right][seed]))
+            for split in splits:
+                before = loaded[left][seed][split]['episodes']
+                after = loaded[right][seed][split]['episodes']
+                common = sorted(set(before) & set(after))
+
+                def paired_row(key):
+                    old, new = before[key], after[key]
+                    return {
+                        'id': key, 'map': old['map'],
+                        'before_success': old['success'], 'after_success': new['success'],
+                        'before_final_distance': old['final_distance'],
+                        'after_final_distance': new['final_distance'],
+                        'final_distance_delta': new['final_distance'] - old['final_distance'],
+                    }
+
+                cases = [paired_row(key) for key in common]
+                regressions = sorted((row for row in cases if row['before_success'] and
+                                      not row['after_success']),
+                                     key=lambda row: row['final_distance_delta'], reverse=True)
+                rescues = sorted((row for row in cases if not row['before_success'] and
+                                  row['after_success']),
+                                 key=lambda row: row['final_distance_delta'])
+                distance_regressions = sorted(
+                    (row for row in cases if row['final_distance_delta'] > 0),
+                    key=lambda row: row['final_distance_delta'], reverse=True)
+                output['pairs'][identity][str(seed)][split] = {
+                    'success_regressions': regressions[:limit],
+                    'success_rescues': rescues[:limit],
+                    'largest_distance_regressions': distance_regressions[:limit],
+                }
+    return output
+
+
+def plot_failure_rates(loaded, output):
+    labels, hit_lost, false_stop = [], [], []
+    for name, seeds in loaded.items():
+        for seed, run in sorted(seeds.items()):
+            for split, values in run.items():
+                rows = list(values['episodes'].values())
+                labels.append(f'{name}:s{seed}\n{split}')
+                hit_lost.append(100 * np.mean([bool(row.get('hit_then_lost')) for row in rows]))
+                false_stop.append(100 * np.mean([bool(row.get('false_stop')) for row in rows]))
+    x = np.arange(len(labels))
+    fig, axes = plt.subplots(2, 1, figsize=(max(12, len(labels) * .8), 8),
+                             constrained_layout=True)
+    for axis, values, title, color in (
+            (axes[0], hit_lost, 'Reached success radius, then finished outside', '#d97706'),
+            (axes[1], false_stop, 'Stopped outside success radius', '#dc2626')):
+        axis.bar(x, values, color=color)
+        axis.set_ylabel('episodes (%)')
+        axis.set_title(title)
+        axis.set_xticks(x, labels, rotation=35, ha='right')
+        axis.grid(axis='y', alpha=.15)
+    fig.savefig(output, dpi=180)
+    plt.close(fig)
+
+
 def plot(result, output_dir):
     names = list(result['runs'])
     available = [name for name in names if 'val_unseen' in result['runs'][name]]
@@ -120,6 +214,10 @@ def main():
     (args.output_dir / 'summary.json').write_text(
         json.dumps(result, indent=2, ensure_ascii=False) + '\n')
     plot(result, args.output_dir)
+    failures = select_failure_cases(loaded, pairs)
+    (args.output_dir / 'failure_cases.json').write_text(
+        json.dumps(failures, indent=2, ensure_ascii=False) + '\n')
+    plot_failure_rates(loaded, args.output_dir / 'failure_cases.png')
     print(json.dumps(result, indent=2, ensure_ascii=False))
 
 

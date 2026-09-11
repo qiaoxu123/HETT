@@ -51,6 +51,7 @@ grounding 的监督覆盖：train_seen 10,734 个状态中可见 63.49%，val_un
 - 完整 seed-0 对照矩阵：`hett-full-seed0-matrix-20260911.service`，等待修复后完整基线成功后启动；包含 11 个预声明任务和配对分析，训练任务均为 20 epochs、全数据、`save_every=20`。
 - 三种子确认矩阵：`hett-multiseed-confirmation-20260911.service`，将在 seed-0 矩阵成功后运行 seed 17、42；每个种子含 10 个完整任务，每项启动前检查至少 16 GiB 可用磁盘。完成后自动汇总 seeds 0/17/42，报告均值、样本标准差、95% 区间和逐 seed 配对变化，并生成两张比较图。
 - 训练动态分析与三种子结果一起自动执行：覆盖 7 个真实训练方案，输出 loss 和 val-unseen SR/SPL/NE 的均值±seed 标准差曲线、四项加权 loss 组成、每 seed 耗时、最佳 epoch 和峰值显存。recovery/combined 只做控制评估，不伪造训练曲线。
+- 三种子与最终测试汇总会额外保存失败案例索引：最差终点、曾进入成功半径后又丢失、错误停止，以及相对基线被救回/被弄坏的配对 episode；同时绘制两类关键失败率。索引不替代原始逐 episode 轨迹。
 - Bug 修复独立报告：`hett-bugfix-analysis-20260911.service` 等待修复后 seed0 基线完成，随后比较原版 buggy 与 corrected 的 loss/验证曲线和逐 episode 结果。两者均关闭双向注意力，该报告不与 grounding/recovery 等创新收益混算。
 - 冻结后最终测试：`hett-frozen-final-test-20260911.service`，等待三种子验证完成；只根据 val-unseen 按“SR 至少 +3pp 且 SPL 下降不超过 1pp”冻结方案，先写 `freeze.json`，再首次显式读取 test-unseen。若没有候选过门槛，冻结修复基线。
 - 完工审计检查所有队列终态、七分支论文参数、20-epoch 完整性、checkpoint 哈希、来源快照、逐 episode 预测、三种子/训练图、历史基线可比性、每个方案三个 seed 的固定提交与源码哈希一致性、点云局部几何负结果、hard contrast、真实 GPU 双向梯度、开发阶段无 test 输出、原版 eval 卫生补丁哈希以及冻结早于最终 test。最终项数会按冻结方案动态增加，只有全部通过才会标记完成。
