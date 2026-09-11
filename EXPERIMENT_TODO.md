@@ -15,6 +15,7 @@
 | 3 | 03-grounding | codex/verify-grounding | 保留局部视觉信息，学习语言与目标区域对应 |
 | 4 | 04-combined | codex/verify-grounding-recovery | 验证定位与恢复是否互补 |
 | 5 | 05-hypotheses | codex/verify-multi-hypothesis | 备选：多目标假设与观测证据更新 |
+| 6 | 06-bidir | codex/verify-bidirectional-attention | 独立验证双向注意力，不与其他结构混算 |
 
 ## 隔离与公平性约定
 
@@ -41,6 +42,7 @@
 - [ ] 4：组合已验证的定位和恢复模块，与单模块使用同一训练协议比较。
 - [ ] 5：若主要方案效果不足，再验证多假设方案；不在测试集反复选结构。
 - [ ] 最终：至少 3 个训练种子，完整 unseen 集，按地图配对统计及置信区间，保存失败案例和绘图。
+- [ ] 双向注意力：整网双向梯度已验证；待真实数据单卡开/关短训及完整对照。
 
 ## 每次实验必须保存
 
