@@ -21,6 +21,16 @@ UNITS = (
     'hett-loss-ablation-20260911.service',
     'hett-corrected-baseline-full-s0-20260911.service',
 )
+RUN_STATUS = {
+    'hett-baseline-20260911.service': BASELINE / 'status.json',
+    'hett-validation-queue-20260911.service': CONTROL / 'runs/gpu_validation_queue_20260911/status.json',
+    'hett-post-smoke-ablations-20260911.service': CONTROL / 'runs/post_smoke_ablations_20260911/status.json',
+    'hett-hypothesis-ablations-20260911.service': CONTROL / 'runs/hypothesis_ablations_20260911/status.json',
+    'hett-grounding-contrast-20260911.service': CONTROL / 'runs/grounding_contrast_queue_20260911/status.json',
+    'hett-bidir-validation-20260911.service': CONTROL / 'runs/bidir_validation_queue_20260911/status.json',
+    'hett-loss-ablation-20260911.service': CONTROL / 'runs/loss_ablation_queue_20260911/status.json',
+    'hett-corrected-baseline-full-s0-20260911.service': CONTROL / 'runs/full_corrected_baseline_queue_s0_20260911/status.json',
+}
 
 
 def stamp():
@@ -67,13 +77,19 @@ def snapshot():
     epochs = json_lines(BASELINE / 'checkpoints/epoch_metrics.jsonl')
     batches = json_lines(BASELINE / 'checkpoints/batch_metrics.jsonl')
     units = {unit: unit_state(unit) for unit in UNITS}
+    run_statuses = {unit: read_json(path) for unit, path in RUN_STATUS.items()}
     alerts = list(baseline_status.get('alerts', []))
     for unit, state in units.items():
         if state.get('ActiveState') == 'failed' or (
                 state.get('ActiveState') == 'inactive' and state.get('ExecMainStatus') not in ('0', '')):
             alerts.append(f'{unit}: {state}')
+        if state.get('ActiveState') in ('inactive', 'not-found'):
+            result = run_statuses[unit]
+            if not result or result.get('phase') != 'complete':
+                alerts.append(f'{unit}: stopped without phase=complete result: {result}')
     return {
-        'time': stamp(), 'units': units, 'baseline_status': baseline_status,
+        'time': stamp(), 'units': units, 'run_statuses': run_statuses,
+        'baseline_status': baseline_status,
         'baseline_completed_epochs': len(epochs),
         'baseline_latest_epoch': epochs[-1] if epochs else None,
         'baseline_latest_batch': batches[-1] if batches else None,
@@ -81,9 +97,19 @@ def snapshot():
     }
 
 
+def compact_run_statuses(statuses):
+    tracked = ('phase', 'unit', 'job', 'experiment', 'exit_code', 'reason')
+    return {
+        unit: ({key: status[key] for key in tracked if key in status}
+               if isinstance(status, dict) else status)
+        for unit, status in statuses.items()
+    }
+
+
 def signature(value):
     return json.dumps({
         'units': value['units'],
+        'run_statuses': compact_run_statuses(value['run_statuses']),
         'baseline_phase': value['baseline_status'].get('phase'),
         'baseline_completed_epochs': value['baseline_completed_epochs'],
         'alerts': value['alerts'],
@@ -114,11 +140,12 @@ def main():
         temporary.write_text(json.dumps(current, indent=2, ensure_ascii=False) + '\n')
         temporary.replace(args.output_dir / 'status.json')
         current_signature = signature(current)
-        if current_signature != previous_signature:
+        changed = current_signature != previous_signature
+        if changed:
             with (args.output_dir / 'events.jsonl').open('a') as stream:
                 stream.write(json.dumps(current, ensure_ascii=False) + '\n')
             previous_signature = current_signature
-        if current['alerts']:
+        if changed and current['alerts']:
             with (args.output_dir / 'alerts.jsonl').open('a') as stream:
                 stream.write(json.dumps(current, ensure_ascii=False) + '\n')
         if current['baseline_completed_epochs'] != plotted_epochs:
