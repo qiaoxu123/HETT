@@ -12,6 +12,8 @@ PYTHON = '/home/tenant2/miniconda3/envs/AirVLN39/bin/python'
 CONTROL = Path('/home/tenant2/Workspace/hett-experiments/00-control')
 ROOT = CONTROL.parent
 BASELINE = Path('/home/tenant2/Workspace/hett-crotonyl/runs/hett_baseline_fixed_20260911')
+REFERENCE = Path('/home/tenant2/Workspace/hett-crotonyl/reference_baseline')
+REFERENCE_REPORT = CONTROL / 'runs/reference_baseline_audit_20260911'
 UNITS = (
     'hett-baseline-20260911.service',
     'hett-validation-queue-20260911.service',
@@ -195,7 +197,8 @@ def main():
     args = parser.parse_args()
     if args.interval < 10:
         parser.error('interval must be at least 10 seconds')
-    args.output_dir.mkdir(parents=True, exist_ok=False)
+    # A monitor restart must preserve the existing event history and reports.
+    args.output_dir.mkdir(parents=True, exist_ok=True)
     stopping = False
 
     def stop(*unused):
@@ -225,6 +228,12 @@ def main():
                       '--run-dir', str(BASELINE),
                       '--output-dir', str(args.output_dir / 'baseline_report')]
             subprocess.run(report, cwd=CONTROL, check=True)
+            reference_report = [
+                PYTHON, str(CONTROL / 'scripts/audit_reference_baseline.py'),
+                '--reference-dir', str(REFERENCE), '--live-run', str(BASELINE),
+                '--output-dir', str(REFERENCE_REPORT),
+            ]
+            subprocess.run(reference_report, cwd=CONTROL, check=True)
             plotted_epochs = current['baseline_completed_epochs']
         time.sleep(args.interval)
     final = snapshot()
