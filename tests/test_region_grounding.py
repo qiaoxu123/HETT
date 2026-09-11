@@ -64,6 +64,13 @@ class RegionGroundingTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.module.embed(torch.randn(2, 2, 8, 49))
 
+    def test_visual_shuffle_changes_region_scores(self):
+        regions = self.module.embed(self.frames)
+        original, _ = self.module.ground(regions, self.language, self.mask)
+        shuffled_regions = self.module.embed(self.frames.flip(0))
+        shuffled, _ = self.module.ground(shuffled_regions, self.language, self.mask)
+        self.assertGreater((original[:, :49] - shuffled[:, :49]).abs().max().item(), 0)
+
 
 if __name__ == '__main__':
     unittest.main()

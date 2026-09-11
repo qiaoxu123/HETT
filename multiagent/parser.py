@@ -128,6 +128,8 @@ def parse_args():
     parser.add_argument('--enable_region_grounding', action='store_true',
                         help='retain 7x7 visual regions and supervise visible/outside grounding')
     parser.add_argument('--region_loss_weight', type=float, default=0.1)
+    parser.add_argument('--grounding_ablation', choices=['none', 'shuffle_language', 'shuffle_visual'],
+                        default='none', help='evaluation-only grounding sensitivity check')
 
     # logger
     parser.add_argument('--log_every', type=int, default=1)
@@ -192,6 +194,8 @@ def parse_args():
         parser.error('stage recovery/stop patience must be positive')
     if args.region_loss_weight < 0:
         parser.error('region_loss_weight must be nonnegative')
+    if args.mode == 'train' and args.grounding_ablation != 'none':
+        parser.error('grounding_ablation is evaluation-only')
     if args.save_every < 1:
         parser.error('save_every must be positive')
     if args.checkpoint and not Path(args.checkpoint).is_absolute():
