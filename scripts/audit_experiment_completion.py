@@ -25,6 +25,15 @@ EVAL_VARIANTS = {
     'recovery_on': ('02-recovery', 'recovery_on_full_eval'),
     'combined': ('04-combined', 'combined_full_eval'),
 }
+EXPECTED_HEADS = {
+    '01-teacher-fix': '507355bb8d6631ab415a03fd74fd26113c099945',
+    '02-recovery': 'b1c55c2a37332290b0afa59de1c66d537a989502',
+    '03-grounding': '6630459986044da2144128ed2a2c70dd4fb762b2',
+    '04-combined': 'bf132b044e2af8f1f5c76d21d3c4f33c54282c25',
+    '05-hypotheses': '55cb3bfaf9ff2f5dc7ee014a58218ce834b32768',
+    '06-bidir': 'b76f9b659dc496583ddcb27745f58a09883cb746',
+    '07-loss-ablation': '9b50ad4a636f4985c4392f2cc799c9cf44d46907',
+}
 QUEUE_RESULTS = {
     'smoke': CONTROL / 'runs/gpu_validation_queue_20260911/status.json',
     'grounding_ablations': CONTROL / 'runs/post_smoke_ablations_20260911/status.json',
@@ -123,7 +132,9 @@ def audit():
             status.get('phase') in accepted, status)
 
     development_runs = []
+    variant_provenance = {}
     for name in TRAIN_VARIANTS:
+        variant_provenance[name] = []
         for seed in SEEDS:
             path = run_path(TRAIN_VARIANTS, name, seed)
             development_runs.append(path)
@@ -136,19 +147,38 @@ def audit():
             for artifact in ('provenance.json', 'commands.json', 'checkpoint_hashes.jsonl'):
                 target = path / artifact
                 add(checks, f'{name} seed {seed} {artifact}', target.is_file(), str(target))
+            variant_provenance[name].append(read_json(path / 'provenance.json'))
             for split in ('val_seen', 'val_unseen'):
                 target = path / 'evaluation' / f'{split}_predictions.pt'
                 add(checks, f'{name} seed {seed} {split}', target.is_file(), str(target))
     for name in EVAL_VARIANTS:
+        variant_provenance[name] = []
         for seed in SEEDS:
             path = run_path(EVAL_VARIANTS, name, seed)
             development_runs.append(path)
             status = read_json(path / 'status.json')
+            variant_provenance[name].append(read_json(path / 'provenance.json'))
             add(checks, f'{name} seed {seed} complete', status is not None and
                 status.get('phase') == 'complete', status)
             for split in ('val_seen', 'val_unseen'):
                 target = path / 'evaluation' / f'{split}_predictions.pt'
                 add(checks, f'{name} seed {seed} {split}', target.is_file(), str(target))
+
+    all_variants = {**TRAIN_VARIANTS, **EVAL_VARIANTS}
+    for name, (worktree, unused_prefix) in all_variants.items():
+        provenances = variant_provenance[name]
+        heads = [item.get('git_head') if item else None for item in provenances]
+        source_hashes = [item.get('source_sha256') if item else None for item in provenances]
+        add(checks, f'{name} uses declared source commit for all seeds',
+            len(heads) == len(SEEDS) and all(
+                head == EXPECTED_HEADS[worktree] for head in heads),
+            {'expected': EXPECTED_HEADS[worktree], 'actual': heads})
+        add(checks, f'{name} source snapshot identical across seeds',
+            len(source_hashes) == len(SEEDS) and source_hashes[0] is not None and
+            all(value == source_hashes[0] for value in source_hashes[1:]),
+            {'source_hash_sets': [len(value) if value else None for value in source_hashes],
+             'identical': (source_hashes[0] is not None and
+                           all(value == source_hashes[0] for value in source_hashes[1:]))})
 
     seed0_controls = [
         ROOT / '03-grounding/runs/grounding_disabled_full_eval_s0',

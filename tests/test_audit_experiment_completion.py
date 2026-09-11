@@ -3,7 +3,7 @@ from pathlib import Path
 import tempfile
 
 from scripts.audit_experiment_completion import (
-    EVAL_VARIANTS, QUEUE_RESULTS, SEEDS, TRAIN_VARIANTS, digest, run_path,
+    EVAL_VARIANTS, EXPECTED_HEADS, QUEUE_RESULTS, SEEDS, TRAIN_VARIANTS, digest, run_path,
 )
 
 
@@ -26,6 +26,10 @@ class CompletionAuditTest(unittest.TestCase):
                  for mapping in (TRAIN_VARIANTS, EVAL_VARIANTS)
                  for name in mapping for seed in SEEDS}
         self.assertEqual(len(paths), 30)
+        self.assertEqual({worktree for worktree, unused in
+                          (*TRAIN_VARIANTS.values(), *EVAL_VARIANTS.values())},
+                         set(EXPECTED_HEADS))
+        self.assertTrue(all(len(head) == 40 for head in EXPECTED_HEADS.values()))
 
     def test_queue_manifest_reaches_frozen_final_test(self):
         self.assertEqual(len(QUEUE_RESULTS), 11)
