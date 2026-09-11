@@ -282,6 +282,16 @@ class CityNavBatch(torch.utils.data.IterableDataset):
             pred_goal_xy = np.mean(centroids, axis=0) if centroids else np.array([0, 0])
 
             rgb = cropclient.crop_image(episode.map_name, poses[i], (224, 224), 'rgb')
+            if 'test' in self.split:
+                # Test actions must not even carry the local GT supervision label.
+                region_target = self.args.ignoreid
+            else:
+                target_pixel, target_visible = cropclient.project_world_to_crop(
+                    episode.map_name, poses[i], episode.target_position.xy, (224, 224)
+                )
+                region_target = cropclient.region_target_from_crop(
+                    target_pixel, target_visible, (224, 224), grid_size=7
+                )
             progress = np.clip(
                 1 - episode.target_position.xy.dist_to(poses[i].xy) / 100,
                 0, 1)
@@ -302,7 +312,8 @@ class CityNavBatch(torch.utils.data.IterableDataset):
                 'centroids': np.mean(normalized_centroids, axis=0) if normalized_centroids else np.array([0, 0]),
                 'centroid_goal': pred_goal_xy,
                 'normalized_goal': normalized_goal_xys,
-                'grid_goal': normalized_goal_id
+                'grid_goal': normalized_goal_id,
+                'region_target': region_target,
             })
 
             # TODO: what to use for a2c reward?

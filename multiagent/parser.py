@@ -118,6 +118,9 @@ def parse_args():
     parser.add_argument('--target_loss_weight', type=float, default=0.1,
                         help='auxiliary grid loss from released code (not specified in paper)')
     parser.add_argument('--disable_task_interaction', action='store_true')
+    parser.add_argument('--enable_region_grounding', action='store_true',
+                        help='retain 7x7 visual regions and supervise visible/outside grounding')
+    parser.add_argument('--region_loss_weight', type=float, default=0.1)
 
     # logger
     parser.add_argument('--log_every', type=int, default=1)
@@ -176,6 +179,8 @@ def parse_args():
     args = parser.parse_args()
     if args.grad_accum < 1 or args.batch_size < 1 or args.max_episodes < 0:
         parser.error('grad_accum/batch_size must be positive; max_episodes must be nonnegative')
+    if args.region_loss_weight < 0:
+        parser.error('region_loss_weight must be nonnegative')
     if args.checkpoint and not Path(args.checkpoint).is_absolute():
         args.checkpoint = str(PROJECT_ROOT / args.checkpoint)
     output_dir = Path(args.output_dir)
