@@ -40,6 +40,7 @@ grounding 的监督覆盖：train_seen 10,734 个状态中可见 63.49%，val_un
 - 双向注意力服务：`hett-bidir-validation-20260911.service`，等待 hard contrast 完成。
 - Loss 消融 smoke 服务：`hett-loss-ablation-20260911.service`，等待双向注意力验证完成。
 - 修复后完整基线 seed 0：`hett-corrected-baseline-full-s0-20260911.service`，等待所有 smoke 成功完成后启动；20 epochs、全数据、`save_every=20`。
+- 总监控器：`hett-chain-monitor-20260911.service`；不占 GPU，每 60 秒记录服务/训练状态，每完成一个 epoch 自动刷新图，输出在 `runs/chain_monitor_20260911/`。
 - 队列状态：`/home/tenant2/Workspace/hett-experiments/00-control/runs/gpu_validation_queue_20260911/`
 - 当前等待文件：`/home/tenant2/Workspace/hett-experiments/01-teacher-fix/runs/teacher_fix_smoke_s0/status.json`
 
@@ -52,3 +53,5 @@ grounding 的监督覆盖：train_seen 10,734 个状态中可见 63.49%，val_un
 短跑通过只表示能在 RTX 5090 上完成真实数据前向、反向、保存和评估。之后仍需依据结果启动完整训练；不能把短跑指标当最终性能。
 
 完整修复后基线是必跑项，已设失败门：任一前置 smoke 失败，它不会启动。grounding、双向注意力、多假设和 loss 消融的完整多种子训练仍需依据真实 smoke 与修复后基线结果逐项放行，避免把 4-episode 噪声当作选型依据。
+
+原版与修复后基线的归因边界记录在 `01-teacher-fix/BASELINE_CAUSALITY.md`：两者都关闭双向注意力；训练信号层面的核心变化只有 batch 内 teacher 轨迹计数独立化，其余是记录、保存、评估卫生和 CPU 可测性修复。
