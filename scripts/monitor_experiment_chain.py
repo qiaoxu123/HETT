@@ -22,6 +22,7 @@ UNITS = (
     'hett-loss-ablation-20260911.service',
     'hett-corrected-baseline-full-s0-20260911.service',
     'hett-full-seed0-matrix-20260911.service',
+    'hett-multiseed-confirmation-20260911.service',
 )
 RUN_STATUS = {
     'hett-baseline-20260911.service': BASELINE / 'status.json',
@@ -33,6 +34,7 @@ RUN_STATUS = {
     'hett-loss-ablation-20260911.service': CONTROL / 'runs/loss_ablation_queue_20260911/status.json',
     'hett-corrected-baseline-full-s0-20260911.service': CONTROL / 'runs/full_corrected_baseline_queue_s0_20260911/status.json',
     'hett-full-seed0-matrix-20260911.service': CONTROL / 'runs/full_seed0_matrix_20260911/status.json',
+    'hett-multiseed-confirmation-20260911.service': CONTROL / 'runs/multiseed_confirmation_20260911/status.json',
 }
 EXPERIMENT_STATUS = {
     'teacher_fix_smoke': ROOT / '01-teacher-fix/runs/teacher_fix_smoke_s0/status.json',
@@ -64,6 +66,19 @@ EXPERIMENT_STATUS = {
     'loss_no_progress_full_s0': ROOT / '07-loss-ablation/runs/loss_no_progress_full_s0/status.json',
     'loss_neither_full_s0': ROOT / '07-loss-ablation/runs/loss_neither_full_s0/status.json',
 }
+for _seed in (17, 42):
+    EXPERIMENT_STATUS.update({
+        f'teacher_fix_full_s{_seed}': ROOT / f'01-teacher-fix/runs/teacher_fix_full_s{_seed}/status.json',
+        f'recovery_off_full_eval_s{_seed}': ROOT / f'02-recovery/runs/recovery_off_full_eval_s{_seed}/status.json',
+        f'recovery_on_full_eval_s{_seed}': ROOT / f'02-recovery/runs/recovery_on_full_eval_s{_seed}/status.json',
+        f'grounding_full_s{_seed}': ROOT / f'03-grounding/runs/grounding_full_s{_seed}/status.json',
+        f'combined_full_eval_s{_seed}': ROOT / f'04-combined/runs/combined_full_eval_s{_seed}/status.json',
+        f'hypothesis_full_s{_seed}': ROOT / f'05-hypotheses/runs/hypothesis_full_s{_seed}/status.json',
+        f'bidir_full_s{_seed}': ROOT / f'06-bidir/runs/bidir_full_s{_seed}/status.json',
+        f'loss_paper_only_full_s{_seed}': ROOT / f'07-loss-ablation/runs/loss_paper_only_full_s{_seed}/status.json',
+        f'loss_no_progress_full_s{_seed}': ROOT / f'07-loss-ablation/runs/loss_no_progress_full_s{_seed}/status.json',
+        f'loss_neither_full_s{_seed}': ROOT / f'07-loss-ablation/runs/loss_neither_full_s{_seed}/status.json',
+    })
 
 
 def stamp():
