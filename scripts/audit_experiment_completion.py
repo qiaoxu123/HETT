@@ -99,6 +99,23 @@ def audit():
         {'provenance': original_hash,
          'expected': hygiene.get('sha256_before') if hygiene else None})
 
+    reference_dir = CONTROL / 'runs/reference_baseline_audit_20260911'
+    reference = read_json(reference_dir / 'report.json')
+    reference_audit = (reference or {}).get('audit', {})
+    reference_artifacts = [reference_dir / name
+                           for name in ('report.json', 'README.md', 'comparison.png')]
+    add(checks, 'historical baseline audit artifacts',
+        all(path.is_file() and path.stat().st_size > 0 for path in reference_artifacts),
+        [str(path) for path in reference_artifacts])
+    add(checks, 'historical baseline comparability is qualified',
+        reference is not None and
+        reference_audit.get('has_epoch_0_to_11_log') is True and
+        reference_audit.get('has_epoch_11_to_19_resume_log') is True and
+        reference_audit.get('has_checkpoint') is False and
+        reference_audit.get('single_continuous_lineage') is False and
+        reference_audit.get('strict_paper_loss_match') is False,
+        reference_audit)
+
     for name, path in QUEUE_RESULTS.items():
         status = read_json(path)
         accepted = {'complete'} if name != 'final_test' else {'complete', 'auditing'}
