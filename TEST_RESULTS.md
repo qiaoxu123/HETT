@@ -26,6 +26,8 @@
 - 轨迹越界：返回 -1，保持读取最终 pose 的历史行为。
 - 空轨迹：显式报错。
 - `agent.py`、辅助模块和测试均通过 Python 语法编译。
+- 测试/验证调用现在显式传入 split 名，`test_unseen` 不再进入 GT loss 分支。
+- `save_every` 已真正控制不可变 epoch 归档，最终 epoch 仍强制保留。
 
 ## 尚未完成
 
