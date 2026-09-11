@@ -1,6 +1,6 @@
 # HETT 验证状态
 
-更新时间：2026-09-11 22:52 +08:00
+更新时间：2026-09-11 23:01 +08:00
 
 ## 当前结论
 
@@ -24,7 +24,7 @@ grounding 的监督覆盖：train_seen 10,734 个状态中可见 63.49%，val_un
 
 论文参数机器审计通过：20 epochs、batch 2、1e-4、AdamW、grid 5、三项主 loss 权重 2.0/1.5/0.1 均匹配；单卡用累积 4 保持有效 episode batch 8。发布代码额外的 target-grid 权重 0.1 未写入论文三项 loss，因此已建立独立消融，不把它默认当作论文结论。
 
-原版基线当前处于 epoch 2，GPU、日志、磁盘均无告警。它使用启动时源码快照，不受这些 worktree 提交影响。
+原版基线当前处于 epoch 2，最新记录为 7,500/10,939 batch（约 68.6%）；GPU、日志、磁盘均无告警。它使用启动时源码快照，不受这些 worktree 提交影响。
 
 开发评估默认只构建 `val_seen` 和 `val_unseen`；`test_unseen` 现在必须显式传 `--include_test_unseen`，仅供方案冻结后的最终报告。旧等待链在真正训练/评估前已停止并移动到 `*.pre_val_only_20260911_2248` 归档，新链的 teacher 源码快照确认来自 `d837182`。
 
@@ -40,7 +40,7 @@ grounding 的监督覆盖：train_seen 10,734 个状态中可见 63.49%，val_un
 - 双向注意力服务：`hett-bidir-validation-20260911.service`，等待 hard contrast 完成。
 - Loss 消融 smoke 服务：`hett-loss-ablation-20260911.service`，等待双向注意力验证完成。
 - 修复后完整基线 seed 0：`hett-corrected-baseline-full-s0-20260911.service`，等待所有 smoke 成功完成后启动；20 epochs、全数据、`save_every=20`。
-- 总监控器：`hett-chain-monitor-20260911.service`；不占 GPU，每 60 秒记录服务/训练状态，每完成一个 epoch 自动刷新图，输出在 `runs/chain_monitor_20260911/`。
+- 总监控器：`hett-chain-monitor-20260911.service`；不占 GPU，每 60 秒记录服务/训练状态，每完成一个 epoch 自动刷新图，输出在 `runs/chain_monitor_20260911/`。监控同时核验短暂服务退出后的 `status.json`，只有状态实质变化才追加事件；跨心跳实测状态文件刷新而事件数保持为 1。
 - 队列状态：`/home/tenant2/Workspace/hett-experiments/00-control/runs/gpu_validation_queue_20260911/`
 - 当前等待文件：`/home/tenant2/Workspace/hett-experiments/01-teacher-fix/runs/teacher_fix_smoke_s0/status.json`
 
