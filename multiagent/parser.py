@@ -187,6 +187,8 @@ def parse_args():
         parser.error('stage_recovery_distance must be greater than stage_enter_distance')
     if args.stage_recovery_patience < 1 or args.progress_stop_patience < 1:
         parser.error('stage recovery/stop patience must be positive')
+    if args.save_every < 1:
+        parser.error('save_every must be positive')
     if args.checkpoint and not Path(args.checkpoint).is_absolute():
         args.checkpoint = str(PROJECT_ROOT / args.checkpoint)
     output_dir = Path(args.output_dir)
