@@ -27,7 +27,7 @@ from torch.utils.data.dataloader import DataLoader
 
 def get_tokenizer(args):
     from transformers import AutoTokenizer
-    tokenizer = AutoTokenizer.from_pretrained('/cver/xcding/code/tokenizer_files/bert-base-uncase')
+    tokenizer = AutoTokenizer.from_pretrained('bert-base-uncased')
     return tokenizer
 
 
@@ -124,6 +124,7 @@ def train(args, train_env, val_envs, rank=-1):
     # first evaluation
     if args.eval_first:
         loss_str = ""
+        start_epoch = 0
         if default_gpu:
 
             for env_name, env in val_envs.items():
@@ -153,6 +154,7 @@ def train(args, train_env, val_envs, rank=-1):
                     if score_summary['sr'] >= best_val[env_name]['sr']:
                         best_val[env_name]['sr'] = score_summary['sr']
                         best_val[env_name]['state'] = 'Epoch %d %s' % (start_epoch, loss_str)
+                del agent_eval
             write_to_record_file(loss_str, record_file)
 
     torch.cuda.empty_cache()
@@ -227,11 +229,8 @@ def train(args, train_env, val_envs, rank=-1):
             loss_str = "\nepoch {}".format(idx)
 
             agent.save(idx, os.path.join(GOAL_PREDICTOR_CHECKPOINT_DIR, "latest"))
-            agent_class_eval = NavCMTAgent
-            agent_eval = agent_class_eval(args, rank=rank, allow_ngpus=False)
-            print("Loaded the listener model at epoch %d from %s" % \
-                  (agent_eval.load(os.path.join(GOAL_PREDICTOR_CHECKPOINT_DIR, "latest")),
-                   os.path.join(GOAL_PREDICTOR_CHECKPOINT_DIR, "latest")))
+            # Reuse the trained modules: avoid a second BERT/Darknet/ET on one GPU.
+            agent_eval = agent
             for env_name, env in val_envs.items():
                 agent_eval.logs = defaultdict(list)
                 agent_eval.env = env
@@ -368,7 +367,10 @@ def visualize(args, vis_envs, rank=-1):
 
 
 def main():
+    global GOAL_PREDICTOR_CHECKPOINT_DIR
     args = parse_args()
+    GOAL_PREDICTOR_CHECKPOINT_DIR = args.output_dir
+    os.makedirs(GOAL_PREDICTOR_CHECKPOINT_DIR, exist_ok=True)
     rank = 0
     # if args.train_val_on_full:
     #     args.max_action_len *= 4

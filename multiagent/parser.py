@@ -1,4 +1,6 @@
 import argparse
+from pathlib import Path
+from multiagent.defaultpaths import PROJECT_ROOT, WEIGHTS_DIR, GOAL_PREDICTOR_CHECKPOINT_DIR
 from typing import Literal, Optional
 from dataclasses import dataclass, asdict
 
@@ -91,7 +93,7 @@ def parse_args():
     parser.add_argument('--ignore_id', type=int, default=-100, help='ignoreid for action')
 
     # model
-    parser.add_argument('--grid_size', type=int, default=7)
+    parser.add_argument('--grid_size', type=int, default=5)
     parser.add_argument('--demb', type=int, default=768)
     parser.add_argument('--encoder_heads', type=int, default=12)
     parser.add_argument('--encoder_layers', type=int, default=2)
@@ -107,11 +109,18 @@ def parse_args():
     parser.add_argument('--entropy_loss_weight', type=float, default=0.01)
     parser.add_argument("--teacher_weight", type=float, default=1.)
 
-    parser.add_argument('--darknet_model_file', type=str, default='../weights/yolo_v3.cfg')
-    parser.add_argument('--darknet_weight_file', type=str, default='../weights/best.pt')
+    parser.add_argument('--darknet_model_file', type=str, default=str(WEIGHTS_DIR / 'yolo_v3.cfg'))
+    parser.add_argument('--darknet_weight_file', type=str, default=str(WEIGHTS_DIR / 'best.pt'))
+    parser.add_argument('--output_dir', type=str, default=str(GOAL_PREDICTOR_CHECKPOINT_DIR))
+    parser.add_argument('--direction_loss_weight', type=float, default=1.5)
+    parser.add_argument('--goal_loss_weight', type=float, default=2.0)
+    parser.add_argument('--progress_loss_weight', type=float, default=0.1)
+    parser.add_argument('--target_loss_weight', type=float, default=0.1,
+                        help='auxiliary grid loss from released code (not specified in paper)')
+    parser.add_argument('--disable_task_interaction', action='store_true')
 
     # logger
-    parser.add_argument('--log_every', type=int, default=5)
+    parser.add_argument('--log_every', type=int, default=1)
     parser.add_argument('--log_dir', type=str, default='log')
 
     # observation
@@ -126,10 +135,13 @@ def parse_args():
     
     # training params
     parser.add_argument(
-        '--optim', type=str, default='adam',
+        '--optim', type=str, default='adamW',
         choices=['rms', 'adam', 'adamW', 'sgd']
     )    # rms, adam
-    parser.add_argument('--decay', dest='weight_decay', type=float, default=0.)
+    parser.add_argument('--decay', dest='weight_decay', type=float, default=0.01,
+                        help='released AdamW code used its implicit default 0.01')
+    parser.add_argument('--grad_accum', type=int, default=1, help='gradient accumulation steps')
+    parser.add_argument('--max_episodes', type=int, default=0, help='cap episodes per split for smoke tests (0 = use all)')
     parser.add_argument(
         '--feedback', type=str, default='student',
         help='How to choose next position, one of ``teacher``, ``sample`` and ``argmax``'
@@ -137,31 +149,37 @@ def parse_args():
     parser.add_argument("--nss_w", type=float, default=1)
     parser.add_argument("--nss_r", type=int, default=0)
     parser.add_argument('--epsilon', type=float, default=0.1, help='')
-    parser.add_argument('--learning_rate', type=float, default=1.0e-03)
-    parser.add_argument('--batch_size', type=int, default=8)
+    parser.add_argument('--learning_rate', type=float, default=1.0e-04)
+    parser.add_argument('--batch_size', type=int, default=2)
     parser.add_argument('--epochs', type=int, default=20)
     parser.add_argument('--iters', type=int, default=200000)
     parser.add_argument('--checkpoint', type=str, default=None)
     parser.add_argument("--resume_optimizer", action="store_true", default=False)
-    parser.add_argument('--save_every', type=int, default=10)
+    parser.add_argument('--save_every', type=int, default=1)
     parser.add_argument('--train_trajectory_type', type=str, choices=['sp', 'mturk', 'both'], default='mturk')
     parser.add_argument('--train_episode_sample_size', type=int, default=-1)
     parser.add_argument('--ignoreid', type=int, default=-100, help='ignoreid for action')
 
     # eval params
-    parser.add_argument('--eval_every', type=int, default=10)
+    parser.add_argument('--eval_every', type=int, default=1)
     parser.add_argument('--eval_first', action='store_true', default=False)
     parser.add_argument('--max_action_len', type=int, default=20)
     parser.add_argument('--eval_client', type=str, choices=['crop', 'airsim'], default='crop')
     parser.add_argument('--success_dist', type=float, default=20.)
     # parser.add_argument('--success_iou', type=float, default=0.4)
-    parser.add_argument('--move_iteration', type=int, default=5)
+    parser.add_argument('--move_iteration', type=int, default=10)
     # parser.add_argument('--progress_stop_val', type=float, default=0.75)
     # parser.add_argument('--eval_goal_selector', type=str, choices=['gdino', 'llava'], default='gdino')
     parser.add_argument('--gps_noise_scale', type=float, default=0.)
 
 
     args = parser.parse_args()
+    if args.grad_accum < 1 or args.batch_size < 1 or args.max_episodes < 0:
+        parser.error('grad_accum/batch_size must be positive; max_episodes must be nonnegative')
+    if args.checkpoint and not Path(args.checkpoint).is_absolute():
+        args.checkpoint = str(PROJECT_ROOT / args.checkpoint)
+    output_dir = Path(args.output_dir)
+    args.output_dir = str((output_dir if output_dir.is_absolute() else PROJECT_ROOT / output_dir).resolve())
     args = postprocess_args(args)
 
     return args

@@ -1,7 +1,7 @@
 from pathlib import Path
 
 
-PROJECT_ROOT = Path("..")
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 WEIGHTS_DIR = PROJECT_ROOT/"weights"
 GOAL_PREDICTOR_CHECKPOINT_DIR = PROJECT_ROOT/"checkpoints/multi"

@@ -134,7 +134,7 @@ class NavCMTAgent:
         # - lang_model: 把自然语言指令编码成 token 表示
         # - vision_model: 把 RGB 图像编码成 visual feature
         # - vln_model: 即 ET，负责把语言、视觉、地图和历史记忆融合，输出动作与目标预测
-        self.tokenizer = BertTokenizerFast.from_pretrained('/cver/xcding/code/tokenizer_files/bert-base-uncase')
+        self.tokenizer = BertTokenizerFast.from_pretrained('bert-base-uncased')
         self.lang_model = CustomBERTModel().cuda()
 
         # self.img_tensor = transforms.ToTensor()
@@ -142,7 +142,7 @@ class NavCMTAgent:
         self.vision_model = Darknet(self.args.darknet_model_file, 224).cuda()
 
         # 视觉编码器加载预训练权重
-        new_state = torch.load(self.args.darknet_weight_file)
+        new_state = torch.load(self.args.darknet_weight_file, map_location='cpu', weights_only=False)
         state = self.vision_model.state_dict()
         model_keys = set(state.keys())
         state_dict = {k: v for k, v in new_state['model'].items() if k in model_keys}
@@ -254,6 +254,7 @@ class NavCMTAgent:
                     timeSince(start, float(idx) / tot), idx, tot), bar_length=80)
 
 
+    @torch.no_grad()
     def test(self, loader, env_name='no_name_provided', feedback='student', not_in_train=False, **kwargs):
         ''' Evaluate once on each instruction in the current environment '''
         self.feedback = feedback
@@ -290,21 +291,28 @@ class NavCMTAgent:
         self.vision_model.train()
 
         self.losses = []
+        # 单卡训练时的梯度累积步数（--grad_accum，默认 1 表示不累积）
+        grad_accum = getattr(self.args, 'grad_accum', 1)
+        if grad_accum < 1:
+            raise ValueError('grad_accum must be positive')
         for epoch in range(1, n_epochs + 1):
             idx = 0
             start = time.time()
+            acc = 0
+            num_batches = math.ceil(loader.dataset.size() / self.env.batch_size)
             # print('?')
             for _, l in enumerate(loader):
                 idx += 1
+                acc += 1
                 # if idx >= 100:
                 #     break
                 # train_loop_start_time = time.time()
 
-                # --------------- 1. 清零梯度：每个 batch 都重新开始 -----------------
-                # 这里必须分别清零 lang/vision/et 三个优化器对应的梯度，否则会累积历史梯度。
-                self.lang_model_optimizer.zero_grad()
-                self.vision_model_optimizer.zero_grad()
-                self.et_optimizer.zero_grad()
+                # 每个累积窗口只清零一次，尾部窗口按实际 batch 数归一化。
+                if (acc - 1) % grad_accum == 0:
+                    for optimizer in self.optimizers:
+                        optimizer.zero_grad(set_to_none=True)
+                    window_size = min(grad_accum, num_batches - acc + 1)
                 self.loss = 0
 
                 # --------------- 2. 进行一个 rollout：构造当前 batch 的观测与动作 -----------------
@@ -321,6 +329,8 @@ class NavCMTAgent:
 
                     self.feedback = 'teacher'
                     self.rollout(train_ml=self.args.ml_weight)  # self.args.nss_w*nss_w_weighting, **kwargs)
+                    (self.loss / window_size).backward()
+                    self.loss = 0
                     # if epoch_train > 10000:
                     self.feedback = 'student'
                     self.rollout(train_ml=self.args.ml_weight)
@@ -337,16 +347,20 @@ class NavCMTAgent:
                 # - language encoder
                 # - vision encoder
                 # - ET transformer + decoder heads
-                self.loss.backward()
+                if not torch.isfinite(self.loss):
+                    raise FloatingPointError('Non-finite training loss')
+                (self.loss / window_size).backward()
                 # print('suc')
 
                 # --------------- 4. 梯度裁剪与更新参数 -----------------
                 # 对 ET 的参数做裁剪，避免爆炸梯度；随后三个优化器分别更新对应模块。
-                torch.nn.utils.clip_grad_norm_(self.vln_model.parameters(), 40.)
+                # 单卡模式：每 grad_accum 个 batch 更新一次（与原多卡代码的更新节奏保持一致）
+                if acc % grad_accum == 0 or acc == num_batches:
+                    grad_norm = torch.nn.utils.clip_grad_norm_(self.vln_model.parameters(), 40., error_if_nonfinite=True)
 
-                self.lang_model_optimizer.step()
-                self.vision_model_optimizer.step()
-                self.et_optimizer.step()
+                    self.lang_model_optimizer.step()
+                    self.vision_model_optimizer.step()
+                    self.et_optimizer.step()
                 # print("---------- One iter takes %s seconds ---" % (time.time() - train_loop_start_time))
 
                 if self.default_gpu:
