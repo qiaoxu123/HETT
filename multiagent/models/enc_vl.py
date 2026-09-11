@@ -108,7 +108,7 @@ class EncoderVL(nn.Module):
             emb_directions,
             emb_maps,
             emb_positions,
-            # lengths
+            lang_mask=None,
     ):
         """
         pass embedded inputs through embeddings and encode them using a transformer
@@ -118,9 +118,18 @@ class EncoderVL(nn.Module):
         length_lang = emb_lang.shape[1]
         
         # create a mask for padded elements
-        # 3 是 emb_frames, emb_directions, emb_maps
-        length_mask_pad = length_lang + 3 + length_max
+        # 按真实 token 长度计算：lang + frames + directions + maps + candidates
+        # （原代码硬编码 3，假设 frame/direction/map 各 1 个 token；frame 数量增长时会错位）
+        length_mask_pad = (
+            length_lang
+            + emb_frames.shape[1]
+            + emb_directions.shape[1]
+            + emb_maps.shape[1]
+            + length_max
+        )
         mask_pad = torch.zeros((len(emb_lang), length_mask_pad), device=emb_lang.device).bool()
+        if lang_mask is not None:
+            mask_pad[:, :length_lang] = ~lang_mask.bool()
         # for i, l in enumerate(lengths):
         #     # mask padded frames
         #     mask_pad[i, (length_lang + l):(length_lang + length_max)] = True
@@ -133,12 +142,9 @@ class EncoderVL(nn.Module):
         emb_all = self.encode_inputs(emb_lang, emb_frames, emb_directions, emb_maps, emb_positions, length_lang)
 
         # create a mask for attention (prediction at t should not see frames at >= t+1)
-        mask_attn = model_util.generate_attention_mask(
-            length_lang,
-            emb_frames.shape[1],
-            length_max,
-            emb_all.device,
-        )
+        mask_attn = torch.zeros((length_mask_pad, length_mask_pad),
+                                device=emb_all.device, dtype=torch.bool)
+        mask_attn[:length_lang, length_lang:] = True
 
         # print(emb_all.shape, mask_attn.shape, mask_pad.shape)
 

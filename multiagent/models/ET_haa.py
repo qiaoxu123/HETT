@@ -264,7 +264,10 @@ class ET(nn.Module):
             tmp_fts = grid_fts[b].to(torch.float32)
             
             # 通过和语言特征的相似度，计算每个历史 cell 与当前指令的相关性
-            grid_fts_weight, _ = (tmp_fts @ text_fts[b]).max(dim=-1) # [N_hist]
+            relevance = tmp_fts @ text_fts[b]
+            if inputs.get('lang_mask') is not None:
+                relevance = relevance.masked_fill(~inputs['lang_mask'][b].bool(), -float('inf'))
+            grid_fts_weight, _ = relevance.max(dim=-1) # [N_hist]
             tmp_fts = self.grid_proj(tmp_fts)
 
             for i in range(self.args.grid_size ** 2):
@@ -296,6 +299,7 @@ class ET(nn.Module):
             emb_directions,     # [B, T_dir, d]
             emb_maps,           # [B, N_map, d]
             emb_candidates,     # [B, N_cand, d]
+            lang_mask=inputs.get('lang_mask'),
         )
 
         # --------------- 7. 按真实 token 长度切分 Transformer 输出 -----------------
@@ -317,7 +321,8 @@ class ET(nn.Module):
         # --------------- 8. target 与 action/progress 双向交互 -----------------
         target_tokens = torch.cat((encoder_out_map.unsqueeze(1), encoder_out_candidates), dim=1)  # [B, 1 + N_cand, d_model]
         motion_tokens = torch.stack((encoder_out_direction, encoder_out_visual), dim=1)           # [B, 2, d_model]
-        target_tokens, motion_tokens = self.task_interaction(target_tokens, motion_tokens)
+        if not getattr(self.args, 'disable_task_interaction', False):
+            target_tokens, motion_tokens = self.task_interaction(target_tokens, motion_tokens)
 
         # --------------- 9. 多头输出：direction / progress / goal / target -----------------
         goal_decoder_input = target_tokens[:, 0]               # [B, d_model]

@@ -188,11 +188,11 @@ class NavCMTAgent:
         assert args.optim in ("adam", "adamW")
         OptimizerClass = torch.optim.Adam if args.optim == "adam" else torch.optim.AdamW
         self.et_optimizer = OptimizerClass(filter(lambda p: p.requires_grad, self.vln_model.parameters()),
-                                           lr=args.learning_rate)
+                                           lr=args.learning_rate, weight_decay=args.weight_decay)
         self.lang_model_optimizer = OptimizerClass(filter(lambda p: p.requires_grad, self.lang_model.parameters()),
-                                                   lr=self.args.learning_rate)
+                                                   lr=self.args.learning_rate, weight_decay=args.weight_decay)
         self.vision_model_optimizer = OptimizerClass(filter(lambda p: p.requires_grad, self.vision_model.parameters()),
-                                                     lr=self.args.learning_rate)
+                                                     lr=self.args.learning_rate, weight_decay=args.weight_decay)
         self.optimizers = (self.et_optimizer, self.lang_model_optimizer, self.vision_model_optimizer)
         # self.optimizers = (self.et_optimizer, self.lang_model_optimizer)
 
@@ -478,6 +478,8 @@ class NavCMTAgent:
         stage1_ended = np.array([False] * batch_size)
 
         for t in range(self.args.max_action_len):
+            direction_t = torch.tensor([ob['pose'].yaw for ob in obs], dtype=torch.float32)
+            position_t = torch.tensor(np.array([ob['position'] for ob in obs]), dtype=torch.float32)
 
             # print("- action rollingout takes %s seconds ---" % (time.time() - rollingout_action_start_time))
             # rollingout_action_start_time = time.time()
@@ -535,7 +537,8 @@ class NavCMTAgent:
                 lang=input['lang'],                 # [B, L_lang, 768]
                 candidates=input['candidates'],     # [B, N_cand, 2]
                 centroids=input['centroids'],       # [B, N_centroid, 2]
-                lang_cls=input['lang_cls']          # [B, 49]
+                lang_cls=input['lang_cls'],          # [B, 49]
+                lang_mask=attention_mask,
             )
 
             # --------------- 5. 更新历史网格记忆：grid_fts / grid_index -----------------
@@ -713,8 +716,6 @@ class NavCMTAgent:
                 if not ended[i]:
                     traj[i]['trajectory'].append(poses[i])
                     # Update the status
-            direction_t = torch.from_numpy(np.array(current_directions, dtype=np.float32))
-            position_t = torch.from_numpy(np.array(current_positions, dtype=np.float32))
             obs = self.env._get_obs(poses, random_direction=(self.feedback == 'teacher'))  # get gt_obs
             # current_view_corners = [np.array(ob['gt_path_corners'][0]) for ob in obs]
 
@@ -745,7 +746,10 @@ class NavCMTAgent:
         if train_ml is not None:
             # print(ml_loss)
             # ml_loss = direction_loss + progress_loss
-            ml_loss = 1 * direction_loss + 0.1 * progress_loss + 2 * goal_predict_loss + 0.1 * target_predict_loss
+            ml_loss = (self.args.direction_loss_weight * direction_loss
+                       + self.args.progress_loss_weight * progress_loss
+                       + self.args.goal_loss_weight * goal_predict_loss
+                       + self.args.target_loss_weight * target_predict_loss)
             # ml_loss = progress_loss + goal_predict_loss
             self.loss += ml_loss * train_ml / batch_size
 
@@ -804,11 +808,13 @@ class NavCMTAgent:
                      ]
         for param in all_tuple:
             create_state(*param)
-        torch.save(states, path)
+        temporary = path + '.tmp'
+        torch.save(states, temporary)
+        os.replace(temporary, path)
 
     def load(self, path):
         ''' Loads parameters (but not training state) '''
-        states = torch.load(path)
+        states = torch.load(path, map_location='cpu', weights_only=False)
 
         def recover_state(name, model, optimizer):
             state = model.state_dict()
@@ -819,6 +825,13 @@ class NavCMTAgent:
                 state_dict = states[name]['state_dict']
             else:
                 print("NOTICE: DIFFERENT KEYS IN THE ", name)
+                missing = sorted(model_keys - load_keys)
+                required_missing = [k for k in missing if not (
+                    self.args.disable_task_interaction and k.startswith('task_interaction.'))]
+                if required_missing and self.args.mode != 'train':
+                    raise ValueError(f'{name}: checkpoint is missing parameters: {required_missing}')
+                if missing:
+                    print('New parameters initialized randomly:', missing)
                 # if not list(model_keys)[0].startswith('module.') and list(load_keys)[0].startswith('module.'):
                 #     state_dict = {k.replace('module.', ''): v for k, v in state_dict.items()}
                 state_dict = {k: v for k, v in states[name]['state_dict'].items() if k in model_keys}
@@ -838,4 +851,4 @@ class NavCMTAgent:
                      ]
         for param in all_tuple:
             recover_state(*param)
-        return states['vln_model']['epoch'] - 1
+        return states['vln_model']['epoch']

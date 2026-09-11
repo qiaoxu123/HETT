@@ -162,7 +162,7 @@ class CityNavBatch(torch.utils.data.IterableDataset):
             if len(batch) < batch_size:
                 # random.shuffle(self.data)
                 ix = batch_size - len(batch)
-                batch += self.data[:ix]
+                batch += [self.data[j % len(self.data)] for j in range(ix)]
 
             self.batch = batch
             used_map_names = []
@@ -454,8 +454,6 @@ class CityNavBatch(torch.utils.data.IterableDataset):
             'stage2_ne': np.mean(metrics['stage2_ne']),
             'stage2_oracle_ne': np.mean(metrics['stage2_oracle_ne']),
             'gt_length': np.mean(metrics['gt_length']),
-            'gp_sr': np.mean(metrics['gp_success']) * 100,
-            'oracle_gp_sr': np.mean(metrics['oracle_gp_success']) * 100
             # 'oracle_goal_sr': np.mean(metrics['oracle_goal_success']),
             # 'goal_sr': np.mean(metrics['goal_success'])
             # 'oracle_pred_sr': np.mean(item['oracle_success']) * 100,
