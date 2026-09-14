@@ -224,6 +224,9 @@ class NavCMTAgent:
         # Logs
         sys.stdout.flush()
         self.logs = defaultdict(list)
+        # Evaluation-only instruction replacement used by controlled semantic
+        # contrast tests.  Normal training and evaluation leave this empty.
+        self.instruction_overrides = {}
 
     def get_results(self):
 
@@ -410,7 +413,8 @@ class NavCMTAgent:
             # if self.args.vision_only:
             #     lang_inputs.append('')
             # else:
-            lang_inputs.append(ob['instruction'])
+            episode_id = tuple(ob['id'])
+            lang_inputs.append(self.instruction_overrides.get(episode_id, ob['instruction']))
         encoding = self.tokenizer(lang_inputs, padding=True, return_tensors="pt")
         input_ids = encoding['input_ids'].cuda()
         attention_mask = encoding['attention_mask'].cuda()
@@ -548,6 +552,19 @@ class NavCMTAgent:
                 lang_cls=input['lang_cls'],          # [B, 49]
                 lang_mask=attention_mask,
             )
+
+            # Preserve target predictions for paired instruction tests.  These
+            # diagnostics are detached and never fed back into the policy.
+            detached_goals = pred_goals.detach().cpu().numpy()
+            detached_cells = pred_logits.detach().squeeze(-1).argmax(dim=1).cpu().tolist()
+            for i, ob in enumerate(obs):
+                if not ended[i]:
+                    traj[i]['all_pred_goal'].append(
+                        self.env.unnormalize_position(
+                            detached_goals[i], ob['map_name'], self.args.map_meters
+                        )
+                    )
+                    traj[i]['target_grid_prediction'].append(int(detached_cells[i]))
 
             # --------------- 5. 更新历史网格记忆：grid_fts / grid_index -----------------
             # 这里把当前 step 的输出特征追加到历史记忆里，供下一步 rollout 使用，从而形成 historical grid map。
