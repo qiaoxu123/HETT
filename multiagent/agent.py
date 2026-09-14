@@ -689,9 +689,9 @@ class NavCMTAgent:
                 #     continue
 
 
-                elif (not self.args.enable_stage_recovery
-                      and pred_progress_t[i] > 0.95
-                      and self.feedback == 'student' and stage1_ended[i]):
+                if (not self.args.enable_stage_recovery
+                        and pred_progress_t[i] > 0.95
+                        and self.feedback == 'student' and stage1_ended[i]):
                     # Updated 'ended' list and make environment action
                     ended[i] = True
                     continue
