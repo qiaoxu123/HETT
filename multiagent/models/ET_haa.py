@@ -118,6 +118,50 @@ class BidirectionalCrossAttention(nn.Module):
         return target_tokens, motion_tokens
 
 
+class CoarseToFineGoalDecoder(nn.Module):
+    """Decode a global goal by selecting coarse cells and refining inside them.
+
+    Candidate coordinates are the normalized top-left corners of the regular
+    ``grid_size`` cells used by the released target classification loss.  No
+    ground-truth position is consumed here; labels remain training-only.
+    """
+
+    def __init__(self, d_model, grid_size, topk=3, temperature=1.0):
+        super().__init__()
+        if grid_size < 1 or topk < 1 or temperature <= 0:
+            raise ValueError('grid_size/topk must be positive and temperature must be > 0')
+        self.grid_size = grid_size
+        self.topk = topk
+        self.temperature = temperature
+        self.offset_head = nn.Sequential(
+            nn.Linear(d_model, d_model // 2),
+            nn.ReLU(),
+            nn.Linear(d_model // 2, 2),
+            nn.Sigmoid(),
+        )
+
+    def forward(self, candidate_tokens, candidates, target_logits):
+        if candidates.shape[-1] != 2 or target_logits.shape[-1] != 1:
+            raise ValueError('expected candidates [..., 2] and target_logits [..., 1]')
+        if candidate_tokens.shape[:2] != candidates.shape[:2] or candidates.shape[:2] != target_logits.shape[:2]:
+            raise ValueError('candidate token, coordinate and logit counts must match')
+
+        # Each proposal stays inside its own coarse cell.  The final target is
+        # a normalized mixture of the strongest cells, preserving uncertainty
+        # without averaging over the entire map.
+        offsets = self.offset_head(candidate_tokens)
+        refined_candidates = (candidates + offsets / self.grid_size).clamp(0.0, 1.0)
+        probabilities = torch.softmax(target_logits.squeeze(-1) / self.temperature, dim=1)
+        k = min(self.topk, probabilities.shape[1])
+        top_probabilities, top_indices = probabilities.topk(k, dim=1)
+        top_coordinates = torch.gather(
+            refined_candidates, 1, top_indices.unsqueeze(-1).expand(-1, -1, 2)
+        )
+        weights = top_probabilities / top_probabilities.sum(dim=1, keepdim=True).clamp_min(1e-8)
+        goal = (top_coordinates * weights.unsqueeze(-1)).sum(dim=1)
+        return goal, offsets
+
+
 class ET(nn.Module):
     def __init__(self, args):
         """
@@ -193,6 +237,15 @@ class ET(nn.Module):
             nn.Linear(256, 2),
             nn.Sigmoid(),
         )
+
+        self.coarse_to_fine_target = getattr(args, 'coarse_to_fine_target', False)
+        if self.coarse_to_fine_target:
+            self.coarse_to_fine_goal = CoarseToFineGoalDecoder(
+                d_model=self.args.demb,
+                grid_size=self.args.grid_size,
+                topk=getattr(args, 'target_topk', 3),
+                temperature=getattr(args, 'target_temperature', 1.0),
+            )
 
         # pose embedding: 把当前的 [sin(yaw), cos(yaw), x, y] 映射到 d_model 维
         self.direction_embedding = nn.Linear(4, self.args.demb)
@@ -337,7 +390,6 @@ class ET(nn.Module):
         decoder_input = motion_tokens[:, 1]                    # [B, d_model]
 
         output = self.decoder_2_action_full(action_decoder_input) # [B, 2] 归一化方向向量
-        pred_goals = self.decoder_2_goal_full(goal_decoder_input) # [B, 2] 归一化目标位置
         norm = torch.norm(output, dim=1, keepdim=True) + 1e-6     # 避免除零
         direction = output / norm
 
@@ -346,5 +398,12 @@ class ET(nn.Module):
 
         # target_logits: [B, N_cand, 1]
         target_logits = self.decoder_2_logits_full(target_decoder_input)
+
+        if self.coarse_to_fine_target:
+            pred_goals, _ = self.coarse_to_fine_goal(
+                target_decoder_input, inputs['candidates'], target_logits
+            )
+        else:
+            pred_goals = self.decoder_2_goal_full(goal_decoder_input) # [B, 2] 归一化目标位置
 
         return direction, progress, pred_goals, target_logits, emb_frames + emb_directions

@@ -118,6 +118,12 @@ def parse_args():
     parser.add_argument('--target_loss_weight', type=float, default=0.1,
                         help='auxiliary grid loss from released code (not specified in paper)')
     parser.add_argument('--disable_task_interaction', action='store_true')
+    parser.add_argument('--coarse_to_fine_target', action='store_true',
+                        help='derive the global goal from top-k coarse cells plus learned in-cell offsets')
+    parser.add_argument('--target_topk', type=int, default=3,
+                        help='number of coarse target cells mixed by the coarse-to-fine decoder')
+    parser.add_argument('--target_temperature', type=float, default=1.0,
+                        help='softmax temperature for coarse target-cell probabilities')
 
     # logger
     parser.add_argument('--log_every', type=int, default=1)
@@ -178,6 +184,8 @@ def parse_args():
     args = parser.parse_args()
     if args.grad_accum < 1 or args.batch_size < 1 or args.max_episodes < 0:
         parser.error('grad_accum/batch_size must be positive; max_episodes must be nonnegative')
+    if args.target_topk < 1 or args.target_temperature <= 0:
+        parser.error('target_topk must be positive and target_temperature must be > 0')
     if args.save_every < 1:
         parser.error('save_every must be positive')
     if args.checkpoint and not Path(args.checkpoint).is_absolute():
