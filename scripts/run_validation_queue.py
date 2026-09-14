@@ -21,6 +21,12 @@ def append(path, value):
         stream.write(json.dumps(value, ensure_ascii=False) + '\n')
 
 
+def write_status(path, value):
+    temporary = path.with_suffix('.json.tmp')
+    temporary.write_text(json.dumps(value, indent=2) + '\n')
+    temporary.replace(path)
+
+
 def supervisor(worktree, run_name, *arguments):
     directory = ROOT / worktree
     return [PYTHON, '-u', str(directory / 'scripts/supervise_experiment.py'),
@@ -98,6 +104,9 @@ def main():
                 'reason': f'incomplete run path already exists: {existing}'
             }, indent=2) + '\n')
             raise FileExistsError(existing)
+        write_status(args.queue_dir / 'status.json', {
+            'time': stamp(), 'phase': 'running', 'job': name,
+            'run_dir': str(existing)})
         append(args.queue_dir / 'events.jsonl', {'time': stamp(), 'event': 'started', 'job': name})
         with (args.queue_dir / f'{name}.log').open('w') as log:
             result = subprocess.run(command, cwd=ROOT / '00-control', stdout=log,
