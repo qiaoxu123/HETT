@@ -1,6 +1,6 @@
 # HETT 验证状态
 
-更新时间：2026-09-14 09:40 +08:00
+更新时间：2026-09-14 09:49 +08:00
 
 ## 当前结论
 
@@ -12,15 +12,17 @@
 | --- | --- | --- | --- |
 | teacher fix | `d837182` | 每 episode 独立索引；12 项测试；真实单卡 smoke 的训练/保存/加载/评估通过 | 修复后完整 seed-0 基线 |
 | recovery | `b1c55c2` | 历史失败量化；19 项测试；开/关配对 smoke 评估完成且轨迹确有变化 | 完整 unseen 配对评估 |
-| grounding | `6630459` | 49 区域＋outside；26 项测试；region CE 非零梯度；16,110 状态审计；16 组 hard contrast | 单卡、完整训练和 checkpoint 消融 |
-| combined | `bf132b0` | 两模块合并；32 项测试；region CE 非零梯度；recovery 仅评估 | 同 checkpoint 配对评估 |
-| hypotheses | `55cb3bf` | 时序证据与 top-k；17 项测试；offset 监督非零梯度 | 单卡短跑、完整对照 |
+| grounding | `0bf5301` | 49 区域＋outside；27 项测试；region CE 非零梯度；真实单卡 smoke 通过 | 完整训练和 checkpoint 消融 |
+| combined | `87228b8` | 两模块合并；33 项测试；recovery 仅评估；真实配对 smoke 通过 | 完整配对评估 |
+| hypotheses | `55cb3bf` | 时序证据与 top-k；17 项测试；offset 监督非零梯度；真实单卡 smoke 通过 | 完整对照 |
 | bidirectional attention | `b76f9b6` | 12 项测试；整网两方向均有非零有限梯度，四个任务头均受影响 | 真实数据单卡开/关短训与完整对照 |
 | loss ablation | `9b50ad4` | 四组独立训练协议；16 项测试 | 真实数据短跑、独立完整训练 |
 
 grounding 的监督覆盖：train_seen 10,734 个状态中可见 63.49%，val_unseen 5,376 个状态中可见 46.88%。因此 outside 类是必要项。
 
-最新六个结构分支 CPU 回归合计 118/118 通过，loss 消融分支另有 16/16 通过。跨分支 checkpoint 审计也通过：grounding 与 combined 的参数键完全一致；关闭 grounding / 多假设时仅忽略对应新增模块；双向注意力开关不改变参数键。
+最新六个结构分支 CPU 回归合计 120/120 通过，loss 消融分支另有 16/16 通过。跨分支 checkpoint 审计也通过：grounding 与 combined 的参数键完全一致；关闭 grounding / 多假设时仅忽略对应新增模块；双向注意力开关不改变参数键。
+
+首次 grounding 真实启动发现修复前分支中有残留 `elif` 语法错误，队列按设计立即停止且后续均未运行。错误 run 和传播出的 blocked 状态均已改名归档；grounding 与 combined 分别修复并加入整文件编译回归，27/27 与 33/33 通过。恢复队列跳过已成功的 teacher/recovery，只重跑 grounding；修复后的 grounding、combined 以及随后 multi-hypothesis 均在真实 GPU 上完整通过。
 
 辅助监督的反向路径已单独验证：region CE 同时覆盖可见 patch/outside 时，视觉输入及每个 grounding 参数都有非零有限梯度；真实 cell offset MSE 对多假设偏移头及上游语言特征也有非零有限梯度。recovery 被限制为 eval-only，避免 teacher 的 GT 轨迹改变训练分布后与纯控制收益混算。
 
@@ -53,7 +55,7 @@ grounding 的监督覆盖：train_seen 10,734 个状态中可见 63.49%，val_un
 ## GPU 队列
 
 - 原版基线服务：`hett-baseline-20260911.service`，已完成并正常退出。
-- 串行验证服务：`hett-validation-queue-20260911.service`；teacher-fix、recovery-off、recovery-on smoke 均已成功完成，当前运行 grounding smoke 训练。
+- 串行验证服务：`hett-validation-queue-20260911.service` 已正常完成；teacher-fix、recovery-off/on、grounding、combined、multi-hypothesis 共 6 项全部通过。
 - Grounding 消融服务：`hett-post-smoke-ablations-20260911.service`，等待短跑队列。
 - 多假设消融服务：`hett-hypothesis-ablations-20260911.service`，等待 grounding 消融。
 - 同 landmark 不同目标服务：`hett-grounding-contrast-20260911.service`，等待上述消融。
@@ -70,7 +72,7 @@ grounding 的监督覆盖：train_seen 10,734 个状态中可见 63.49%，val_un
 - 完工审计检查所有队列终态、七分支论文参数、20-epoch 完整性、checkpoint 文件重新计算后的大小/SHA-256 与训练时记录一致、来源快照、逐 episode 预测、三种子/训练图、历史基线可比性、每个方案三个 seed 的固定提交与源码哈希一致性、点云局部几何负结果、hard contrast、真实 GPU 双向梯度、开发阶段无 test 输出、原版 eval 卫生补丁哈希以及冻结早于最终 test。最终项数会按冻结方案动态增加，只有全部通过才会标记完成。
 - 总监控器：`hett-chain-monitor-20260911.service`；不占 GPU，每 60 秒记录服务/训练状态，每完成一个 epoch 自动刷新图，输出在 `runs/chain_monitor_20260911/`。监控同时核验外层服务退出结果和 75 个内部子实验状态，只有状态实质变化才追加事件；跨心跳实测状态文件刷新而事件数保持为 1。
 - 队列状态：`/home/tenant2/Workspace/hett-experiments/00-control/runs/gpu_validation_queue_20260911/`
-- 当前运行文件：`/home/tenant2/Workspace/hett-experiments/03-grounding/runs/grounding_smoke_s0/status.json`
+- 当前阶段：Grounding 关闭/打乱语言/打乱视觉的后续消融服务正在从等待态接管 GPU。
 
 原版基线成功结束后，队列顺序为：teacher fix → recovery off → recovery on → grounding → combined → multi-hypothesis。任何一步非零退出都会停止队列，并保留失败日志，不会继续产生不可解释结果。
 

@@ -93,6 +93,8 @@
 | 隔离环境建立 | 公共工具 e582afb；隔离配置见各分支后续提交 | 51a1828 | 不训练 | 各 worktree | 输入链接和输出隔离检查；不代表模型验证完成 |
 | 原版 seed-0 基线 | 启动快照及卫生哈希见 run | 原版结构、关闭双向交互 | 20 epochs；全量 train/val | `hett-crotonyl/runs/hett_baseline_fixed_20260911/` | 63.57h 完成；最佳轮次 15；unseen SR/SPL/NE 18.91%/14.73%/52.60m；未读取 test |
 | Teacher 修复单卡 smoke | `d837182` | 原版结构 | seed 0；1 epoch；4 episodes | `01-teacher-fix/runs/teacher_fix_smoke_s0/` | 训练/保存/加载/val 全链路成功；数值有限；小样本指标不作效果结论 |
+| 首组真实 GPU smoke | grounding `0bf5301`；combined `87228b8`；其余见分支 | teacher checkpoint 或各自独立短训 | seed 0；4 episodes | 各分支 `runs/*_smoke_s0/` | teacher、recovery 开/关、grounding、combined、multi-hypothesis 共 6 项全部完成；只证明链路，不作效果结论 |
+| Grounding/combined 语法失败复盘 | 修复前 `6630459`/`bf132b0`，修复后见上 | 不适用 | 首次真实启动 | `03-grounding/runs/grounding_smoke_s0.syntax_failure_20260914_093953/` | 注释旧 if 后残留 elif；失败链完整归档，新增整文件编译测试后从 grounding 恢复，未重跑已成功项 |
 | 跨方案 checkpoint 兼容性 | `b6107e4` | 各方案最新提交 | 不训练 | `runs/checkpoint_compatibility_20260911/` | grounding→combined 精确兼容；关闭模块时仅有预期的新模块参数被忽略 |
 | 论文参数一致性 | `d3bef88` | 六个结构分支 | 不训练 | `runs/training_protocol_audit_20260911/` | 六分支协议一致；论文核心参数匹配；单卡用 2×累积4，另标明发布代码额外 target-grid loss |
 | 数据划分审计 | `5821366` | 最新 CityNav 输入哈希 | 不训练 | `runs/dataset_split_audit_20260911/` | 四个 split 无目标描述键/起点重叠；两个 unseen 地图集合与训练隔离 |
