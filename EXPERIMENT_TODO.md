@@ -36,7 +36,7 @@
 - [x] 修补运行中原版基线的独立最终 eval：只移除提前的 test split，不重启、不改变已加载的训练代码；修改前后哈希和 PID 已留档。
 - [x] 建立串行、失败即停的 GPU 短跑队列；当前等待原版基线正常结束。
 - [x] 1a：teacher 计数单元测试：batch=1/2、不同 episode 提前结束、轨迹越界；每条轨迹独立推进。
-- [ ] 1b：修复 teacher 索引；CPU 回归测试及单卡短跑，检查有限 loss、梯度、保存恢复。
+- [x] 1b：修复 teacher 索引；CPU 回归和真实单卡短跑通过，loss/梯度有限，checkpoint 保存后由独立评估成功加载。
 - [ ] 1c：修复后基线完整训练/评估，固定数据、种子、预算、损失权重；与旧运行分开报告。
 - [x] 2a：恢复机制状态机测试：误切换、重新进入粗阶段、越过目标、错误停止。
 - [ ] 2b：只改控制机制的消融；新增恢复训练采样另做对照，不混算。
@@ -91,6 +91,8 @@
 | 实验 | 代码哈希 | 父基线/修复哈希 | 配置/种子 | 输出目录 | 结论 |
 | --- | --- | --- | --- | --- | --- |
 | 隔离环境建立 | 公共工具 e582afb；隔离配置见各分支后续提交 | 51a1828 | 不训练 | 各 worktree | 输入链接和输出隔离检查；不代表模型验证完成 |
+| 原版 seed-0 基线 | 启动快照及卫生哈希见 run | 原版结构、关闭双向交互 | 20 epochs；全量 train/val | `hett-crotonyl/runs/hett_baseline_fixed_20260911/` | 63.57h 完成；最佳轮次 15；unseen SR/SPL/NE 18.91%/14.73%/52.60m；未读取 test |
+| Teacher 修复单卡 smoke | `d837182` | 原版结构 | seed 0；1 epoch；4 episodes | `01-teacher-fix/runs/teacher_fix_smoke_s0/` | 训练/保存/加载/val 全链路成功；数值有限；小样本指标不作效果结论 |
 | 跨方案 checkpoint 兼容性 | `b6107e4` | 各方案最新提交 | 不训练 | `runs/checkpoint_compatibility_20260911/` | grounding→combined 精确兼容；关闭模块时仅有预期的新模块参数被忽略 |
 | 论文参数一致性 | `d3bef88` | 六个结构分支 | 不训练 | `runs/training_protocol_audit_20260911/` | 六分支协议一致；论文核心参数匹配；单卡用 2×累积4，另标明发布代码额外 target-grid loss |
 | 数据划分审计 | `5821366` | 最新 CityNav 输入哈希 | 不训练 | `runs/dataset_split_audit_20260911/` | 四个 split 无目标描述键/起点重叠；两个 unseen 地图集合与训练隔离 |

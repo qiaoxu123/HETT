@@ -29,11 +29,30 @@ def supervisor(worktree, run_name, *arguments):
             '--interval', '30', *arguments]
 
 
+def run_directory(command):
+    return Path(command[command.index('--run-dir') + 1])
+
+
+def completed_run(command):
+    path = run_directory(command) / 'status.json'
+    try:
+        return json.loads(path.read_text()).get('phase') == 'complete'
+    except (FileNotFoundError, json.JSONDecodeError):
+        return False
+
+
+def write_or_verify_manifest(path, jobs):
+    value = [{'name': name, 'command': command} for name, command in jobs]
+    if path.exists() and json.loads(path.read_text()) != value:
+        raise RuntimeError(f'queue manifest changed across restart: {path}')
+    path.write_text(json.dumps(value, indent=2) + '\n')
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--queue-dir', type=Path, required=True)
     args = parser.parse_args()
-    args.queue_dir.mkdir(parents=True, exist_ok=False)
+    args.queue_dir.mkdir(parents=True, exist_ok=True)
     teacher_run = ROOT / '01-teacher-fix/runs/teacher_fix_smoke_s0'
     grounding_run = ROOT / '03-grounding/runs/grounding_smoke_s0'
     jobs = [
@@ -66,9 +85,19 @@ def main():
             '--variant-arg=--disable_task_interaction',
             '--variant-arg=--enable_multi_hypothesis')),
     ]
-    (args.queue_dir / 'jobs.json').write_text(json.dumps(
-        [{'name': name, 'command': command} for name, command in jobs], indent=2) + '\n')
+    write_or_verify_manifest(args.queue_dir / 'jobs.json', jobs)
     for name, command in jobs:
+        if completed_run(command):
+            append(args.queue_dir / 'events.jsonl', {
+                'time': stamp(), 'event': 'skipped_complete', 'job': name})
+            continue
+        existing = run_directory(command)
+        if existing.exists() or existing.is_symlink():
+            (args.queue_dir / 'status.json').write_text(json.dumps({
+                'time': stamp(), 'phase': 'failed', 'job': name,
+                'reason': f'incomplete run path already exists: {existing}'
+            }, indent=2) + '\n')
+            raise FileExistsError(existing)
         append(args.queue_dir / 'events.jsonl', {'time': stamp(), 'event': 'started', 'job': name})
         with (args.queue_dir / f'{name}.log').open('w') as log:
             result = subprocess.run(command, cwd=ROOT / '00-control', stdout=log,

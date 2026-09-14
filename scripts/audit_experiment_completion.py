@@ -28,8 +28,8 @@ EVAL_VARIANTS = {
 EXPECTED_HEADS = {
     '01-teacher-fix': '507355bb8d6631ab415a03fd74fd26113c099945',
     '02-recovery': 'b1c55c2a37332290b0afa59de1c66d537a989502',
-    '03-grounding': '6630459986044da2144128ed2a2c70dd4fb762b2',
-    '04-combined': 'bf132b044e2af8f1f5c76d21d3c4f33c54282c25',
+    '03-grounding': '0bf5301f55e3009557b1e96ac85a22801b28c16e',
+    '04-combined': '87228b8c240d2ab510659e48409a1bd076f954c3',
     '05-hypotheses': '55cb3bfaf9ff2f5dc7ee014a58218ce834b32768',
     '06-bidir': 'b76f9b659dc496583ddcb27745f58a09883cb746',
     '07-loss-ablation': '9b50ad4a636f4985c4392f2cc799c9cf44d46907',

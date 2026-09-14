@@ -1,6 +1,6 @@
 # HETT 验证状态
 
-更新时间：2026-09-12 14:39 +08:00
+更新时间：2026-09-14 09:40 +08:00
 
 ## 当前结论
 
@@ -10,8 +10,8 @@
 
 | 分支 | 当前提交 | 已完成 | 待完成 |
 | --- | --- | --- | --- |
-| teacher fix | `d837182` | 每 episode 独立索引；12 项核心/卫生/整网测试 | 单卡短跑、完整基线 |
-| recovery | `b1c55c2` | 历史失败量化；19 项测试；强制仅评估启用 | checkpoint 配对短评估、完整 unseen |
+| teacher fix | `d837182` | 每 episode 独立索引；12 项测试；真实单卡 smoke 的训练/保存/加载/评估通过 | 修复后完整 seed-0 基线 |
+| recovery | `b1c55c2` | 历史失败量化；19 项测试；开/关配对 smoke 评估完成且轨迹确有变化 | 完整 unseen 配对评估 |
 | grounding | `6630459` | 49 区域＋outside；26 项测试；region CE 非零梯度；16,110 状态审计；16 组 hard contrast | 单卡、完整训练和 checkpoint 消融 |
 | combined | `bf132b0` | 两模块合并；32 项测试；region CE 非零梯度；recovery 仅评估 | 同 checkpoint 配对评估 |
 | hypotheses | `55cb3bf` | 时序证据与 top-k；17 项测试；offset 监督非零梯度 | 单卡短跑、完整对照 |
@@ -34,13 +34,13 @@ grounding 的监督覆盖：train_seen 10,734 个状态中可见 63.49%，val_un
 
 历史 `reference_baseline` 已做只读审计：`train_rep.log.gz` 连续记录 epoch 0–11，`train_epoch12_20.log.gz` 记录 resume epoch 11–19，`valid.txt` 含完整 split 指标；但归档不含 checkpoint，也不能证明两段属于唯一连续 lineage。更关键的是，`htnav-repro` 旧代码将 action loss 权重写死为 1.0，而论文和当前受控训练为 1.5，因此旧 loss 曲线不可直接比较，只保留为导航指标量级旁证。报告和图位于 `runs/reference_baseline_audit_20260911/`，监控器会在当前基线每完成一个 epoch 后自动刷新。
 
-原版基线已完整跑完前 6 个 epoch，当前进入 epoch 7，最新记录为 6,700/10,939 batch（61.2%）；GPU、日志、磁盘均无告警。按目前每个完整 epoch 平均约 3.15 小时估算，原版剩余约 42 小时。它使用启动时源码快照，不受这些 worktree 提交影响。
+原版基线已经完成全部 20 个 epoch 和独立 val-seen/val-unseen 评估，总训练耗时 63.57 小时，服务以退出码 0 结束。按 val-unseen SR 选择的最佳 checkpoint 来自第 15 个完成轮次；最终独立评估为 seen SR/SPL/NE 31.78%/24.13%/35.82m，unseen 为 18.91%/14.73%/52.60m。两个预测文件、epoch 20 与最佳 checkpoint、哈希和参数审计均通过，确认没有生成 test-unseen 输出。
 
-梯度日志已明确标注为“ET 主体裁剪前范数”：epoch 6 的 p95/最大值为 123.01/245.60，仍存在长尾；当前 epoch 7 最近一次 132.07 的尖峰后已回落到 33.37。所有记录的 loss 和范数均有限，当前连续超过 100 的采样数为 0。ET 实际梯度会裁剪到 40，且该数值不覆盖语言/视觉两个独立优化器，所以目前不能判定发散，但会持续监控。
+梯度日志已明确标注为“ET 主体裁剪前范数”：epoch 20 的 p95/最大值为 204.15/402.07，长尾较早期明显增大，但全部 loss 和梯度记录均有限，结束时连续超过 100 的采样数为 1，没有触发持续异常门。ET 实际梯度裁剪到 40，且该数值不覆盖语言/视觉两个独立优化器；结合验证性能波动，应视为训练稳定性风险记录，而不是直接判定发散。
 
 在线监控进一步区分偶发尖峰和持续异常：batch loss 或梯度出现 NaN/Inf 会立即告警；裁剪前梯度连续三个采样点超过 100 才报告持续高梯度。单次超过 100 仍保留在报告中，但不会被误判为训练失败。
 
-阶段诊断已加入逐 episode 和 epoch 汇总。epoch 1→6，val-seen SR 从 23.28% 升至 30.28%，NE 从 46.57m 降至 36.69m；val-unseen 最佳 SR 仍是 epoch 2 的 17.39%，最佳 NE 仍是 epoch 3 的 52.44m，epoch 4–6 没有继续提升，呈平台或轻微回落。epoch 6 的 fine refinement 相对粗阶段终点将 seen SR 提高 5.99pp、NE 改善 2.05m，将 unseen SR 提高 3.41pp、NE 改善 2.67m，细化阶段继续保持正贡献。自动更新的图和逐轮报告保存在 `runs/chain_monitor_20260911/baseline_report/`。
+阶段诊断已加入逐 episode 和 epoch 汇总。训练期间 unseen 最佳 SR/SPL 都出现在 epoch 15（18.91%/14.73%），最佳 NE 出现在 epoch 19（51.93m），说明后半程仍有波动而非单调提升。最佳 checkpoint 的独立评估中，fine refinement 将 seen SR 提高 5.18pp、NE 改善 0.90m；将 unseen SR 提高 5.64pp，但 NE 略差 0.34m。它确实救回部分成功样本，但 unseen 最终位置仍有漂移，不能只看 SR。自动更新的图和逐轮报告保存在 `runs/chain_monitor_20260911/baseline_report/`。
 
 开发评估默认只构建 `val_seen` 和 `val_unseen`；`test_unseen` 现在必须显式传 `--include_test_unseen`，仅供方案冻结后的最终报告。旧等待链在真正训练/评估前已停止并移动到 `*.pre_val_only_20260911_2248` 归档，新链的 teacher 源码快照确认来自 `d837182`。
 
@@ -52,8 +52,8 @@ grounding 的监督覆盖：train_seen 10,734 个状态中可见 63.49%，val_un
 
 ## GPU 队列
 
-- 原版基线服务：`hett-baseline-20260911.service`，当前 active。
-- 串行验证服务：`hett-validation-queue-20260911.service`，当前 active/waiting。
+- 原版基线服务：`hett-baseline-20260911.service`，已完成并正常退出。
+- 串行验证服务：`hett-validation-queue-20260911.service`；teacher-fix、recovery-off、recovery-on smoke 均已成功完成，当前运行 grounding smoke 训练。
 - Grounding 消融服务：`hett-post-smoke-ablations-20260911.service`，等待短跑队列。
 - 多假设消融服务：`hett-hypothesis-ablations-20260911.service`，等待 grounding 消融。
 - 同 landmark 不同目标服务：`hett-grounding-contrast-20260911.service`，等待上述消融。
@@ -61,16 +61,16 @@ grounding 的监督覆盖：train_seen 10,734 个状态中可见 63.49%，val_un
 - Loss 消融 smoke 服务：`hett-loss-ablation-20260911.service`，等待双向注意力验证完成。
 - 修复后完整基线 seed 0：`hett-corrected-baseline-full-s0-20260911.service`，等待所有 smoke 成功完成后启动；20 epochs、全数据、`save_every=20`。
 - 完整 seed-0 对照矩阵：`hett-full-seed0-matrix-20260911.service`，等待修复后完整基线成功后启动；包含 11 个预声明任务和配对分析，训练任务均为 20 epochs、全数据、`save_every=20`。
-- 三种子确认矩阵：`hett-multiseed-confirmation-20260911.service`，将在 seed-0 矩阵成功后运行 seed 17、42；每个种子含 10 个完整任务，每项启动前检查至少 16 GiB 可用磁盘。完成后自动汇总 seeds 0/17/42，报告均值、样本标准差、95% 区间和逐 seed 配对变化，并生成两张比较图。
+- 三种子确认矩阵：`hett-multiseed-confirmation-20260911.service` 已按用户要求暂停，seed 17/42 实际运行数为 0；待完整 seed-0 矩阵评审并明确确认后才恢复。
 - 训练动态分析与三种子结果一起自动执行：覆盖 7 个真实训练方案，输出 loss 和 val-unseen SR/SPL/NE 的均值±seed 标准差曲线、四项加权 loss 组成、每 seed 耗时、最佳 epoch 和峰值显存。recovery/combined 只做控制评估，不伪造训练曲线。
 - 三种子与最终测试汇总会额外保存失败案例索引：最差终点、曾进入成功半径后又丢失、错误停止，以及相对基线被救回/被弄坏的配对 episode；同时绘制两类关键失败率。索引不替代原始逐 episode 轨迹。
 - 同一个汇总器还会自动生成可读 `REPORT.md`，集中列出 SR/SPL/NE 的三 seed 均值、标准差、95% 区间及配对变化；开发验证和最终 test 使用同一模板，但文档会明确禁止把 val 写成 test 结论。
 - Bug 修复独立报告：`hett-bugfix-analysis-20260911.service` 等待修复后 seed0 基线完成，随后比较原版 buggy 与 corrected 的 loss/验证曲线和逐 episode 结果。两者均关闭双向注意力，该报告不与 grounding/recovery 等创新收益混算。
-- 冻结后最终测试：`hett-frozen-final-test-20260911.service`，等待三种子验证完成；只根据 val-unseen 按“SR 至少 +3pp 且 SPL 下降不超过 1pp”冻结方案，先写 `freeze.json`，再首次显式读取 test-unseen。若没有候选过门槛，冻结修复基线。
+- 冻结后最终测试：`hett-frozen-final-test-20260911.service` 与多种子任务一起暂停；恢复后仍需先冻结方案、再首次显式读取 test-unseen。
 - 完工审计检查所有队列终态、七分支论文参数、20-epoch 完整性、checkpoint 文件重新计算后的大小/SHA-256 与训练时记录一致、来源快照、逐 episode 预测、三种子/训练图、历史基线可比性、每个方案三个 seed 的固定提交与源码哈希一致性、点云局部几何负结果、hard contrast、真实 GPU 双向梯度、开发阶段无 test 输出、原版 eval 卫生补丁哈希以及冻结早于最终 test。最终项数会按冻结方案动态增加，只有全部通过才会标记完成。
 - 总监控器：`hett-chain-monitor-20260911.service`；不占 GPU，每 60 秒记录服务/训练状态，每完成一个 epoch 自动刷新图，输出在 `runs/chain_monitor_20260911/`。监控同时核验外层服务退出结果和 75 个内部子实验状态，只有状态实质变化才追加事件；跨心跳实测状态文件刷新而事件数保持为 1。
 - 队列状态：`/home/tenant2/Workspace/hett-experiments/00-control/runs/gpu_validation_queue_20260911/`
-- 当前等待文件：`/home/tenant2/Workspace/hett-experiments/01-teacher-fix/runs/teacher_fix_smoke_s0/status.json`
+- 当前运行文件：`/home/tenant2/Workspace/hett-experiments/03-grounding/runs/grounding_smoke_s0/status.json`
 
 原版基线成功结束后，队列顺序为：teacher fix → recovery off → recovery on → grounding → combined → multi-hypothesis。任何一步非零退出都会停止队列，并保留失败日志，不会继续产生不可解释结果。
 
