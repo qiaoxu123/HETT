@@ -43,7 +43,7 @@ def build_commands(snapshot, run, args):
     common = ['--seed', str(args.seed), '--max_episodes', str(args.max_episodes),
               '--output_dir', str(checkpoint_dir)] + list(args.variant_arg)
     train = ['bash', str(snapshot / 'multiagent/train.sh'), '--epochs', str(args.epochs),
-             '--save_every', str(args.save_every)] + common
+             '--save_every', str(args.save_every)] + common + list(args.train_variant_arg)
     checkpoint = Path(args.checkpoint).resolve() if args.checkpoint else checkpoint_dir / 'best_val_unseen'
     evaluation = ['bash', str(snapshot / 'multiagent/eval.sh'), '--checkpoint', str(checkpoint),
                   '--seed', str(args.seed), '--max_episodes', str(args.max_episodes),
@@ -63,6 +63,8 @@ def main():
     parser.add_argument('--phase', choices=['train-eval', 'eval'], default='train-eval')
     parser.add_argument('--checkpoint')
     parser.add_argument('--variant-arg', action='append', default=[])
+    parser.add_argument('--train-variant-arg', action='append', default=[],
+                        help='extra argument used only for training, not independent evaluation')
     parser.add_argument('--wait-for-unit')
     parser.add_argument('--require-status',
                         help='JSON status that must report phase=complete after waiting')
@@ -102,6 +104,7 @@ def main():
     atomic_json(run / 'provenance.json', dict(started=stamp(), git_head=command_output(['git','rev-parse','HEAD'],root).strip(),
                 source_sha256=source_hashes, input_sha256=inputs, raster_inventory=rasters,
                 phase=args.phase, seed=args.seed, variant_args=args.variant_arg,
+                train_variant_args=args.train_variant_arg,
                 note='isolated experiment; compare only against explicitly recorded parent run'))
     environment = os.environ.copy()
     environment.update(CUDA_VISIBLE_DEVICES='0', PYTHONUNBUFFERED='1', PYTHON=args.python,

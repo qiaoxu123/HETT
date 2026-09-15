@@ -99,8 +99,8 @@ def main():
             '--seed', '0', '--interval', '30', '--lock-file', str(INTERNAL_LOCK),
             '--variant-arg=--disable_task_interaction',
             '--variant-arg=--coarse_to_fine_target',
-            '--variant-arg=--checkpoint',
-            f'--variant-arg={parent_checkpoint}',
+            '--train-variant-arg=--checkpoint',
+            f'--train-variant-arg={parent_checkpoint}',
         ]
         write(run / 'status.json', {'time': stamp(), 'phase': 'finetuning'})
         code = run_logged(command, run / 'finetune.log', WORKTREE)

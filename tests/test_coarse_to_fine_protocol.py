@@ -14,7 +14,7 @@ class CoarseToFineProtocolTest(unittest.TestCase):
         source = (ROOT / 'scripts/run_coarse_to_fine_smoke.py').read_text()
         self.assertIn("'--epochs', str(args.parent_epoch + 1)", source)
         self.assertIn("'--max-episodes', '512'", source)
-        self.assertIn("'--variant-arg=--checkpoint'", source)
+        self.assertIn("'--train-variant-arg=--checkpoint'", source)
         self.assertIn("'--variant-arg=--coarse_to_fine_target'", source)
 
     def test_paused_predecessor_requires_explicit_opt_in(self):
@@ -28,6 +28,12 @@ class CoarseToFineProtocolTest(unittest.TestCase):
         self.assertIn("metrics['first_cell_change_percent'] >= 25.0", source)
         self.assertIn("metrics['mean_first_prediction_correct_advantage_m'] > 0.0", source)
         self.assertIn("metrics['correct_first_prediction_better_percent'] >= 55.0", source)
+
+    def test_posttrain_recovery_uses_trained_checkpoint_for_evaluation(self):
+        source = (ROOT / 'scripts/run_coarse_to_fine_posttrain.py').read_text()
+        self.assertIn("'--phase', 'eval'", source)
+        self.assertIn("'--checkpoint', str(checkpoint)", source)
+        self.assertNotIn('--include_test_unseen', source)
 
 
 if __name__ == '__main__':
