@@ -12,7 +12,7 @@ class CoarseToFineProtocolTest(unittest.TestCase):
 
     def test_screening_is_finetuning_from_corrected_checkpoint(self):
         source = (ROOT / 'scripts/run_coarse_to_fine_smoke.py').read_text()
-        self.assertIn("'--epochs', '1'", source)
+        self.assertIn("'--epochs', str(args.parent_epoch + 1)", source)
         self.assertIn("'--max-episodes', '512'", source)
         self.assertIn("'--variant-arg=--checkpoint'", source)
         self.assertIn("'--variant-arg=--coarse_to_fine_target'", source)
@@ -20,6 +20,7 @@ class CoarseToFineProtocolTest(unittest.TestCase):
     def test_paused_predecessor_requires_explicit_opt_in(self):
         source = (ROOT / 'scripts/run_coarse_to_fine_smoke.py').read_text()
         self.assertIn("parser.add_argument('--allow-paused-predecessor', action='store_true'", source)
+        self.assertIn("parser.add_argument('--parent-epoch', type=int, required=True", source)
         self.assertIn("and not args.allow_paused_predecessor", source)
 
     def test_full_run_gate_is_predeclared(self):

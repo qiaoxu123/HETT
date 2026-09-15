@@ -44,17 +44,23 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--run-dir', type=Path, required=True)
     parser.add_argument('--parent-checkpoint', type=Path, default=DEFAULT_CORRECTED_CHECKPOINT)
+    parser.add_argument('--parent-epoch', type=int, required=True,
+                        help='completed epoch stored in parent checkpoint; screening adds exactly one epoch')
     parser.add_argument('--allow-paused-predecessor', action='store_true',
                         help='screen from a saved partial-baseline checkpoint after an intentional pause')
     args = parser.parse_args()
     run = args.run_dir.resolve()
     parent_checkpoint = args.parent_checkpoint.resolve()
+    if args.parent_epoch < 1:
+        parser.error('--parent-epoch must be positive')
     run.mkdir(parents=True, exist_ok=False)
     write(run / 'protocol.json', {
         'time': stamp(),
         'seed': 0,
         'train_episodes': 512,
-        'epochs': 1,
+        'fine_tune_epochs': 1,
+        'parent_epoch': args.parent_epoch,
+        'total_epochs_argument': args.parent_epoch + 1,
         'parent_checkpoint': str(parent_checkpoint),
         'allow_paused_predecessor': args.allow_paused_predecessor,
         'test_unseen': False,
@@ -89,7 +95,7 @@ def main():
             PYTHON, '-u', str(WORKTREE / 'scripts/supervise_experiment.py'),
             '--python', PYTHON,
             '--run-dir', str(train_run),
-            '--epochs', '1', '--max-episodes', '512', '--save-every', '1',
+            '--epochs', str(args.parent_epoch + 1), '--max-episodes', '512', '--save-every', '1',
             '--seed', '0', '--interval', '30', '--lock-file', str(INTERNAL_LOCK),
             '--variant-arg=--disable_task_interaction',
             '--variant-arg=--coarse_to_fine_target',

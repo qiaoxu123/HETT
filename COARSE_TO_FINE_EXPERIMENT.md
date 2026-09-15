@@ -32,3 +32,7 @@ The smoke result is a semantic-mechanism gate, not navigation-performance eviden
 - [ ] Real RTX 5090 fine-tuning smoke after corrected baseline.
 - [ ] Paired hard-contrast report and plot.
 - [ ] Decide whether to admit a full seed-0 run.
+
+When screening from a checkpoint, `main.py` interprets `--epochs` as the total
+epoch number, not a count to add. The runner therefore requires the recorded
+parent epoch and passes `parent_epoch + 1` for exactly one additional epoch.
