@@ -230,17 +230,18 @@ class CityNavBatch(torch.utils.data.IterableDataset):
 
             # if normalized_goal_xys[0] > 1:
             #     normalized_goal_xys[0] =
-            normalized_goal_grid = np.floor(np.array(normalized_goal_xys) * self.args.grid_size)
+            target_grid_size = getattr(self.args, 'target_grid_size', self.args.grid_size)
+            normalized_goal_grid = np.floor(np.array(normalized_goal_xys) * target_grid_size)
 
             normalized_cur_pos = self.normalize_position(current_position, episode.map_name, self.args.map_meters)
             normalized_cur_grid = np.floor(np.array(normalized_cur_pos) * self.args.grid_size)
 
-            if normalized_goal_grid[1] >= self.args.grid_size:
-                normalized_goal_grid[1] = self.args.grid_size - 1
-            if normalized_goal_grid[0] >= self.args.grid_size:
-                normalized_goal_grid[0] = self.args.grid_size - 1
-            normalized_goal_id = normalized_goal_grid[0] * self.args.grid_size + normalized_goal_grid[1]
-            if (normalized_goal_id >= self.args.grid_size ** 2) or (normalized_goal_id < 0):
+            if normalized_goal_grid[1] >= target_grid_size:
+                normalized_goal_grid[1] = target_grid_size - 1
+            if normalized_goal_grid[0] >= target_grid_size:
+                normalized_goal_grid[0] = target_grid_size - 1
+            normalized_goal_id = normalized_goal_grid[0] * target_grid_size + normalized_goal_grid[1]
+            if (normalized_goal_id >= target_grid_size ** 2) or (normalized_goal_id < 0):
                 print(normalized_goal_xys)
 
 

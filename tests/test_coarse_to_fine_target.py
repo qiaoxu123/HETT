@@ -98,6 +98,32 @@ class CoarseToFineETIntegrationTest(unittest.TestCase):
         ))
         self.assertEqual(tuple(history.shape), (batch, 1, 768))
 
+    def test_target_grid_can_differ_from_historical_grid(self):
+        args = SimpleNamespace(
+            grid_size=5, target_grid_size=7, demb=768, encoder_heads=12,
+            encoder_layers=2, dropout_transformer_encoder=0.1,
+            num_input_actions=1, dropout_emb=0.0, disable_task_interaction=True,
+            coarse_to_fine_target=True, target_topk=3, target_temperature=1.0,
+        )
+        model = ET(args)
+        batch = 1
+        inputs = {
+            'lang': torch.randn(batch, 4, 768),
+            'maps': torch.randn(batch, 3, 240, 240),
+            'candidates': torch.tensor([
+                [[i / 7, j / 7] for i in range(7) for j in range(7)]
+            ]),
+            'directions': torch.rand(batch, 1, 4),
+            'frames': torch.randn(batch, 1, 512, 49),
+            'grid_fts': torch.randn(batch, 3, 768),
+            'grid_index': torch.tensor([[0, 12, 24]]),
+            'lang_cls': torch.randn(batch, 49),
+            'lang_mask': torch.ones(batch, 4, dtype=torch.bool),
+        }
+        _, _, goals, logits, _ = model(**inputs)
+        self.assertEqual(tuple(goals.shape), (1, 2))
+        self.assertEqual(tuple(logits.shape), (1, 49, 1))
+
 
 if __name__ == '__main__':
     unittest.main()

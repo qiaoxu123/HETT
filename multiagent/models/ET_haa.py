@@ -239,10 +239,11 @@ class ET(nn.Module):
         )
 
         self.coarse_to_fine_target = getattr(args, 'coarse_to_fine_target', False)
+        self.target_grid_size = getattr(args, 'target_grid_size', self.args.grid_size)
         if self.coarse_to_fine_target:
             self.coarse_to_fine_goal = CoarseToFineGoalDecoder(
                 d_model=self.args.demb,
-                grid_size=self.args.grid_size,
+                grid_size=self.target_grid_size,
                 topk=getattr(args, 'target_topk', 3),
                 temperature=getattr(args, 'target_temperature', 1.0),
             )
@@ -349,7 +350,19 @@ class ET(nn.Module):
         grid_map_embeds = torch.zeros(batch_size, max_cell_num, 768).to(grid_fts[0].device) # [B, max_cell_num, 768]
 
         # 将历史空间记忆叠加进候选特征中，形成历史感知的目标候选表示
-        emb_candidates = emb_candidates + grid_map_input        # [B, N_cand, d_model]
+        history_for_candidates = grid_map_input
+        if self.target_grid_size != self.args.grid_size:
+            history_for_candidates = F.interpolate(
+                grid_map_input.view(
+                    batch_size, self.args.grid_size, self.args.grid_size, self.args.demb
+                ).permute(0, 3, 1, 2),
+                size=(self.target_grid_size, self.target_grid_size),
+                mode='bilinear',
+                align_corners=False,
+            ).permute(0, 2, 3, 1).reshape(
+                batch_size, self.target_grid_size ** 2, self.args.demb
+            )
+        emb_candidates = emb_candidates + history_for_candidates # [B, N_cand, d_model]
 
         # --------------- 6. Transformer 融合：把所有模态拼接后做跨模态 self-attention -----------------
         encoder_out, _ = self.encoder_vl.forward_with_map(

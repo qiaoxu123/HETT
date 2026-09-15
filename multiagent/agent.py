@@ -437,9 +437,10 @@ class NavCMTAgent:
         position_t = torch.from_numpy(np.array(current_positions, dtype=np.float32))
         traj = [defaultdict(list) for ob in obs]
 
+        target_grid_size = getattr(self.args, 'target_grid_size', self.args.grid_size)
         global_position = np.stack([np.array([i, j], dtype=np.float32)
-                                    for i in range(self.args.grid_size)
-                                    for j in range(self.args.grid_size)]) / self.args.grid_size
+                                    for i in range(target_grid_size)
+                                    for j in range(target_grid_size)]) / target_grid_size
 
         global_positions = torch.from_numpy(np.stack([global_position
                                                       for _ in range(batch_size)

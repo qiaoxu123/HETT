@@ -94,6 +94,8 @@ def parse_args():
 
     # model
     parser.add_argument('--grid_size', type=int, default=5)
+    parser.add_argument('--target_grid_size', type=int, default=None,
+                        help='target candidate grid; defaults to historical grid_size')
     parser.add_argument('--demb', type=int, default=768)
     parser.add_argument('--encoder_heads', type=int, default=12)
     parser.add_argument('--encoder_layers', type=int, default=2)
@@ -182,8 +184,12 @@ def parse_args():
 
 
     args = parser.parse_args()
+    if args.target_grid_size is None:
+        args.target_grid_size = args.grid_size
     if args.grad_accum < 1 or args.batch_size < 1 or args.max_episodes < 0:
         parser.error('grad_accum/batch_size must be positive; max_episodes must be nonnegative')
+    if args.grid_size < 1 or args.target_grid_size < 1:
+        parser.error('grid_size and target_grid_size must be positive')
     if args.target_topk < 1 or args.target_temperature <= 0:
         parser.error('target_topk must be positive and target_temperature must be > 0')
     if args.save_every < 1:
