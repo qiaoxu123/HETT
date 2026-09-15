@@ -46,13 +46,14 @@ def main():
     parser.add_argument('--parent-checkpoint', type=Path, default=DEFAULT_CORRECTED_CHECKPOINT)
     parser.add_argument('--parent-epoch', type=int, required=True,
                         help='completed epoch stored in parent checkpoint; screening adds exactly one epoch')
+    parser.add_argument('--target-grid-size', type=int, default=5)
     parser.add_argument('--allow-paused-predecessor', action='store_true',
                         help='screen from a saved partial-baseline checkpoint after an intentional pause')
     args = parser.parse_args()
     run = args.run_dir.resolve()
     parent_checkpoint = args.parent_checkpoint.resolve()
-    if args.parent_epoch < 1:
-        parser.error('--parent-epoch must be positive')
+    if args.parent_epoch < 1 or args.target_grid_size < 1:
+        parser.error('--parent-epoch and --target-grid-size must be positive')
     run.mkdir(parents=True, exist_ok=False)
     write(run / 'protocol.json', {
         'time': stamp(),
@@ -61,6 +62,8 @@ def main():
         'fine_tune_epochs': 1,
         'parent_epoch': args.parent_epoch,
         'total_epochs_argument': args.parent_epoch + 1,
+        'historical_grid_size': 5,
+        'target_grid_size': args.target_grid_size,
         'parent_checkpoint': str(parent_checkpoint),
         'allow_paused_predecessor': args.allow_paused_predecessor,
         'test_unseen': False,
@@ -99,6 +102,8 @@ def main():
             '--seed', '0', '--interval', '30', '--lock-file', str(INTERNAL_LOCK),
             '--variant-arg=--disable_task_interaction',
             '--variant-arg=--coarse_to_fine_target',
+            '--variant-arg=--target_grid_size',
+            f'--variant-arg={args.target_grid_size}',
             '--train-variant-arg=--checkpoint',
             f'--train-variant-arg={parent_checkpoint}',
         ]
@@ -114,6 +119,7 @@ def main():
             PYTHON, str(train_run / 'source/scripts/evaluate_target_contrasts.py'),
             '--checkpoint', str(train_run / 'checkpoints/best_val_unseen'),
             '--output-dir', str(contrast_dir), '--pairs', '16', '--seed', '20260911',
+            '--target-grid-size', str(args.target_grid_size),
         ]
         write(run / 'status.json', {'time': stamp(), 'phase': 'hard_contrast'})
         code = run_logged(contrast_command, run / 'hard_contrast.log', train_run / 'source')

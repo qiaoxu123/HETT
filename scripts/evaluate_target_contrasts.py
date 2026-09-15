@@ -95,12 +95,13 @@ def pair_manifest(objects, pairs):
     return rows
 
 
-def make_args(checkpoint, output):
+def make_args(checkpoint, output, target_grid_size):
     from multiagent.parser import parse_args
     saved = sys.argv
     sys.argv = [
         'contrast', '--mode', 'eval', '--batch_size', '2',
         '--disable_task_interaction', '--coarse_to_fine_target',
+        '--target_grid_size', str(target_grid_size),
         '--checkpoint', str(checkpoint), '--output_dir', str(output),
     ]
     args = parse_args()
@@ -108,14 +109,14 @@ def make_args(checkpoint, output):
     return args
 
 
-def evaluate(output, checkpoint, objects, pairs):
+def evaluate(output, checkpoint, objects, pairs, target_grid_size):
     import multiagent.env as env_module
     from multiagent.agent import NavCMTAgent
 
     selected = [trajectory for pair in pairs for trajectory in pair[:2]]
     original_loader = env_module.load_mturk_trajectories
     env_module.load_mturk_trajectories = lambda *unused, **kwargs: selected
-    args = make_args(checkpoint, output)
+    args = make_args(checkpoint, output, target_grid_size)
     torch.manual_seed(args.seed)
     np.random.seed(args.seed)
     random.seed(args.seed)
@@ -146,20 +147,41 @@ def evaluate(output, checkpoint, objects, pairs):
     torch.save(correct, output / 'correct_predictions.pt')
     torch.save(swapped, output / 'swapped_predictions.pt')
 
+    from multiagent.mapdata import MAP_BOUNDS
+
+    def target_cell(map_name, point):
+        bounds = MAP_BOUNDS[map_name]
+        nx = (point.x - bounds.x_min) / args.map_meters
+        ny = (bounds.y_max - point.y) / args.map_meters
+        gx = min(target_grid_size - 1, max(0, int(np.floor(nx * target_grid_size))))
+        gy = min(target_grid_size - 1, max(0, int(np.floor(ny * target_grid_size))))
+        return gx * target_grid_size + gy
+
+    other_targets = {}
+    for left, right, _ in pairs:
+        other_targets[(left.map_name, left.object_id, left.desc_id)] = right.target_position.xy
+        other_targets[(right.map_name, right.object_id, right.desc_id)] = left.target_position.xy
+
     rows = []
     for episode_id in sorted(correct):
         normal, wrong = correct[episode_id], swapped[episode_id]
         target = normal['goal']
         normal_goal, wrong_goal = normal['all_pred_goal'][0], wrong['all_pred_goal'][0]
+        gt_cells_differ = target_cell(episode_id[0], target) != target_cell(
+            episode_id[0], other_targets[episode_id]
+        )
         rows.append({
             'id': str(episode_id),
             'first_prediction_shift_m': normal_goal.dist_to(wrong_goal),
             'first_prediction_correct_advantage_m': wrong_goal.dist_to(target) - normal_goal.dist_to(target),
             'first_cell_changed': normal['target_grid_prediction'][0] != wrong['target_grid_prediction'][0],
+            'paired_gt_cells_differ': gt_cells_differ,
+            'first_prediction_error_m': normal_goal.dist_to(target),
             'final_distance_correct': normal['trajectory'][-1].xy.dist_to(target),
             'final_distance_swapped': wrong['trajectory'][-1].xy.dist_to(target),
         })
     advantages = np.array([row['first_prediction_correct_advantage_m'] for row in rows])
+    eligible = [row for row in rows if row['paired_gt_cells_differ']]
     result = {
         'episodes': len(rows),
         'pairs': len(pairs),
@@ -170,6 +192,13 @@ def evaluate(output, checkpoint, objects, pairs):
         'mean_first_prediction_correct_advantage_m': float(advantages.mean()),
         'correct_first_prediction_better_percent': float(100 * (advantages > 0).mean()),
         'first_cell_change_percent': float(100 * np.mean([row['first_cell_changed'] for row in rows])),
+        'different_gt_cell_episodes': len(eligible),
+        'first_cell_change_percent_when_gt_cells_differ': float(
+            100 * np.mean([row['first_cell_changed'] for row in eligible])
+        ) if eligible else None,
+        'mean_first_prediction_error_m': float(np.mean([
+            row['first_prediction_error_m'] for row in rows
+        ])),
         'rows': rows,
     }
     (output / 'summary.json').write_text(json.dumps(result, indent=2, ensure_ascii=False) + '\n')
@@ -188,6 +217,7 @@ def main():
     parser.add_argument('--output-dir', type=Path, required=True)
     parser.add_argument('--pairs', type=int, default=16)
     parser.add_argument('--seed', type=int, default=20260911)
+    parser.add_argument('--target-grid-size', type=int, default=5)
     parser.add_argument('--manifest-only', action='store_true')
     args = parser.parse_args()
     args.output_dir.mkdir(parents=True, exist_ok=False)
@@ -205,7 +235,7 @@ def main():
     if args.manifest_only:
         print(json.dumps({'pairs': len(pairs), 'maps': sorted({pair[0].map_name for pair in pairs})}))
     elif args.checkpoint:
-        evaluate(args.output_dir, args.checkpoint, objects, pairs)
+        evaluate(args.output_dir, args.checkpoint, objects, pairs, args.target_grid_size)
     else:
         parser.error('--checkpoint is required unless --manifest-only is used')
 

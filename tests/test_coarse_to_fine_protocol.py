@@ -16,6 +16,7 @@ class CoarseToFineProtocolTest(unittest.TestCase):
         self.assertIn("'--max-episodes', '512'", source)
         self.assertIn("'--train-variant-arg=--checkpoint'", source)
         self.assertIn("'--variant-arg=--coarse_to_fine_target'", source)
+        self.assertIn("'--variant-arg=--target_grid_size'", source)
 
     def test_paused_predecessor_requires_explicit_opt_in(self):
         source = (ROOT / 'scripts/run_coarse_to_fine_smoke.py').read_text()
