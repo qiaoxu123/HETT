@@ -13,7 +13,7 @@ WORKTREE = ROOT / '08-coarse-to-fine-target'
 PYTHON = '/home/tenant2/miniconda3/envs/AirVLN39/bin/python'
 PREDECESSOR_UNIT = 'hett-corrected-baseline-full-s0-20260911.service'
 PREDECESSOR_STATUS = ROOT / '00-control/runs/full_corrected_baseline_queue_s0_20260911/status.json'
-CORRECTED_CHECKPOINT = ROOT / '01-teacher-fix/runs/teacher_fix_full_s0/checkpoints/best_val_unseen'
+DEFAULT_CORRECTED_CHECKPOINT = ROOT / '01-teacher-fix/runs/teacher_fix_full_s0/checkpoints/best_val_unseen'
 GLOBAL_LOCK = ROOT / '.gpu-validation.lock'
 INTERNAL_LOCK = ROOT / '.coarse-to-fine-internal.lock'
 
@@ -43,15 +43,20 @@ def run_logged(command, log_path, cwd):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--run-dir', type=Path, required=True)
+    parser.add_argument('--parent-checkpoint', type=Path, default=DEFAULT_CORRECTED_CHECKPOINT)
+    parser.add_argument('--allow-paused-predecessor', action='store_true',
+                        help='screen from a saved partial-baseline checkpoint after an intentional pause')
     args = parser.parse_args()
     run = args.run_dir.resolve()
+    parent_checkpoint = args.parent_checkpoint.resolve()
     run.mkdir(parents=True, exist_ok=False)
     write(run / 'protocol.json', {
         'time': stamp(),
         'seed': 0,
         'train_episodes': 512,
         'epochs': 1,
-        'parent_checkpoint': str(CORRECTED_CHECKPOINT),
+        'parent_checkpoint': str(parent_checkpoint),
+        'allow_paused_predecessor': args.allow_paused_predecessor,
         'test_unseen': False,
         'gates': {
             'first_cell_change_percent_min': 25.0,
@@ -67,17 +72,17 @@ def main():
         lock_stream.write(f'{Path(__file__).name} {run}\n')
         lock_stream.flush()
 
-        while active(PREDECESSOR_UNIT):
+        while active(PREDECESSOR_UNIT) and not args.allow_paused_predecessor:
             write(run / 'status.json', {'time': stamp(), 'phase': 'waiting_for_predecessor',
                                          'unit': PREDECESSOR_UNIT})
             time.sleep(30)
         predecessor = json.loads(PREDECESSOR_STATUS.read_text())
-        if predecessor.get('phase') != 'complete':
+        if predecessor.get('phase') != 'complete' and not args.allow_paused_predecessor:
             write(run / 'status.json', {'time': stamp(), 'phase': 'blocked',
                                          'predecessor': predecessor})
             raise SystemExit('corrected baseline did not complete successfully')
-        if not CORRECTED_CHECKPOINT.exists():
-            raise FileNotFoundError(CORRECTED_CHECKPOINT)
+        if not parent_checkpoint.exists():
+            raise FileNotFoundError(parent_checkpoint)
 
         train_run = run / 'finetune'
         command = [
@@ -89,7 +94,7 @@ def main():
             '--variant-arg=--disable_task_interaction',
             '--variant-arg=--coarse_to_fine_target',
             '--variant-arg=--checkpoint',
-            f'--variant-arg={CORRECTED_CHECKPOINT}',
+            f'--variant-arg={parent_checkpoint}',
         ]
         write(run / 'status.json', {'time': stamp(), 'phase': 'finetuning'})
         code = run_logged(command, run / 'finetune.log', WORKTREE)

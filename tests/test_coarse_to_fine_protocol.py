@@ -17,6 +17,11 @@ class CoarseToFineProtocolTest(unittest.TestCase):
         self.assertIn("'--variant-arg=--checkpoint'", source)
         self.assertIn("'--variant-arg=--coarse_to_fine_target'", source)
 
+    def test_paused_predecessor_requires_explicit_opt_in(self):
+        source = (ROOT / 'scripts/run_coarse_to_fine_smoke.py').read_text()
+        self.assertIn("parser.add_argument('--allow-paused-predecessor', action='store_true'", source)
+        self.assertIn("and not args.allow_paused_predecessor", source)
+
     def test_full_run_gate_is_predeclared(self):
         source = (ROOT / 'scripts/run_coarse_to_fine_smoke.py').read_text()
         self.assertIn("metrics['first_cell_change_percent'] >= 25.0", source)
