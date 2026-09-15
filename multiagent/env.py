@@ -15,6 +15,7 @@ from multiagent.dataset.generate import generate_episodes_from_mturk_trajectorie
 from multiagent.dataset.mturk_trajectory import load_mturk_trajectories
 from multiagent.mapdata import MAP_BOUNDS
 from multiagent.maps.landmark_nav_map import LandmarkNavMap
+from multiagent.teacher.straight_probe import straight_teacher, balanced_subset
 from multiagent.observation import cropclient
 from multiagent.space import Pose4D, modulo_radians, Point2D
 from typing import List, Dict, Callable, Tuple
@@ -129,9 +130,14 @@ class CityNavBatch(torch.utils.data.IterableDataset):
         # 冒烟测试用：--max_episodes N 时只取前 N 条轨迹（默认 0 = 全部）
         max_eps = getattr(args, 'max_episodes', 0)
         if max_eps and max_eps > 0:
-            mturk_trajs = mturk_trajs[:max_eps]
+            mturk_trajs = (balanced_subset(mturk_trajs,max_eps,seed)
+                           if getattr(args,'balanced_screen',False) else mturk_trajs[:max_eps])
         full_data = generate_episodes_from_mturk_trajectories(
             objects, mturk_trajs)
+        # Keep original episodes/reference trajectories for scoring and student logs.
+        self.teacher_paths = {}
+        if split == 'train_seen' and getattr(args,'teacher_path_mode','human') == 'straight':
+            self.teacher_paths = {ep.id:straight_teacher(ep.start_pose,ep.target_position) for ep in full_data}
 
         random.seed(seed)
         if self.split == 'train_seen':
@@ -298,6 +304,7 @@ class CityNavBatch(torch.utils.data.IterableDataset):
                 'position': normalized_position,
                 'cur_grid': normalized_pos_id,
                 'trajectory': episode.trajectory,
+                'teacher_trajectory': self.teacher_paths.get(episode.id,episode.trajectory),
                 'progress': progress,
                 'centroids': np.mean(normalized_centroids, axis=0) if normalized_centroids else np.array([0, 0]),
                 'centroid_goal': pred_goal_xy,

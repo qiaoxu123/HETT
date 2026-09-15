@@ -94,6 +94,8 @@ def parse_args():
 
     # model
     parser.add_argument('--grid_size', type=int, default=5)
+    parser.add_argument('--teacher_path_mode', choices=['human','straight'], default='human')
+    parser.add_argument('--balanced_screen', action='store_true')
     parser.add_argument('--demb', type=int, default=768)
     parser.add_argument('--encoder_heads', type=int, default=12)
     parser.add_argument('--encoder_layers', type=int, default=2)

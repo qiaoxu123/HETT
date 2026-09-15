@@ -692,13 +692,14 @@ class NavCMTAgent:
                     # dst = Point2D(obs[i]['centroid_goal'][0], obs[i]['centroid_goal'][1])
                     # dst = self.env.unnormalize_position(global_position[cpu_goal[i]], obs[i]['map_name'], self.args.map_meters)
                     if self.feedback == 'teacher':
+                        teacher_path = obs[i].get('teacher_trajectory',obs[i]['trajectory'])
                         cur_step = advance_teacher_stage1(
                             stage1_steps,
                             i,
                             self.args.move_iteration,
-                            len(obs[i]['trajectory']),
+                            len(teacher_path),
                         )
-                        poses[i] = obs[i]['trajectory'][cur_step]
+                        poses[i] = teacher_path[cur_step]
                     else:
                         stage1_steps[i] += 1
                         poses[i] = self.move(poses[i], dst,
