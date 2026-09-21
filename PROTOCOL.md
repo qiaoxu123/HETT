@@ -1,28 +1,22 @@
-# Factorized relational heatmap protocol
+# Token-level landmark grounding protocol
 
 ## Question
 
-Does explicitly factoring target direction and distance from each landmark improve the
-relational heatmap from experiment 27?
+Can explicit instruction-token to landmark-name grounding improve the factorized dense
+heatmap on unseen city blocks without changing geometry, navigation, or the action head?
 
 ## Single intended change
 
-- Keep the same instruction marking, per-landmark identity, pair field, 64×64 output,
-  loss, CNN refiner, data splits, six epochs, and seeds 2701/2702/2703.
-- Replace 12 broad relation fields with two independent distributions:
-  - angle: isotropic plus eight compass sectors;
-  - exterior distance from the contour: 0, 15, 30, 50, 80, and 120 metres.
-- Multiply the selected angle and distance fields before combining landmarks. This can
-  represent, for example, "left of A, about 30 m away" directly.
+Keep experiment 28's contours, direction/distance bases, spatial refiner, data, loss,
+six epochs, and three seeds. Replace the small marked-sentence GRU with frozen pristine
+`bert-base-uncased` tokens. Each landmark name queries the instruction tokens through
+cross-attention before predicting its direction and distance weights.
 
-No RGB, target contour, validation label, or navigation trajectory is a model input.
-Development uses val_seen and val_unseen only; test_unseen remains untouched.
+No RGB, target contour, target coordinate, validation label, or trajectory is an
+inference input. Run only train_seen, val_seen, and val_unseen.
 
-## Metrics and decision
+## Decision
 
-Report Top-1 Hit@20, Top-5 Recall@20, median/P90 error, 20 m probability mass, and
-relation-wise metrics. Compare directly with experiment 27's three-seed means:
-val_seen 37.50/73.37 and val_unseen 27.73/58.00 (Top-1/Top-5).
-
-Pass only if the three-seed val_unseen mean reaches Top-1 ≥35% and Top-5 ≥70%, with
-the seen-minus-unseen Top-1 gap no larger than 15 points.
+Primary comparison is experiment 28: val_unseen Top-1 Hit@20 27.81% and Top-5
+Recall@20 57.20%. Advance only if three-seed unseen Top-1 improves by at least 3 points
+without lower Top-5, or Top-5 reaches at least 65% without lower Top-1.
