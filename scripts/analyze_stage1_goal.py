@@ -36,6 +36,14 @@ def summarize(rows):
     return result
 
 
+def navigation(rows):
+    final = np.array([row['trajectory'][-1].xy.dist_to(row['goal']) for row in rows.values()])
+    oracle = np.array([min(pose.xy.dist_to(row['goal']) for pose in row['trajectory'])
+                       for row in rows.values()])
+    return {'episodes': len(rows), 'sr': 100 * float(np.mean(final <= 20)),
+            'ne_m': float(np.mean(final)), 'oracle_sr': 100 * float(np.mean(oracle <= 20))}
+
+
 def paired(parent, candidate):
     keys = sorted(set(parent) & set(candidate))
     output = {'episodes': len(keys)}
@@ -71,10 +79,8 @@ def main():
         report['splits'][split] = {
             'parent': summarize(shared), 'candidate': summarize(candidate),
             'paired': paired(parent, candidate),
-            'navigation': {
-                'parent': json.loads((args.parent_eval / f'{split}_metrics.json').read_text()),
-                'candidate': json.loads((args.candidate_eval / f'{split}_metrics.json').read_text()),
-            },
+            'navigation_paired_subset': {'parent': navigation(shared),
+                                         'candidate': navigation(candidate)},
         }
     unseen = report['splits']['val_unseen']['paired']['last']['delta_pp']
     seen = report['splits']['val_seen']['paired']['last']['delta_pp']
@@ -91,7 +97,15 @@ def main():
         lines.append(f"| {split} | {last['parent_hit20']:.2f}% | {last['candidate_hit20']:.2f}% | "
                      f"{last['delta_pp']:+.2f} pp | {first['delta_pp']:+.2f} pp |")
     lines += ['', ('**通过筛选门槛。**' if report['gate']['pass'] else '**未通过筛选门槛。**'),
-              '', '这是 512-episode、单 seed 的机制筛选，不是最终导航成绩。']
+              '', '导航副指标（相同 episode）:', '',
+              '| 划分 | 父模型 SR | 微调后 SR | 父模型 NE | 微调后 NE |',
+              '|---|---:|---:|---:|---:|']
+    for split, row in report['splits'].items():
+        old = row['navigation_paired_subset']['parent']
+        new = row['navigation_paired_subset']['candidate']
+        lines.append(f"| {split} | {old['sr']:.2f}% | {new['sr']:.2f}% | "
+                     f"{old['ne_m']:.2f} m | {new['ne_m']:.2f} m |")
+    lines += ['', '这是 512-episode、单 seed 的机制筛选，不是最终导航成绩。']
     (args.out / 'REPORT.md').write_text('\n'.join(lines) + '\n')
     print(json.dumps(report['gate'], indent=2, ensure_ascii=False))
 
