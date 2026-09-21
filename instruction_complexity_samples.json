@@ -1,0 +1,5519 @@
+{
+  "simple_landmark": [
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_12",
+      "object_id": 100,
+      "annotation_id": 3,
+      "text": "A building that is in between the Department of History of Art and the Brook House.",
+      "target": "building",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": false,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Brook House",
+        "Department of History of Art"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "birmingham_block_9",
+      "object_id": 49,
+      "annotation_id": 0,
+      "text": "The white car behind the building on Aldridge Road that has eye windows on the roof and has a a white car next to the building. It is across the intersection from Holford Drive.",
+      "target": "white car",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Aldridge Road",
+        "Holford Drive"
+      ],
+      "surroundings": [
+        "eye windows"
+      ],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "birmingham_block_3",
+      "object_id": 64,
+      "annotation_id": 4,
+      "text": "A large building on Birchfield Road across from Perry Barr Carpets. Part of the building has purple and blue walls.",
+      "target": "large building",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Birchfield Road",
+        "Perry Barr Carpets"
+      ],
+      "surroundings": [
+        "purple and blue walls"
+      ],
+      "auxiliary_items": []
+    },
+    {
+      "split": "val_unseen",
+      "map": "cambridge_block_3",
+      "object_id": 40,
+      "annotation_id": 1,
+      "text": "The brown, gray, and turquoise building adjacent to the side of the Squash Court building.",
+      "target": "building",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Squash Court"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_12",
+      "object_id": 16,
+      "annotation_id": 3,
+      "text": "The corner brown building that is on the Trumpington Road and the Lensfield Road.",
+      "target": "brown building",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Trumpington Road",
+        "Lensfield Road"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "birmingham_block_12",
+      "object_id": 243,
+      "annotation_id": 2,
+      "text": "The parking lot underneath the massive parking lot for the West Midlands Police Custody Suite, when viewed aerially with Holford Drive to the right.",
+      "target": "parking lot",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": false,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "West Midlands Police Custody Suite",
+        "Holford Drive"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "birmingham_block_1",
+      "object_id": 3,
+      "annotation_id": 0,
+      "text": "The brick building at the end of Leslie Road that has a gray roof and a gray garage door.",
+      "target": "brick building",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Leslie Road"
+      ],
+      "surroundings": [
+        "gray roof",
+        "gray garage door"
+      ],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_20",
+      "object_id": 236,
+      "annotation_id": 5,
+      "text": "The navy blue car parked diagonally in an alleyway off of Warkworth Terrace.",
+      "target": "navy blue car",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Warkworth Terrace"
+      ],
+      "surroundings": [
+        "alleyway"
+      ],
+      "auxiliary_items": []
+    },
+    {
+      "split": "val_seen",
+      "map": "birmingham_block_1",
+      "object_id": 125,
+      "annotation_id": 4,
+      "text": "A black car that is parked by the Celine Grove traffic Road. There is no any car parked next to it.",
+      "target": "black car",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Celine Grove"
+      ],
+      "surroundings": [
+        "next to it"
+      ],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_7",
+      "object_id": 29,
+      "annotation_id": 0,
+      "text": "this is part of the building. this building is the Old Metallurgy building and is on Pembroke Street. This section of the building is near the Free School Lane corner of the building. this fragment includes the small corner section of the building and the rectangular high roof section in the middle.",
+      "target": "building",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Old Metallurgy",
+        "Pembroke Street",
+        "Free School Lane"
+      ],
+      "surroundings": [
+        "small corner section",
+        "rectangular high roof section"
+      ],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_9",
+      "object_id": 372,
+      "annotation_id": 0,
+      "text": "The square patch of green grass that is the closest to the Cross Keys Yard among the several patches of green grass in the area enclosed by the Magdalene College Chapel and the Hall building.",
+      "target": "square patch of green grass",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Cross Keys Yard",
+        "Magdalene College Chapel",
+        "Hall"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_9",
+      "object_id": 73,
+      "annotation_id": 1,
+      "text": "The large building that is L shaped in front of the Mallory Court, NW Range with gray and brown roofs.",
+      "target": "large building",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Mallory Court, NW Range"
+      ],
+      "surroundings": [
+        "gray roof",
+        "brown roof"
+      ],
+      "auxiliary_items": []
+    },
+    {
+      "split": "val_unseen",
+      "map": "cambridge_block_2",
+      "object_id": 118,
+      "annotation_id": 3,
+      "text": "This is a small sidewalk, next to the Scholars' Lawn near the Trinity Bridge.",
+      "target": "small sidewalk",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Scholars' Lawn",
+        "Trinity Bridge"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "val_seen",
+      "map": "cambridge_block_9",
+      "object_id": 139,
+      "annotation_id": 5,
+      "text": "The gray rounded building at the corner of New Park Street and Portugal Street.",
+      "target": "gray rounded building",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "New Park Street",
+        "Portugal Street"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_18",
+      "object_id": 19,
+      "annotation_id": 5,
+      "text": "The brown L-shaped building that is located behind the Catholic of Our Lady and the English Martyrs.",
+      "target": "brown L-shaped building",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Catholic Church"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_13",
+      "object_id": 107,
+      "annotation_id": 3,
+      "text": "A multi-colored beige, Brown and white house with gray roofs, near the corner of the map off Camden Court, across from the Emmanuel College Library",
+      "target": "multi-colored house",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Camden Court",
+        "Emmanuel College Library"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_23",
+      "object_id": 6,
+      "annotation_id": 1,
+      "text": "On the north side of the road Ferry Path, this gray roofed building is directly to the left of Townsends Light Blue Cycle Centre.",
+      "target": "gray roofed building",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Ferry Path",
+        "Townsends Light Blue Cycle Centre"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_9",
+      "object_id": 15,
+      "annotation_id": 1,
+      "text": "The building to the right of the Jesus College Forum building, its roof is shaped like 3 trapezoid or almost rectangles side by side.",
+      "target": "building",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Jesus College Forum"
+      ],
+      "surroundings": [
+        "roof"
+      ],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_21",
+      "object_id": 109,
+      "annotation_id": 2,
+      "text": "The building with the dark brown roof that is connected to the back of the Eden Chapel.",
+      "target": "building",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Eden Chapel"
+      ],
+      "surroundings": [
+        "dark brown roof"
+      ],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "birmingham_block_12",
+      "object_id": 157,
+      "annotation_id": 3,
+      "text": "A tennis courts is adjacent to the Manchester Bourneemouth footpath and next to the West Midlands Police Custody Suite.",
+      "target": "tennis courts",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": false,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "CrossCountry: Manchester => Bournemouth (all stations)",
+        "West Midlands Police Custody Suite"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_28",
+      "object_id": 8,
+      "annotation_id": 4,
+      "text": "This brown roofed building is directly to the right of the Pembroke College Boat Club building.",
+      "target": "brown roofed building",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Pembroke College Boat Club"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_13",
+      "object_id": 89,
+      "annotation_id": 1,
+      "text": "The white building along Saint Andrew's street. It is in between stone yard centre and language centre-olsd school music center.",
+      "target": "white building",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Language Centre - Old Music School",
+        "Stone Yard Centre",
+        "Saint Andrew's Street"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_20",
+      "object_id": 119,
+      "annotation_id": 0,
+      "text": "A multicolored beige and white building with a brown roof that has solar panels on the far left side of it, off warkworth Terrace across from the Parkside police station",
+      "target": "building",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Warkworth Terrace",
+        "Parkside"
+      ],
+      "surroundings": [
+        "solar panels"
+      ],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_13",
+      "object_id": 478,
+      "annotation_id": 4,
+      "text": "The green rectangular lawn area on the side of the Courtyard Building.",
+      "target": "green rectangular lawn area",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Courtyard Building"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_13",
+      "object_id": 35,
+      "annotation_id": 5,
+      "text": "The gray and green building next to the Museum of Zoology.",
+      "target": "gray and green building",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Museum of Zoology"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "val_unseen",
+      "map": "birmingham_block_5",
+      "object_id": 211,
+      "annotation_id": 5,
+      "text": "It is specified as ground here, but there are other types of objects within the marked area. This is a structure consisting of a green ground and a red running track and tribunes around it. this area is the oval shaped structure next to the Perry Barr Greyhound Stadium building.",
+      "target": "structure",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Perry Barr Greyhound Stadium"
+      ],
+      "surroundings": [
+        "ground",
+        "red running track",
+        "tribunes",
+        "oval shaped structure"
+      ],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_13",
+      "object_id": 501,
+      "annotation_id": 5,
+      "text": "A small section of a rectangular grass area red-lined, surrounded by dirt, on the corner of the map of trumpington Street",
+      "target": "grass area",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Trumpington Street"
+      ],
+      "surroundings": [
+        "rectangular",
+        "red-lined",
+        "dirt",
+        "corner of the map"
+      ],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_9",
+      "object_id": 216,
+      "annotation_id": 1,
+      "text": "This is a white car parked on New Park Street near where the street meets Portugal Street. There is no car behind it but there is another white car in front of it.",
+      "target": "white car",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "New Park Street",
+        "Portugal Street"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_13",
+      "object_id": 491,
+      "annotation_id": 3,
+      "text": "The green lawn at the centre of the Kenny A and the Kenny B buildings.",
+      "target": "green lawn",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Kenny A"
+      ],
+      "surroundings": [
+        "centre"
+      ],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_7",
+      "object_id": 379,
+      "annotation_id": 5,
+      "text": "The ground behind the Cosin Court building that overlaps the blue solar panels on the roof.",
+      "target": "ground",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Cosin Court"
+      ],
+      "surroundings": [
+        "blue solar panels"
+      ],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_7",
+      "object_id": 65,
+      "annotation_id": 3,
+      "text": "The riverside building with brown roof and blue wall situated at the right side of Study Centre Building along the road named Silver street.",
+      "target": "riverside building",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Study Centre",
+        "Silver Street"
+      ],
+      "surroundings": [
+        "brown roof",
+        "blue wall"
+      ],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_20",
+      "object_id": 406,
+      "annotation_id": 5,
+      "text": "The white car on Victoria Street parked in front of Unitarian Hall.",
+      "target": "white car",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Victoria Street",
+        "Unitarian Hall"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_20",
+      "object_id": 161,
+      "annotation_id": 1,
+      "text": "This is a light brown building with a gray roof located on City Road and Burleigh Street.  Behind it is Primark.",
+      "target": "light brown building",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "City Road",
+        "Burleigh Street",
+        "Primark"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "val_unseen",
+      "map": "birmingham_block_5",
+      "object_id": 5,
+      "annotation_id": 5,
+      "text": "The building attached to the Johnsons Apparel Master building next to the track.",
+      "target": "building",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": false,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Johnsons Apparel Master"
+      ],
+      "surroundings": [
+        "track"
+      ],
+      "auxiliary_items": []
+    },
+    {
+      "split": "val_unseen",
+      "map": "cambridge_block_3",
+      "object_id": 404,
+      "annotation_id": 5,
+      "text": "This is a parking space behind Buckingham Room with over a dozen cars. Squash Court and Bin Brooks are found near this parking space.",
+      "target": "parking space",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": false,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Buckingham Room",
+        "Squash Court",
+        "Bin Brook"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_9",
+      "object_id": 71,
+      "annotation_id": 4,
+      "text": "This is a building with a brown roof located on Magdalene Street. Across the street from this building there is Magdalene College Chapel.",
+      "target": "building with a brown roof",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Magdalene Street",
+        "Magdalene College Chapel"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_20",
+      "object_id": 249,
+      "annotation_id": 5,
+      "text": "The gray car parked across from the short side of the Parkside Police Station.",
+      "target": "gray car",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Parkside Police Station"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_12",
+      "object_id": 64,
+      "annotation_id": 3,
+      "text": "The tiny gray building across from the Grove Lodge Cottage building.",
+      "target": "tiny gray building",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Grove Lodge Cottage"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_7",
+      "object_id": 153,
+      "annotation_id": 4,
+      "text": "A small house behind the Pembroke college library. It has Peterhouse masters lodge behind it.",
+      "target": "small house",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Pembroke College Library",
+        "Peterhouse Master's Lodge"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_20",
+      "object_id": 134,
+      "annotation_id": 3,
+      "text": "If you're on John Street facing the Eve House this is the building directly to the right of it.",
+      "target": "building",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": false,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Eve House"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "val_unseen",
+      "map": "birmingham_block_5",
+      "object_id": 41,
+      "annotation_id": 3,
+      "text": "The brown and gray house on Walsall Road that is at the intersection with Cliveden Avenue.",
+      "target": "brown and gray house",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Walsall Road",
+        "Cliveden Avenue"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_28",
+      "object_id": 260,
+      "annotation_id": 0,
+      "text": "The red car that is on the Walnut tree Avenue, Elizabeth Way Bridge is at the front, Riverside Road is to the right, and the parking lot is to the left.",
+      "target": "red car",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Walnut Tree Avenue",
+        "Elizabeth Way",
+        "Riverside"
+      ],
+      "surroundings": [
+        "parking lot"
+      ],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_12",
+      "object_id": 15,
+      "annotation_id": 5,
+      "text": "To the north of FitzWilliam Museum Department Department and to the right of Cambridge Judge Business School, this long building has a dark gray roof.",
+      "target": "long building",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Fitzwilliam Museum",
+        "Cambridge Judge Business School"
+      ],
+      "surroundings": [
+        "dark gray roof"
+      ],
+      "auxiliary_items": []
+    },
+    {
+      "split": "val_unseen",
+      "map": "cambridge_block_10",
+      "object_id": 185,
+      "annotation_id": 2,
+      "text": "The ground that is behind the Pepys Library building and east of the Master's Lodge.",
+      "target": "ground",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": false,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Pepys Library",
+        "Master's Lodge"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_21",
+      "object_id": 261,
+      "annotation_id": 5,
+      "text": "The blue car parked in the reddish parking lot outside the Grafton building.",
+      "target": "blue car",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Grafton Street"
+      ],
+      "surroundings": [
+        "reddish parking lot"
+      ],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_7",
+      "object_id": 384,
+      "annotation_id": 4,
+      "text": "The large green lawn to the left of the Perne Library on Trumpington Street.",
+      "target": "large green lawn",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Perne Library",
+        "Trumpington Street"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "birmingham_block_1",
+      "object_id": 43,
+      "annotation_id": 2,
+      "text": "The building next to the Nike Factory Store that is beside the The Gym and the One Stop building.",
+      "target": "building",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": false,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Nike Factory Store",
+        "The Gym",
+        "One Stop"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_28",
+      "object_id": 260,
+      "annotation_id": 5,
+      "text": "One red car on Walnut Tree Avenue facing the Elizabeth way bridge",
+      "target": "red car",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Walnut Tree Avenue",
+        "Elizabeth Way"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_13",
+      "object_id": 323,
+      "annotation_id": 3,
+      "text": "Between Combined Facility and St Andrew's Street Baptist Church, this white car is directly south of Combined Facility.",
+      "target": "white car",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "St Andrew's Street Baptist Church",
+        "Combined Facility"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_20",
+      "object_id": 148,
+      "annotation_id": 3,
+      "text": "this is a gray roofed building with white walls and is on the corner of Eden Street Backway on Portland Place road. here, this building and a part of the building next to it were chosen together. The other selected building section is on the Eden Street Backway.",
+      "target": "gray roofed building",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Portland Place",
+        "Eden Street Backway"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_7",
+      "object_id": 125,
+      "annotation_id": 2,
+      "text": "This is the building which is directly across the street from the Dokett Building on Queens Lane.",
+      "target": "building",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": false,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Dokett Building",
+        "Queens Lane"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "val_unseen",
+      "map": "birmingham_block_5",
+      "object_id": 805,
+      "annotation_id": 5,
+      "text": "The narrow parking behind the BMTR building along the Walsall road.",
+      "target": "narrow parking",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "BMTR",
+        "Walsall Road"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_9",
+      "object_id": 117,
+      "annotation_id": 0,
+      "text": "This is a small building which is right between the Wolfson Building, and the Winstanley Lecture Theatre.",
+      "target": "small building",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Wolfson Building",
+        "Winstanley Lecture Theatre"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_17",
+      "object_id": 7,
+      "annotation_id": 2,
+      "text": "A gray and brown roofed building that's long and somewhat L shaped behind Corona Road",
+      "target": "gray and brown roofed building",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Corona Road"
+      ],
+      "surroundings": [
+        "long",
+        "L shaped"
+      ],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_13",
+      "object_id": 138,
+      "annotation_id": 3,
+      "text": "The building right behind Downing Place United Reform Church on Downing Street.",
+      "target": "building",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": false,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Downing Place United Reformed Church",
+        "Downing Street"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_9",
+      "object_id": 86,
+      "annotation_id": 2,
+      "text": "The long building across the Sidney Street from the Blue Boar I to N building. The back of it connects to the Hall Court.",
+      "target": "long building",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Sidney Street",
+        "Blue Boar I to N",
+        "Hall Court"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "val_unseen",
+      "map": "cambridge_block_2",
+      "object_id": 102,
+      "annotation_id": 1,
+      "text": "The small square ground that is in the bottom left outside corner of the outer walls of the Forbes Mellon Library.",
+      "target": "small square ground",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Forbes Mellon Library"
+      ],
+      "surroundings": [
+        "bottom left outside corner",
+        "outer walls"
+      ],
+      "auxiliary_items": []
+    },
+    {
+      "split": "val_unseen",
+      "map": "cambridge_block_10",
+      "object_id": 133,
+      "annotation_id": 2,
+      "text": "A blue camper with a white top and an awning extended from the side. It is parked beside the building called Saint Giles.",
+      "target": "blue camper",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Saint Giles"
+      ],
+      "surroundings": [
+        "white top",
+        "awning"
+      ],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_9",
+      "object_id": 403,
+      "annotation_id": 4,
+      "text": "The round green patch of lawn between the Master's Lodge and Bridge Street.",
+      "target": "round green patch of lawn",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Master's Lodge",
+        "Bridge Street"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_33",
+      "object_id": 83,
+      "annotation_id": 2,
+      "text": "The long dark gray building with brown trim on Abbey Street, with a large parking lot behind it.",
+      "target": "long dark gray building",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Abbey Road"
+      ],
+      "surroundings": [
+        "brown trim",
+        "parking lot"
+      ],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "birmingham_block_4",
+      "object_id": 2,
+      "annotation_id": 4,
+      "text": "The brown building to the left of the parking lot of the NT Wholesale Cash & Carry, when viewed aerially with Aston Lane below.",
+      "target": "brown building",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "NT Wholesale Cash & Carry",
+        "Aston Lane"
+      ],
+      "surroundings": [
+        "parking lot"
+      ],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_9",
+      "object_id": 183,
+      "annotation_id": 0,
+      "text": "North of the Blue Boar common Room this white roofed building is directly left of the Wolfson Building.",
+      "target": "white roofed building",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Blue Boar common Room",
+        "Wolfson Building"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "val_seen",
+      "map": "birmingham_block_1",
+      "object_id": 74,
+      "annotation_id": 2,
+      "text": "The red car in the parking lot to the left of the St. Teresa of the Child Jesus Catholic Church.",
+      "target": "red car",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "St. Teresa of the Child Jesus Catholic Church"
+      ],
+      "surroundings": [
+        "parking lot"
+      ],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_20",
+      "object_id": 299,
+      "annotation_id": 4,
+      "text": "The dark blue car parked in the lot of the Interaction Recruitment building.",
+      "target": "dark blue car",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Interaction Recruitment"
+      ],
+      "surroundings": [
+        "lot"
+      ],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_19",
+      "object_id": 6,
+      "annotation_id": 2,
+      "text": "The building off of Gresham Road that has a small parking lot in front of it. It is yellow with several gray roofs.",
+      "target": "building",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Gresham Road"
+      ],
+      "surroundings": [
+        "parking lot",
+        "yellow",
+        "gray roofs"
+      ],
+      "auxiliary_items": []
+    },
+    {
+      "split": "val_seen",
+      "map": "cambridge_block_9",
+      "object_id": 43,
+      "annotation_id": 5,
+      "text": "Center section of a beige multi-housing unit complex with a gray roof, off Park parade that extends from the edge of the map, that has its back roof covered in solar panels",
+      "target": "beige multi-housing unit complex",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Park Parade"
+      ],
+      "surroundings": [
+        "edge of the map",
+        "solar panels"
+      ],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_20",
+      "object_id": 311,
+      "annotation_id": 5,
+      "text": "A white car parked at a free space opposite Unitarian building along Victoria street road.",
+      "target": "white car",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Unitarian Church",
+        "Victoria Street"
+      ],
+      "surroundings": [
+        "free space"
+      ],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_12",
+      "object_id": 69,
+      "annotation_id": 2,
+      "text": "The gray building on Lensfield Road to the left of the Lensfield Road Cycles building.",
+      "target": "gray building",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Lensfield Road"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_19",
+      "object_id": 37,
+      "annotation_id": 2,
+      "text": "The gray house on Regent Street across from the Essex House building.",
+      "target": "gray house",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Regent Street",
+        "Essex House"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "val_unseen",
+      "map": "cambridge_block_2",
+      "object_id": 102,
+      "annotation_id": 3,
+      "text": "Small section of grass that is on the left corner of the Forbes mellon Library off Queens Road",
+      "target": "section of grass",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Forbes Mellon Library",
+        "Queen's Road"
+      ],
+      "surroundings": [
+        "left corner"
+      ],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_4",
+      "object_id": 30,
+      "annotation_id": 2,
+      "text": "This is the building on Castle Street that is next to The Museum of Cambridge.",
+      "target": "building",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": false,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Castle Street",
+        "The Museum of Cambridge"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_9",
+      "object_id": 178,
+      "annotation_id": 0,
+      "text": "The center of the larger building in the shape of an H behind Thompson's Lane hostels. It has a blue roof.",
+      "target": "center of larger building",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Thompson's Lane hostels (Magdalene College)"
+      ],
+      "surroundings": [
+        "blue roof"
+      ],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_12",
+      "object_id": 97,
+      "annotation_id": 4,
+      "text": "The brown and gray building to the right of the University Childcare Office building.",
+      "target": "brown and gray building",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "University Childcare Office"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_9",
+      "object_id": 70,
+      "annotation_id": 3,
+      "text": "The grey building in front of the Mallory court building on the right side along Magdalene street road.",
+      "target": "grey building",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Mallory Court",
+        "Magdalene Street"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_23",
+      "object_id": 19,
+      "annotation_id": 4,
+      "text": "The tiny gray building behind the yards of the gray houses on Trafalgar Road.",
+      "target": "tiny gray building",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Trafalgar Road"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_7",
+      "object_id": 379,
+      "annotation_id": 3,
+      "text": "The green lawn area with trees behind the Cosin Court building.",
+      "target": "green lawn area with trees",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Cosin Court"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_7",
+      "object_id": 44,
+      "annotation_id": 2,
+      "text": "On Laundress Lane, this dark gray roofed building is directly to the right of the University Social Club building.",
+      "target": "dark gray roofed building",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Laundress Lane",
+        "University Social Club"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "birmingham_block_9",
+      "object_id": 215,
+      "annotation_id": 1,
+      "text": "The green narrow grassy lawn that goes down the middle of Aldridge Road.",
+      "target": "green narrow grassy lawn",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Aldridge Road"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "val_unseen",
+      "map": "cambridge_block_2",
+      "object_id": 29,
+      "annotation_id": 3,
+      "text": "The dark blue car in the parking lot that is behind the Brewhouse building.",
+      "target": "dark blue car",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "The Brewhouse"
+      ],
+      "surroundings": [
+        "parking lot"
+      ],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_9",
+      "object_id": 195,
+      "annotation_id": 2,
+      "text": "The small tan building on Bridge Street to the left of the Pearce Hostel building.",
+      "target": "small tan building",
+      "category": "simple_landmark",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Bridge Street",
+        "Pearce Hostel"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    }
+  ],
+  "complex_auxiliary": [
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_20",
+      "object_id": 236,
+      "annotation_id": 4,
+      "text": "A black car parked near a white roofed building in front of the parkside police station. It is in between the building and the multi-storey car park along warkworth terrace.",
+      "target": "black car",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": true,
+      "landmarks": [
+        "parkside police station"
+      ],
+      "surroundings": [
+        "white roofed building",
+        "warkworth terrace"
+      ],
+      "auxiliary_items": [
+        "white roofed building"
+      ]
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_21",
+      "object_id": 331,
+      "annotation_id": 1,
+      "text": "The dark blue car on Stanley Close that is 2 cars away from the white car closest to the intersection with Parsonage Street.",
+      "target": "dark blue car",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": true,
+      "auxiliary_spatial": true,
+      "landmarks": [
+        "Stanway Close",
+        "Parsonage Street"
+      ],
+      "surroundings": [
+        "2 cars",
+        "white car"
+      ],
+      "auxiliary_items": [
+        "2 cars",
+        "white car"
+      ]
+    },
+    {
+      "split": "val_seen",
+      "map": "cambridge_block_13",
+      "object_id": 480,
+      "annotation_id": 0,
+      "text": "this is a ground. this area was located between the road and the building on Tennis Court Road, next to the Hopkins building. this area is on the side of the building closer to the big tree.",
+      "target": "ground",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": false,
+      "number_or_order": false,
+      "auxiliary_spatial": true,
+      "landmarks": [
+        "Tennis Court Road",
+        "Hopkins Building"
+      ],
+      "surroundings": [
+        "big tree"
+      ],
+      "auxiliary_items": [
+        "big tree"
+      ]
+    },
+    {
+      "split": "train_seen",
+      "map": "birmingham_block_1",
+      "object_id": 168,
+      "annotation_id": 3,
+      "text": "The black car that is 1st from the left in the 19th row of cars in the large parking lot behind the One Stop Building, when viewed aerially with the long side of the One Stop Building to the right.",
+      "target": "black car",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": true,
+      "auxiliary_spatial": true,
+      "landmarks": [
+        "One Stop"
+      ],
+      "surroundings": [
+        "19th row of cars",
+        "large parking lot"
+      ],
+      "auxiliary_items": [
+        "19th row of cars"
+      ]
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_20",
+      "object_id": 305,
+      "annotation_id": 2,
+      "text": "The gray car on Earl Street that is across from the gray car that is 3 cars behind the turquoise car closest to the intersection with Clarendon Street.",
+      "target": "gray car",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": true,
+      "auxiliary_spatial": true,
+      "landmarks": [
+        "Earl Street",
+        "Clarendon Street"
+      ],
+      "surroundings": [
+        "gray car",
+        "3 cars",
+        "turquoise car"
+      ],
+      "auxiliary_items": [
+        "gray car",
+        "3 cars",
+        "turquoise car"
+      ]
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_18",
+      "object_id": 112,
+      "annotation_id": 4,
+      "text": "The white car next to the yellow car on the side of the Scott Polar Research Institute (SPRI) building.",
+      "target": "white car",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": true,
+      "landmarks": [
+        "Scott Polar Research Institute (SPRI)"
+      ],
+      "surroundings": [
+        "yellow car"
+      ],
+      "auxiliary_items": [
+        "yellow car"
+      ]
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_33",
+      "object_id": 13,
+      "annotation_id": 4,
+      "text": "The right-most building with a black car in front of it along Beche road.",
+      "target": "building",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": true,
+      "landmarks": [
+        "Beche Road"
+      ],
+      "surroundings": [
+        "black car"
+      ],
+      "auxiliary_items": [
+        "black car"
+      ]
+    },
+    {
+      "split": "train_seen",
+      "map": "birmingham_block_9",
+      "object_id": 149,
+      "annotation_id": 0,
+      "text": "A white car parked adjacent to a brown, entirely soil-covered square plot of farm land on the side of Holford Drive. The square plot is next to another equally sized square plot of farm land that has a gray tarp covering most of it. Both square plots are adjacent to a larger farm plot with four large light blue squares on it. Both square plots are across the road from a very large, almost square grass field lined by trees.",
+      "target": "white car",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": true,
+      "landmarks": [
+        "Holford Drive"
+      ],
+      "surroundings": [
+        "brown, entirely soil-covered square plot of farm land",
+        "gray tarp-covered square plot of farm land",
+        "larger farm plot with four large light blue squares",
+        "very large, almost square grass field lined by trees"
+      ],
+      "auxiliary_items": [
+        "very large, almost square grass field lined by trees"
+      ]
+    },
+    {
+      "split": "val_seen",
+      "map": "cambridge_block_9",
+      "object_id": 48,
+      "annotation_id": 5,
+      "text": "The center building on Park Parade that has a gray car parked at its backyard fence.",
+      "target": "center building",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": true,
+      "landmarks": [
+        "Park Parade"
+      ],
+      "surroundings": [
+        "gray car",
+        "backyard fence"
+      ],
+      "auxiliary_items": [
+        "gray car",
+        "backyard fence"
+      ]
+    },
+    {
+      "split": "val_seen",
+      "map": "cambridge_block_28",
+      "object_id": 687,
+      "annotation_id": 5,
+      "text": "A parking lot in front of a building along Woodvale lodge road. It is near a tree.",
+      "target": "parking lot",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": false,
+      "number_or_order": false,
+      "auxiliary_spatial": true,
+      "landmarks": [
+        "Woodvale Lodge"
+      ],
+      "surroundings": [
+        "building",
+        "tree"
+      ],
+      "auxiliary_items": [
+        "building",
+        "tree"
+      ]
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_9",
+      "object_id": 185,
+      "annotation_id": 0,
+      "text": "A building across the river from Ramsey Hall that is part of a building that forms an H this is the side without the hook on the end.",
+      "target": "building",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": false,
+      "number_or_order": false,
+      "auxiliary_spatial": true,
+      "landmarks": [
+        "Ramsay Hall (Bright's Building)"
+      ],
+      "surroundings": [
+        "river",
+        "H",
+        "hook"
+      ],
+      "auxiliary_items": [
+        "river"
+      ]
+    },
+    {
+      "split": "train_seen",
+      "map": "birmingham_block_3",
+      "object_id": 45,
+      "annotation_id": 2,
+      "text": "This is a residential building located on Chesterwood Gardens. In the backyard there is a large tree. In the front yard there is a blue car.",
+      "target": "residential building",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": true,
+      "landmarks": [
+        "Chesterwood Gardens"
+      ],
+      "surroundings": [
+        "backyard",
+        "large tree",
+        "front yard",
+        "blue car"
+      ],
+      "auxiliary_items": [
+        "large tree",
+        "front yard",
+        "blue car"
+      ]
+    },
+    {
+      "split": "train_seen",
+      "map": "birmingham_block_3",
+      "object_id": 182,
+      "annotation_id": 0,
+      "text": "A dark blue car with a partially visible gray car behind it next to a street marking that says bus lane, and beside a multi-colored house, call it blue, red, purple, Brown, green and white near the edge of the map on Birchfield Road",
+      "target": "dark blue car",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": true,
+      "landmarks": [
+        "Birchfield Road"
+      ],
+      "surroundings": [
+        "gray car",
+        "street marking",
+        "multi-colored house"
+      ],
+      "auxiliary_items": [
+        "gray car",
+        "street marking",
+        "multi-colored house"
+      ]
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_28",
+      "object_id": 46,
+      "annotation_id": 0,
+      "text": "This is a large gray building located on Pentlands Close. Thee are a few cars parked on the street in front of it. Behind it is Cutter Ferry Lane.",
+      "target": "large gray building",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": true,
+      "landmarks": [
+        "Pentlands Close",
+        "Cutter Ferry Lane"
+      ],
+      "surroundings": [
+        "cars",
+        "street"
+      ],
+      "auxiliary_items": [
+        "cars",
+        "street"
+      ]
+    },
+    {
+      "split": "train_seen",
+      "map": "birmingham_block_12",
+      "object_id": 20,
+      "annotation_id": 2,
+      "text": "This is a black car parked near the road access to Holford Drive. It is facing away from Police Custody Suite. On its right is a white car facing the opposite direction. Next to the white car is a purple car.",
+      "target": "black car",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": true,
+      "landmarks": [
+        "Holford Drive",
+        "West Midlands Police Custody Suite"
+      ],
+      "surroundings": [
+        "white car",
+        "purple car"
+      ],
+      "auxiliary_items": [
+        "white car",
+        "purple car"
+      ]
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_7",
+      "object_id": 11,
+      "annotation_id": 3,
+      "text": "The L shaped long house next to peterhouse car park to the right. It has trees garden in front of it.",
+      "target": "long house",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": true,
+      "landmarks": [
+        "Peterhouse Car Park"
+      ],
+      "surroundings": [
+        "trees garden"
+      ],
+      "auxiliary_items": [
+        "trees garden"
+      ]
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_19",
+      "object_id": 547,
+      "annotation_id": 2,
+      "text": "The parking lot that extends back to the red brick building and is between a small building and the YMCA, on Queen Anne Terrace.",
+      "target": "parking lot",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": true,
+      "landmarks": [
+        "YMCA",
+        "Queen Anne Terrace"
+      ],
+      "surroundings": [
+        "red brick building",
+        "small building"
+      ],
+      "auxiliary_items": [
+        "red brick building",
+        "small building"
+      ]
+    },
+    {
+      "split": "train_seen",
+      "map": "birmingham_block_7",
+      "object_id": 3,
+      "annotation_id": 1,
+      "text": "A big building with white roof and car parking area at both left and right side alone the road named Aston lane .",
+      "target": "big building",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": true,
+      "landmarks": [
+        "Aston Lane"
+      ],
+      "surroundings": [
+        "white roof",
+        "car parking area"
+      ],
+      "auxiliary_items": [
+        "car parking area"
+      ]
+    },
+    {
+      "split": "train_seen",
+      "map": "birmingham_block_4",
+      "object_id": 175,
+      "annotation_id": 3,
+      "text": "The white car that is 11th from the left in the top row of cars in the parking lot behind the brown building at the intersection of Birchfield Road and Wellington Road, when viewed aerially with Birchfield Road to the right.",
+      "target": "white car",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": true,
+      "auxiliary_spatial": true,
+      "landmarks": [
+        "Birchfield Road",
+        "Wellington Road"
+      ],
+      "surroundings": [
+        "11th from the left",
+        "top row of cars",
+        "parking lot",
+        "brown building"
+      ],
+      "auxiliary_items": [
+        "top row of cars",
+        "brown building"
+      ]
+    },
+    {
+      "split": "train_seen",
+      "map": "birmingham_block_10",
+      "object_id": 3,
+      "annotation_id": 2,
+      "text": "The building on Aldridge Road that has no cars in the driveway and curved path in the backyard.",
+      "target": "building",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": true,
+      "has_appearance": false,
+      "number_or_order": false,
+      "auxiliary_spatial": true,
+      "landmarks": [
+        "Aldridge Road"
+      ],
+      "surroundings": [
+        "driveway",
+        "curved path"
+      ],
+      "auxiliary_items": [
+        "driveway",
+        "curved path"
+      ]
+    },
+    {
+      "split": "val_seen",
+      "map": "cambridge_block_12",
+      "object_id": 202,
+      "annotation_id": 0,
+      "text": "This is a white car with two on the side and a white car on the back. these cars are in the back of The Leys School building. this is the car right next to the stairs.",
+      "target": "white car",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": true,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "The Leys School"
+      ],
+      "surroundings": [
+        "stairs"
+      ],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "birmingham_block_3",
+      "object_id": 48,
+      "annotation_id": 5,
+      "text": "In Chesterwood Gardens, this gray roofed house is second from the top on the far left.",
+      "target": "gray roofed house",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": true,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Chesterwood Gardens"
+      ],
+      "surroundings": [
+        "second",
+        "far left"
+      ],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_28",
+      "object_id": 247,
+      "annotation_id": 2,
+      "text": "Black car on the left lane along walnut tree  Avenue road. It has a white car in front.",
+      "target": "Black car",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": true,
+      "landmarks": [
+        "Walnut Tree Avenue"
+      ],
+      "surroundings": [
+        "white car"
+      ],
+      "auxiliary_items": [
+        "white car"
+      ]
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_12",
+      "object_id": 134,
+      "annotation_id": 5,
+      "text": "A black car in the parking lot at the Royal Cambridge hotel. It has a white car to the left.",
+      "target": "black car",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": true,
+      "landmarks": [
+        "Royal Cambridge Hotel"
+      ],
+      "surroundings": [
+        "parking lot",
+        "white car"
+      ],
+      "auxiliary_items": [
+        "white car"
+      ]
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_12",
+      "object_id": 163,
+      "annotation_id": 2,
+      "text": "The silver car that is the leftmost car in the top row of the parking lot behind the long gray buildings on Saxon Street and Brookside, when viewed aerially with Saxon Street to the left.",
+      "target": "silver car",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": true,
+      "auxiliary_spatial": true,
+      "landmarks": [
+        "Brookside Lane",
+        "Saxon Street"
+      ],
+      "surroundings": [
+        "top row of the parking lot",
+        "long gray buildings"
+      ],
+      "auxiliary_items": [
+        "long gray buildings"
+      ]
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_12",
+      "object_id": 98,
+      "annotation_id": 5,
+      "text": "The gray building on Trumpington Street that is 2 houses to the right of the Brook House.",
+      "target": "gray building",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": true,
+      "auxiliary_spatial": true,
+      "landmarks": [
+        "Brook House",
+        "Trumpington Street"
+      ],
+      "surroundings": [
+        "2 houses"
+      ],
+      "auxiliary_items": [
+        "2 houses"
+      ]
+    },
+    {
+      "split": "train_seen",
+      "map": "birmingham_block_1",
+      "object_id": 32,
+      "annotation_id": 5,
+      "text": "A square building with a gray flat roof that has a blue circle on it and the white rectangular building with a white roof beside it. They are located back off of Wellington Road and there is a large pile of black cement barriers on one side of the square building.",
+      "target": "buildings",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": true,
+      "landmarks": [
+        "Wellington Road"
+      ],
+      "surroundings": [
+        "gray flat roof",
+        "blue circle",
+        "white rectangular building",
+        "black cement barriers"
+      ],
+      "auxiliary_items": [
+        "white rectangular building"
+      ]
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_13",
+      "object_id": 87,
+      "annotation_id": 5,
+      "text": "Multiple buildings with gray roofs that is in between the Cambridge tap building and The Language Centre - old music school building off Saint Andrews Street on the edge of the map",
+      "target": "buildings with gray roofs",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": true,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Language Centre - Old Music School",
+        "Saint Andrew's Street",
+        "Cambridge Tap"
+      ],
+      "surroundings": [
+        "edge of the map"
+      ],
+      "auxiliary_items": []
+    },
+    {
+      "split": "val_seen",
+      "map": "cambridge_block_28",
+      "object_id": 79,
+      "annotation_id": 4,
+      "text": "The tiny brown building behind the large brown buildings to the right of the Downing College Boat Club.",
+      "target": "tiny brown building",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": true,
+      "landmarks": [
+        "Downing College Boat Club"
+      ],
+      "surroundings": [
+        "large brown buildings"
+      ],
+      "auxiliary_items": [
+        "large brown buildings"
+      ]
+    },
+    {
+      "split": "train_seen",
+      "map": "birmingham_block_1",
+      "object_id": 535,
+      "annotation_id": 3,
+      "text": "This light gray car is in the parking lot near the One Stop and is in the bottom half of the third row from the bottom, fifth car from the right.",
+      "target": "gray car",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": true,
+      "auxiliary_spatial": true,
+      "landmarks": [
+        "One Stop"
+      ],
+      "surroundings": [
+        "last row",
+        "second car in the handicap parking",
+        "two red vehicles",
+        "cross walk"
+      ],
+      "auxiliary_items": [
+        "second car in the handicap parking",
+        "two red vehicles"
+      ]
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_13",
+      "object_id": 60,
+      "annotation_id": 1,
+      "text": "The third building from the corner of Fitzwilliam Street that has a rounded back part of the building facing the Union Hut.",
+      "target": "building",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": false,
+      "number_or_order": true,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Fitzwilliam Street",
+        "Union Hut"
+      ],
+      "surroundings": [
+        "corner",
+        "rounded back part"
+      ],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "birmingham_block_1",
+      "object_id": 321,
+      "annotation_id": 3,
+      "text": "The gray car that is 8th from the right in the 9th row of cars in the large parking lot behind the One Stop Building, when viewed aerially with the long side of the One Stop Building to the right.",
+      "target": "gray car",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": true,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "One Stop"
+      ],
+      "surroundings": [
+        "8th from the right",
+        "9th row",
+        "large parking lot"
+      ],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_33",
+      "object_id": 108,
+      "annotation_id": 5,
+      "text": "Two conjoined buildings, one white building with a gray roof and one blue building with a gray roof off Newmarket Road next to the electric bike sales building",
+      "target": "conjoined buildings",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": true,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Newmarket Road",
+        "Electric Bike Sales"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "birmingham_block_1",
+      "object_id": 590,
+      "annotation_id": 1,
+      "text": "The white car that is 6th from the left in the front row of cars in the parking lot outside the long side of the One Stop Building.",
+      "target": "white car",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": true,
+      "auxiliary_spatial": true,
+      "landmarks": [
+        "One Stop"
+      ],
+      "surroundings": [
+        "front row of cars",
+        "parking lot"
+      ],
+      "auxiliary_items": [
+        "front row of cars"
+      ]
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_20",
+      "object_id": 253,
+      "annotation_id": 1,
+      "text": "The white car parked just above the bottom bright blue car on the roof of the big building roof parking lot found right of the Parkside Police Station building and above the Wellington House building. There's only a grey car in parallel with the white car in the row.",
+      "target": "white car",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": true,
+      "landmarks": [
+        "Parkside Police Station",
+        "Wellington House"
+      ],
+      "surroundings": [
+        "bottom bright blue car",
+        "big building roof parking lot",
+        "grey car"
+      ],
+      "auxiliary_items": [
+        "bottom bright blue car",
+        "big building roof parking lot",
+        "grey car"
+      ]
+    },
+    {
+      "split": "train_seen",
+      "map": "birmingham_block_3",
+      "object_id": 383,
+      "annotation_id": 1,
+      "text": "If you turn onto Bridgelands Way coming from Birchfield Road this is the 3rd car on your left, it's a white car parked next to a blue car.",
+      "target": "white car",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": true,
+      "auxiliary_spatial": true,
+      "landmarks": [
+        "Bridgelands Way",
+        "Birchfield Road"
+      ],
+      "surroundings": [
+        "3rd car",
+        "blue car"
+      ],
+      "auxiliary_items": [
+        "3rd car",
+        "blue car"
+      ]
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_13",
+      "object_id": 84,
+      "annotation_id": 1,
+      "text": "The second building on the left from the blue University arms along the regent street. It has a the triangular park behind it.",
+      "target": "second building",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": true,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Regent Street",
+        "University Arms"
+      ],
+      "surroundings": [
+        "triangular park"
+      ],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_21",
+      "object_id": 150,
+      "annotation_id": 1,
+      "text": "A white car, with a red car to the right and a sliver car to the left, parked in front of the stone square shapped building with a brown roof, beside the Wesley Methodist Church.",
+      "target": "white car",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": true,
+      "landmarks": [
+        "Wesley Methodist Church"
+      ],
+      "surroundings": [
+        "red car",
+        "sliver car",
+        "stone square shaped building",
+        "brown roof"
+      ],
+      "auxiliary_items": [
+        "red car",
+        "sliver car",
+        "stone square shaped building"
+      ]
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_20",
+      "object_id": 257,
+      "annotation_id": 1,
+      "text": "To the left of the parking lot between Parkside Police Station and Cambridge & Peterborough, this red car is parked north of Wellington House and next to a yellow car.",
+      "target": "red car",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": true,
+      "landmarks": [
+        "Parkside Police Station",
+        "Cambridge & Peterborough Probation Trust",
+        "Wellington House"
+      ],
+      "surroundings": [
+        "parking lot",
+        "yellow car"
+      ],
+      "auxiliary_items": [
+        "yellow car"
+      ]
+    },
+    {
+      "split": "train_seen",
+      "map": "birmingham_block_10",
+      "object_id": 55,
+      "annotation_id": 3,
+      "text": "The blue car next to a black car at the Weighbridge Offices and has yellow paint on the curb in front of it.",
+      "target": "blue car",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": true,
+      "landmarks": [
+        "Weighbridge Offices"
+      ],
+      "surroundings": [
+        "black car",
+        "yellow paint"
+      ],
+      "auxiliary_items": [
+        "black car"
+      ]
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_12",
+      "object_id": 60,
+      "annotation_id": 3,
+      "text": "A floating piece of gray roof, that is in between the chapel, the Leys school building, a tree and a group of three white cars on the edge of the map of trumpington Road",
+      "target": "floating piece of gray roof",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": true,
+      "auxiliary_spatial": true,
+      "landmarks": [
+        "Chapel",
+        "Trumpington Road",
+        "The Leys School"
+      ],
+      "surroundings": [
+        "tree",
+        "group of three white cars"
+      ],
+      "auxiliary_items": [
+        "tree",
+        "group of three white cars"
+      ]
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_13",
+      "object_id": 475,
+      "annotation_id": 1,
+      "text": "The ground with many trees behind the building name master lodge along the road named Tennis court terrace.",
+      "target": "ground with many trees",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": false,
+      "number_or_order": true,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Tennis Court Terrace",
+        "Master's Lodge"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "birmingham_block_12",
+      "object_id": 91,
+      "annotation_id": 2,
+      "text": "The blue car that is 7th from the left in the 3rd row of cars in the massive parking lot for the West Midlands Police Custody Suite, when viewed aerially with Holford Drive to the right.",
+      "target": "blue car",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": true,
+      "auxiliary_spatial": true,
+      "landmarks": [
+        "West Midlands Police Custody Suite",
+        "Holford Drive"
+      ],
+      "surroundings": [
+        "7th from the left",
+        "3rd row of cars",
+        "massive parking lot"
+      ],
+      "auxiliary_items": [
+        "3rd row of cars"
+      ]
+    },
+    {
+      "split": "train_seen",
+      "map": "birmingham_block_4",
+      "object_id": 156,
+      "annotation_id": 1,
+      "text": "A black car in the parking lot at the corner of Wellington Road and Station Bridge. It's between two red cars in the middle of the long row of cars against the trees and big building.",
+      "target": "black car",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": true,
+      "auxiliary_spatial": true,
+      "landmarks": [
+        "Wellington Road",
+        "Station Bridge"
+      ],
+      "surroundings": [
+        "red cars",
+        "trees",
+        "big building"
+      ],
+      "auxiliary_items": [
+        "red cars",
+        "trees",
+        "big building"
+      ]
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_12",
+      "object_id": 181,
+      "annotation_id": 0,
+      "text": "This is a light blue car parked in the parking space of University Chemical Laboratory. On its left is a red car and in front of it and on its right is an empty spot.",
+      "target": "light blue car",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": true,
+      "landmarks": [
+        "University Chemical Laboratory"
+      ],
+      "surroundings": [
+        "parking space",
+        "red car",
+        "empty spot"
+      ],
+      "auxiliary_items": [
+        "parking space",
+        "red car",
+        "empty spot"
+      ]
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_28",
+      "object_id": 19,
+      "annotation_id": 2,
+      "text": "The second building from the bottom along Abbey road. It has a blue car at the front.",
+      "target": "building",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": true,
+      "auxiliary_spatial": true,
+      "landmarks": [
+        "Abbey Road"
+      ],
+      "surroundings": [
+        "blue car"
+      ],
+      "auxiliary_items": [
+        "blue car"
+      ]
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_21",
+      "object_id": 295,
+      "annotation_id": 3,
+      "text": "The black car that is 2nd from the left in the 3rd row of cars in the parking lot behind the Grafton West building, when viewed aerially with the Grafton West building to the left.",
+      "target": "black car",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": true,
+      "auxiliary_spatial": true,
+      "landmarks": [
+        "Grafton West"
+      ],
+      "surroundings": [
+        "2nd from the left",
+        "3rd row of cars",
+        "parking lot"
+      ],
+      "auxiliary_items": [
+        "3rd row of cars"
+      ]
+    },
+    {
+      "split": "train_seen",
+      "map": "birmingham_block_3",
+      "object_id": 265,
+      "annotation_id": 0,
+      "text": "This white car is parked on the drive of a house on Bragg Road, this is a light blue car next to it and a black car blocking both of them. There is a green slide in the back garden of the house.",
+      "target": "white car",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": true,
+      "landmarks": [
+        "Bragg Road"
+      ],
+      "surroundings": [
+        "light blue car",
+        "black car",
+        "green slide"
+      ],
+      "auxiliary_items": [
+        "light blue car",
+        "black car"
+      ]
+    },
+    {
+      "split": "train_seen",
+      "map": "birmingham_block_9",
+      "object_id": 199,
+      "annotation_id": 5,
+      "text": "The gray car between a red car and a small gray car in the back parking lot of the West Midlands Police Custody Suite.",
+      "target": "gray car",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": true,
+      "landmarks": [
+        "West Midlands Police Custody Suite"
+      ],
+      "surroundings": [
+        "red car",
+        "small gray car",
+        "back parking lot"
+      ],
+      "auxiliary_items": [
+        "red car",
+        "small gray car"
+      ]
+    },
+    {
+      "split": "train_seen",
+      "map": "birmingham_block_3",
+      "object_id": 327,
+      "annotation_id": 2,
+      "text": "The dark red car parked in front of the building on the corner of Birchfield Road and The Broadway.",
+      "target": "dark red car",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": true,
+      "landmarks": [
+        "The Broadway"
+      ],
+      "surroundings": [
+        "building"
+      ],
+      "auxiliary_items": [
+        "building"
+      ]
+    },
+    {
+      "split": "train_seen",
+      "map": "birmingham_block_4",
+      "object_id": 46,
+      "annotation_id": 4,
+      "text": "The white car that is between the blue car and the white car that is parked behind the NT Wholesale Cash & Carry Building, closed to the railroad.",
+      "target": "white car",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": true,
+      "landmarks": [
+        "NT Wholesale Cash & Carry"
+      ],
+      "surroundings": [
+        "blue car",
+        "white car",
+        "railroad"
+      ],
+      "auxiliary_items": [
+        "blue car",
+        "white car"
+      ]
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_28",
+      "object_id": 151,
+      "annotation_id": 4,
+      "text": "This is a residential building located on Acrefield Drive next to Woodvale Lodge. There is a blue car parked in its front yard.",
+      "target": "residential building",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": true,
+      "landmarks": [
+        "Acrefield Drive",
+        "Woodvale Lodge"
+      ],
+      "surroundings": [
+        "front yard",
+        "blue car"
+      ],
+      "auxiliary_items": [
+        "front yard",
+        "blue car"
+      ]
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_13",
+      "object_id": 228,
+      "annotation_id": 1,
+      "text": "A partially visible white truck in between a large beige building with a Brown and gray roof and the Janus house off St Andrews Street",
+      "target": "partially visible white truck",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": true,
+      "landmarks": [
+        "Janus House",
+        "Saint Andrew's Street"
+      ],
+      "surroundings": [
+        "large beige building",
+        "Brown and gray roof"
+      ],
+      "auxiliary_items": [
+        "large beige building"
+      ]
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_13",
+      "object_id": 162,
+      "annotation_id": 4,
+      "text": "The white van in the row of cars parked between the Pathology Building above it and the Microbiology Building below it.",
+      "target": "white van",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": true,
+      "auxiliary_spatial": true,
+      "landmarks": [
+        "Pathology Building",
+        "Microbiology Building"
+      ],
+      "surroundings": [
+        "row of cars"
+      ],
+      "auxiliary_items": [
+        "row of cars"
+      ]
+    },
+    {
+      "split": "val_seen",
+      "map": "cambridge_block_19",
+      "object_id": 45,
+      "annotation_id": 5,
+      "text": "The last  house at the left end of Regent street . It has trees behind it",
+      "target": "house",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": false,
+      "number_or_order": true,
+      "auxiliary_spatial": true,
+      "landmarks": [
+        "Regent Street"
+      ],
+      "surroundings": [
+        "trees"
+      ],
+      "auxiliary_items": [
+        "trees"
+      ]
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_25",
+      "object_id": 20,
+      "annotation_id": 1,
+      "text": "This car is almost completely off the map it is on Petersfield mansions Road. It is a black car right above that black car there is part of a blue car that is not fully rendered in",
+      "target": "car",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": true,
+      "landmarks": [
+        "Petersfield Mansions"
+      ],
+      "surroundings": [
+        "black car",
+        "blue car"
+      ],
+      "auxiliary_items": [
+        "black car",
+        "blue car"
+      ]
+    },
+    {
+      "split": "train_seen",
+      "map": "birmingham_block_1",
+      "object_id": 301,
+      "annotation_id": 5,
+      "text": "The black car in the seventh aisle of the One Stop building with an empty parking spot on both sides of it.",
+      "target": "black car",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": true,
+      "auxiliary_spatial": true,
+      "landmarks": [
+        "One Stop"
+      ],
+      "surroundings": [
+        "seventh aisle",
+        "empty parking spot"
+      ],
+      "auxiliary_items": [
+        "empty parking spot"
+      ]
+    },
+    {
+      "split": "val_unseen",
+      "map": "birmingham_block_5",
+      "object_id": 89,
+      "annotation_id": 1,
+      "text": "A white car parked next to a blue car and in front of another white car near the traffic circle on the side of the One Stop buildling.",
+      "target": "white car",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": true,
+      "landmarks": [
+        "One Stop"
+      ],
+      "surroundings": [
+        "blue car",
+        "traffic circle"
+      ],
+      "auxiliary_items": [
+        "blue car"
+      ]
+    },
+    {
+      "split": "train_seen",
+      "map": "birmingham_block_9",
+      "object_id": 167,
+      "annotation_id": 1,
+      "text": "The gray car that is 4th from the bottom in the column of cars in the parking lot to the right of the West Midlands Police Custody Suite on Holford Drive.",
+      "target": "gray car",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": true,
+      "auxiliary_spatial": true,
+      "landmarks": [
+        "West Midlands Police Custody Suite",
+        "Holford Drive"
+      ],
+      "surroundings": [
+        "bottom in the column of cars",
+        "parking lot"
+      ],
+      "auxiliary_items": [
+        "bottom in the column of cars"
+      ]
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_20",
+      "object_id": 336,
+      "annotation_id": 1,
+      "text": "A black car with another black car behind it and facing a light blue car, on the corner of Jesus Terrace and Elm street",
+      "target": "black car",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": true,
+      "landmarks": [
+        "Jesus Terrace",
+        "Elm street"
+      ],
+      "surroundings": [
+        "another black car",
+        "light blue car"
+      ],
+      "auxiliary_items": [
+        "another black car",
+        "light blue car"
+      ]
+    },
+    {
+      "split": "train_seen",
+      "map": "birmingham_block_1",
+      "object_id": 561,
+      "annotation_id": 4,
+      "text": "A blue car parked in the ninth aisle in the Nike Factory parking lot. It's the fourth parking spot from the main road of the parking lot and between black cars.",
+      "target": "blue car",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": true,
+      "auxiliary_spatial": true,
+      "landmarks": [
+        "Nike Factory Store"
+      ],
+      "surroundings": [
+        "ninth aisle",
+        "main road",
+        "fourth parking spot",
+        "black cars"
+      ],
+      "auxiliary_items": [
+        "main road",
+        "fourth parking spot",
+        "black cars"
+      ]
+    },
+    {
+      "split": "train_seen",
+      "map": "birmingham_block_1",
+      "object_id": 493,
+      "annotation_id": 1,
+      "text": "A black car in between two empty spots with an empty spot behind it, in the fifth row from the top in the parking lot of the One-Stop building nearest to the edge of the map",
+      "target": "black car",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": true,
+      "auxiliary_spatial": true,
+      "landmarks": [
+        "One Stop"
+      ],
+      "surroundings": [
+        "empty spot",
+        "empty spot",
+        "empty spot",
+        "fifth row",
+        "parking lot",
+        "edge of the map"
+      ],
+      "auxiliary_items": [
+        "empty spot",
+        "empty spot",
+        "empty spot"
+      ]
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_13",
+      "object_id": 12,
+      "annotation_id": 1,
+      "text": "The L shaped building at the end of an alley and diagonally behind the Fitzwilliam House. There is a brown tree behind the building.",
+      "target": "L shaped building",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": true,
+      "landmarks": [
+        "Fitzwilliam House"
+      ],
+      "surroundings": [
+        "alley",
+        "brown tree"
+      ],
+      "auxiliary_items": [
+        "alley",
+        "brown tree"
+      ]
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_9",
+      "object_id": 21,
+      "annotation_id": 1,
+      "text": "The gray house on Park Street that is 8 houses to the left of the Little Trinity building.",
+      "target": "gray house",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": true,
+      "auxiliary_spatial": true,
+      "landmarks": [
+        "Park Street",
+        "Little Trinity"
+      ],
+      "surroundings": [
+        "8 houses"
+      ],
+      "auxiliary_items": [
+        "8 houses"
+      ]
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_33",
+      "object_id": 82,
+      "annotation_id": 3,
+      "text": "A small square building with a flat gray roof and the building beside it with two skylight windows. on Beche Road",
+      "target": "small square building",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": true,
+      "auxiliary_spatial": true,
+      "landmarks": [
+        "Beche Road"
+      ],
+      "surroundings": [
+        "flat gray roof",
+        "building beside it",
+        "two skylight windows"
+      ],
+      "auxiliary_items": [
+        "building beside it"
+      ]
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_7",
+      "object_id": 383,
+      "annotation_id": 4,
+      "text": "The ground beside the Gisborne Court that has a path around it and several trees.",
+      "target": "ground",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": false,
+      "number_or_order": true,
+      "auxiliary_spatial": true,
+      "landmarks": [
+        "Gisborne Court"
+      ],
+      "surroundings": [
+        "path",
+        "trees"
+      ],
+      "auxiliary_items": [
+        "path",
+        "trees"
+      ]
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_20",
+      "object_id": 10,
+      "annotation_id": 1,
+      "text": "The building is adjacent to the building named Orchard court along the footpath named Orchard street. A silver car parked in front of the building.",
+      "target": "building",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": false,
+      "number_or_order": false,
+      "auxiliary_spatial": true,
+      "landmarks": [
+        "Orchard Court",
+        "Orchard Street"
+      ],
+      "surroundings": [
+        "footpath",
+        "silver car"
+      ],
+      "auxiliary_items": [
+        "silver car"
+      ]
+    },
+    {
+      "split": "train_seen",
+      "map": "birmingham_block_3",
+      "object_id": 159,
+      "annotation_id": 3,
+      "text": "Third house from the right on The Broadway, when viewed aerially with Thornbury Road underneath and Bragg Road above.",
+      "target": "Third house",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": false,
+      "number_or_order": true,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "The Broadway",
+        "Thornbury Road",
+        "Bragg Road"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_21",
+      "object_id": 254,
+      "annotation_id": 1,
+      "text": "This light blue car is in the large parking lot in between Fitzroy Lane and salmon Lane. Parked on both sides of it are white cars it is the middle column of the very large parking lot",
+      "target": "light blue car",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": true,
+      "auxiliary_spatial": true,
+      "landmarks": [
+        "Fitzroy Lane",
+        "salmon Lane"
+      ],
+      "surroundings": [
+        "white cars",
+        "large parking lot"
+      ],
+      "auxiliary_items": [
+        "white cars"
+      ]
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_20",
+      "object_id": 92,
+      "annotation_id": 2,
+      "text": "The brown roof building that has a driveway that is between the two grey buildings that are on the Clarendon Street.",
+      "target": "brown roof building",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": true,
+      "auxiliary_spatial": true,
+      "landmarks": [
+        "Clarendon Street"
+      ],
+      "surroundings": [
+        "driveway",
+        "grey buildings"
+      ],
+      "auxiliary_items": [
+        "driveway",
+        "grey buildings"
+      ]
+    },
+    {
+      "split": "train_seen",
+      "map": "birmingham_block_4",
+      "object_id": 189,
+      "annotation_id": 0,
+      "text": "The red car that is 11th from the left in the 2nd row of cars in the parking lot behind the brown building at the intersection of Birchfield Road and Wellington Road, when viewed aerially with Birchfield Road to the right.",
+      "target": "red car",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": true,
+      "auxiliary_spatial": true,
+      "landmarks": [
+        "Birchfield Road",
+        "Wellington Road"
+      ],
+      "surroundings": [
+        "2nd row of cars",
+        "parking lot",
+        "brown building"
+      ],
+      "auxiliary_items": [
+        "2nd row of cars",
+        "brown building"
+      ]
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_20",
+      "object_id": 60,
+      "annotation_id": 4,
+      "text": "The building on Eden Street that has a tree and a dark red car in front of it near Fitzroy Street.",
+      "target": "building",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": true,
+      "landmarks": [
+        "Fitzroy Street",
+        "Eden Street Backway"
+      ],
+      "surroundings": [
+        "tree",
+        "dark red car"
+      ],
+      "auxiliary_items": [
+        "tree",
+        "dark red car"
+      ]
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_20",
+      "object_id": 28,
+      "annotation_id": 3,
+      "text": "A building with cars parked near it  covering the left side of Victoria street road. It is opposite Christs court building.",
+      "target": "building",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": false,
+      "number_or_order": false,
+      "auxiliary_spatial": true,
+      "landmarks": [
+        "Victoria Street",
+        "Christ's Court"
+      ],
+      "surroundings": [
+        "cars"
+      ],
+      "auxiliary_items": [
+        "cars"
+      ]
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_13",
+      "object_id": 201,
+      "annotation_id": 0,
+      "text": "A white car in between another white car and a tree, next to the Cosin court building, and behind a multicolored beige and white multi housing unit with gray roofs off Fitzwilliam Street",
+      "target": "white car",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": true,
+      "landmarks": [
+        "Cosin Court",
+        "Fitzwilliam Street"
+      ],
+      "surroundings": [
+        "another white car",
+        "tree",
+        "multicolored beige and white multi housing unit with gray roofs"
+      ],
+      "auxiliary_items": [
+        "another white car",
+        "tree"
+      ]
+    },
+    {
+      "split": "train_seen",
+      "map": "birmingham_block_3",
+      "object_id": 315,
+      "annotation_id": 3,
+      "text": "The orange head truck that is parked by the tree that is on the Broadway Road.",
+      "target": "orange head truck",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": true,
+      "landmarks": [
+        "The Broadway"
+      ],
+      "surroundings": [
+        "tree"
+      ],
+      "auxiliary_items": [
+        "tree"
+      ]
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_28",
+      "object_id": 163,
+      "annotation_id": 3,
+      "text": "The gray house on Acrefield Drive that is 14 houses to the left of the reddish house at the intersection with Manhattan Drive.",
+      "target": "gray house",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": true,
+      "auxiliary_spatial": true,
+      "landmarks": [
+        "Acrefield Drive",
+        "Manhattan Drive"
+      ],
+      "surroundings": [
+        "14 houses",
+        "reddish house"
+      ],
+      "auxiliary_items": [
+        "14 houses",
+        "reddish house"
+      ]
+    },
+    {
+      "split": "val_unseen",
+      "map": "cambridge_block_3",
+      "object_id": 100,
+      "annotation_id": 5,
+      "text": "A black car in between another black car, a empty space and a blue car in the center row of a parking lot between the Cripps building and the squash court building",
+      "target": "black car",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": true,
+      "auxiliary_spatial": true,
+      "landmarks": [
+        "Cripps Building",
+        "Squash Court"
+      ],
+      "surroundings": [
+        "another black car",
+        "empty space",
+        "blue car",
+        "center row",
+        "parking lot"
+      ],
+      "auxiliary_items": [
+        "another black car",
+        "empty space",
+        "blue car"
+      ]
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_21",
+      "object_id": 235,
+      "annotation_id": 5,
+      "text": "this is a black car. this car is in the middle parking row above Salmon Lane in a multi-storey car park. this car is the 11th car from the ramp.",
+      "target": "black car",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": true,
+      "auxiliary_spatial": true,
+      "landmarks": [
+        "Salmon Lane"
+      ],
+      "surroundings": [
+        "multi-storey car park",
+        "middle parking row",
+        "ramp"
+      ],
+      "auxiliary_items": [
+        "multi-storey car park"
+      ]
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_21",
+      "object_id": 204,
+      "annotation_id": 1,
+      "text": "The black car that is between a white car and a white van with a gray roof on the top middle row of the Grafton West parking lot. There is no car in front of it and a white car behind it.",
+      "target": "black car",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": true,
+      "auxiliary_spatial": true,
+      "landmarks": [
+        "Grafton West"
+      ],
+      "surroundings": [
+        "white car",
+        "white van",
+        "gray roof"
+      ],
+      "auxiliary_items": [
+        "white car",
+        "white van"
+      ]
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_21",
+      "object_id": 217,
+      "annotation_id": 2,
+      "text": "The dark blue car, parked between a lighter blue car and a black car, in the center of the middle parking row, closest to Salmon Lane, in Grafton West's parking lot.",
+      "target": "dark blue car",
+      "category": "complex_auxiliary",
+      "has_landmark": true,
+      "has_relation": true,
+      "landmark_coarse": true,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": true,
+      "landmarks": [
+        "Salmon Lane",
+        "Grafton West"
+      ],
+      "surroundings": [
+        "lighter blue car",
+        "black car",
+        "middle parking row"
+      ],
+      "auxiliary_items": [
+        "lighter blue car",
+        "black car"
+      ]
+    }
+  ],
+  "other": [
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_13",
+      "object_id": 143,
+      "annotation_id": 5,
+      "text": "This is a part of what is already labelled as the David Attenborough Building.",
+      "target": "part",
+      "category": "other",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": false,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "David Attenborough Building"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "birmingham_block_9",
+      "object_id": 727,
+      "annotation_id": 5,
+      "text": "The triangular parking lot that is bordered by the Perry Barr footpath.",
+      "target": "triangular parking lot",
+      "category": "other",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Perry Barr Bus Depot"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "birmingham_block_12",
+      "object_id": 242,
+      "annotation_id": 4,
+      "text": "The massive gray rectangular parking lot for the West Midlands Police Custody Suite.",
+      "target": "massive gray rectangular parking lot",
+      "category": "other",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "West Midlands Police Custody Suite"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_25",
+      "object_id": 27,
+      "annotation_id": 5,
+      "text": "The dark blue car in the rectangular parking lot of the Petersfield Mansions.",
+      "target": "dark blue car",
+      "category": "other",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Petersfield Mansions"
+      ],
+      "surroundings": [
+        "rectangular parking lot"
+      ],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_25",
+      "object_id": 118,
+      "annotation_id": 2,
+      "text": "The parking area is very long and is rectangular in shape. Is is infront of the Peterfield Mansions",
+      "target": "parking area",
+      "category": "other",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Petersfield Mansions"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "val_unseen",
+      "map": "birmingham_block_5",
+      "object_id": 41,
+      "annotation_id": 5,
+      "text": "The dark brown house at the sharp intersection of Walsell Road and Cliveden Avenue.",
+      "target": "dark brown house",
+      "category": "other",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Walsall Road",
+        "Cliveden Avenue"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "val_unseen",
+      "map": "cambridge_block_10",
+      "object_id": 160,
+      "annotation_id": 2,
+      "text": "The gray and yellow car in the parking lot of Arundel House Hotel",
+      "target": "gray and yellow car",
+      "category": "other",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Arundel House Hotel"
+      ],
+      "surroundings": [
+        "parking lot"
+      ],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_33",
+      "object_id": 88,
+      "annotation_id": 4,
+      "text": "Front section of a beige and white building with a gray roof that is missing its side wall, find a multi-unit complex, the house in the center with the white wall off Elizabeth way",
+      "target": "beige and white building",
+      "category": "other",
+      "has_landmark": false,
+      "has_relation": true,
+      "landmark_coarse": false,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [],
+      "surroundings": [
+        "gray roof",
+        "side wall",
+        "multi-unit complex",
+        "white wall",
+        "Elizabeth way"
+      ],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_12",
+      "object_id": 145,
+      "annotation_id": 4,
+      "text": "A red car in the parking lot of the Lensfield Hotel",
+      "target": "red car",
+      "category": "other",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "The Lensfield Hotel"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "birmingham_block_12",
+      "object_id": 242,
+      "annotation_id": 5,
+      "text": "The massive gray rectangular parking lot for the West Midlands Police Custody Suite.",
+      "target": "massive gray rectangular parking lot",
+      "category": "other",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "West Midlands Police Custody Suite"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "birmingham_block_1",
+      "object_id": 1021,
+      "annotation_id": 4,
+      "text": "The parking lot of the St. Teresa of the Child Jesus Catholic Church.",
+      "target": "parking lot",
+      "category": "other",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": false,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "St. Teresa of the Child Jesus Catholic Church"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "birmingham_block_7",
+      "object_id": 46,
+      "annotation_id": 5,
+      "text": "The black car parked by itself at the intersection area of Aston Manor Close.",
+      "target": "black car",
+      "category": "other",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Aston Manor Close"
+      ],
+      "surroundings": [
+        "intersection area"
+      ],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_25",
+      "object_id": 29,
+      "annotation_id": 5,
+      "text": "The light gray car parked in the parking lot of the Petersfield Mansions.",
+      "target": "light gray car",
+      "category": "other",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Petersfield Mansions"
+      ],
+      "surroundings": [
+        "parking lot"
+      ],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_9",
+      "object_id": 33,
+      "annotation_id": 4,
+      "text": "This is a long building lining up Lower Park Street. It has chimneys on the roof periodically and has a gray roof.",
+      "target": "building",
+      "category": "other",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Lower Park Street"
+      ],
+      "surroundings": [
+        "chimneys",
+        "gray roof"
+      ],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_33",
+      "object_id": 170,
+      "annotation_id": 5,
+      "text": "The black car at the top of the yellowish tan parking lot.",
+      "target": "black car",
+      "category": "other",
+      "has_landmark": false,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [],
+      "surroundings": [
+        "yellowish tan parking lot"
+      ],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "birmingham_block_12",
+      "object_id": 63,
+      "annotation_id": 5,
+      "text": "The large white truck or van that is driving along Holford Drive.",
+      "target": "large white truck or van",
+      "category": "other",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Holford Drive"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "birmingham_block_10",
+      "object_id": 367,
+      "annotation_id": 4,
+      "text": "The parking area of the Weighbridge Offices that has white painted lines.",
+      "target": "parking area",
+      "category": "other",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Weighbridge Offices"
+      ],
+      "surroundings": [
+        "white painted lines"
+      ],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_13",
+      "object_id": 992,
+      "annotation_id": 2,
+      "text": "The massive winding parking area that includes the Craik-Marshall Building and Anatomy Building.",
+      "target": "massive winding parking area",
+      "category": "other",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": false,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Craik-Marshall Building",
+        "Anatomy Building"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "birmingham_block_10",
+      "object_id": 55,
+      "annotation_id": 5,
+      "text": "The blue car in the Weighbridge Offices parking area with a yellow curb.",
+      "target": "blue car",
+      "category": "other",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Weighbridge Offices"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_20",
+      "object_id": 117,
+      "annotation_id": 2,
+      "text": "A multi-colored Brown and white multi housing unit with a gray roof one City Road, with one of the units having a red door on it",
+      "target": "multi housing unit",
+      "category": "other",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "City Road"
+      ],
+      "surroundings": [
+        "gray roof",
+        "red door"
+      ],
+      "auxiliary_items": []
+    },
+    {
+      "split": "val_unseen",
+      "map": "cambridge_block_2",
+      "object_id": 29,
+      "annotation_id": 4,
+      "text": "The darker blue car that is in the parking lot of The Brewhouse.",
+      "target": "darker blue car",
+      "category": "other",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "The Brewhouse"
+      ],
+      "surroundings": [
+        "parking lot"
+      ],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "birmingham_block_1",
+      "object_id": 156,
+      "annotation_id": 5,
+      "text": "The red car when viewing Leslie Road horizontally, it is the only red car on the road.",
+      "target": "red car",
+      "category": "other",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Leslie Road"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_33",
+      "object_id": 98,
+      "annotation_id": 3,
+      "text": "The small blue building with the white roof in the parking area of Beche Road.",
+      "target": "small blue building with the white roof",
+      "category": "other",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Beche Road"
+      ],
+      "surroundings": [
+        "parking area"
+      ],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_13",
+      "object_id": 70,
+      "annotation_id": 5,
+      "text": "The gray metallic building with a curved entrance and the large Quadrangle building.",
+      "target": "gray metallic building",
+      "category": "other",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "The Quadrangle"
+      ],
+      "surroundings": [
+        "curved entrance"
+      ],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "birmingham_block_4",
+      "object_id": 100,
+      "annotation_id": 2,
+      "text": "In Chesterwood Gardens, this interesting car is parked all by iteself and all. gary",
+      "target": "interesting car",
+      "category": "other",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": false,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Chesterwood Gardens"
+      ],
+      "surroundings": [
+        "all by itself"
+      ],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_7",
+      "object_id": 153,
+      "annotation_id": 5,
+      "text": "The small brown building touching the Pembroke College Library and Peterhouse Master's Lodge.",
+      "target": "small brown building",
+      "category": "other",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Pembroke College Library",
+        "Peterhouse Master's Lodge"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_7",
+      "object_id": 109,
+      "annotation_id": 5,
+      "text": "The long brown and gray building that encloses the Old Court.",
+      "target": "long brown and gray building",
+      "category": "other",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Old Court"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_9",
+      "object_id": 372,
+      "annotation_id": 4,
+      "text": "The area of grass that is square and large in the Magdalene College Chapel courtyard.",
+      "target": "area of grass",
+      "category": "other",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Magdalene College Chapel"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_12",
+      "object_id": 5,
+      "annotation_id": 5,
+      "text": "The gray metallic building with brown accents along St. Peter's Terrace.",
+      "target": "gray metallic building",
+      "category": "other",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "St Peter's Terrace"
+      ],
+      "surroundings": [
+        "brown accents"
+      ],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_18",
+      "object_id": 26,
+      "annotation_id": 5,
+      "text": "The gray house at the intersection of Regent Street and Lensfield Road.",
+      "target": "gray house",
+      "category": "other",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Regent Street Dental Surgery",
+        "Lensfield Road"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "birmingham_block_7",
+      "object_id": 49,
+      "annotation_id": 2,
+      "text": "The only white car that is parked on the big parking lot that can access through the Aston Lane.",
+      "target": "white car",
+      "category": "other",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Aston Lane"
+      ],
+      "surroundings": [
+        "big parking lot"
+      ],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_7",
+      "object_id": 69,
+      "annotation_id": 0,
+      "text": "This is a building with a grey roof which is ocnnected to the Friars' Building.",
+      "target": "building",
+      "category": "other",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Friars' Building"
+      ],
+      "surroundings": [
+        "grey roof"
+      ],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "birmingham_block_3",
+      "object_id": 94,
+      "annotation_id": 1,
+      "text": "a building with grey roof and brown wall situated at the intersection point of two road named Bayswater road and Canterbury road.",
+      "target": "building",
+      "category": "other",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Canterbury Road",
+        "Bayswater Road"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_20",
+      "object_id": 6,
+      "annotation_id": 4,
+      "text": "The brownish gray building at the intersection of Eden Street and Fitzroy Street.",
+      "target": "brownish gray building",
+      "category": "other",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Fitzroy Street",
+        "Eden Street Backway"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_9",
+      "object_id": 3,
+      "annotation_id": 1,
+      "text": "The large gray and brown building that encloses a space with the Blue Boar R, S and T",
+      "target": "large gray and brown building",
+      "category": "other",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Blue Boar R, S and T"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "birmingham_block_11",
+      "object_id": 1,
+      "annotation_id": 5,
+      "text": "The white car that is the only car on Noble Way road.",
+      "target": "white car",
+      "category": "other",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Nobel Way"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_12",
+      "object_id": 851,
+      "annotation_id": 3,
+      "text": "The big parking lot of the University Chemical Laboratory that is by the Saxon Footpath.",
+      "target": "parking lot",
+      "category": "other",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": false,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "University Chemical Laboratory",
+        "Saxon Street"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_12",
+      "object_id": 20,
+      "annotation_id": 3,
+      "text": "The building connect to The Wellcome Trust/Cancer Research UK Gurdon Institute with a gray and white roof.",
+      "target": "building",
+      "category": "other",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "The Wellcome Trust/Cancer Research UK Gurdon Institute"
+      ],
+      "surroundings": [
+        "gray and white roof"
+      ],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_7",
+      "object_id": 113,
+      "annotation_id": 4,
+      "text": "The gray and tan building that encloses the Gisborne Court with the Whittle building.",
+      "target": "building",
+      "category": "other",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Gisborne Court",
+        "Whittle Building"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_12",
+      "object_id": 77,
+      "annotation_id": 3,
+      "text": "The gray house on Brookside that is at the intersection with Pemberton Terrace.",
+      "target": "gray house",
+      "category": "other",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Brookside Lane"
+      ],
+      "surroundings": [
+        "intersection with Pemberton Terrace"
+      ],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "birmingham_block_1",
+      "object_id": 7,
+      "annotation_id": 4,
+      "text": "A building with white roof along the road named Celine Grove",
+      "target": "building",
+      "category": "other",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Celine Grove"
+      ],
+      "surroundings": [
+        "white roof"
+      ],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_13",
+      "object_id": 991,
+      "annotation_id": 4,
+      "text": "The parking spot of the Zoology Building and the Shell Building, and the Museum of Zoology.",
+      "target": "parking spot",
+      "category": "other",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": false,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Shell Building",
+        "Museum of Zoology",
+        "Zoology Building"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "birmingham_block_1",
+      "object_id": 77,
+      "annotation_id": 4,
+      "text": "The purple car in the St. Teresa of the Child Jesus Catholic Church's parking lot.",
+      "target": "purple car",
+      "category": "other",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "St. Teresa of the Child Jesus Catholic Church"
+      ],
+      "surroundings": [
+        "parking lot"
+      ],
+      "auxiliary_items": []
+    },
+    {
+      "split": "val_unseen",
+      "map": "cambridge_block_3",
+      "object_id": 4,
+      "annotation_id": 2,
+      "text": "The light brown and long building is to the southwest of the Buckingham Room and Castle Street to the northwest.",
+      "target": "light brown building",
+      "category": "other",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Buckingham Room",
+        "Castle Street"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_13",
+      "object_id": 39,
+      "annotation_id": 2,
+      "text": "The round tower part of the Sedgwick Building and has a rounded roof on top.",
+      "target": "round tower",
+      "category": "other",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Sedgwick Building"
+      ],
+      "surroundings": [
+        "rounded roof"
+      ],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_13",
+      "object_id": 217,
+      "annotation_id": 4,
+      "text": "The black car parked in the crevice at the intersection of the Howard Building and the Howard Lodge.",
+      "target": "black car",
+      "category": "other",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Howard Lodge",
+        "Howard Building"
+      ],
+      "surroundings": [
+        "crevice"
+      ],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_7",
+      "object_id": 367,
+      "annotation_id": 5,
+      "text": "The rectangular lawn at the Queens College Chapel along Queen’s Lane Road.",
+      "target": "rectangular lawn",
+      "category": "other",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Queens' College Chapel",
+        "Queens Lane"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_20",
+      "object_id": 16,
+      "annotation_id": 2,
+      "text": "Very long beige multi-housing unit with a brown roof that encompasses most of the Orchard Street block",
+      "target": "beige multi-housing unit",
+      "category": "other",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Orchard Street"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "birmingham_block_12",
+      "object_id": 19,
+      "annotation_id": 5,
+      "text": "The gray car that is about to exit the West Midlands Police Custody Suite parking lot.",
+      "target": "gray car",
+      "category": "other",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "West Midlands Police Custody Suite"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_9",
+      "object_id": 65,
+      "annotation_id": 5,
+      "text": "The building that connects the Magdalene College Chapel to the Ramsay Hall.",
+      "target": "building",
+      "category": "other",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": false,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Magdalene College Chapel",
+        "Ramsay Hall (Bright's Building)"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_33",
+      "object_id": 78,
+      "annotation_id": 3,
+      "text": "The stone building on Beche Road that is long and has many different peaks on the roof.",
+      "target": "stone building on Beche Road",
+      "category": "other",
+      "has_landmark": false,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [],
+      "surroundings": [
+        "long and has many different peaks on the roof"
+      ],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "birmingham_block_3",
+      "object_id": 2,
+      "annotation_id": 3,
+      "text": "A large building with a blue, white and black colored roof with brown walls along Canterbury Road.",
+      "target": "large building",
+      "category": "other",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Canterbury Road"
+      ],
+      "surroundings": [
+        "blue, white and black colored roof",
+        "brown walls"
+      ],
+      "auxiliary_items": []
+    },
+    {
+      "split": "val_unseen",
+      "map": "cambridge_block_10",
+      "object_id": 199,
+      "annotation_id": 3,
+      "text": "The grass and trees that run along the River Cam with the Floating Wier Safety Barrier and Chesterton Road.",
+      "target": "grass and trees",
+      "category": "other",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": false,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "River Cam",
+        "Floating Wier Safety Barrier",
+        "Chesterton Road"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_13",
+      "object_id": 61,
+      "annotation_id": 2,
+      "text": "The tiny grayish brown building in the alleyway of the Henry Wellcome Building.",
+      "target": "tiny grayish brown building",
+      "category": "other",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "The Henry Wellcome Building"
+      ],
+      "surroundings": [
+        "alleyway"
+      ],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_7",
+      "object_id": 6,
+      "annotation_id": 3,
+      "text": "Long gray building that intersects perpendicularly with the Old brew House.",
+      "target": "Long gray building",
+      "category": "other",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Old Brew House"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_13",
+      "object_id": 18,
+      "annotation_id": 4,
+      "text": "The L-shaped brown and gray building connecting the Haddon Library and the West Building.",
+      "target": "L-shaped brown and gray building",
+      "category": "other",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Haddon Library",
+        "West Building"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_25",
+      "object_id": 118,
+      "annotation_id": 5,
+      "text": "The rectangular parking lot enclosed by the gray Petersfield Mansion buildings.",
+      "target": "rectangular parking lot",
+      "category": "other",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Petersfield Mansions"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_33",
+      "object_id": 70,
+      "annotation_id": 5,
+      "text": "The long gray angular building with brown trim along Occupation Road.",
+      "target": "building",
+      "category": "other",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Occupation Road"
+      ],
+      "surroundings": [
+        "brown trim"
+      ],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "birmingham_block_12",
+      "object_id": 242,
+      "annotation_id": 1,
+      "text": "This is the parking space for West Midlands Police Custody Suite. The parking has an entrance that leads to Holford Drive.",
+      "target": "parking space",
+      "category": "other",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": false,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "West Midlands Police Custody Suite",
+        "Holford Drive"
+      ],
+      "surroundings": [
+        "entrance"
+      ],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_21",
+      "object_id": 187,
+      "annotation_id": 5,
+      "text": "The red car in the parking lot for the Cambridge Community Kitchen.",
+      "target": "red car",
+      "category": "other",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Cambridge Community Kitchen"
+      ],
+      "surroundings": [
+        "parking lot"
+      ],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "birmingham_block_12",
+      "object_id": 1,
+      "annotation_id": 4,
+      "text": "The square black building in the parking lot of Holford Drive.",
+      "target": "square black building",
+      "category": "other",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Holford Drive"
+      ],
+      "surroundings": [
+        "parking lot"
+      ],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_9",
+      "object_id": 73,
+      "annotation_id": 3,
+      "text": "The large building that has the Mallory Court, NW Range in it.",
+      "target": "large building",
+      "category": "other",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Mallory Court"
+      ],
+      "surroundings": [
+        "NW Range"
+      ],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_9",
+      "object_id": 183,
+      "annotation_id": 3,
+      "text": "A small part of the white roof of the Wolfson Building closer to the Blue Boar common room.",
+      "target": "white roof",
+      "category": "other",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Wolfson Building",
+        "Blue Boar common Room"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "val_unseen",
+      "map": "cambridge_block_2",
+      "object_id": 9,
+      "annotation_id": 2,
+      "text": "The long brown building that one has to walk through to reach the Forbes Mellon Library.",
+      "target": "long brown building",
+      "category": "other",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Forbes Mellon Library"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_28",
+      "object_id": 269,
+      "annotation_id": 5,
+      "text": "The red car in the intersection of Aylestone Road and Belvoir Road.",
+      "target": "red car",
+      "category": "other",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Aylestone Road",
+        "Belvoir Road"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_9",
+      "object_id": 439,
+      "annotation_id": 5,
+      "text": "The rectangle grass courtyard of the Wheell's Court G to P building.",
+      "target": "rectangle grass courtyard",
+      "category": "other",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": false,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Whewell's Court G to P"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "birmingham_block_1",
+      "object_id": 1021,
+      "annotation_id": 5,
+      "text": "The parking lot of the St. Teresa of the Child Jesus Catholic Church.",
+      "target": "parking lot",
+      "category": "other",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": false,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "St. Teresa of the Child Jesus Catholic Church"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_13",
+      "object_id": 1017,
+      "annotation_id": 3,
+      "text": "The parking lot that is for the Geography Building and the Butterfield Cafe.",
+      "target": "parking lot",
+      "category": "other",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": false,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Butterfield Café",
+        "Geography Building"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_13",
+      "object_id": 112,
+      "annotation_id": 2,
+      "text": "The brown and gray building sharing a lot with the Emmanuel College Library.",
+      "target": "brown and gray building",
+      "category": "other",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Emmanuel College Library"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "val_seen",
+      "map": "birmingham_block_4",
+      "object_id": 9,
+      "annotation_id": 4,
+      "text": "The large grayish brown house on Ashton Lane and Chesterfield Gardens.",
+      "target": "large grayish brown house",
+      "category": "other",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Aston Lane",
+        "Chesterwood Gardens"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "val_unseen",
+      "map": "cambridge_block_3",
+      "object_id": 78,
+      "annotation_id": 3,
+      "text": "The light blue car and red car parked in the lot of the Mallory Court, NW Range.",
+      "target": "light blue car and red car",
+      "category": "other",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Mallory Court, NW Range"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "val_unseen",
+      "map": "birmingham_block_5",
+      "object_id": 202,
+      "annotation_id": 4,
+      "text": "White car in the circular parking lot at Teddington glove road. It has no car closer to it.",
+      "target": "white car",
+      "category": "other",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Teddington Grove"
+      ],
+      "surroundings": [
+        "circular parking lot"
+      ],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_28",
+      "object_id": 230,
+      "annotation_id": 3,
+      "text": "A blue car next to a parking lot on Pentlands Close with no cars on it's right, left, front or back.",
+      "target": "blue car",
+      "category": "other",
+      "has_landmark": false,
+      "has_relation": true,
+      "landmark_coarse": false,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [],
+      "surroundings": [
+        "parking lot"
+      ],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_7",
+      "object_id": 403,
+      "annotation_id": 2,
+      "text": "The green ground with trees at the apex of the map, sharing lawn with First Island.",
+      "target": "green ground with trees",
+      "category": "other",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "First Island"
+      ],
+      "surroundings": [
+        "apex of the map"
+      ],
+      "auxiliary_items": []
+    },
+    {
+      "split": "val_unseen",
+      "map": "birmingham_block_5",
+      "object_id": 102,
+      "annotation_id": 3,
+      "text": "A red car parked in the parking area of the building named National probation service along the Walsall road.",
+      "target": "red car",
+      "category": "other",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "National Probation Service",
+        "Walsall Road"
+      ],
+      "surroundings": [
+        "parking area"
+      ],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_12",
+      "object_id": 49,
+      "annotation_id": 4,
+      "text": "The white building at the parking lot of the University Chemical Laboratory .",
+      "target": "white building",
+      "category": "other",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "University Chemical Laboratory"
+      ],
+      "surroundings": [
+        "parking lot"
+      ],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_13",
+      "object_id": 70,
+      "annotation_id": 4,
+      "text": "The silver dome-shaped building at the top of the large enclosure, including the Quadrangle.",
+      "target": "silver dome-shaped building",
+      "category": "other",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "The Quadrangle"
+      ],
+      "surroundings": [
+        "large enclosure"
+      ],
+      "auxiliary_items": []
+    },
+    {
+      "split": "val_unseen",
+      "map": "cambridge_block_3",
+      "object_id": 398,
+      "annotation_id": 2,
+      "text": "The parking lot underneath the trees along Queen's Road, by the tennis courts.",
+      "target": "parking lot",
+      "category": "other",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": false,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Queen's Road"
+      ],
+      "surroundings": [
+        "tennis courts"
+      ],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_12",
+      "object_id": 5,
+      "annotation_id": 4,
+      "text": "The long grey roof building that is on the St Peter’s Terrace.",
+      "target": "long grey roof building",
+      "category": "other",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "St Peter's Terrace"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    },
+    {
+      "split": "train_seen",
+      "map": "cambridge_block_28",
+      "object_id": 53,
+      "annotation_id": 5,
+      "text": "The large brown and gray angular building along Midsummer Meadows,",
+      "target": "building",
+      "category": "other",
+      "has_landmark": true,
+      "has_relation": false,
+      "landmark_coarse": false,
+      "has_appearance": true,
+      "number_or_order": false,
+      "auxiliary_spatial": false,
+      "landmarks": [
+        "Midsummer Meadows"
+      ],
+      "surroundings": [],
+      "auxiliary_items": []
+    }
+  ]
+}

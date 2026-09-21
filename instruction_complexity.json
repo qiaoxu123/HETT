@@ -1,0 +1,98 @@
+{
+  "scope": [
+    "train_seen",
+    "val_seen",
+    "val_unseen"
+  ],
+  "missing_processed": 0,
+  "stats": {
+    "train_seen": {
+      "total": 21878,
+      "categories": {
+        "simple_landmark": 5130,
+        "complex_auxiliary": 16671,
+        "other": 77
+      },
+      "category_percent": {
+        "simple_landmark": 23.45,
+        "complex_auxiliary": 76.2,
+        "other": 0.35
+      },
+      "complex_subtypes": {
+        "number_or_order": 9189,
+        "auxiliary_spatial": 15241,
+        "both": 7759
+      },
+      "has_landmark": 21819,
+      "landmark_coarse": 21634,
+      "landmark_and_complex": 16504,
+      "has_appearance": 20123
+    },
+    "val_seen": {
+      "total": 2470,
+      "categories": {
+        "complex_auxiliary": 1866,
+        "simple_landmark": 603,
+        "other": 1
+      },
+      "category_percent": {
+        "simple_landmark": 24.41,
+        "complex_auxiliary": 75.55,
+        "other": 0.04
+      },
+      "complex_subtypes": {
+        "number_or_order": 1016,
+        "auxiliary_spatial": 1737,
+        "both": 887
+      },
+      "has_landmark": 2470,
+      "landmark_coarse": 2461,
+      "landmark_and_complex": 1858,
+      "has_appearance": 2273
+    },
+    "val_unseen": {
+      "total": 2697,
+      "categories": {
+        "simple_landmark": 818,
+        "complex_auxiliary": 1869,
+        "other": 10
+      },
+      "category_percent": {
+        "simple_landmark": 30.33,
+        "complex_auxiliary": 69.3,
+        "other": 0.37
+      },
+      "complex_subtypes": {
+        "number_or_order": 747,
+        "auxiliary_spatial": 1735,
+        "both": 613
+      },
+      "has_landmark": 2695,
+      "landmark_coarse": 2667,
+      "landmark_and_complex": 1849,
+      "has_appearance": 2376
+    },
+    "all": {
+      "total": 27045,
+      "categories": {
+        "simple_landmark": 6551,
+        "complex_auxiliary": 20406,
+        "other": 88
+      },
+      "category_percent": {
+        "simple_landmark": 24.22,
+        "complex_auxiliary": 75.45,
+        "other": 0.33
+      },
+      "complex_subtypes": {
+        "number_or_order": 10952,
+        "auxiliary_spatial": 18713,
+        "both": 9259
+      },
+      "has_landmark": 26984,
+      "landmark_coarse": 26762,
+      "landmark_and_complex": 20211,
+      "has_appearance": 24772
+    }
+  }
+}
