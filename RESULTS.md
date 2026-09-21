@@ -38,6 +38,44 @@
 
 两条样本的训练、反向传播、保存和验证冒烟已经通过；固定后的运行没有加载 `test_unseen`。
 
+## 三轮全量实验与复现
+
+完整 `train_seen`、seed 0 的 3 epoch 实验已启动。每轮训练 21,878 条轨迹，随后分别验证
+`val_seen` 2,470 条和 `val_unseen` 2,697 条；不加载 `test_unseen`。运行完成前不把中间进度
+解释为效果结论。
+
+移交快照（2026-09-21 22:03 +08:00）：第 1 轮训练完成 72.4%（7,918 / 10,939
+batch），训练进程和 GPU 正常，尚未产生首轮 checkpoint 或验证指标。因此当前可以确认的是
+实现、离线审计和训练链路有效；**不能据此声称 SR/SPL 得到提升**。本机运行目录受
+`.gitignore` 管理，不随 Git 提交，跨机器复现应重新启动完整实验。
+
+从本分支根目录运行：
+
+```bash
+/home/tenant2/miniconda3/envs/AirVLN39/bin/python scripts/supervise_experiment.py \
+  --run-dir runs/teacher_cleanup_3ep_s0_repro \
+  --python /home/tenant2/miniconda3/envs/AirVLN39/bin/python \
+  --epochs 3 --save-every 1 --seed 0 --phase train-eval --interval 60 \
+  --variant-arg=--disable_task_interaction \
+  --variant-arg=--teacher_trajectory_mode \
+  --variant-arg=landmark_clean
+```
+
+若另一台机器的 Python 或共享 GPU 锁路径不同，替换 `--python`，并按需传入
+`--lock-file`；其余参数保持不变。`data/` 和 `weights/` 按 `SINGLE_GPU.md` 配置，不提交到 Git。
+
+训练完成后与原始 20 epoch 基线比较：
+
+```bash
+/home/tenant2/miniconda3/envs/AirVLN39/bin/python scripts/compare_epoch_metrics.py \
+  --candidate runs/teacher_cleanup_3ep_s0_repro/checkpoints/epoch_metrics.jsonl \
+  --baseline runs/hett_baseline_fixed_20260911/checkpoints/epoch_metrics.jsonl \
+  --output runs/teacher_cleanup_3ep_s0_repro/REPORT.md
+```
+
+对比报告逐轮比较前 3 epoch 的 SR、SPL、NE 和 loss，并将候选前三轮最佳检查点与原始
+20 epoch 的最佳 `val_unseen` SR 检查点比较。短训练、单 seed 只能判断早期趋势。
+
 ## 仍需修改的部分
 
 1. 当前阶段门是 pose＋地图轮廓确认，不能证明视觉上识别了正确地标；后续仍需要高精度、可拒答的视觉确认头。
