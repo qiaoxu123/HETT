@@ -111,3 +111,28 @@ class GeometricCandidateSelector(nn.Module):
         pair_logit = self.pair_head(self.text(global_tokens))
         pair_logit = pair_logit.masked_fill(~pair_valid.bool().unsqueeze(-1), -1e4)
         return torch.cat([logits, pair_logit], dim=1)
+
+
+class HETTBertCandidateSelector(nn.Module):
+    """Candidate selector over frozen, precomputed HETT BERT embeddings."""
+
+    def __init__(self, max_landmarks: int, candidates_per_landmark: int, input_dim: int = 768):
+        super().__init__()
+        self.max_landmarks = max_landmarks
+        self.candidates_per_landmark = candidates_per_landmark
+        self.adapter = nn.Sequential(nn.Linear(input_dim, 256), nn.LayerNorm(256), nn.ReLU())
+        self.candidate_head = nn.Sequential(
+            nn.Linear(256, 128), nn.ReLU(), nn.Dropout(0.1),
+            nn.Linear(128, candidates_per_landmark),
+        )
+        self.landmark_gate = nn.Sequential(nn.Linear(256, 32), nn.ReLU(), nn.Linear(32, 1))
+        self.pair_head = nn.Sequential(nn.Linear(256, 32), nn.ReLU(), nn.Linear(32, 1))
+
+    def forward(self, ref_embeddings, global_embedding, valid, pair_valid):
+        encoded = self.adapter(ref_embeddings.float())
+        logits = self.candidate_head(encoded) + self.landmark_gate(encoded)
+        logits = logits.masked_fill(~valid.bool().unsqueeze(-1), -1e4)
+        logits = logits.flatten(1)
+        pair_logit = self.pair_head(self.adapter(global_embedding.float()))
+        pair_logit = pair_logit.masked_fill(~pair_valid.bool().unsqueeze(-1), -1e4)
+        return torch.cat([logits, pair_logit], dim=1)

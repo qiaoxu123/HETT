@@ -1,29 +1,26 @@
-# Explicit geometric candidate selector protocol
+# HETT BERT geometric selector protocol
 
 ## Question
 
-The factorized candidate set has a 91.32% val_unseen Hit@20 oracle ceiling, while the
-dense heatmap reaches only 27.81%. Can explicit language-based candidate selection
-close that gap?
+Does the language encoder from the completed 20-epoch HETT checkpoint improve the
+explicit geometric selector that failed with a small GRU?
 
-## Design fixed before the run
+## Single intended change
 
-- Use the same per-landmark `9 directions × 6 contour distances` peaks as experiment 28.
-- Add one aggregate between-landmarks candidate when at least two landmarks are named.
-- Mark each landmark as `<ref>` in turn and use the same small bidirectional GRU.
-- Directly score all `4 × 54 + 1 = 217` candidates. A scalar landmark gate is learned
-  jointly with the 54 relation scores.
-- Optimize negative log probability assigned to all candidates within 20 m of the GT;
-  if none exists, supervise the nearest candidate.
-- At inference, retain five metric-NMS candidates. Their probabilities can be splatted
-  with 10 m Gaussians to form the target heatmap.
+- Keep experiment 29's candidate set, labels, 20 m probability loss, metric NMS,
+  splits, epochs, and seeds.
+- Replace the train-from-scratch GRU with frozen 768-dimensional pooler embeddings from
+  `runs/hett_baseline_fixed_20260911/checkpoints/best_val_unseen`.
+- Train only a small 768→256 adapter, landmark gate, and candidate heads.
+- Mark the current named landmark in each instruction as "the referenced landmark" and
+  other names as "another named landmark" before encoding.
 
-Inputs remain instruction, landmark names, and landmark contours only. RGB, target
-contours, validation labels, and trajectory data are excluded. Train on train_seen for
-six epochs and evaluate three seeds 2701/2702/2703 on val_seen and val_unseen only.
+No RGB, target contour, validation label, or trajectory is an inference input. BERT
+embeddings are precomputed once and reused identically across seeds. The cache records
+the source checkpoint hash.
 
 ## Decision
 
 Pass if the three-seed val_unseen mean reaches Top-1 Hit@20 ≥35%, Top-5 Recall@20
-≥70%, and the seen-minus-unseen Top-1 gap is no larger than 15 points. Compare against
-experiment 28 (27.81/57.20) and experiment 27 (27.73/58.00).
+≥70%, and the seen-minus-unseen Top-1 gap is no larger than 15 points. Compare with the
+GRU selector's 20.95/54.41 and the best dense geometry result 27.73/58.00.

@@ -1,6 +1,8 @@
 import torch
 
-from multiagent.models.relational_heatmap import GeometricCandidateSelector, RelationalHeatmap
+from multiagent.models.relational_heatmap import (GeometricCandidateSelector,
+                                                  HETTBertCandidateSelector,
+                                                  RelationalHeatmap)
 
 
 def test_heatmap_shape_and_target_is_not_an_input():
@@ -42,3 +44,11 @@ def test_candidate_selector_masks_invalid_landmarks():
                        valid, torch.tensor([0.0]))
     assert logits.shape == (1, 217)
     assert torch.all(logits[0, 54:] < -1000)
+
+
+def test_hett_bert_selector_accepts_frozen_embeddings():
+    model = HETTBertCandidateSelector(max_landmarks=4, candidates_per_landmark=54).eval()
+    with torch.no_grad():
+        logits = model(torch.randn(2, 4, 768), torch.randn(2, 768),
+                       torch.ones(2, 4), torch.ones(2))
+    assert logits.shape == (2, 217)
