@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
-RUNS = [ROOT / "runs" / f"relational_heatmap_s{index}" for index in range(3)]
+RUNS = [ROOT / "runs" / f"factorized_heatmap_s{index}" for index in range(3)]
 
 
 def stats(values):
@@ -34,10 +34,10 @@ def main():
     passed = (unseen["top5_recall20"]["mean"] >= 70 and unseen["top1_hit20"]["mean"] >= 35
               and seen["top1_hit20"]["mean"] - unseen["top1_hit20"]["mean"] <= 15)
     aggregate["passed"] = passed
-    output = ROOT / "runs" / "relational_heatmap_aggregate.json"
+    output = ROOT / "runs" / "factorized_heatmap_aggregate.json"
     output.write_text(json.dumps(aggregate, ensure_ascii=False, indent=2))
 
-    lines = ["# 关系地标热图：三 seed 汇总", "",
+    lines = ["# 因子化关系地标热图：三 seed 汇总", "",
              "| 划分 | Top-1 Hit@20 | Top-5 Recall@20 | 中位误差 | 20m 概率质量 |",
              "|---|---:|---:|---:|---:|"]
     for split in ["val_seen", "val_unseen"]:
@@ -54,7 +54,7 @@ def main():
     lines += ["", "## 判定", "",
               "**通过。**" if passed else "**未通过。**",
               "", "模型稳定优于地标中心基线，但未达到预注册的 unseen 35% Top-1 / 70% Top-5 门槛。"]
-    (ROOT / "runs" / "RELATIONAL_HEATMAP_AGGREGATE.md").write_text("\n".join(lines) + "\n")
+    (ROOT / "runs" / "FACTORIZED_HEATMAP_AGGREGATE.md").write_text("\n".join(lines) + "\n")
 
     fig, ax = plt.subplots(figsize=(8, 4.5))
     relations = list(aggregate["val_unseen"]["by_relation"])
@@ -66,7 +66,7 @@ def main():
     ax.axhline(70, color="gray", linestyle="--", linewidth=1, label="Top-5 gate")
     ax.set_xticks(x, relations, rotation=25, ha="right")
     ax.set_ylabel("Hit / Recall @20 (%)"); ax.set_title("val_unseen by relation, mean of 3 seeds")
-    ax.legend(); fig.tight_layout(); fig.savefig(ROOT / "runs" / "relational_heatmap_relations.png", dpi=180)
+    ax.legend(); fig.tight_layout(); fig.savefig(ROOT / "runs" / "factorized_heatmap_relations.png", dpi=180)
 
 
 if __name__ == "__main__":

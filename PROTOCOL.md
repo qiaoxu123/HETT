@@ -1,40 +1,28 @@
-# Relational landmark heatmap protocol
+# Factorized relational heatmap protocol
 
 ## Question
 
-Can named landmark contours and instruction geometry produce a useful target heatmap
-before visual/action reasoning?
+Does explicitly factoring target direction and distance from each landmark improve the
+relational heatmap from experiment 27?
 
-## Frozen scope
+## Single intended change
 
-- Train on `train_seen`; evaluate all episodes in `val_seen` and `val_unseen`.
-- Do not use RGB, target contours, target attributes, validation labels, or navigation
-  rollouts as model inputs.
-- Each named landmark keeps its own contour and identity.  The instruction is encoded
-  once per landmark after marking that landmark as `<ref>` and other named landmarks
-  as `<other>`.
-- Fixed geometric bases: inside, near, ring, four cardinal half-planes, and four
-  diagonal sectors.  A learned language head mixes these bases; a small CNN refines
-  the combined field.  A separate pair channel represents the region between
-  landmarks.
-- Output is a global 64 x 64 probability field.  Training target is a 10 m Gaussian.
-- Top-K uses metric non-maximum suppression with a 20 m separation radius.
+- Keep the same instruction marking, per-landmark identity, pair field, 64×64 output,
+  loss, CNN refiner, data splits, six epochs, and seeds 2701/2702/2703.
+- Replace 12 broad relation fields with two independent distributions:
+  - angle: isotropic plus eight compass sectors;
+  - exterior distance from the contour: 0, 15, 30, 50, 80, and 120 metres.
+- Multiply the selected angle and distance fields before combining landmarks. This can
+  represent, for example, "left of A, about 30 m away" directly.
 
-## Metrics
+No RGB, target contour, validation label, or navigation trajectory is a model input.
+Development uses val_seen and val_unseen only; test_unseen remains untouched.
 
-- Top-1 Hit@20 and Top-5 Recall@20.
-- Median/P90 Top-1 error and probability mass inside 20 m.
-- The same metrics by relation family: left/right, front/behind, near, between,
-  cardinal, ordinal, and other.
-- Compare with first-landmark centroid and an untrained contour-distance heatmap.
+## Metrics and decision
 
-## Decision set before running
+Report Top-1 Hit@20, Top-5 Recall@20, median/P90 error, 20 m probability mass, and
+relation-wise metrics. Compare directly with experiment 27's three-seed means:
+val_seen 37.50/73.37 and val_unseen 27.73/58.00 (Top-1/Top-5).
 
-The first-stage design passes this diagnostic only if:
-
-1. `val_unseen` Top-5 Recall@20 is at least 70%;
-2. `val_unseen` Top-1 Hit@20 is at least 35%; and
-3. `val_seen` Top-1 does not trail `val_unseen` by more than 15 percentage points.
-
-This is a target-proposal diagnostic.  It is not navigation SR and it does not use
-`test_unseen`.
+Pass only if the three-seed val_unseen mean reaches Top-1 ≥35% and Top-5 ≥70%, with
+the seen-minus-unseen Top-1 gap no larger than 15 points.

@@ -27,10 +27,9 @@ MAX_LANDMARKS = 4
 MAX_TOKENS = 80
 SIGMA_METERS = 10.0
 NMS_METERS = 20.0
-BASIS_NAMES = [
-    "inside", "near", "ring", "left", "right", "up", "down",
-    "left_up", "right_up", "left_down", "right_down", "uniform",
-]
+ANGLE_NAMES = ["isotropic", "left", "right", "up", "down",
+               "left_up", "right_up", "left_down", "right_down"]
+DISTANCE_METERS = [0, 15, 30, 50, 80, 120]
 TOKEN_RE = re.compile(r"<[^>]+>|[a-z0-9]+(?:'[a-z]+)?")
 RELATIONS = {
     "between": re.compile(r"\b(between|middle of|in between)\b"),
@@ -160,20 +159,21 @@ def landmark_basis(map_name, landmark):
     outside_cells = cv2.distanceTransform(1 - mask, cv2.DIST_L2, 5)
     cell_m = 0.5 * ((bounds.x_max - bounds.x_min) + (bounds.y_max - bounds.y_min)) / (SIZE - 1)
     outside = outside_cells * cell_m
-    outside_mask = 1.0 - mask.astype(np.float32)
-    near = np.exp(-outside / 35.0).astype(np.float32)
-    ring = (np.exp(-0.5 * ((outside - 15.0) / 10.0) ** 2) * outside_mask).astype(np.float32)
     cx, cy = landmark["position"][:2]
     dx, dy = x_grid - cx, y_grid - cy
-    decay = np.exp(-outside / 80.0).astype(np.float32) * outside_mask
-    sigmoid = lambda value: 1.0 / (1.0 + np.exp(-np.clip(value / 12.0, -20, 20)))
-    left, right = decay * sigmoid(-dx), decay * sigmoid(dx)
-    up, down = decay * sigmoid(dy), decay * sigmoid(-dy)
-    fields = [mask.astype(np.float32), near, ring, left, right, up, down,
-              np.sqrt(left * up), np.sqrt(right * up),
-              np.sqrt(left * down), np.sqrt(right * down),
-              np.full_like(near, 0.25)]
-    return np.stack(fields).astype(np.float16)
+    norm = np.sqrt(dx ** 2 + dy ** 2).clip(min=1e-3)
+    unit_x, unit_y = dx / norm, dy / norm
+    directions = [None, (-1, 0), (1, 0), (0, 1), (0, -1),
+                  (-math.sqrt(.5), math.sqrt(.5)), (math.sqrt(.5), math.sqrt(.5)),
+                  (-math.sqrt(.5), -math.sqrt(.5)), (math.sqrt(.5), -math.sqrt(.5))]
+    angles = [np.ones_like(outside, dtype=np.float32)]
+    for direction in directions[1:]:
+        cosine = unit_x * direction[0] + unit_y * direction[1]
+        angles.append(np.exp(3.0 * (cosine - 1.0)).astype(np.float32))
+    sigmas = [10, 10, 12, 15, 20, 25]
+    distances = [np.exp(-0.5 * ((outside - center) / sigma) ** 2).astype(np.float32)
+                 for center, sigma in zip(DISTANCE_METERS, sigmas)]
+    return np.stack(angles).astype(np.float16), np.stack(distances).astype(np.float16)
 
 
 def pair_field(map_name, landmarks):
@@ -215,11 +215,12 @@ class HeatmapDataset(Dataset):
 
     def __getitem__(self, index):
         sample = self.samples[index]
-        bases = np.zeros((MAX_LANDMARKS, len(BASIS_NAMES), SIZE, SIZE), dtype=np.float16)
+        angle_fields = np.zeros((MAX_LANDMARKS, len(ANGLE_NAMES), SIZE, SIZE), dtype=np.float16)
+        distance_fields = np.zeros((MAX_LANDMARKS, len(DISTANCE_METERS), SIZE, SIZE), dtype=np.float16)
         ref_tokens = np.zeros((MAX_LANDMARKS, MAX_TOKENS), dtype=np.int64)
         valid = np.zeros(MAX_LANDMARKS, dtype=np.float32)
         for slot, (landmark_id, _, _) in enumerate(sample["landmarks"]):
-            bases[slot] = self.basis_cache[(sample["map"], landmark_id)]
+            angle_fields[slot], distance_fields[slot] = self.basis_cache[(sample["map"], landmark_id)]
             ref_tokens[slot] = sample["ref_tokens"][slot]
             valid[slot] = 1
         bounds = MAP_BOUNDS[sample["map"]]
@@ -229,7 +230,8 @@ class HeatmapDataset(Dataset):
         if pair_key not in self.pair_cache:
             self.pair_cache[pair_key] = pair_field(sample["map"], sample["landmarks"])
         return {
-            "bases": bases, "pair": self.pair_cache[pair_key],
+            "angle_fields": angle_fields, "distance_fields": distance_fields,
+            "pair": self.pair_cache[pair_key],
             "ref_tokens": ref_tokens, "global_tokens": sample["global_tokens"], "valid": valid,
             "target_rc": np.asarray([target_row, target_col], dtype=np.float32),
             "cell_xy": np.asarray([(bounds.x_max - bounds.x_min) / (SIZE - 1),
@@ -267,8 +269,9 @@ def move(batch, device):
 
 
 def forward(model, batch):
-    return model(batch["bases"].float(), batch["pair"].float(), batch["ref_tokens"],
-                 batch["global_tokens"], batch["valid"])
+    return model(batch["angle_fields"].float(), batch["distance_fields"].float(),
+                 batch["pair"].float(), batch["ref_tokens"], batch["global_tokens"],
+                 batch["valid"])
 
 
 def nms_points(field, cell_xy, count=5):
@@ -294,7 +297,6 @@ def point_error(point, target_rc, cell_xy):
 def evaluate(model, loader, dataset, device):
     model.eval()
     outputs = []
-    basis_index = BASIS_NAMES.index("near")
     with torch.no_grad():
         for raw_batch in loader:
             batch = move(raw_batch, device)
@@ -303,7 +305,7 @@ def evaluate(model, loader, dataset, device):
             _, within = target_fields(batch, device)
             masses = (probabilities * within).sum(dim=(1, 2)).cpu().numpy()
             probabilities = probabilities.cpu().numpy()
-            near = batch["bases"][:, :, basis_index].amax(dim=1).cpu().numpy()
+            near = batch["distance_fields"][:, :, 0].amax(dim=1).cpu().numpy()
             weights = relation_weights.cpu().numpy()
             for offset, sample_index in enumerate(raw_batch["index"]):
                 sample = dataset.samples[sample_index]
@@ -469,7 +471,8 @@ def main():
         "val_unseen": DataLoader(datasets["val_unseen"], batch_size=args.batch_size * 2, shuffle=False,
                                  num_workers=0, collate_fn=collate),
     }
-    model = RelationalHeatmap(len(vocab.itos), MAX_LANDMARKS, len(BASIS_NAMES)).to(device)
+    model = RelationalHeatmap(len(vocab.itos), MAX_LANDMARKS,
+                              len(ANGLE_NAMES), len(DISTANCE_METERS)).to(device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=2e-3, weight_decay=1e-4)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
     history = []
@@ -500,7 +503,8 @@ def main():
         "device": str(device), "vocab_size": len(vocab.itos),
         "parameters": sum(parameter.numel() for parameter in model.parameters()),
         "samples": {name: len(value) for name, value in splits.items()},
-        "truncated_landmark_sets": truncation, "basis_names": BASIS_NAMES,
+        "truncated_landmark_sets": truncation, "angle_names": ANGLE_NAMES,
+        "distance_meters": DISTANCE_METERS,
         "history": history,
     }
     output_rows = {}
@@ -517,7 +521,8 @@ def main():
     (args.run_dir / "results.json").write_text(json.dumps(result, ensure_ascii=False, indent=2))
     torch.save({"model": model.state_dict(), "vocab": vocab.itos,
                 "config": {"size": SIZE, "max_landmarks": MAX_LANDMARKS,
-                           "basis_names": BASIS_NAMES}}, args.run_dir / "model.pt")
+                           "angle_names": ANGLE_NAMES,
+                           "distance_meters": DISTANCE_METERS}}, args.run_dir / "model.pt")
     plot_results(args.run_dir, history, result, output_rows["val_unseen"])
     print(json.dumps({"passed": passed, "elapsed_seconds": result["elapsed_seconds"]}), flush=True)
 

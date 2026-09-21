@@ -22,24 +22,30 @@ class TextEncoder(nn.Module):
 
 
 class RelationalHeatmap(nn.Module):
-    """Mix fixed landmark fields with language, then refine spatially.
+    """Factor direction and distance, combine them, then refine spatially.
 
     Args to forward:
-      bases: [B, K, R, H, W]
+      angle_fields: [B, K, A, H, W]
+      distance_fields: [B, K, D, H, W]
       ref_tokens: [B, K, L], with the current landmark replaced by <ref>
       global_tokens: [B, L], with all landmark names replaced by <landmark>
       valid: [B, K]
       pair_field: [B, 1, H, W]
     """
 
-    def __init__(self, vocab_size: int, max_landmarks: int, relation_bases: int):
+    def __init__(self, vocab_size: int, max_landmarks: int,
+                 angle_bases: int, distance_bases: int):
         super().__init__()
         self.max_landmarks = max_landmarks
-        self.relation_bases = relation_bases
+        self.angle_bases = angle_bases
+        self.distance_bases = distance_bases
         self.text = TextEncoder(vocab_size)
         dim = self.text.output_dim
-        self.relation_head = nn.Sequential(
-            nn.Linear(dim, dim), nn.ReLU(), nn.Linear(dim, relation_bases)
+        self.angle_head = nn.Sequential(
+            nn.Linear(dim, dim), nn.ReLU(), nn.Linear(dim, angle_bases)
+        )
+        self.distance_head = nn.Sequential(
+            nn.Linear(dim, dim), nn.ReLU(), nn.Linear(dim, distance_bases)
         )
         self.pair_head = nn.Sequential(nn.Linear(dim, 32), nn.ReLU(), nn.Linear(32, 1))
 
@@ -51,19 +57,21 @@ class RelationalHeatmap(nn.Module):
         self.film = nn.Linear(dim, 64)
         self.act = nn.ReLU()
 
-    def forward(self, bases, pair_field, ref_tokens, global_tokens, valid):
-        batch, refs, _, height, width = bases.shape
+    def forward(self, angle_fields, distance_fields, pair_field,
+                ref_tokens, global_tokens, valid):
+        batch, refs, _, height, width = angle_fields.shape
         ref_text = self.text(ref_tokens.reshape(batch * refs, -1)).reshape(batch, refs, -1)
-        relation_logits = self.relation_head(ref_text)
-        relation_weights = relation_logits.softmax(dim=-1)
-        relation_weights = relation_weights * valid.unsqueeze(-1)
-        fields = (relation_weights[..., None, None] * bases).sum(dim=2)
+        angle_weights = self.angle_head(ref_text).softmax(dim=-1) * valid.unsqueeze(-1)
+        distance_weights = self.distance_head(ref_text).softmax(dim=-1) * valid.unsqueeze(-1)
+        angle_map = (angle_weights[..., None, None] * angle_fields).sum(dim=2)
+        distance_map = (distance_weights[..., None, None] * distance_fields).sum(dim=2)
+        fields = angle_map * distance_map
 
         global_text = self.text(global_tokens)
         pair_gate = self.pair_head(global_text).sigmoid().view(batch, 1, 1, 1)
         pair = pair_field * pair_gate
 
-        union_contour = bases[:, :, 0].amax(dim=1, keepdim=True)
+        union_contour = distance_fields[:, :, 0].amax(dim=1, keepdim=True)
         max_prior = torch.maximum(fields.amax(dim=1, keepdim=True), pair)
         features = torch.cat([fields, union_contour, pair, max_prior], dim=1)
         hidden = self.conv1(features)
@@ -74,4 +82,5 @@ class RelationalHeatmap(nn.Module):
         hidden = self.act(self.conv3(hidden))
         residual = self.out(hidden)
         logits = residual + torch.log(max_prior.clamp_min(1e-4))
-        return logits, relation_weights, pair_gate.squeeze((1, 2, 3))
+        joint_weights = angle_weights.unsqueeze(-1) * distance_weights.unsqueeze(-2)
+        return logits, joint_weights, pair_gate.reshape(batch)
