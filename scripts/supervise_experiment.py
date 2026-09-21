@@ -38,6 +38,31 @@ def append(path, value):
         stream.write(json.dumps(value, ensure_ascii=False) + '\n')
 
 
+def inherit_run_state(source_dir, checkpoint_dir):
+    """Carry the prior global best and metrics into an optimizer-resumed run."""
+    source_dir = Path(source_dir).resolve()
+    checkpoint_dir.mkdir(parents=True, exist_ok=True)
+    inherited = []
+    for name in ['best_val_unseen', 'best_metrics.json', 'epoch_metrics.jsonl']:
+        source = source_dir / name
+        if not source.exists():
+            raise FileNotFoundError(f'inherited run state is missing: {source}')
+        destination = checkpoint_dir / name
+        try:
+            if name == 'best_val_unseen':
+                os.link(source, destination)
+                method = 'hardlink'
+            else:
+                shutil.copy2(source, destination)
+                method = 'copy'
+        except OSError:
+            shutil.copy2(source, destination)
+            method = 'copy'
+        inherited.append(dict(name=name, source=str(source), method=method,
+                              bytes=source.stat().st_size, sha256=digest(source)))
+    return inherited
+
+
 def build_commands(snapshot, run, args):
     checkpoint_dir = run / 'checkpoints'
     common = ['--seed', str(args.seed), '--max_episodes', str(args.max_episodes),
@@ -65,6 +90,8 @@ def main():
     parser.add_argument('--phase', choices=['train-eval', 'eval'], default='train-eval')
     parser.add_argument('--checkpoint')
     parser.add_argument('--resume-from', help='Training-only checkpoint; restores optimizer as well')
+    parser.add_argument('--inherit-run-state',
+                        help='Checkpoint directory supplying the prior best model and metrics')
     parser.add_argument('--variant-arg', action='append', default=[])
     parser.add_argument('--wait-for-unit')
     parser.add_argument('--require-status',
@@ -73,6 +100,8 @@ def main():
     args = parser.parse_args()
     if args.phase == 'eval' and not args.checkpoint:
         parser.error('--checkpoint is required for eval-only runs')
+    if args.inherit_run_state and (args.phase != 'train-eval' or not args.resume_from):
+        parser.error('--inherit-run-state requires train-eval and --resume-from')
     if args.epochs < 1 or args.save_every < 1 or args.max_episodes < 0:
         parser.error('epochs/save-every must be positive and max-episodes nonnegative')
     root = Path(__file__).resolve().parent.parent
@@ -102,15 +131,23 @@ def main():
     # Large rasters: retain filenames, sizes and mtimes without an expensive full reread.
     rasters = [dict(path=str(p.resolve()), bytes=p.stat().st_size, mtime_ns=p.stat().st_mtime_ns)
                for p in sorted((root / 'data/rgbd').iterdir()) if p.is_file()]
+    checkpoint_dir = run / 'checkpoints'
+    resume_info = None
+    if args.resume_from:
+        resume_path = Path(args.resume_from).resolve()
+        resume_info = dict(path=str(resume_path),
+                           sha256=(None if args.require_status else digest(resume_path)),
+                           pending_predecessor=bool(args.require_status))
     atomic_json(run / 'provenance.json', dict(started=stamp(), git_head=command_output(['git','rev-parse','HEAD'],root).strip(),
                 source_sha256=source_hashes, input_sha256=inputs, raster_inventory=rasters,
                 phase=args.phase, seed=args.seed, variant_args=args.variant_arg,
-                resume_from=(dict(path=str(Path(args.resume_from).resolve()),sha256=digest(args.resume_from)) if args.resume_from else None),
+                resume_from=resume_info,
+                inherit_run_state_source=(str(Path(args.inherit_run_state).resolve()) if args.inherit_run_state else None),
+                inherited_run_state=[],
                 note='isolated experiment; compare only against explicitly recorded parent run'))
     environment = os.environ.copy()
     environment.update(CUDA_VISIBLE_DEVICES='0', PYTHONUNBUFFERED='1', PYTHON=args.python,
                        HF_HUB_OFFLINE='1', TRANSFORMERS_OFFLINE='1')
-    checkpoint_dir = run / 'checkpoints'
     train, evaluation = build_commands(snapshot, run, args)
     atomic_json(run / 'commands.json', dict(train=train, evaluation=evaluation,
                 environment_overrides={k:environment[k] for k in ['CUDA_VISIBLE_DEVICES','PYTHONUNBUFFERED','PYTHON',
@@ -134,6 +171,17 @@ def main():
             atomic_json(run / 'status.json', dict(time=stamp(), phase='blocked',
                         reason='required predecessor did not complete', required_status=required))
             raise SystemExit('required predecessor did not complete successfully')
+    provenance = json.loads((run / 'provenance.json').read_text())
+    if args.resume_from:
+        resume_path = Path(args.resume_from).resolve()
+        provenance['resume_from'] = dict(path=str(resume_path), sha256=digest(resume_path),
+                                         bytes=resume_path.stat().st_size,
+                                         pending_predecessor=False)
+    if args.inherit_run_state:
+        inherited = inherit_run_state(args.inherit_run_state, checkpoint_dir)
+        provenance['inherited_run_state'] = inherited
+    if args.resume_from or args.inherit_run_state:
+        atomic_json(run / 'provenance.json', provenance)
 
     stopped = False
     child = None

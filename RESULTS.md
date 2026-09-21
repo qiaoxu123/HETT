@@ -38,9 +38,9 @@
 
 两条样本的训练、反向传播、保存和验证冒烟已经通过；固定后的运行没有加载 `test_unseen`。
 
-## 三轮全量实验与复现
+## 六轮全量实验与复现
 
-完整 `train_seen`、seed 0 的 3 epoch 实验已启动。每轮训练 21,878 条轨迹，随后分别验证
+完整 `train_seen`、seed 0 的实验按 3＋3 epoch 运行。每轮训练 21,878 条轨迹，随后分别验证
 `val_seen` 2,470 条和 `val_unseen` 2,697 条；不加载 `test_unseen`。运行完成前不把中间进度
 解释为效果结论。
 
@@ -73,8 +73,29 @@ batch），训练进程和 GPU 正常，尚未产生首轮 checkpoint 或验证�
   --output runs/teacher_cleanup_3ep_s0_repro/REPORT.md
 ```
 
-对比报告逐轮比较前 3 epoch 的 SR、SPL、NE 和 loss，并将候选前三轮最佳检查点与原始
-20 epoch 的最佳 `val_unseen` SR 检查点比较。短训练、单 seed 只能判断早期趋势。
+对比报告逐轮比较所有已完成 epoch 的 SR、SPL、NE 和 loss，并将候选最佳检查点与原始
+20 epoch 的最佳 `val_unseen` SR 检查点比较。单 seed 不能作为最终统计结论。
+
+当前机器先完成上面的 3 epoch，再从第 3 轮 `latest` 恢复模型和三个优化器，继续到总计
+6 epoch。续训目录继承前三轮的最佳模型、`best_metrics.json` 和 `epoch_metrics.jsonl`，因此
+第 4–6 轮仍按全部六轮选择全局最佳模型：
+
+```bash
+/home/tenant2/miniconda3/envs/AirVLN39/bin/python scripts/supervise_experiment.py \
+  --run-dir runs/teacher_cleanup_6ep_s0_resume \
+  --python /home/tenant2/miniconda3/envs/AirVLN39/bin/python \
+  --epochs 6 --save-every 1 --seed 0 --phase train-eval --interval 60 \
+  --resume-from runs/teacher_cleanup_3ep_s0/checkpoints/latest \
+  --inherit-run-state runs/teacher_cleanup_3ep_s0/checkpoints \
+  --require-status runs/teacher_cleanup_3ep_s0/status.json \
+  --variant-arg=--disable_task_interaction \
+  --variant-arg=--teacher_trajectory_mode \
+  --variant-arg=landmark_clean
+```
+
+检查点包含优化器状态，可从 `latest` 继续训练；实现未保存 Python、NumPy 和 CUDA RNG 状态，
+所以 3＋3 续训与不中断跑 6 轮不宣称逐位一致。最终只需长期保留 `best_val_unseen`（评测）和
+epoch 6 的 `latest`（续训），逐轮 `epoch_*.pt` 可在指标归档后删除。
 
 ## 仍需修改的部分
 
