@@ -1,28 +1,29 @@
-# Factorized relational heatmap protocol
+# Explicit geometric candidate selector protocol
 
 ## Question
 
-Does explicitly factoring target direction and distance from each landmark improve the
-relational heatmap from experiment 27?
+The factorized candidate set has a 91.32% val_unseen Hit@20 oracle ceiling, while the
+dense heatmap reaches only 27.81%. Can explicit language-based candidate selection
+close that gap?
 
-## Single intended change
+## Design fixed before the run
 
-- Keep the same instruction marking, per-landmark identity, pair field, 64×64 output,
-  loss, CNN refiner, data splits, six epochs, and seeds 2701/2702/2703.
-- Replace 12 broad relation fields with two independent distributions:
-  - angle: isotropic plus eight compass sectors;
-  - exterior distance from the contour: 0, 15, 30, 50, 80, and 120 metres.
-- Multiply the selected angle and distance fields before combining landmarks. This can
-  represent, for example, "left of A, about 30 m away" directly.
+- Use the same per-landmark `9 directions × 6 contour distances` peaks as experiment 28.
+- Add one aggregate between-landmarks candidate when at least two landmarks are named.
+- Mark each landmark as `<ref>` in turn and use the same small bidirectional GRU.
+- Directly score all `4 × 54 + 1 = 217` candidates. A scalar landmark gate is learned
+  jointly with the 54 relation scores.
+- Optimize negative log probability assigned to all candidates within 20 m of the GT;
+  if none exists, supervise the nearest candidate.
+- At inference, retain five metric-NMS candidates. Their probabilities can be splatted
+  with 10 m Gaussians to form the target heatmap.
 
-No RGB, target contour, validation label, or navigation trajectory is a model input.
-Development uses val_seen and val_unseen only; test_unseen remains untouched.
+Inputs remain instruction, landmark names, and landmark contours only. RGB, target
+contours, validation labels, and trajectory data are excluded. Train on train_seen for
+six epochs and evaluate three seeds 2701/2702/2703 on val_seen and val_unseen only.
 
-## Metrics and decision
+## Decision
 
-Report Top-1 Hit@20, Top-5 Recall@20, median/P90 error, 20 m probability mass, and
-relation-wise metrics. Compare directly with experiment 27's three-seed means:
-val_seen 37.50/73.37 and val_unseen 27.73/58.00 (Top-1/Top-5).
-
-Pass only if the three-seed val_unseen mean reaches Top-1 ≥35% and Top-5 ≥70%, with
-the seen-minus-unseen Top-1 gap no larger than 15 points.
+Pass if the three-seed val_unseen mean reaches Top-1 Hit@20 ≥35%, Top-5 Recall@20
+≥70%, and the seen-minus-unseen Top-1 gap is no larger than 15 points. Compare against
+experiment 28 (27.81/57.20) and experiment 27 (27.73/58.00).

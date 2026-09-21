@@ -84,3 +84,30 @@ class RelationalHeatmap(nn.Module):
         logits = residual + torch.log(max_prior.clamp_min(1e-4))
         joint_weights = angle_weights.unsqueeze(-1) * distance_weights.unsqueeze(-2)
         return logits, joint_weights, pair_gate.reshape(batch)
+
+
+class GeometricCandidateSelector(nn.Module):
+    """Score explicit landmark x angle x distance candidates from marked text."""
+
+    def __init__(self, vocab_size: int, max_landmarks: int, candidates_per_landmark: int):
+        super().__init__()
+        self.max_landmarks = max_landmarks
+        self.candidates_per_landmark = candidates_per_landmark
+        self.text = TextEncoder(vocab_size)
+        dim = self.text.output_dim
+        self.candidate_head = nn.Sequential(
+            nn.Linear(dim, dim), nn.ReLU(), nn.Dropout(0.1),
+            nn.Linear(dim, candidates_per_landmark),
+        )
+        self.landmark_gate = nn.Sequential(nn.Linear(dim, 32), nn.ReLU(), nn.Linear(32, 1))
+        self.pair_head = nn.Sequential(nn.Linear(dim, 32), nn.ReLU(), nn.Linear(32, 1))
+
+    def forward(self, ref_tokens, global_tokens, valid, pair_valid):
+        batch, refs, _ = ref_tokens.shape
+        encoded = self.text(ref_tokens.reshape(batch * refs, -1)).reshape(batch, refs, -1)
+        logits = self.candidate_head(encoded) + self.landmark_gate(encoded)
+        logits = logits.masked_fill(~valid.bool().unsqueeze(-1), -1e4)
+        logits = logits.reshape(batch, refs * self.candidates_per_landmark)
+        pair_logit = self.pair_head(self.text(global_tokens))
+        pair_logit = pair_logit.masked_fill(~pair_valid.bool().unsqueeze(-1), -1e4)
+        return torch.cat([logits, pair_logit], dim=1)

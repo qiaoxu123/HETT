@@ -1,6 +1,6 @@
 import torch
 
-from multiagent.models.relational_heatmap import RelationalHeatmap
+from multiagent.models.relational_heatmap import GeometricCandidateSelector, RelationalHeatmap
 
 
 def test_heatmap_shape_and_target_is_not_an_input():
@@ -31,3 +31,14 @@ def test_invalid_landmark_has_zero_mixture_weight():
                               torch.randint(0, 16, (1, 4, 8)), torch.randint(1, 16, (1, 8)), valid)
     assert weights[0, 0].sum().item() > 0.99
     assert weights[0, 1:].abs().sum().item() == 0
+
+
+def test_candidate_selector_masks_invalid_landmarks():
+    model = GeometricCandidateSelector(vocab_size=16, max_landmarks=4,
+                                       candidates_per_landmark=54).eval()
+    valid = torch.tensor([[1.0, 0.0, 0.0, 0.0]])
+    with torch.no_grad():
+        logits = model(torch.randint(1, 16, (1, 4, 8)), torch.randint(1, 16, (1, 8)),
+                       valid, torch.tensor([0.0]))
+    assert logits.shape == (1, 217)
+    assert torch.all(logits[0, 54:] < -1000)
