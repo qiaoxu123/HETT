@@ -44,6 +44,8 @@ def build_commands(snapshot, run, args):
               '--output_dir', str(checkpoint_dir)] + list(args.variant_arg)
     train = ['bash', str(snapshot / 'multiagent/train.sh'), '--epochs', str(args.epochs),
              '--save_every', str(args.save_every)] + common
+    if args.init_from:
+        train += ['--checkpoint', str(Path(args.init_from).resolve())]
     checkpoint = Path(args.checkpoint).resolve() if args.checkpoint else checkpoint_dir / 'best_val_unseen'
     evaluation = ['bash', str(snapshot / 'multiagent/eval.sh'), '--checkpoint', str(checkpoint),
                   '--seed', str(args.seed), '--max_episodes', str(args.max_episodes),
@@ -62,12 +64,15 @@ def main():
     parser.add_argument('--interval', type=int, default=60)
     parser.add_argument('--phase', choices=['train-eval', 'eval'], default='train-eval')
     parser.add_argument('--checkpoint')
+    parser.add_argument('--init-from', help='initialize training weights without restoring optimizer state')
     parser.add_argument('--variant-arg', action='append', default=[])
     parser.add_argument('--wait-for-unit')
     parser.add_argument('--require-status',
                         help='JSON status that must report phase=complete after waiting')
     parser.add_argument('--lock-file', default='/home/tenant2/Workspace/hett-experiments/.gpu-validation.lock')
     args = parser.parse_args()
+    if args.init_from and args.phase == 'eval':
+        parser.error('--init-from applies only to training')
     if args.phase == 'eval' and not args.checkpoint:
         parser.error('--checkpoint is required for eval-only runs')
     if args.epochs < 1 or args.save_every < 1 or args.max_episodes < 0:
@@ -102,6 +107,8 @@ def main():
     atomic_json(run / 'provenance.json', dict(started=stamp(), git_head=command_output(['git','rev-parse','HEAD'],root).strip(),
                 source_sha256=source_hashes, input_sha256=inputs, raster_inventory=rasters,
                 phase=args.phase, seed=args.seed, variant_args=args.variant_arg,
+                init_from=(dict(path=str(Path(args.init_from).resolve()),
+                                sha256=digest(args.init_from)) if args.init_from else None),
                 note='isolated experiment; compare only against explicitly recorded parent run'))
     environment = os.environ.copy()
     environment.update(CUDA_VISIBLE_DEVICES='0', PYTHONUNBUFFERED='1', PYTHON=args.python,

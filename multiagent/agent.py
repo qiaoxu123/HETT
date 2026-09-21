@@ -93,6 +93,15 @@ def is_default_gpu(opts) -> bool:
     return opts.local_rank == -1 or dist.get_rank() == 0
 
 
+def configure_goal_head_only(lang_model, vision_model, vln_model):
+    """Freeze the full graph, then expose only the existing XY goal decoder."""
+    for model in (lang_model, vision_model, vln_model):
+        for parameter in model.parameters():
+            parameter.requires_grad = False
+    for parameter in vln_model.decoder_2_goal_full.parameters():
+        parameter.requires_grad = True
+
+
 def get_direction(start, end):
     vec = np.array(end) - np.array(start)
     _angle = 0
@@ -177,6 +186,13 @@ class NavCMTAgent:
             self.vision_model_without_ddp = self.vision_model
             self.vln_model_without_ddp = self.vln_model
 
+        # Isolate stage 1: retain the pretrained representation and update only the
+        # existing continuous XY goal head. Freezing only the action decoder would not
+        # isolate it because a changed shared encoder also changes its input.
+        if self.args.goal_head_only:
+            configure_goal_head_only(self.lang_model_without_ddp, self.vision_model_without_ddp,
+                                     self.vln_model_without_ddp)
+
         # self.vln_model = ViT_LSTM(
         #     self.args, 
         #     self.vision_model).cuda()
@@ -190,10 +206,15 @@ class NavCMTAgent:
         OptimizerClass = torch.optim.Adam if args.optim == "adam" else torch.optim.AdamW
         self.et_optimizer = OptimizerClass(filter(lambda p: p.requires_grad, self.vln_model.parameters()),
                                            lr=args.learning_rate, weight_decay=args.weight_decay)
-        self.lang_model_optimizer = OptimizerClass(filter(lambda p: p.requires_grad, self.lang_model.parameters()),
-                                                   lr=self.args.learning_rate, weight_decay=args.weight_decay)
-        self.vision_model_optimizer = OptimizerClass(filter(lambda p: p.requires_grad, self.vision_model.parameters()),
-                                                     lr=self.args.learning_rate, weight_decay=args.weight_decay)
+        if self.args.goal_head_only:
+            # Keep checkpoint serialization compatible; frozen optimizers have zero LR.
+            self.lang_model_optimizer = OptimizerClass(self.lang_model.parameters(), lr=0.)
+            self.vision_model_optimizer = OptimizerClass(self.vision_model.parameters(), lr=0.)
+        else:
+            self.lang_model_optimizer = OptimizerClass(filter(lambda p: p.requires_grad, self.lang_model.parameters()),
+                                                       lr=self.args.learning_rate, weight_decay=args.weight_decay)
+            self.vision_model_optimizer = OptimizerClass(filter(lambda p: p.requires_grad, self.vision_model.parameters()),
+                                                         lr=self.args.learning_rate, weight_decay=args.weight_decay)
         self.optimizers = (self.et_optimizer, self.lang_model_optimizer, self.vision_model_optimizer)
         # self.optimizers = (self.et_optimizer, self.lang_model_optimizer)
 
@@ -287,9 +308,16 @@ class NavCMTAgent:
         # 在本函数中，语言模型 / 视觉模型 / ET 策略模型都会被设为 train 模式，并且梯度会被统一回传。
         self.feedback = feedback
 
-        self.lang_model.train()
-        self.vln_model.train()
-        self.vision_model.train()
+        if self.args.goal_head_only:
+            # Frozen dropout and normalization state must stay fixed as well.
+            self.lang_model.eval()
+            self.vln_model.eval()
+            self.vision_model.eval()
+            self.vln_model_without_ddp.decoder_2_goal_full.train()
+        else:
+            self.lang_model.train()
+            self.vln_model.train()
+            self.vision_model.train()
 
         self.losses = []
         # 单卡训练时的梯度累积步数（--grad_accum，默认 1 表示不累积）

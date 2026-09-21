@@ -118,6 +118,8 @@ def parse_args():
     parser.add_argument('--target_loss_weight', type=float, default=0.1,
                         help='auxiliary grid loss from released code (not specified in paper)')
     parser.add_argument('--disable_task_interaction', action='store_true')
+    parser.add_argument('--goal_head_only', action='store_true',
+                        help='freeze every module except decoder_2_goal_full during training')
 
     # logger
     parser.add_argument('--log_every', type=int, default=1)
@@ -178,6 +180,8 @@ def parse_args():
     args = parser.parse_args()
     if args.grad_accum < 1 or args.batch_size < 1 or args.max_episodes < 0:
         parser.error('grad_accum/batch_size must be positive; max_episodes must be nonnegative')
+    if args.goal_head_only and args.resume_optimizer:
+        parser.error('--goal_head_only changes optimizer parameter groups; do not resume optimizer state')
     if args.save_every < 1:
         parser.error('save_every must be positive')
     if args.checkpoint and not Path(args.checkpoint).is_absolute():
