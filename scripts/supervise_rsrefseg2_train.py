@@ -42,6 +42,18 @@ def main():
     parser.add_argument("--val-root", type=Path, required=True)
     parser.add_argument("--val-ann", type=Path, required=True)
     parser.add_argument("--checkpoint", type=Path, default=Path("/home/tenant2/dataext/rsrefseg2/weights/refsegrs.pth"))
+    parser.add_argument(
+        "--rsrefseg2-root", type=Path,
+        default=Path(os.environ.get("RSREFSEG2_ROOT", "/home/tenant2/Workspace/RSRefSeg2")),
+    )
+    parser.add_argument(
+        "--python", type=Path,
+        default=Path(os.environ.get("RSREFSEG2_PYTHON", "/home/tenant2/dataext/rsrefseg2/venv/bin/python")),
+    )
+    parser.add_argument(
+        "--hf-cache", type=Path,
+        default=Path(os.environ.get("RSREFSEG2_HF_CACHE", "/home/tenant2/dataext/rsrefseg2/hf_cache")),
+    )
     parser.add_argument("--batch-size", type=int, default=2)
     parser.add_argument("--epochs", type=int, default=2)
     parser.add_argument("--lr", type=float, default=1e-5)
@@ -62,10 +74,11 @@ def main():
     shutil.copytree(root / "scripts", snapshot / "scripts", ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
     shutil.copytree(root / "configs", snapshot / "configs")
     shutil.copy2(root / "PROTOCOL.md", snapshot / "PROTOCOL.md")
-    rs_repo = Path("/home/tenant2/Workspace/RSRefSeg2")
+    rs_repo = args.rsrefseg2_root.resolve()
     shutil.copy2(rs_repo / "configs_RSRefSeg2/refsegrs_infer.py", snapshot / "configs/refsegrs_infer.py")
 
-    python = Path("/home/tenant2/dataext/rsrefseg2/venv/bin/python")
+    python = args.python.resolve()
+    hf_cache = args.hf_cache.resolve()
     command = [
         str(python), "-m", "torch.distributed.run", "--standalone", "--nproc-per-node=1",
         "tools_mmseg/train.py", str(snapshot / "configs/cityrefer_rsrefseg2_train.py"),
@@ -82,6 +95,9 @@ def main():
         f"val_dataloader.dataset.data_root={args.val_root.resolve()}",
         f"val_dataloader.dataset.ann_file={args.val_ann.resolve()}",
         f"optim_wrapper.optimizer.lr={args.lr}",
+        f"model.backbone.cache_dir={hf_cache}",
+        f"model.clip_vision_encoder.cache_dir={hf_cache}",
+        f"model.clip_text_encoder.cache_dir={hf_cache}",
     ]
     if args.no_checkpoint:
         command.extend([
@@ -92,8 +108,8 @@ def main():
     env = os.environ.copy()
     env.update({
         "CUDA_VISIBLE_DEVICES": "0", "PYTHONUNBUFFERED": "1",
-        "HF_HOME": "/home/tenant2/dataext/rsrefseg2/hf_cache",
-        "HF_DATASETS_CACHE": "/home/tenant2/dataext/rsrefseg2/hf_datasets_cache",
+        "HF_HOME": str(hf_cache),
+        "HF_DATASETS_CACHE": str(hf_cache / "datasets"),
         "HF_HUB_OFFLINE": "1", "TRANSFORMERS_OFFLINE": "1",
         "PYTHONPATH": f"{rs_repo}:{snapshot}:{env.get('PYTHONPATH', '')}",
     })

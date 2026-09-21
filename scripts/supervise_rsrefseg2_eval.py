@@ -40,6 +40,18 @@ def main():
     parser.add_argument("--data-root", type=Path, required=True)
     parser.add_argument("--ann-file", type=Path, required=True)
     parser.add_argument("--checkpoint", type=Path, default=Path("/home/tenant2/dataext/rsrefseg2/weights/refsegrs.pth"))
+    parser.add_argument(
+        "--rsrefseg2-root", type=Path,
+        default=Path(os.environ.get("RSREFSEG2_ROOT", "/home/tenant2/Workspace/RSRefSeg2")),
+    )
+    parser.add_argument(
+        "--python", type=Path,
+        default=Path(os.environ.get("RSREFSEG2_PYTHON", "/home/tenant2/dataext/rsrefseg2/venv/bin/python")),
+    )
+    parser.add_argument(
+        "--hf-cache", type=Path,
+        default=Path(os.environ.get("RSREFSEG2_HF_CACHE", "/home/tenant2/dataext/rsrefseg2/hf_cache")),
+    )
     parser.add_argument("--batch-size", type=int, default=8)
     parser.add_argument("--num-workers", type=int, default=4)
     parser.add_argument("--interval", type=int, default=30)
@@ -55,10 +67,11 @@ def main():
     shutil.copytree(root / "configs", snapshot / "configs")
     shutil.copy2(root / "PROTOCOL.md", snapshot / "PROTOCOL.md")
 
-    rs_repo = Path("/home/tenant2/Workspace/RSRefSeg2")
+    rs_repo = args.rsrefseg2_root.resolve()
     shutil.copy2(rs_repo / "configs_RSRefSeg2/refsegrs_infer.py", snapshot / "configs/refsegrs_infer.py")
     shutil.copy2(root / "scripts/cityrefer_metrics.py", snapshot / "configs/cityrefer_metrics.py")
-    python = Path("/home/tenant2/dataext/rsrefseg2/venv/bin/python")
+    python = args.python.resolve()
+    hf_cache = args.hf_cache.resolve()
     config = snapshot / "configs/cityrefer_rsrefseg2_eval.py"
     metrics = run / "metrics"
     command = [
@@ -69,13 +82,16 @@ def main():
         f"test_dataloader.persistent_workers={str(args.num_workers > 0)}",
         f"test_dataloader.dataset.data_root={str(args.data_root.resolve())}",
         f"test_dataloader.dataset.ann_file={str(args.ann_file.resolve())}",
+        f"model.backbone.cache_dir={hf_cache}",
+        f"model.clip_vision_encoder.cache_dir={hf_cache}",
+        f"model.clip_text_encoder.cache_dir={hf_cache}",
     ]
     env = os.environ.copy()
     env.update({
         "CUDA_VISIBLE_DEVICES": "0",
         "PYTHONUNBUFFERED": "1",
-        "HF_HOME": "/home/tenant2/dataext/rsrefseg2/hf_cache",
-        "HF_DATASETS_CACHE": "/home/tenant2/dataext/rsrefseg2/hf_datasets_cache",
+        "HF_HOME": str(hf_cache),
+        "HF_DATASETS_CACHE": str(hf_cache / "datasets"),
         "HF_HUB_OFFLINE": "1",
         "TRANSFORMERS_OFFLINE": "1",
         "TORCH_FORCE_NO_WEIGHTS_ONLY_LOAD": "1",
