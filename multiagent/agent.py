@@ -453,6 +453,10 @@ class NavCMTAgent:
             traj[i]['gt_trajectory'] = ob['trajectory']
             traj[i]['trajectory'] = [poses[i]]
             traj[i]['stage1_trajectory'] = [poses[i]]
+            landmark_distance = self.env.nav_maps[i].landmark_map.distance_to(poses[i].xy)
+            traj[i]['landmark_distance_m'] = [landmark_distance]
+            traj[i]['landmark_arrived'] = [landmark_distance <= getattr(
+                self.args, 'landmark_arrival_radius', 10.0)]
         # print(np.array([len(ob['trajectory']) for ob in obs]))
 
         # Initialization the finishing status
@@ -722,6 +726,10 @@ class NavCMTAgent:
             for i, ob in enumerate(obs):
                 if not ended[i]:
                     traj[i]['trajectory'].append(poses[i])
+                    landmark_distance = self.env.nav_maps[i].landmark_map.distance_to(poses[i].xy)
+                    traj[i]['landmark_distance_m'].append(landmark_distance)
+                    traj[i]['landmark_arrived'].append(landmark_distance <= getattr(
+                        self.args, 'landmark_arrival_radius', 10.0))
                     # Update the status
             obs = self.env._get_obs(poses, random_direction=(self.feedback == 'teacher'))  # get gt_obs
             # current_view_corners = [np.array(ob['gt_path_corners'][0]) for ob in obs]
@@ -782,6 +790,11 @@ class NavCMTAgent:
         # print('[3]')
         # debug_memory()
         # print()
+        for item in traj:
+            confirmations = item['landmark_arrived']
+            item['landmark_arrival_confirmed'] = bool(any(confirmations))
+            item['landmark_first_arrival_step'] = (
+                confirmations.index(True) if any(confirmations) else None)
         return traj
 
 

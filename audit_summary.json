@@ -1,0 +1,140 @@
+{
+  "10m": {
+    "definition": "Arrived iff 2D pose distance to union of supplied landmark contours <= 10 m.",
+    "summary": {
+      "val_seen": {
+        "episodes": 2470,
+        "with_landmark": 2470,
+        "stage2_started_percent": 97.48987854251013,
+        "stage_switch_near_landmark_percent": 57.64119601328904,
+        "stage_switch_distance_median_m": 7.301234565979092,
+        "ever_reached_landmark_percent": 86.51821862348179,
+        "final_near_landmark_percent": 55.26315789473684,
+        "left_after_reaching_percent": 36.12540945250351,
+        "target_success_given_landmark_reached_percent": 31.773514272344407,
+        "teacher_reached_landmark_percent": 83.03643724696356,
+        "teacher_reached_from_outside_percent": 82.14742224115892,
+        "teacher_tail_length_m_median": 65.00000000000048,
+        "teacher_tail_fraction_median": 0.28571428571428614,
+        "teacher_tail_excess_ratio_median": 1.1547005383792475,
+        "teacher_target_distance_at_arrival_median_m": 46.30403980044431,
+        "progress_as_arrival": {
+          "threshold": 0.6212942389845849,
+          "n": 48768,
+          "positive_percent": 46.315206692913385,
+          "accuracy_percent": 68.98991141732283,
+          "balanced_accuracy_percent": 70.44952658995001,
+          "precision_percent": 61.20451543172811,
+          "recall_percent": 90.25545667862045,
+          "specificity_percent": 50.64359650127955,
+          "tp": 20386,
+          "fp": 12922,
+          "tn": 13259,
+          "fn": 2201,
+          "roc_auc": 0.7303603958755089
+        }
+      },
+      "val_unseen": {
+        "episodes": 2697,
+        "with_landmark": 2695,
+        "stage2_started_percent": 93.02411873840445,
+        "stage_switch_near_landmark_percent": 60.0319106501795,
+        "stage_switch_distance_median_m": 5.68895074126878,
+        "ever_reached_landmark_percent": 90.53803339517626,
+        "final_near_landmark_percent": 66.2708719851577,
+        "left_after_reaching_percent": 26.80327868852459,
+        "target_success_given_landmark_reached_percent": 19.631147540983605,
+        "teacher_reached_landmark_percent": 78.7012987012987,
+        "teacher_reached_from_outside_percent": 77.95698924731182,
+        "teacher_tail_length_m_median": 59.99999999999933,
+        "teacher_tail_fraction_median": 0.2380952380952387,
+        "teacher_tail_excess_ratio_median": 1.0899308430906123,
+        "teacher_target_distance_at_arrival_median_m": 44.54671062376144,
+        "progress_as_arrival": {
+          "threshold": 0.6212942389845849,
+          "n": 53517,
+          "positive_percent": 51.873236541659665,
+          "accuracy_percent": 68.434329278547,
+          "balanced_accuracy_percent": 67.70133271382699,
+          "precision_percent": 64.45828011919966,
+          "recall_percent": 87.26630885054573,
+          "specificity_percent": 48.136356577108245,
+          "tp": 24226,
+          "fp": 13358,
+          "tn": 12398,
+          "fn": 3535,
+          "roc_auc": 0.7171390450566728
+        }
+      }
+    }
+  },
+  "20m": {
+    "definition": "Arrived iff 2D pose distance to union of supplied landmark contours <= 20 m.",
+    "summary": {
+      "val_seen": {
+        "episodes": 2470,
+        "with_landmark": 2470,
+        "stage2_started_percent": 97.48987854251013,
+        "stage_switch_near_landmark_percent": 76.0797342192691,
+        "stage_switch_distance_median_m": 7.301234565979092,
+        "ever_reached_landmark_percent": 94.17004048582996,
+        "final_near_landmark_percent": 74.53441295546558,
+        "left_after_reaching_percent": 20.851246775580396,
+        "target_success_given_landmark_reached_percent": 31.943250214961306,
+        "teacher_reached_landmark_percent": 90.20242914979757,
+        "teacher_reached_from_outside_percent": 89.31567328918322,
+        "teacher_tail_length_m_median": 79.9999999999996,
+        "teacher_tail_fraction_median": 0.3375936177141004,
+        "teacher_tail_excess_ratio_median": 1.1855655695347498,
+        "teacher_target_distance_at_arrival_median_m": 54.87022095815436,
+        "progress_as_arrival": {
+          "threshold": 0.6103327410817146,
+          "n": 48768,
+          "positive_percent": 63.16231955380578,
+          "accuracy_percent": 82.03330052493439,
+          "balanced_accuracy_percent": 79.07272686678917,
+          "precision_percent": 82.79813100800571,
+          "recall_percent": 90.31912476057526,
+          "specificity_percent": 67.82632897300306,
+          "tp": 27821,
+          "fp": 5780,
+          "tn": 12185,
+          "fn": 2982,
+          "roc_auc": 0.817532363783211
+        }
+      },
+      "val_unseen": {
+        "episodes": 2697,
+        "with_landmark": 2695,
+        "stage2_started_percent": 93.02411873840445,
+        "stage_switch_near_landmark_percent": 80.77383326685282,
+        "stage_switch_distance_median_m": 5.68895074126878,
+        "ever_reached_landmark_percent": 96.95732838589981,
+        "final_near_landmark_percent": 86.12244897959184,
+        "left_after_reaching_percent": 11.17489475698431,
+        "target_success_given_landmark_reached_percent": 19.288174512055107,
+        "teacher_reached_landmark_percent": 87.75510204081633,
+        "teacher_reached_from_outside_percent": 87.05882352941177,
+        "teacher_tail_length_m_median": 70.0,
+        "teacher_tail_fraction_median": 0.2941176470588232,
+        "teacher_tail_excess_ratio_median": 1.1162760977433546,
+        "teacher_target_distance_at_arrival_median_m": 52.88741517628915,
+        "progress_as_arrival": {
+          "threshold": 0.6103327410817146,
+          "n": 53517,
+          "positive_percent": 68.27363267746698,
+          "accuracy_percent": 80.5912140067642,
+          "balanced_accuracy_percent": 76.53901028020785,
+          "precision_percent": 84.51548187841512,
+          "recall_percent": 87.6265805462806,
+          "specificity_percent": 65.45144001413512,
+          "tp": 32017,
+          "fp": 5866,
+          "tn": 11113,
+          "fn": 4521,
+          "roc_auc": 0.826580594799336
+        }
+      }
+    }
+  }
+}

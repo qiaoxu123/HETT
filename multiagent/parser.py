@@ -166,6 +166,8 @@ def parse_args():
     parser.add_argument('--max_action_len', type=int, default=20)
     parser.add_argument('--eval_client', type=str, choices=['crop', 'airsim'], default='crop')
     parser.add_argument('--success_dist', type=float, default=20.)
+    parser.add_argument('--landmark_arrival_radius', type=float, default=10.,
+                        help='map-space radius used only to report landmark arrival')
     # parser.add_argument('--success_iou', type=float, default=0.4)
     parser.add_argument('--move_iteration', type=int, default=10)
     # parser.add_argument('--progress_stop_val', type=float, default=0.75)

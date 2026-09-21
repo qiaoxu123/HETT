@@ -7,6 +7,23 @@ from multiagent.cityreferobject import get_landmarks, remove_duplicate_landmarks
 from .map import Map
 from typing import List, Dict, Callable, Tuple
 
+
+def distance_to_landmark_contours(position, contours) -> float:
+    """2D distance in metres to the nearest supplied landmark polygon.
+
+    A point inside a polygon has distance zero.  This is a map/pose check; it
+    deliberately makes no claim that the RGB encoder recognized the landmark.
+    """
+    point = tuple(float(value) for value in position)
+    nearest = float("inf")
+    for contour in contours:
+        array = np.asarray(contour, dtype=np.float32).reshape(-1, 2)
+        if len(array) < 3:
+            continue
+        signed_distance = cv2.pointPolygonTest(array, point, True)
+        nearest = min(nearest, max(0.0, -float(signed_distance)))
+    return nearest
+
 class LandmarkMap(Map):
     _landmarks_cache = None
     _landmark_segmentations = None
@@ -40,6 +57,9 @@ class LandmarkMap(Map):
             # contour = np.stack(contour)
             contours.append(lm.contour)
         return contours
+
+    def distance_to(self, position) -> float:
+        return distance_to_landmark_contours(position, self.get_contours())
     
     def to_array(self, dtype=np.float32) -> np.ndarray:
         return self.landmark_map[np.newaxis].astype(dtype)
