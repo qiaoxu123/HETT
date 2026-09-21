@@ -1,29 +1,24 @@
-# HETT BERT pooler 候选选择结果
+# HETT token-mean 候选选择结果
 
-实验保持显式几何候选、20米概率损失和训练预算不变，只把实验29的从头训练 GRU 换成
-20 epoch HETT 最佳检查点的冻结 BERT `pooler_output`。
+实验保持候选选择器不变，只将已塌缩的 BERT `pooler_output` 替换为 masked mean
+`last_hidden_state`。
 
-| 划分 | Top-1 Hit@20 | Top-5 Recall@20 | 中位误差 |
-|---|---:|---:|---:|
-| val_seen | 23.12±0.00% | 51.10±0.10% | 34.67 m |
-| val_unseen | 22.69±0.00% | 52.69±0.49% | 39.32 m |
+| 划分 | Top-1 Hit@20 | Top-5 Recall@20 |
+|---|---:|---:|
+| val_seen | 23.12±0.00% | 50.97±0.21% |
+| val_unseen | 22.69±0.00% | 52.55±0.71% |
 
-结果未通过门槛。它比 GRU 选择器的 unseen Top-1 20.95%略高，但低于其 Top-5
-54.41%，也明显低于稠密热图27.73% / 58.00%。
+结果与 pooler 实验几乎完全相同，未通过门槛。进一步用 FP32 直接检查四条不同指令：
 
-## 关键诊断
+- token 均值特征标准差均值 `1.44e-8`，最大 `3.00e-7`；
+- pooler 标准差均值 `1.47e-8`；
+- 两条左右相反指令的 token 均值最大绝对差只有 `4.77e-7`。
 
-对缓存中的64,044条不同指令表示检查发现：
+FP16缓存会把这些微小差异量化为完全相同，但FP32结果已经表明它们只是数值噪声。该20 epoch
+HETT检查点的整个BERT输出已发生表示塌缩，并非只坏在pooler。因此共享这个语言编码器无法完成
+目标关系选择，也可能解释原HETT对语言和地标语义利用不足。
 
-- 768维各特征跨文本的平均标准差：`1.62e-8`；
-- 最大特征标准差：`1.17e-5`；
-- 同一指令不同参考地标的余弦相似度：1.0；
-- 随机不同文本的余弦相似度：1.0。
+下一项应使用未被HETT训练破坏的原始 `bert-base-uncased` token均值做同协议对照。如果原始BERT
+明显更好，应修复HETT语言训练/冻结策略；若仍差，则需要token级交叉注意力而非单向量分类。
 
-即该 HETT 检查点的 BERT `pooler_output` 已塌缩为几乎固定向量。原代码把它作为
-`cls_hidden`，用于视觉注意力和候选语言调制，因此这些路径很可能没有获得有效的句子级区别。
-这不代表 BERT 的 token 序列输出也塌缩；下一项应在同一权重上改用 masked mean token
-embedding，保持选择器其他部分不变。
-
-未运行 test_unseen。汇总见 `runs/HETT_BERT_SELECTOR_AGGREGATE.md`，表示诊断见
-`runs/hett_bert_embedding_diagnostic.json`。
+未运行 test_unseen。三 seed 汇总在 `runs/HETT_TOKEN_SELECTOR_AGGREGATE.md`。
