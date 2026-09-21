@@ -26,6 +26,18 @@ Run artifacts are ignored by Git and must be transferred separately if the exact
 checkpoints are required. Dataset and weight symlinks are machine-specific and must not
 be committed.
 
+A portable source-history bundle was generated at
+`/home/tenant2/Workspace/hett-rsrefseg2-handoff-20260921.bundle` with SHA256
+`4bb670d528a0ff1a81ab6fc2daaaba77f666a18ac6fb6ed5227d52ecf5c59d9f`. It contains
+`main`, the teacher-cleanup and planned grounding branches, and both standalone
+RSRefSeg2 branches. On another machine:
+
+```bash
+git clone /path/to/hett-rsrefseg2-handoff-20260921.bundle hett-crotonyl
+cd hett-crotonyl
+git switch codex/rsrefseg2-goal-grounding
+```
+
 ## Findings already supported by evidence
 
 ### HETT baseline and stopping diagnosis
@@ -115,4 +127,3 @@ calibrated stopping, rather than only enlarging the geometric candidate set.
 - Start experiments through `scripts/supervise_experiment.py` so source snapshots,
   commands, hashes, status, and telemetry are retained.
 - Treat `data/` and `weights/` as read-only.
-
