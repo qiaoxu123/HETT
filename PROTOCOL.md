@@ -7,8 +7,10 @@ better than a learned sentence/token selector across unseen city blocks?
 
 ## Method
 
-Use the same CityRefer landmark names, contours, 9 direction fields, 6 contour-distance
-fields, 64×64 grid, 20 m hit radius, and NMS as experiment 28. Parse each instruction
+Use the same CityRefer landmark names, contours, 6 contour-distance fields, 64×64 grid,
+20 m hit radius, and NMS as experiment 34. The only geometry change is that eight
+direction fields are measured from each grid cell to its nearest contour point instead
+of the landmark centroid. Parse each instruction
 into one relation with two fixed parsers: a lexical parser and local Qwen2.5-VL-3B in
 text-only greedy mode. Apply a deterministic geometry operator to the referenced
 landmark fields. There is no training and no target coordinate, target contour,

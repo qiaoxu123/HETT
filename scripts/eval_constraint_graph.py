@@ -9,12 +9,14 @@ from collections import Counter, defaultdict
 from pathlib import Path
 
 import numpy as np
+from scipy.ndimage import distance_transform_edt
 
 ROOT = Path(__file__).resolve().parents[1]
 import sys
 sys.path.insert(0, str(ROOT))
 from scripts.train_relational_heatmap import (ANGLE_NAMES, DISTANCE_METERS, MAX_LANDMARKS,
     landmark_basis, load_objects, load_split, nms_points, pair_field, point_error)
+from multiagent.mapdata import MAP_BOUNDS
 
 PATTERNS = [
     ("between", r"\b(between|in the middle of|middle of)\b"),
@@ -31,6 +33,26 @@ PATTERNS = [
 ]
 ANGLE = {"left": 1, "right": 2, "north": 3, "south": 4,
          "northwest": 5, "northeast": 6, "southwest": 7, "southeast": 8}
+
+
+def contour_relative_basis(map_name, landmark):
+    """Keep experiment 28 distances; measure direction from the nearest contour cell."""
+    angle_fields, distance_fields = landmark_basis(map_name, landmark)
+    mask = distance_fields[0] > 0.99
+    _, nearest = distance_transform_edt(~mask, return_indices=True)
+    rows, cols = np.indices(mask.shape)
+    bounds = MAP_BOUNDS[map_name]
+    dx = (cols - nearest[1]) * (bounds.x_max - bounds.x_min) / 63
+    dy = (nearest[0] - rows) * (bounds.y_max - bounds.y_min) / 63
+    norm = np.sqrt(dx * dx + dy * dy).clip(min=1e-3)
+    ux, uy = dx / norm, dy / norm
+    root = math.sqrt(.5)
+    directions = [(-1, 0), (1, 0), (0, 1), (0, -1),
+                  (-root, root), (root, root), (-root, -root), (root, -root)]
+    relative = [np.ones_like(ux, dtype=np.float32)]
+    relative += [np.exp(3.0 * (ux * x + uy * y - 1.0)).astype(np.float32)
+                 for x, y in directions]
+    return np.stack(relative).astype(np.float16), distance_fields
 
 
 def lexical(text):
@@ -107,10 +129,12 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--run-dir", required=True, type=Path)
     parser.add_argument("--qwen-python", default="/home/tenant2/miniconda3/envs/vlmtest/bin/python")
+    parser.add_argument("--qwen-cache", type=Path)
     args = parser.parse_args(); args.run_dir.mkdir(parents=True, exist_ok=True)
-    cache = args.run_dir / "qwen_relations.json"
-    subprocess.run([args.qwen_python, str(ROOT / "scripts/parse_constraints_qwen.py"),
-                    "--output", str(cache)], check=True)
+    cache = args.qwen_cache or (args.run_dir / "qwen_relations.json")
+    if not cache.exists():
+        subprocess.run([args.qwen_python, str(ROOT / "scripts/parse_constraints_qwen.py"),
+                        "--output", str(cache)], check=True)
     qwen = json.loads(cache.read_text())
     objects, processed, lookups = load_objects(); splits = {}
     for split in ["val_seen", "val_unseen"]:
@@ -119,7 +143,7 @@ def main():
     for samples in splits.values():
         for sample in samples:
             for landmark_id, landmark, _ in sample["landmarks"]:
-                bases.setdefault((sample["map"], landmark_id), landmark_basis(sample["map"], landmark))
+                bases.setdefault((sample["map"], landmark_id), contour_relative_basis(sample["map"], landmark))
     result = {"protocol": "PROTOCOL.md", "qwen_model": qwen["model"], "splits": {}}
     for split, samples in splits.items():
         qwen_rows = qwen["splits"][split]
