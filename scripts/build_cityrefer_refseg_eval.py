@@ -4,6 +4,7 @@
 import argparse
 import json
 import math
+import random
 from collections import defaultdict
 from pathlib import Path
 
@@ -102,9 +103,11 @@ def encode_rle(binary_mask):
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--repo", type=Path, default=Path(__file__).resolve().parents[1])
-    parser.add_argument("--split", choices=("val_seen", "val_unseen", "test_unseen"), required=True)
+    parser.add_argument("--split", choices=("train_seen", "val_seen", "val_unseen", "test_unseen"), required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--limit", type=int)
+    parser.add_argument("--sample-count", type=int)
+    parser.add_argument("--sample-seed", type=int, default=0)
     parser.add_argument("--out-size", type=int, default=512)
     parser.add_argument("--min-side-m", type=float, default=160.0)
     parser.add_argument("--padding-m", type=float, default=20.0)
@@ -121,6 +124,24 @@ def main():
     objects = json.loads((repo / "data/cityrefer/objects.json").read_text())
     processed = json.loads((repo / "data/cityrefer/processed_descriptions.json").read_text())
     rows = json.loads((repo / f"data/processed_citynav/citynav_{args.split}.json").read_text())
+    if args.sample_count is not None:
+        rng = random.Random(args.sample_seed)
+        by_map = defaultdict(list)
+        for row in rows:
+            by_map[f"{row['area']}_block_{row['block']}"].append(row)
+        for values in by_map.values():
+            rng.shuffle(values)
+        sampled = []
+        map_names = sorted(by_map)
+        while len(sampled) < min(args.sample_count, len(rows)):
+            added = False
+            for map_name in map_names:
+                if by_map[map_name] and len(sampled) < args.sample_count:
+                    sampled.append(by_map[map_name].pop())
+                    added = True
+            if not added:
+                break
+        rows = sampled
     if args.limit is not None:
         rows = rows[:args.limit]
 
@@ -221,6 +242,7 @@ def main():
     summary = {
         "split": args.split,
         "samples": len(rows),
+        "sample_seed": args.sample_seed if args.sample_count is not None else None,
         "maps": sorted(grouped),
         "out_size": args.out_size,
         "min_side_m": args.min_side_m,

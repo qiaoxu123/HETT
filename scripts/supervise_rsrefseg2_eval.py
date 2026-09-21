@@ -75,8 +75,10 @@ def main():
         "CUDA_VISIBLE_DEVICES": "0",
         "PYTHONUNBUFFERED": "1",
         "HF_HOME": "/home/tenant2/dataext/rsrefseg2/hf_cache",
+        "HF_DATASETS_CACHE": "/home/tenant2/dataext/rsrefseg2/hf_datasets_cache",
         "HF_HUB_OFFLINE": "1",
         "TRANSFORMERS_OFFLINE": "1",
+        "TORCH_FORCE_NO_WEIGHTS_ONLY_LOAD": "1",
         "CITYREFER_METRIC_DIR": str(metrics),
         "PYTHONPATH": f"{rs_repo}:{snapshot}:{env.get('PYTHONPATH', '')}",
     })
@@ -90,8 +92,8 @@ def main():
         "data_root": str(args.data_root.resolve()),
         "command": command,
         "environment": {key: env[key] for key in (
-            "CUDA_VISIBLE_DEVICES", "HF_HOME", "HF_HUB_OFFLINE", "TRANSFORMERS_OFFLINE",
-            "CITYREFER_METRIC_DIR", "PYTHONPATH",
+            "CUDA_VISIBLE_DEVICES", "HF_HOME", "HF_DATASETS_CACHE", "HF_HUB_OFFLINE", "TRANSFORMERS_OFFLINE",
+            "TORCH_FORCE_NO_WEIGHTS_ONLY_LOAD", "CITYREFER_METRIC_DIR", "PYTHONPATH",
         )},
     }
     write_json(run / "provenance.json", provenance)

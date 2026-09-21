@@ -1,0 +1,72 @@
+{
+  "overall": {
+    "count": 5281,
+    "mean_box_iou": 18.342016462864333,
+    "box_acc_0.25": 29.975383450104147,
+    "box_acc_0.5": 8.464306002651014,
+    "center_hit_rate": 33.21340655178943,
+    "mask_gIoU": 13.950103411622324,
+    "mask_Pr@0.5": 6.362431357697405
+  },
+  "baseline": {
+    "count": 5281,
+    "mask_gIoU": 1.5282149225944466,
+    "mask_Pr@0.5": 0.0,
+    "mean_box_iou": 3.1691465248574087,
+    "box_acc_0.25": 1.3823139556902102,
+    "box_acc_0.5": 0.11361484567316796,
+    "box_acc_0.75": 0.0,
+    "center_hit_rate": 20.658966104904376,
+    "nonempty_prediction_rate": 100.0
+  },
+  "counts": {
+    "box_acc_0.25": 1583,
+    "box_acc_0.5": 447,
+    "center_hit": 1754
+  },
+  "direct": {
+    "count": 2001,
+    "mean_box_iou": 20.357557646506123,
+    "box_acc_0.25": 33.983008495752124,
+    "box_acc_0.5": 9.845077461269366,
+    "center_hit_rate": 37.881059470264866,
+    "mask_gIoU": 12.286788156768507,
+    "mask_Pr@0.5": 3.8980509745127434
+  },
+  "context": {
+    "count": 3280,
+    "mean_box_iou": 17.112413441990178,
+    "box_acc_0.25": 27.53048780487805,
+    "box_acc_0.5": 7.621951219512195,
+    "center_hit_rate": 30.365853658536583,
+    "mask_gIoU": 14.964827138745035,
+    "mask_Pr@0.5": 7.865853658536586
+  },
+  "paired_language_control": {
+    "count": 192,
+    "correct_instruction_subset": {
+      "count": 192,
+      "mean_box_iou": 15.926680925780405,
+      "box_acc_0.25": 25.0,
+      "box_acc_0.5": 5.208333333333334,
+      "center_hit_rate": 25.0,
+      "mask_gIoU": 12.714095162676028,
+      "mask_Pr@0.5": 4.166666666666666
+    },
+    "alternate_visible_target": {
+      "count": 192,
+      "mean_box_iou": 12.247815805777089,
+      "box_acc_0.25": 17.1875,
+      "box_acc_0.5": 3.125,
+      "center_hit_rate": 21.354166666666664,
+      "mask_gIoU": 9.755075432974865,
+      "mask_Pr@0.5": 1.0416666666666665
+    },
+    "prediction_mask_overlap_after_text_switch": 50.06444446443859,
+    "median_prediction_mask_overlap_after_text_switch": 54.88974260468691,
+    "identical_prediction_rate": 0.0,
+    "mean_predicted_box_center_shift_px": 22.555627439170507,
+    "median_predicted_box_center_shift_px": 14.54991774229428,
+    "both_box_acc_0.25": 8.854166666666668
+  }
+}
