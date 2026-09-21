@@ -3,7 +3,7 @@ import json
 from dataclasses import dataclass
 from typing import Literal, Optional
 
-from multiagent.space import Point3D, Pose5D
+from multiagent.space import Point3D, Pose4D, Pose5D, modulo_radians
 from multiagent.defaultpaths import MTURK_TRAJECTORY_DIR
 from multiagent.trajectory import straight_line_trajectory
 from multiagent.mapdata import GROUND_LEVEL
@@ -93,6 +93,24 @@ class MTurkTrajectory:
                     interploated_trajectory.append(pos)
         
         return interploated_trajectory
+
+    @property
+    def interpolated_pose_trajectory(self):
+        """Five-metre interpolation that retains the human camera yaw."""
+        marker = self.marker_positions[-1]
+        marker_pose = Pose4D(marker.x, marker.y, marker.z, self.trajectory[-1].yaw)
+        source = [pose.xyzyaw for pose in self.trajectory] + [marker_pose]
+        interpolated = [source[0]]
+        for src, dst in zip(source[:-1], source[1:]):
+            segment = straight_line_trajectory(src.xyz, dst.xyz)
+            segment_length = max(src.xyz.dist_to(dst.xyz), 1e-6)
+            yaw_delta = modulo_radians(dst.yaw - src.yaw)
+            for position in segment:
+                if interpolated[-1].xyz.dist_to(position) > 5.:
+                    alpha = min(1.0, src.xyz.dist_to(position) / segment_length)
+                    yaw = modulo_radians(src.yaw + alpha * yaw_delta)
+                    interpolated.append(Pose4D(position.x, position.y, position.z, yaw))
+        return interpolated
     
     def fix_altitude(self, altitude_from_ground: float):
         

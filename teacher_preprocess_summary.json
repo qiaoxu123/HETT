@@ -1,0 +1,118 @@
+{
+  "parameters": {
+    "out": "/home/tenant2/Workspace/hett-experiments/38-landmark-teacher-cleanup/runs/teacher_preprocess_audit",
+    "radius": 20.0,
+    "coarse_moves": 10,
+    "local_moves": 10
+  },
+  "summary": {
+    "train_seen": {
+      "episodes": 21878,
+      "optimized": 17774,
+      "optimized_percent": 81.24142974677758,
+      "source_points": {
+        "mean": 48.735400022504784,
+        "median": 40.0,
+        "p10": 18.0,
+        "p90": 87.0
+      },
+      "cleaned_points": {
+        "mean": 11.419095307752897,
+        "median": 12.0,
+        "p10": 6.0,
+        "p90": 16.0
+      },
+      "coarse_moves": {
+        "mean": 3.097276921345786,
+        "median": 2.0,
+        "p10": 1.0,
+        "p90": 7.0
+      },
+      "local_moves": {
+        "mean": 7.321818386407111,
+        "median": 8.0,
+        "p10": 3.0,
+        "p90": 10.0
+      },
+      "length_ratio": {
+        "mean": 0.8309713545933116,
+        "median": 0.9292133335506336,
+        "p10": 0.48389466216128235,
+        "p90": 0.9999640940558027
+      },
+      "maximum_endpoint_error_m": 0.0
+    },
+    "val_seen": {
+      "episodes": 2470,
+      "optimized": 2037,
+      "optimized_percent": 82.46963562753037,
+      "source_points": {
+        "mean": 48.16151202749141,
+        "median": 40.0,
+        "p10": 18.0,
+        "p90": 86.0
+      },
+      "cleaned_points": {
+        "mean": 11.532646048109966,
+        "median": 12.0,
+        "p10": 7.0,
+        "p90": 16.0
+      },
+      "coarse_moves": {
+        "mean": 2.948944526264114,
+        "median": 2.0,
+        "p10": 1.0,
+        "p90": 7.0
+      },
+      "local_moves": {
+        "mean": 7.5837015218458514,
+        "median": 9.0,
+        "p10": 3.0,
+        "p90": 10.0
+      },
+      "length_ratio": {
+        "mean": 0.8294241017149294,
+        "median": 0.9273286616256712,
+        "p10": 0.48476308575544136,
+        "p90": 0.9999717382414566
+      },
+      "maximum_endpoint_error_m": 0.0
+    },
+    "val_unseen": {
+      "episodes": 2697,
+      "optimized": 2213,
+      "optimized_percent": 82.05413422321098,
+      "source_points": {
+        "mean": 43.18843199276999,
+        "median": 37.0,
+        "p10": 19.0,
+        "p90": 72.0
+      },
+      "cleaned_points": {
+        "mean": 10.978309986443742,
+        "median": 12.0,
+        "p10": 6.0,
+        "p90": 15.0
+      },
+      "coarse_moves": {
+        "mean": 2.8635336647085405,
+        "median": 2.0,
+        "p10": 1.0,
+        "p90": 6.0
+      },
+      "local_moves": {
+        "mean": 7.114776321735201,
+        "median": 8.0,
+        "p10": 3.0,
+        "p90": 10.0
+      },
+      "length_ratio": {
+        "mean": 0.8635683480124347,
+        "median": 0.9568857842258762,
+        "p10": 0.5645535734922802,
+        "p90": 0.9999894183580722
+      },
+      "maximum_endpoint_error_m": 0.0
+    }
+  }
+}

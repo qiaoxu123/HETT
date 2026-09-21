@@ -131,7 +131,15 @@ class CityNavBatch(torch.utils.data.IterableDataset):
         if max_eps and max_eps > 0:
             mturk_trajs = mturk_trajs[:max_eps]
         full_data = generate_episodes_from_mturk_trajectories(
-            objects, mturk_trajs)
+            objects, mturk_trajs,
+            optimize_landmark_teacher=(
+                split == 'train_seen' and
+                getattr(args, 'teacher_trajectory_mode', 'original') == 'landmark_clean'
+            ),
+            landmark_arrival_radius=getattr(args, 'teacher_arrival_radius', 20.0),
+            teacher_coarse_moves=getattr(args, 'teacher_coarse_moves', 10),
+            teacher_local_moves=getattr(args, 'teacher_local_moves', 10),
+        )
 
         random.seed(seed)
         if self.split == 'train_seen':
@@ -298,6 +306,8 @@ class CityNavBatch(torch.utils.data.IterableDataset):
                 'position': normalized_position,
                 'cur_grid': normalized_pos_id,
                 'trajectory': episode.trajectory,
+                'teacher_stage_boundary': episode.teacher_stage_boundary,
+                'teacher_optimized': episode.teacher_optimized,
                 'progress': progress,
                 'centroids': np.mean(normalized_centroids, axis=0) if normalized_centroids else np.array([0, 0]),
                 'centroid_goal': pred_goal_xy,

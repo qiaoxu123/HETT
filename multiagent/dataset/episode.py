@@ -4,7 +4,7 @@ from multiagent.cityreferobject import CityReferObject
 from multiagent.space import Pose4D
 import numpy as np
 
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Optional
 
 MapName = str
 ObjectID = int
@@ -18,11 +18,13 @@ class Episode:
     description_id: int
     teacher_trajectory: List[Pose4D]
     teacher_actions: List[int]
+    teacher_stage_boundary: Optional[int] = None
+    teacher_optimized: bool = False
 
     @property
     def description_landmarks(self):
         return self.target_object.processed_descriptions[self.description_id].landmarks
-    
+
     @property
     def description_surroundings(self):
         return self.target_object.processed_descriptions[self.description_id].surroundings
@@ -38,7 +40,7 @@ class Episode:
     @property
     def map_name(self):
         return self.target_object.map_name
-    
+
     @property
     def start_pose(self):
         return self.teacher_trajectory[0]
@@ -73,4 +75,3 @@ class Episode:
     def sample_actions(self, interval: int, end_idx: int):
 
         return self.teacher_actions[:end_idx][::interval] + [self.teacher_actions[end_idx]]
-    

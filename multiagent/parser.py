@@ -157,11 +157,17 @@ def parse_args():
     parser.add_argument("--resume_optimizer", action="store_true", default=False)
     parser.add_argument('--save_every', type=int, default=1)
     parser.add_argument('--train_trajectory_type', type=str, choices=['sp', 'mturk', 'both'], default='mturk')
+    parser.add_argument('--teacher_trajectory_mode', choices=['original', 'landmark_clean'], default='original')
+    parser.add_argument('--teacher_arrival_radius', type=float, default=20.)
+    parser.add_argument('--teacher_coarse_moves', type=int, default=10)
+    parser.add_argument('--teacher_local_moves', type=int, default=10)
     parser.add_argument('--train_episode_sample_size', type=int, default=-1)
     parser.add_argument('--ignoreid', type=int, default=-100, help='ignoreid for action')
 
     # eval params
     parser.add_argument('--eval_every', type=int, default=1)
+    parser.add_argument('--include_test_unseen', action='store_true',
+                        help='explicit final-report opt-in; development evaluation is validation-only')
     parser.add_argument('--eval_first', action='store_true', default=False)
     parser.add_argument('--max_action_len', type=int, default=20)
     parser.add_argument('--eval_client', type=str, choices=['crop', 'airsim'], default='crop')
@@ -176,8 +182,9 @@ def parse_args():
 
 
     args = parser.parse_args()
-    if args.grad_accum < 1 or args.batch_size < 1 or args.max_episodes < 0:
-        parser.error('grad_accum/batch_size must be positive; max_episodes must be nonnegative')
+    if (args.grad_accum < 1 or args.batch_size < 1 or args.max_episodes < 0 or
+            args.teacher_coarse_moves < 1 or args.teacher_local_moves < 1):
+        parser.error('batch/teacher move counts must be positive; max_episodes must be nonnegative')
     if args.checkpoint and not Path(args.checkpoint).is_absolute():
         args.checkpoint = str(PROJECT_ROOT / args.checkpoint)
     output_dir = Path(args.output_dir)

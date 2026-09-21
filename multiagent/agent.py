@@ -29,6 +29,7 @@ from multiagent.observation import cropclient
 from multiagent.space import Pose4D, Point2D, Point3D
 from multiagent.teacher.algorithm.lookahead import lookahead_discrete_action
 from multiagent.teacher.trajectory import _moved_pose
+from multiagent.stage_control import advance_teacher_stage1
 from models.vln_model import CustomBERTModel
 from models.ET_haa import ET
 from transformers import AutoModel, BertTokenizerFast
@@ -395,7 +396,11 @@ class NavCMTAgent:
         # 5. 计算损失并输出动作/目标/进度更新环境状态
         # rollout_start_time = time.time()
 
-        obs = self.env._get_obs(random_direction=(self.feedback == 'teacher'))
+        clean_teacher_mode = getattr(
+            self.args, 'teacher_trajectory_mode', 'original') == 'landmark_clean'
+        clean_teacher_control = self.feedback == 'teacher' and clean_teacher_mode
+        obs = self.env._get_obs(
+            random_direction=(self.feedback == 'teacher' and not clean_teacher_mode))
         batch_size = len(obs)
 
         # --------------- 1. 语言输入：instruction -> token ids -> BERT embedding -----------------
@@ -469,7 +474,9 @@ class NavCMTAgent:
         goal_predict_loss = 0.
         target_predict_loss = 0.
 
-        stage1_step = 0
+        stage1_steps = [0] * batch_size
+        teacher_cursors = [0] * batch_size
+        landmark_arrival_streaks = [0] * batch_size
         stage2_step = 0
         stage2_rotate = 0
 
@@ -583,6 +590,23 @@ class NavCMTAgent:
             # for i in range(len(pred_progress_t)):
             #     pred_progress_t[i] = min(1., max(0., pred_progress_t[i]))
             gt_direction = np.array([ob['direction'] for ob in obs], dtype=np.float32)
+            if clean_teacher_mode:
+                for i, ob in enumerate(obs):
+                    if not ob.get('teacher_optimized'):
+                        continue
+                    teacher_path = ob['trajectory']
+                    if clean_teacher_control:
+                        path_index = teacher_cursors[i]
+                    else:
+                        path_xy = np.asarray([[pose.x, pose.y] for pose in teacher_path])
+                        path_index = int(np.linalg.norm(
+                            path_xy - np.asarray([poses[i].x, poses[i].y]), axis=1).argmin())
+                    next_index = min(path_index + 1, len(teacher_path) - 1)
+                    next_pose = teacher_path[next_index]
+                    dx, dy = next_pose.x - poses[i].x, next_pose.y - poses[i].y
+                    if np.hypot(dx, dy) > 1e-6:
+                        absolute = np.arctan2(dy, dx)
+                        gt_direction[i] = (absolute - poses[i].yaw + np.pi) % (2 * np.pi) - np.pi
             gt_goal = torch.from_numpy(np.array([ob['normalized_goal'] for ob in obs], dtype=np.float32))
             gt_progress = torch.from_numpy(np.array([ob['progress'] for ob in obs], dtype=np.float32))
             gt_target = torch.from_numpy(np.array([ob['grid_goal'] for ob in obs], dtype=np.int64))
@@ -664,12 +688,40 @@ class NavCMTAgent:
                 # dst = Point2D(obs[i]['centroid_goal'][0], obs[i]['centroid_goal'][1])
                 if ended[i]:
                     continue
+                if clean_teacher_control and obs[i].get('teacher_optimized'):
+                    teacher_path = obs[i]['trajectory']
+                    if teacher_cursors[i] >= len(teacher_path) - 1:
+                        ended[i] = True
+                        continue
+                    teacher_cursors[i] += 1
+                    poses[i] = teacher_path[teacher_cursors[i]]
+                    boundary = obs[i]['teacher_stage_boundary']
+                    if teacher_cursors[i] <= boundary:
+                        stage1_steps[i] += 1
+                        traj[i]['stage1_trajectory'].append(poses[i])
+                    else:
+                        stage1_ended[i] = True
+                        stage2_step += 1
+                        if len(traj[i]['stage2_trajectory']) == 0:
+                            traj[i]['stage2_trajectory'].append(traj[i]['stage1_trajectory'][-1])
+                        traj[i]['stage2_trajectory'].append(poses[i])
+                    continue
+                if self.feedback == 'student' and clean_teacher_mode and not stage1_ended[i]:
+                    landmark_distance = self.env.nav_maps[i].landmark_map.distance_to(poses[i].xy)
+                    if landmark_distance <= self.args.teacher_arrival_radius:
+                        landmark_arrival_streaks[i] += 1
+                    else:
+                        landmark_arrival_streaks[i] = 0
+                    if landmark_arrival_streaks[i] >= 2:
+                        stage1_ended[i] = True
+                        traj[i]['landmark_gate_triggered'] = True
+                        traj[i]['landmark_gate_step'] = t
                 # if dst.dist_to(poses[i].xy) < 10:
                 #     ended[i] = True
                 #     continue
 
 
-                elif pred_progress_t[i] > 0.95 and self.feedback == 'student' and stage1_ended[i]:
+                if pred_progress_t[i] > 0.95 and self.feedback == 'student' and stage1_ended[i]:
                     # Updated 'ended' list and make environment action
                     ended[i] = True
                     continue
@@ -688,7 +740,6 @@ class NavCMTAgent:
                 # if pred_progress_t[i] > 0.9 and not stage1_ended[i]:
                 #     stage1_ended[i] = True
                 if dst.dist_to(poses[i].xy) > 5 and not stage1_ended[i]:
-                    stage1_step += 1
                     traj[i]['pred_goal'].append(dst)
                     # pred_goal_xys = [
                     #     unnormalize_position(global_position[goal_id] / args.grid_size, eps.map_name, args.map_meters)
@@ -696,10 +747,11 @@ class NavCMTAgent:
                     # dst = Point2D(obs[i]['centroid_goal'][0], obs[i]['centroid_goal'][1])
                     # dst = self.env.unnormalize_position(global_position[cpu_goal[i]], obs[i]['map_name'], self.args.map_meters)
                     if self.feedback == 'teacher':
-                        cur_step = stage1_step * self.args.move_iteration
-                        cur_step = cur_step if cur_step < len(obs[i]['trajectory']) else -1
+                        cur_step = advance_teacher_stage1(
+                            stage1_steps, i, self.args.move_iteration, len(obs[i]['trajectory']))
                         poses[i] = obs[i]['trajectory'][cur_step]
                     else:
+                        stage1_steps[i] += 1
                         poses[i] = self.move(poses[i], dst,
                                          self.args.move_iteration)
                     if not ended[i]:
@@ -731,7 +783,8 @@ class NavCMTAgent:
                     traj[i]['landmark_arrived'].append(landmark_distance <= getattr(
                         self.args, 'landmark_arrival_radius', 10.0))
                     # Update the status
-            obs = self.env._get_obs(poses, random_direction=(self.feedback == 'teacher'))  # get gt_obs
+            obs = self.env._get_obs(
+                poses, random_direction=(self.feedback == 'teacher' and not clean_teacher_mode))  # get gt_obs
             # current_view_corners = [np.array(ob['gt_path_corners'][0]) for ob in obs]
 
             # Early exit if all ended
@@ -783,7 +836,7 @@ class NavCMTAgent:
 
         # if t==0:
         #     self.logs
-        self.logs['stage1_step'].append(float(stage1_step) / batch_size)
+        self.logs['stage1_step'].append(float(sum(stage1_steps)) / batch_size)
         self.logs['stage2_step'].append(float(stage2_step) / batch_size)
         self.logs['stage2_rotate'].append(float(stage2_rotate) / batch_size)
 
@@ -791,6 +844,8 @@ class NavCMTAgent:
         # debug_memory()
         # print()
         for item in traj:
+            item.setdefault('landmark_gate_triggered', False)
+            item.setdefault('landmark_gate_step', None)
             confirmations = item['landmark_arrived']
             item['landmark_arrival_confirmed'] = bool(any(confirmations))
             item['landmark_first_arrival_step'] = (
