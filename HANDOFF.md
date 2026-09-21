@@ -27,10 +27,9 @@ checkpoints are required. Dataset and weight symlinks are machine-specific and m
 be committed.
 
 A portable source-history bundle was generated at
-`/home/tenant2/Workspace/hett-rsrefseg2-handoff-20260921.bundle` with SHA256
-`4bb670d528a0ff1a81ab6fc2daaaba77f666a18ac6fb6ed5227d52ecf5c59d9f`. It contains
-`main`, the teacher-cleanup and planned grounding branches, and both standalone
-RSRefSeg2 branches. On another machine:
+`/home/tenant2/Workspace/hett-rsrefseg2-handoff-20260921.bundle`; its adjacent
+`.sha256` file records the checksum. It contains `main`, the teacher-cleanup and
+planned grounding branches, and both standalone RSRefSeg2 branches. On another machine:
 
 ```bash
 git clone /path/to/hett-rsrefseg2-handoff-20260921.bundle hett-crotonyl
