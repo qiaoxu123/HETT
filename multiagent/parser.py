@@ -174,6 +174,8 @@ def parse_args():
     parser.add_argument('--success_dist', type=float, default=20.)
     parser.add_argument('--progress_stop_threshold', type=float, default=0.95,
                         help='stop after stage 1 when predicted progress reaches this value')
+    parser.add_argument('--allow_progress_stop_in_stage1', action='store_true',
+                        help='allow progress threshold to stop before the stage-1 controller ends')
     parser.add_argument('--landmark_arrival_radius', type=float, default=10.,
                         help='map-space radius used only to report landmark arrival')
     # parser.add_argument('--success_iou', type=float, default=0.4)

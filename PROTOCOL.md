@@ -13,5 +13,6 @@ Question: HETT supervises `progress = clip(1 - target_distance_m / 100, 0, 1)`, 
 
 1. Control: `--progress_stop_threshold 0.95`
 2. Aligned: `--progress_stop_threshold 0.80`
+3. Aligned without the stage gate: `--progress_stop_threshold 0.80 --allow_progress_stop_in_stage1`
 
 Compare SR, SPL, NE, oracle SR, path length, stopping-step distribution, and paired final-distance changes. This is a single-seed diagnostic, not deployment evidence.

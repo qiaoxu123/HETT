@@ -20,6 +20,7 @@ def test_cursor_falls_back_to_final_pose_when_route_is_exhausted():
 def test_landmark_gate_does_not_short_circuit_progress_stop():
     source = (Path(__file__).resolve().parents[1] / 'multiagent/agent.py').read_text()
     assert "pred_progress_t[i] >= self.args.progress_stop_threshold" in source
+    assert "stage1_ended[i] or self.args.allow_progress_stop_in_stage1" in source
     assert "elif (pred_progress_t[i] >= self.args.progress_stop_threshold" not in source
 
 
