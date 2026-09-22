@@ -70,7 +70,9 @@ def main():
     rs_repo = args.rsrefseg2_root.resolve()
     shutil.copy2(rs_repo / "configs_RSRefSeg2/refsegrs_infer.py", snapshot / "configs/refsegrs_infer.py")
     shutil.copy2(root / "scripts/cityrefer_metrics.py", snapshot / "configs/cityrefer_metrics.py")
-    python = args.python.resolve()
+    # Preserve a virtualenv launcher instead of resolving its python symlink
+    # into the base interpreter.
+    python = Path(os.path.abspath(args.python))
     hf_cache = args.hf_cache.resolve()
     config = snapshot / "configs/cityrefer_rsrefseg2_eval.py"
     metrics = run / "metrics"

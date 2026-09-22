@@ -77,7 +77,10 @@ def main():
     rs_repo = args.rsrefseg2_root.resolve()
     shutil.copy2(rs_repo / "configs_RSRefSeg2/refsegrs_infer.py", snapshot / "configs/refsegrs_infer.py")
 
-    python = args.python.resolve()
+    # Keep the venv entry-point path intact.  ``Path.resolve()`` follows the
+    # venv's python symlink into the base conda environment and loses the
+    # venv-specific site-packages when the resolved binary is executed.
+    python = Path(os.path.abspath(args.python))
     hf_cache = args.hf_cache.resolve()
     command = [
         str(python), "-m", "torch.distributed.run", "--standalone", "--nproc-per-node=1",
