@@ -38,87 +38,48 @@
 
 两条样本的训练、反向传播、保存和验证冒烟已经通过；固定后的运行没有加载 `test_unseen`。
 
-## 九轮全量实验与复现
+## 五轮全量实验结果
 
-完整 `train_seen`、seed 0 的实验按 3＋3＋3 epoch 运行。每轮训练 21,878 条轨迹，随后分别验证
-`val_seen` 2,470 条和 `val_unseen` 2,697 条；不加载 `test_unseen`。运行完成前不把中间进度
-解释为效果结论。
+seed 0，完整 `train_seen`；每轮评估 `val_seen` 2,470 条和 `val_unseen` 2,697 条，未加载
+`test_unseen`。实验先训练 3 轮，再从 epoch 3 恢复模型和三个优化器完成 epoch 4–5。
+epoch 6 只运行 0.4% 后按用户要求停止，没有产生 checkpoint，以下结果均为完整轮次。
 
-移交快照（2026-09-21 22:03 +08:00）：第 1 轮训练完成 72.4%（7,918 / 10,939
-batch），训练进程和 GPU 正常，尚未产生首轮 checkpoint 或验证指标。因此当前可以确认的是
-实现、离线审计和训练链路有效；**不能据此声称 SR/SPL 得到提升**。本机运行目录受
-`.gitignore` 管理，不随 Git 提交，跨机器复现应重新启动完整实验。
+| epoch | split | 新 SR | 原始同轮 SR | ΔSR | 新 SPL | 原始同轮 SPL | ΔSPL | 新 NE | 原始同轮 NE |
+|---:|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| 1 | seen | 21.01 | 23.28 | -2.27 | 18.68 | 17.35 | +1.33 | 45.13 | 46.57 |
+| 1 | unseen | 12.64 | 16.28 | -3.63 | 11.40 | 13.19 | -1.80 | 59.66 | 60.57 |
+| 2 | seen | 24.13 | 24.82 | -0.69 | 20.08 | 16.23 | +3.85 | 44.02 | 40.56 |
+| 2 | unseen | 15.24 | 17.39 | -2.15 | 12.78 | 12.57 | +0.21 | 55.45 | 54.41 |
+| 3 | seen | 27.53 | 29.43 | -1.90 | 22.70 | 21.21 | +1.49 | 41.78 | 37.20 |
+| 3 | unseen | 15.28 | 17.24 | -1.97 | 12.57 | 12.91 | -0.35 | 58.84 | 52.44 |
+| 4 | seen | 29.84 | 30.89 | -1.05 | 24.99 | 22.68 | +2.31 | 38.61 | 38.01 |
+| 4 | unseen | **16.20** | 16.65 | **-0.44** | **13.21** | 12.54 | **+0.66** | 56.94 | 54.80 |
+| 5 | seen | **31.09** | 30.89 | **+0.20** | **26.54** | 22.95 | **+3.59** | 37.93 | 37.17 |
+| 5 | unseen | 14.61 | 15.80 | -1.19 | 12.34 | 12.19 | +0.14 | 56.65 | 53.99 |
 
-从本分支根目录运行：
+IL loss 从 7.75 降至 6.33，direction loss 从 4.76 降至 3.94。按 `val_unseen SR` 选择的
+全局最佳是 **epoch 4**。相对原始 20 epoch 最佳 checkpoint（epoch 15）：
 
-```bash
-/home/tenant2/miniconda3/envs/AirVLN39/bin/python scripts/supervise_experiment.py \
-  --run-dir runs/teacher_cleanup_3ep_s0_repro \
-  --python /home/tenant2/miniconda3/envs/AirVLN39/bin/python \
-  --epochs 3 --save-every 1 --seed 0 --phase train-eval --interval 60 \
-  --variant-arg=--disable_task_interaction \
-  --variant-arg=--teacher_trajectory_mode \
-  --variant-arg=landmark_clean
-```
+| split | 新最佳 SR | 原始最终 SR | ΔSR | 新最佳 SPL | 原始最终 SPL | ΔSPL | 新最佳 NE | 原始最终 NE |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| seen | 29.84 | 31.78 | -1.94 | 24.99 | 24.13 | +0.86 | 38.61 | 35.82 |
+| unseen | 16.20 | 18.91 | -2.71 | 13.21 | 14.73 | -1.52 | 56.94 | 52.60 |
 
-若另一台机器的 Python 或共享 GPU 锁路径不同，替换 `--python`，并按需传入
-`--lock-file`；其余参数保持不变。`data/` 和 `weights/` 按 `SINGLE_GPU.md` 配置，不提交到 Git。
+结论：整理轨迹显著提高 seen 的路径效率，epoch 5 的 seen SR 也超过原始同轮；但 unseen
+没有超过原始方案，且从 epoch 4 的 16.20 降到 epoch 5 的 14.61，说明继续拟合会损害泛化。
+因此该版本适合作为“teacher 轨迹处理有效但泛化不足”的诊断结果，不能替换原始最终模型。
 
-训练完成后与原始 20 epoch 基线比较：
+长期保留两个 checkpoint：`best_val_unseen`（epoch 4，用于评测，SHA256
+`9dbe323e936f6805887c0ba14663979a878a8407610b9dc94e01494c957c3ff1`）和 `latest`
+（epoch 5，含优化器，用于续训，SHA256
+`9041ad9048f76675a243a17530cb24de5ba98c830b8812f26e6929c725755f9a`）。逐轮归档已删除。
 
-```bash
-/home/tenant2/miniconda3/envs/AirVLN39/bin/python scripts/compare_epoch_metrics.py \
-  --candidate runs/teacher_cleanup_3ep_s0_repro/checkpoints/epoch_metrics.jsonl \
-  --baseline runs/hett_baseline_fixed_20260911/checkpoints/epoch_metrics.jsonl \
-  --output runs/teacher_cleanup_3ep_s0_repro/REPORT.md
-```
-
-对比报告逐轮比较所有已完成 epoch 的 SR、SPL、NE 和 loss，并将候选最佳检查点与原始
-20 epoch 的最佳 `val_unseen` SR 检查点比较。单 seed 不能作为最终统计结论。
-
-当前机器先完成上面的 3 epoch，再从第 3 轮 `latest` 恢复模型和三个优化器，继续到总计
-6 epoch。续训目录继承前三轮的最佳模型、`best_metrics.json` 和 `epoch_metrics.jsonl`，因此
-第 4–6 轮仍按全部六轮选择全局最佳模型：
-
-```bash
-/home/tenant2/miniconda3/envs/AirVLN39/bin/python scripts/supervise_experiment.py \
-  --run-dir runs/teacher_cleanup_6ep_s0_resume \
-  --python /home/tenant2/miniconda3/envs/AirVLN39/bin/python \
-  --epochs 6 --save-every 1 --seed 0 --phase train-eval --interval 60 \
-  --resume-from runs/teacher_cleanup_3ep_s0/checkpoints/latest \
-  --inherit-run-state runs/teacher_cleanup_3ep_s0/checkpoints \
-  --require-status runs/teacher_cleanup_3ep_s0/status.json \
-  --variant-arg=--disable_task_interaction \
-  --variant-arg=--teacher_trajectory_mode \
-  --variant-arg=landmark_clean
-```
-
-检查点包含优化器状态，可从 `latest` 继续训练；实现未保存 Python、NumPy 和 CUDA RNG 状态，
-所以 3＋3 续训与不中断跑 6 轮不宣称逐位一致。六轮阶段保留 `best_val_unseen`（评测）和
-epoch 6 的 `latest`（续训），逐轮 `epoch_*.pt` 可在指标归档后删除。
-
-第 6 轮完成后以相同方式恢复模型和优化器，继续到总计 9 epoch：
-
-```bash
-/home/tenant2/miniconda3/envs/AirVLN39/bin/python scripts/supervise_experiment.py \
-  --run-dir runs/teacher_cleanup_9ep_s0_resume \
-  --python /home/tenant2/miniconda3/envs/AirVLN39/bin/python \
-  --epochs 9 --save-every 1 --seed 0 --phase train-eval --interval 60 \
-  --resume-from runs/teacher_cleanup_6ep_s0_resume/checkpoints/latest \
-  --inherit-run-state runs/teacher_cleanup_6ep_s0_resume/checkpoints \
-  --require-status runs/teacher_cleanup_6ep_s0_resume/status.json \
-  --variant-arg=--disable_task_interaction \
-  --variant-arg=--teacher_trajectory_mode \
-  --variant-arg=landmark_clean
-```
-
-epoch 7 成功加载 epoch 6 后，删除 epoch 1–6 的 `epoch_*.pt` 归档以释放空间；保留
-epoch 6 `latest` 直至 epoch 7 检查点写入。最终长期保留九轮全局 `best_val_unseen` 和
-epoch 9 `latest`。
+完整复现使用 `scripts/supervise_experiment.py`：先运行 3 epoch，再用 `--resume-from`、
+`--inherit-run-state` 恢复到总计 5 epoch；用 `scripts/compare_epoch_metrics.py` 生成同轮与最终基线对比。
 
 ## 仍需修改的部分
 
 1. 当前阶段门是 pose＋地图轮廓确认，不能证明视觉上识别了正确地标；后续仍需要高精度、可拒答的视觉确认头。
 2. 道路和大型地标轮廓过长，应该用第一阶段关系热图选择相关轮廓片段，再计算到达，避免在错误路段提前切换。
 3. 当前 progress/stop 仍面向最终目标且校准较差，需要把“到达地标”“找到目标”“最终停止”拆成独立输出。
-4. 本次只证明轨迹和训练链路正确，尚未进行完整训练对照，不能宣称 SR 已提升。
+4. 单 seed 五轮显示 seen 效率改善但 unseen 泛化不足；解决视觉确认和停止问题后再做多 seed 验证。
