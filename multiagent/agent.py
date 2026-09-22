@@ -721,7 +721,8 @@ class NavCMTAgent:
                 #     continue
 
 
-                if pred_progress_t[i] > 0.95 and self.feedback == 'student' and stage1_ended[i]:
+                if (pred_progress_t[i] >= self.args.progress_stop_threshold
+                        and self.feedback == 'student' and stage1_ended[i]):
                     # Updated 'ended' list and make environment action
                     ended[i] = True
                     continue

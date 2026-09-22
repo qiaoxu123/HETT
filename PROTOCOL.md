@@ -1,13 +1,17 @@
-# Landmark-aware teacher trajectory cleanup
+# Progress stop threshold test
 
-- Separate worktree and branch; no source, run, checkpoint, or dataset in the original worktree is modified.
-- Opt-in only: `--teacher_trajectory_mode landmark_clean`; default remains `original`.
-- Cleanup is applied only to `train_seen`. Validation keeps the original reference trajectories and metrics.
-- `test_unseen` requires explicit `--include_test_unseen` and is excluded from development runs.
-- Stable arrival means two consecutive human path samples within 20 m of a supplied landmark contour.
-- Eligible routes are split at stable arrival. Coarse navigation is simplified to at most 10 moves; local exploration keeps up to 10 spatially distributed observations and their interpolated human yaw.
-- Repeated points and spatial loops are removed. The original endpoint is preserved exactly.
-- Routes without a stable arrival keep the original teacher representation.
+Question: HETT supervises `progress = clip(1 - target_distance_m / 100, 0, 1)`, while success is target distance <= 20 m. Does changing only the post-landmark stop threshold from 0.95 (5 m semantics) to 0.80 (20 m semantics) improve validation navigation?
 
-Primary implementation check: full offline data audit, unit checks, then a two-episode train/eval smoke. No full-result claim is made from the smoke run.
+## Fixed controls
 
+- Checkpoint: landmark-clean Epoch 7 `best_val_unseen` (seed 0)
+- Splits: `val_seen`, `val_unseen`; no `test_unseen`
+- Same source, data, controller, budget, and model weights
+- `--disable_task_interaction --teacher_trajectory_mode landmark_clean`
+
+## Arms
+
+1. Control: `--progress_stop_threshold 0.95`
+2. Aligned: `--progress_stop_threshold 0.80`
+
+Compare SR, SPL, NE, oracle SR, path length, stopping-step distribution, and paired final-distance changes. This is a single-seed diagnostic, not deployment evidence.

@@ -172,6 +172,8 @@ def parse_args():
     parser.add_argument('--max_action_len', type=int, default=20)
     parser.add_argument('--eval_client', type=str, choices=['crop', 'airsim'], default='crop')
     parser.add_argument('--success_dist', type=float, default=20.)
+    parser.add_argument('--progress_stop_threshold', type=float, default=0.95,
+                        help='stop after stage 1 when predicted progress reaches this value')
     parser.add_argument('--landmark_arrival_radius', type=float, default=10.,
                         help='map-space radius used only to report landmark arrival')
     # parser.add_argument('--success_iou', type=float, default=0.4)
@@ -185,6 +187,8 @@ def parse_args():
     if (args.grad_accum < 1 or args.batch_size < 1 or args.max_episodes < 0 or
             args.teacher_coarse_moves < 1 or args.teacher_local_moves < 1):
         parser.error('batch/teacher move counts must be positive; max_episodes must be nonnegative')
+    if not 0 <= args.progress_stop_threshold <= 1:
+        parser.error('progress-stop-threshold must be in [0, 1]')
     if args.checkpoint and not Path(args.checkpoint).is_absolute():
         args.checkpoint = str(PROJECT_ROOT / args.checkpoint)
     output_dir = Path(args.output_dir)

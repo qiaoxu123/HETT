@@ -17,6 +17,7 @@ from multiagent.mapdata import MAP_BOUNDS
 from multiagent.maps.landmark_nav_map import LandmarkNavMap
 from multiagent.observation import cropclient
 from multiagent.space import Pose4D, modulo_radians, Point2D
+from multiagent.stage_control import target_progress
 from typing import List, Dict, Callable, Tuple
 
 
@@ -290,9 +291,7 @@ class CityNavBatch(torch.utils.data.IterableDataset):
             pred_goal_xy = np.mean(centroids, axis=0) if centroids else np.array([0, 0])
 
             rgb = cropclient.crop_image(episode.map_name, poses[i], (224, 224), 'rgb')
-            progress = np.clip(
-                1 - episode.target_position.xy.dist_to(poses[i].xy) / 100,
-                0, 1)
+            progress = target_progress(episode.target_position.xy.dist_to(poses[i].xy))
 
             obs.append({
                 'instruction': episode.target_description,
