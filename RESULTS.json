@@ -1,0 +1,238 @@
+{
+  "arms": {
+    "control_095": {
+      "val_seen": {
+        "metrics": {
+          "sr": 32.469635627530366,
+          "spl": 26.860179060043553,
+          "ne": 36.321600918349134,
+          "oracle_sr": 51.1336032388664,
+          "lengths": 228.51039041286813
+        },
+        "trajectory": {
+          "episodes": 2470,
+          "success_percent_recomputed": 32.469635627530366,
+          "ever_inside_20m_percent": 51.1336032388664,
+          "left_after_entering_20m_percent": 18.663967611336034,
+          "mean_actions": 19.874493927125506,
+          "median_final_distance_m": 28.610406575423937,
+          "episodes_shorter_than_20": 52,
+          "shorter_than_20_percent": 2.1052631578947367,
+          "shorter_than_20_success_percent": 57.69230769230769,
+          "shorter_than_20_median_final_distance_m": 16.773590884894617
+        }
+      },
+      "val_unseen": {
+        "metrics": {
+          "sr": 19.13236929922136,
+          "spl": 15.732153332866355,
+          "ne": 51.46714964373398,
+          "oracle_sr": 35.22432332220986,
+          "lengths": 252.4403659444846
+        },
+        "trajectory": {
+          "episodes": 2697,
+          "success_percent_recomputed": 19.132369299221356,
+          "ever_inside_20m_percent": 35.22432332220986,
+          "left_after_entering_20m_percent": 16.091954022988507,
+          "mean_actions": 19.979977753058954,
+          "median_final_distance_m": 44.365728197730576,
+          "episodes_shorter_than_20": 9,
+          "shorter_than_20_percent": 0.3337041156840934,
+          "shorter_than_20_success_percent": 22.22222222222222,
+          "shorter_than_20_median_final_distance_m": 49.57931867515413
+        }
+      }
+    },
+    "gated_080": {
+      "val_seen": {
+        "metrics": {
+          "sr": 31.17408906882591,
+          "spl": 27.162024754688957,
+          "ne": 36.79906570616702,
+          "oracle_sr": 47.44939271255061,
+          "lengths": 221.19864952217986
+        },
+        "trajectory": {
+          "episodes": 2470,
+          "success_percent_recomputed": 31.17408906882591,
+          "ever_inside_20m_percent": 47.449392712550605,
+          "left_after_entering_20m_percent": 16.275303643724698,
+          "mean_actions": 14.710931174089069,
+          "median_final_distance_m": 29.240298940023052,
+          "episodes_shorter_than_20": 1280,
+          "shorter_than_20_percent": 51.821862348178136,
+          "shorter_than_20_success_percent": 37.890625,
+          "shorter_than_20_median_final_distance_m": 24.79070894782368
+        }
+      },
+      "val_unseen": {
+        "metrics": {
+          "sr": 18.094178717093065,
+          "spl": 15.638099020758018,
+          "ne": 51.8889779712082,
+          "oracle_sr": 32.66592510196515,
+          "lengths": 246.91570891815905
+        },
+        "trajectory": {
+          "episodes": 2697,
+          "success_percent_recomputed": 18.094178717093065,
+          "ever_inside_20m_percent": 32.66592510196514,
+          "left_after_entering_20m_percent": 14.57174638487208,
+          "mean_actions": 16.14163885799036,
+          "median_final_distance_m": 44.59557843814883,
+          "episodes_shorter_than_20": 1193,
+          "shorter_than_20_percent": 44.23433444568039,
+          "shorter_than_20_success_percent": 22.296730930427493,
+          "shorter_than_20_median_final_distance_m": 37.89316043395706
+        }
+      }
+    },
+    "ungated_080": {
+      "val_seen": {
+        "metrics": {
+          "sr": 31.214574898785425,
+          "spl": 27.724357800158074,
+          "ne": 36.62314535795637,
+          "oracle_sr": 45.95141700404859,
+          "lengths": 216.410493689928
+        },
+        "trajectory": {
+          "episodes": 2470,
+          "success_percent_recomputed": 31.214574898785425,
+          "ever_inside_20m_percent": 45.95141700404859,
+          "left_after_entering_20m_percent": 14.736842105263158,
+          "mean_actions": 14.075303643724697,
+          "median_final_distance_m": 29.190267362480284,
+          "episodes_shorter_than_20": 1326,
+          "shorter_than_20_percent": 53.68421052631579,
+          "shorter_than_20_success_percent": 37.48114630467572,
+          "shorter_than_20_median_final_distance_m": 25.11699061185812
+        }
+      },
+      "val_unseen": {
+        "metrics": {
+          "sr": 17.797552836484982,
+          "spl": 15.483993856042865,
+          "ne": 52.25272852857266,
+          "oracle_sr": 31.590656284760843,
+          "lengths": 242.1315375841527
+        },
+        "trajectory": {
+          "episodes": 2697,
+          "success_percent_recomputed": 17.797552836484982,
+          "ever_inside_20m_percent": 31.590656284760847,
+          "left_after_entering_20m_percent": 13.793103448275861,
+          "mean_actions": 15.476084538375973,
+          "median_final_distance_m": 44.84046412980893,
+          "episodes_shorter_than_20": 1295,
+          "shorter_than_20_percent": 48.01631442343344,
+          "shorter_than_20_success_percent": 21.08108108108108,
+          "shorter_than_20_median_final_distance_m": 39.108416024555886
+        }
+      }
+    }
+  },
+  "paired_vs_control": {
+    "val_seen": {
+      "gated_080": {
+        "episodes": 2470,
+        "changed_trajectory_length": 1277,
+        "success_to_failure": 117,
+        "failure_to_success": 85,
+        "mean_action_change": -5.163562753036437,
+        "mean_final_distance_change_m": 0.4774647878178935
+      },
+      "ungated_080": {
+        "episodes": 2470,
+        "changed_trajectory_length": 1324,
+        "success_to_failure": 132,
+        "failure_to_success": 101,
+        "mean_action_change": -5.79919028340081,
+        "mean_final_distance_change_m": 0.3015444396072342
+      }
+    },
+    "val_unseen": {
+      "gated_080": {
+        "episodes": 2697,
+        "changed_trajectory_length": 1190,
+        "success_to_failure": 83,
+        "failure_to_success": 55,
+        "mean_action_change": -3.8383388950685946,
+        "mean_final_distance_change_m": 0.4218283274742107
+      },
+      "ungated_080": {
+        "episodes": 2697,
+        "changed_trajectory_length": 1294,
+        "success_to_failure": 97,
+        "failure_to_success": 61,
+        "mean_action_change": -4.503893214682981,
+        "mean_final_distance_change_m": 0.7855788848386669
+      }
+    }
+  },
+  "calibration_from_control": {
+    "val_seen": {
+      "states": 49090,
+      "positive_percent": 23.440619270727236,
+      "score_min": -0.2253258228302002,
+      "score_max": 1.0495582818984985,
+      "score_below_0_percent": 4.251375025463434,
+      "score_above_1_percent": 0.010185373803218578,
+      "roc_auc": 0.7393999678787484,
+      "threshold_080": {
+        "threshold": 0.8,
+        "tp": 3603,
+        "fp": 4688,
+        "tn": 32895,
+        "fn": 7904,
+        "precision_percent": 43.4567603425401,
+        "recall_percent": 31.311375684366038,
+        "specificity_percent": 87.52627517760689,
+        "accuracy_percent": 74.34915461397433
+      },
+      "threshold_095": {
+        "threshold": 0.95,
+        "tp": 47,
+        "fp": 36,
+        "tn": 37547,
+        "fn": 11460,
+        "precision_percent": 56.626506024096386,
+        "recall_percent": 0.40844703224124446,
+        "specificity_percent": 99.90421201074955,
+        "accuracy_percent": 76.58178855163985
+      }
+    },
+    "val_unseen": {
+      "states": 53886,
+      "positive_percent": 13.417214118695023,
+      "score_min": -0.19527161121368408,
+      "score_max": 0.99120032787323,
+      "score_below_0_percent": 4.724789370151802,
+      "score_above_1_percent": 0.0,
+      "roc_auc": 0.69254460444545,
+      "threshold_080": {
+        "threshold": 0.8,
+        "tp": 1275,
+        "fp": 3942,
+        "tn": 42714,
+        "fn": 5955,
+        "precision_percent": 24.43933294997125,
+        "recall_percent": 17.634854771784234,
+        "specificity_percent": 91.55092592592592,
+        "accuracy_percent": 81.63344839104776
+      },
+      "threshold_095": {
+        "threshold": 0.95,
+        "tp": 2,
+        "fp": 8,
+        "tn": 46648,
+        "fn": 7228,
+        "precision_percent": 20.0,
+        "recall_percent": 0.027662517289073305,
+        "specificity_percent": 99.98285322359396,
+        "accuracy_percent": 86.57165126377909
+      }
+    }
+  }
+}
