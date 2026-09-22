@@ -38,9 +38,9 @@
 
 两条样本的训练、反向传播、保存和验证冒烟已经通过；固定后的运行没有加载 `test_unseen`。
 
-## 六轮全量实验与复现
+## 九轮全量实验与复现
 
-完整 `train_seen`、seed 0 的实验按 3＋3 epoch 运行。每轮训练 21,878 条轨迹，随后分别验证
+完整 `train_seen`、seed 0 的实验按 3＋3＋3 epoch 运行。每轮训练 21,878 条轨迹，随后分别验证
 `val_seen` 2,470 条和 `val_unseen` 2,697 条；不加载 `test_unseen`。运行完成前不把中间进度
 解释为效果结论。
 
@@ -94,8 +94,27 @@ batch），训练进程和 GPU 正常，尚未产生首轮 checkpoint 或验证�
 ```
 
 检查点包含优化器状态，可从 `latest` 继续训练；实现未保存 Python、NumPy 和 CUDA RNG 状态，
-所以 3＋3 续训与不中断跑 6 轮不宣称逐位一致。最终只需长期保留 `best_val_unseen`（评测）和
+所以 3＋3 续训与不中断跑 6 轮不宣称逐位一致。六轮阶段保留 `best_val_unseen`（评测）和
 epoch 6 的 `latest`（续训），逐轮 `epoch_*.pt` 可在指标归档后删除。
+
+第 6 轮完成后以相同方式恢复模型和优化器，继续到总计 9 epoch：
+
+```bash
+/home/tenant2/miniconda3/envs/AirVLN39/bin/python scripts/supervise_experiment.py \
+  --run-dir runs/teacher_cleanup_9ep_s0_resume \
+  --python /home/tenant2/miniconda3/envs/AirVLN39/bin/python \
+  --epochs 9 --save-every 1 --seed 0 --phase train-eval --interval 60 \
+  --resume-from runs/teacher_cleanup_6ep_s0_resume/checkpoints/latest \
+  --inherit-run-state runs/teacher_cleanup_6ep_s0_resume/checkpoints \
+  --require-status runs/teacher_cleanup_6ep_s0_resume/status.json \
+  --variant-arg=--disable_task_interaction \
+  --variant-arg=--teacher_trajectory_mode \
+  --variant-arg=landmark_clean
+```
+
+epoch 7 成功加载 epoch 6 后，删除 epoch 1–6 的 `epoch_*.pt` 归档以释放空间；保留
+epoch 6 `latest` 直至 epoch 7 检查点写入。最终长期保留九轮全局 `best_val_unseen` 和
+epoch 9 `latest`。
 
 ## 仍需修改的部分
 
