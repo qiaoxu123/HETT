@@ -137,13 +137,16 @@ def main():
 
             fixed = crop_view(image, raster, fixed_pose, ground, 224)
             dynamic = crop_view(image, raster, dynamic_pose, ground, 224)
-            highres = crop_view(image, raster, dynamic_pose, ground, 448)
-            compressed = cv2.resize(highres, (224, 224), interpolation=cv2.INTER_AREA)
+            highres_448 = crop_view(image, raster, dynamic_pose, ground, 448)
+            compressed_448 = cv2.resize(highres_448, (224, 224), interpolation=cv2.INTER_AREA)
+            highres_896 = crop_view(image, raster, dynamic_pose, ground, 896)
+            compressed_896 = cv2.resize(highres_896, (224, 224), interpolation=cv2.INTER_AREA)
 
             base = assets / f"{prefix}-step-{sample_number}"
             save_jpeg(base.with_name(base.name + "-fixed.jpg"), fixed)
             save_jpeg(base.with_name(base.name + "-dynamic.jpg"), dynamic)
-            save_jpeg(base.with_name(base.name + "-compressed.jpg"), compressed)
+            save_jpeg(base.with_name(base.name + "-compressed-448.jpg"), compressed_448)
+            save_jpeg(base.with_name(base.name + "-compressed-896.jpg"), compressed_896)
 
             distance = float(np.hypot(source_pose.x - target.x, source_pose.y - target.y))
             steps.append(
@@ -157,7 +160,8 @@ def main():
                     "dynamic_fov": round(2 * view_height, 1),
                     "fixed": f"assets/{prefix}-step-{sample_number}-fixed.jpg",
                     "dynamic": f"assets/{prefix}-step-{sample_number}-dynamic.jpg",
-                    "compressed": f"assets/{prefix}-step-{sample_number}-compressed.jpg",
+                    "compressed_448": f"assets/{prefix}-step-{sample_number}-compressed-448.jpg",
+                    "compressed_896": f"assets/{prefix}-step-{sample_number}-compressed-896.jpg",
                 }
             )
 
