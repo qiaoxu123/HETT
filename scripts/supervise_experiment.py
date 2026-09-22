@@ -92,6 +92,8 @@ def main():
     parser.add_argument('--resume-from', help='Training-only checkpoint; restores optimizer as well')
     parser.add_argument('--inherit-run-state',
                         help='Checkpoint directory supplying the prior best model and metrics')
+    parser.add_argument('--prune-epoch-archives', action='store_true',
+                        help='Hash and remove epoch_*.pt archives while retaining best/latest')
     parser.add_argument('--variant-arg', action='append', default=[])
     parser.add_argument('--wait-for-unit')
     parser.add_argument('--require-status',
@@ -197,8 +199,13 @@ def main():
         if checkpoint_dir.exists():
             for path in sorted(checkpoint_dir.glob('epoch_*.pt')):
                 if path.name not in seen:
-                    append(run / 'checkpoint_hashes.jsonl', dict(time=stamp(), file=path.name,
-                           bytes=path.stat().st_size, sha256=digest(path)))
+                    record = dict(time=stamp(), file=path.name,
+                                  bytes=path.stat().st_size, sha256=digest(path))
+                    append(run / 'checkpoint_hashes.jsonl', record)
+                    if args.prune_epoch_archives:
+                        path.unlink()
+                        append(run / 'events.jsonl', dict(time=stamp(), event='pruned_checkpoint',
+                                                         file=path.name))
                     seen.add(path.name)
     phases = [('evaluation', evaluation)] if args.phase == 'eval' else [
         ('training', train), ('evaluation', evaluation)
@@ -248,9 +255,10 @@ def main():
                     break
                 time.sleep(args.interval)
         if phase == 'training':
-            best = checkpoint_dir / 'best_val_unseen'
-            append(run / 'checkpoint_hashes.jsonl', dict(time=stamp(), file=best.name,
-                   bytes=best.stat().st_size, sha256=digest(best)))
+            for retained in ['best_val_unseen', 'latest']:
+                path = checkpoint_dir / retained
+                append(run / 'checkpoint_hashes.jsonl', dict(time=stamp(), file=path.name,
+                       bytes=path.stat().st_size, sha256=digest(path), retained=True))
     atomic_json(run / 'status.json', dict(time=stamp(), phase='stopped' if stopped else 'complete'))
 
 
