@@ -57,6 +57,7 @@ def main():
     )
     parser.add_argument("--batch-size", type=int, default=8)
     parser.add_argument("--num-workers", type=int, default=4)
+    parser.add_argument("--max-samples", type=int, default=0)
     parser.add_argument("--interval", type=int, default=30)
     parser.add_argument(
         "--lock-file", type=Path,
@@ -88,6 +89,8 @@ def main():
         f"model.clip_vision_encoder.cache_dir={args.hf_cache.resolve()}",
         f"model.clip_text_encoder.cache_dir={args.hf_cache.resolve()}",
     ]
+    if args.max_samples > 0:
+        command.append(f"test_dataloader.dataset.max_samples={args.max_samples}")
     environment = os.environ.copy()
     environment.update({
         "CUDA_VISIBLE_DEVICES": "0", "PYTHONUNBUFFERED": "1",
