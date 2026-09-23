@@ -1,5 +1,18 @@
 # Implementation status
 
+## 2026-09-23: paired visual validation
+
+- Added `scripts/build_altitude_view_benchmark.py` for same-pose multi-height
+  crops, exact clipped footprint masks and digital-zoom controls.
+- Added strict common-visibility semantic annotations so field-of-view changes
+  cannot be confused with recognition improvement.
+- Added an isolated RSRefSeg2 environment, evaluation config, per-sample metric
+  and single-GPU supervisor.  Official/model assets are external to the repo.
+- Pilot protocol and first geometry result are recorded in
+  `ALTITUDE_VIEW_PROTOCOL.md`.
+- The active-altitude policy remains unwired to HETT rollout until the frozen
+  semantic comparison passes.
+
 ## Present in this worktree
 
 - Pure, per-episode active-altitude controller.
@@ -16,9 +29,10 @@
 ## Deliberately not done
 
 - No changes to the released HETT rollout, environment or checkpoint format.
-- No dataset preprocessing or cache generation.
 - No RSRefSeg2 model dependency or weights copied into this repository.
-- No training, evaluation, smoke test, unit test or syntax execution.
+- No HETT training has been launched from this worktree.
+- Frozen RSRefSeg2 semantic inference is pending external asset download and
+  release of the shared GPU; only the CPU geometry/image pilot is complete.
 - No claims about navigation improvement or runtime improvement.
 
 The next implementation turn should begin with Gate 0 in
