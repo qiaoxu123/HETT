@@ -19,6 +19,7 @@ def main():
         allow_patterns=[
             "config.json", "model.safetensors", "preprocessor_config.json",
             "processor_config.json", "video_preprocessor_config.json",
+            "sam2.1_hiera_large.pt",
         ],
     )
     snapshot_download(
