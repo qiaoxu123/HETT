@@ -10,6 +10,8 @@
   and single-GPU supervisor.  Official/model assets are external to the repo.
 - Pilot protocol and first geometry result are recorded in
   `ALTITUDE_VIEW_PROTOCOL.md`.
+- The formal 128-episode-per-split geometry result and semantic environment
+  validation are recorded in `ALTITUDE_VIEW_RESULTS.md`.
 - The active-altitude policy remains unwired to HETT rollout until the frozen
   semantic comparison passes.
 
