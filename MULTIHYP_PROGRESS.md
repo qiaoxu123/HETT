@@ -31,7 +31,22 @@ NMS over the summed map.
 
 ## Current blocker and next execution
 
-The shared GPU is occupied by the independent three-epoch HETT training job.
-Per repository policy, the full seed is not launched concurrently. Once the
-device is released, run seed 2701 for six epochs. Continue to the other two
-seeds only if `val_unseen` Top-5 improves over 57.20%.
+The user authorized a parallel full seed on the 96 GB RTX PRO 6000. Seed 2701
+completed six epochs with batch size 16:
+
+| Split | Top-1 Hit@20 | Top-5 Recall@20 | Median error |
+|---|---:|---:|---:|
+| val_seen | 39.35% | 57.61% | 25.38 m |
+| val_unseen | 25.62% | 41.05% | 37.04 m |
+
+Against experiment 28, unseen Top-1 fell from 27.81% to 25.62% and Top-5 fell
+from 57.20% to 41.05%. The head-overlap diagnostic did improve from 0.590 after
+epoch 1 to 0.100 after epoch 6, so the heads separated, but separation forced
+probability into distinct wrong modes rather than improving target coverage.
+The pre-registered single-seed continuation gate failed; seeds 2702/2703 will
+not be run.
+
+Resource observation: the variant used only about 0.93 GiB additional GPU
+memory and stayed at 80 C or below, but concurrent HETT steps slowed from about
+9 seconds to about 15 seconds. Accuracy remains interpretable; runtime is not
+comparable to an isolated run.
