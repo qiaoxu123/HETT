@@ -34,11 +34,12 @@ class RelationalHeatmap(nn.Module):
     """
 
     def __init__(self, vocab_size: int, max_landmarks: int,
-                 angle_bases: int, distance_bases: int):
+                 angle_bases: int, distance_bases: int, hypotheses: int = 1):
         super().__init__()
         self.max_landmarks = max_landmarks
         self.angle_bases = angle_bases
         self.distance_bases = distance_bases
+        self.hypotheses = hypotheses
         self.text = TextEncoder(vocab_size)
         dim = self.text.output_dim
         self.angle_head = nn.Sequential(
@@ -53,7 +54,7 @@ class RelationalHeatmap(nn.Module):
         self.conv1 = nn.Conv2d(channels, 32, 5, padding=2)
         self.conv2 = nn.Conv2d(32, 32, 3, padding=2, dilation=2)
         self.conv3 = nn.Conv2d(32, 16, 3, padding=1)
-        self.out = nn.Conv2d(16, 1, 1)
+        self.out = nn.Conv2d(16, hypotheses, 1)
         self.film = nn.Linear(dim, 64)
         self.act = nn.ReLU()
 

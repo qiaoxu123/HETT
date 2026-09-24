@@ -1,6 +1,9 @@
+import inspect
+
 import torch
 
 from multiagent.models.relational_heatmap import RelationalHeatmap
+from scripts.train_relational_heatmap import hypothesis_points
 
 
 def test_heatmap_shape_and_target_is_not_an_input():
@@ -31,3 +34,23 @@ def test_invalid_landmark_has_zero_mixture_weight():
                               torch.randint(0, 16, (1, 4, 8)), torch.randint(1, 16, (1, 8)), valid)
     assert weights[0, 0].sum().item() > 0.99
     assert weights[0, 1:].abs().sum().item() == 0
+
+
+def test_multiple_hypotheses_change_only_output_channels():
+    model = RelationalHeatmap(vocab_size=16, max_landmarks=4,
+                              angle_bases=9, distance_bases=6,
+                              hypotheses=5).eval()
+    with torch.no_grad():
+        logits, weights, gate = model(
+            torch.rand(2, 4, 9, 64, 64), torch.rand(2, 4, 6, 64, 64),
+            torch.zeros(2, 1, 64, 64), torch.randint(0, 16, (2, 4, 8)),
+            torch.randint(1, 16, (2, 8)), torch.ones(2, 4))
+    assert logits.shape == (2, 5, 64, 64)
+    assert weights.shape == (2, 4, 9, 6)
+    assert gate.shape == (2,)
+
+
+def test_candidate_extraction_cannot_receive_target():
+    parameters = inspect.signature(hypothesis_points).parameters
+    assert set(parameters) == {"joint_probability", "cell_xy", "count"}
+    assert all("target" not in name for name in parameters)

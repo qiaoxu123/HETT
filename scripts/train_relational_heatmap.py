@@ -289,6 +289,32 @@ def nms_points(field, cell_xy, count=5):
     return points
 
 
+def hypothesis_points(joint_probability, cell_xy, count=5):
+    """Take one mode from each head, then fill missing modes from the mixture.
+
+    `joint_probability` is normalized over head and pixel jointly, so peak scores
+    are comparable across heads.  The target is deliberately not an argument.
+    """
+    candidates = []
+    for head in joint_probability:
+        flat = int(np.argmax(head))
+        row, col = divmod(flat, SIZE)
+        candidates.append((float(head[row, col]), (row, col)))
+    candidates.sort(reverse=True)
+    selected = []
+    for _, point in candidates:
+        if all(point_error(point, other, cell_xy) > NMS_METERS for other in selected):
+            selected.append(point)
+        if len(selected) == count:
+            return selected
+    for point in nms_points(joint_probability.sum(axis=0), cell_xy, count=count * 2):
+        if all(point_error(point, other, cell_xy) > NMS_METERS for other in selected):
+            selected.append(point)
+        if len(selected) == count:
+            break
+    return selected
+
+
 def point_error(point, target_rc, cell_xy):
     return math.hypot((point[0] - target_rc[0]) * cell_xy[1],
                       (point[1] - target_rc[1]) * cell_xy[0])
@@ -301,17 +327,20 @@ def evaluate(model, loader, dataset, device):
         for raw_batch in loader:
             batch = move(raw_batch, device)
             logits, relation_weights, pair_gate = forward(model, batch)
-            probabilities = logits.flatten(1).softmax(dim=1).reshape(-1, SIZE, SIZE)
+            joint = logits.flatten(1).softmax(dim=1).reshape(
+                logits.shape[0], logits.shape[1], SIZE, SIZE)
+            probabilities = joint.sum(dim=1)
             _, within = target_fields(batch, device)
             masses = (probabilities * within).sum(dim=(1, 2)).cpu().numpy()
             probabilities = probabilities.cpu().numpy()
+            joint = joint.cpu().numpy()
             near = batch["distance_fields"][:, :, 0].amax(dim=1).cpu().numpy()
             weights = relation_weights.cpu().numpy()
             for offset, sample_index in enumerate(raw_batch["index"]):
                 sample = dataset.samples[sample_index]
                 target_rc = raw_batch["target_rc"][offset].numpy()
                 cell_xy = raw_batch["cell_xy"][offset].numpy()
-                learned_points = nms_points(probabilities[offset], cell_xy)
+                learned_points = hypothesis_points(joint[offset], cell_xy)
                 near_points = nms_points(near[offset], cell_xy)
                 centroid_points = []
                 bounds = MAP_BOUNDS[sample["map"]]
@@ -430,12 +459,18 @@ def main():
     parser.add_argument("--epochs", type=int, default=6)
     parser.add_argument("--batch-size", type=int, default=32)
     parser.add_argument("--seed", type=int, default=2701)
+    parser.add_argument("--hypotheses", type=int, default=5)
+    parser.add_argument("--diversity-weight", type=float, default=0.05)
+    parser.add_argument("--device", choices=["auto", "cpu", "cuda"], default="auto")
     parser.add_argument("--train-limit", type=int, default=0, help="smoke-test only")
     parser.add_argument("--val-limit", type=int, default=0, help="smoke-test only")
     args = parser.parse_args()
+    args.run_dir.mkdir(parents=True, exist_ok=True)
     random.seed(args.seed); np.random.seed(args.seed); torch.manual_seed(args.seed)
     torch.backends.cudnn.deterministic = True
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device_name = ("cuda" if torch.cuda.is_available() else "cpu") \
+        if args.device == "auto" else args.device
+    device = torch.device(device_name)
     started = time.time()
 
     objects, processed, lookups = load_objects()
@@ -472,35 +507,50 @@ def main():
                                  num_workers=0, collate_fn=collate),
     }
     model = RelationalHeatmap(len(vocab.itos), MAX_LANDMARKS,
-                              len(ANGLE_NAMES), len(DISTANCE_METERS)).to(device)
+                              len(ANGLE_NAMES), len(DISTANCE_METERS),
+                              hypotheses=args.hypotheses).to(device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=2e-3, weight_decay=1e-4)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
     history = []
     for epoch in range(args.epochs):
-        model.train(); total_loss = total_ce = total_mass = count = 0
+        model.train(); total_loss = total_ce = total_mass = total_diversity = count = 0
         for raw_batch in loaders["train_seen"]:
             batch = move(raw_batch, device)
             logits, _, _ = forward(model, batch)
             target, within = target_fields(batch, device)
-            log_prob = F.log_softmax(logits.flatten(1), dim=1).reshape(-1, SIZE, SIZE)
-            probability = log_prob.exp()
-            ce = -(target * log_prob).sum(dim=(1, 2)).mean()
-            mass_loss = -torch.log((probability * within).sum(dim=(1, 2)).clamp_min(1e-8)).mean()
-            loss = ce + 0.5 * mass_loss
+            joint_log_prob = F.log_softmax(logits.flatten(1), dim=1).reshape(
+                -1, args.hypotheses, SIZE, SIZE)
+            spatial_log_prob = torch.logsumexp(joint_log_prob, dim=1)
+            probability = spatial_log_prob.exp()
+            ce = -(target * spatial_log_prob).sum(dim=(1, 2)).mean()
+            mass_loss = -torch.log(
+                (probability * within).sum(dim=(1, 2)).clamp_min(1e-8)).mean()
+            per_head = logits.flatten(2).softmax(dim=-1)
+            normalized = F.normalize(per_head, dim=-1)
+            similarity = normalized @ normalized.transpose(1, 2)
+            off_diagonal = ~torch.eye(args.hypotheses, dtype=torch.bool,
+                                      device=device)[None]
+            diversity = similarity.masked_select(off_diagonal).mean() \
+                if args.hypotheses > 1 else similarity.new_zeros(())
+            loss = ce + 0.5 * mass_loss + args.diversity_weight * diversity
             optimizer.zero_grad(set_to_none=True); loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), 5.0)
             optimizer.step()
             batch_n = logits.shape[0]; count += batch_n
             total_loss += loss.item() * batch_n; total_ce += ce.item() * batch_n
             total_mass += mass_loss.item() * batch_n
+            total_diversity += diversity.item() * batch_n
         scheduler.step()
         row = {"epoch": epoch + 1, "loss": total_loss / count, "ce": total_ce / count,
-               "mass_loss": total_mass / count, "lr": scheduler.get_last_lr()[0]}
+               "mass_loss": total_mass / count,
+               "diversity": total_diversity / count,
+               "lr": scheduler.get_last_lr()[0]}
         history.append(row); print(json.dumps(row), flush=True)
 
     result = {
         "protocol": "PROTOCOL.md", "seed": args.seed, "epochs": args.epochs,
         "device": str(device), "vocab_size": len(vocab.itos),
+        "hypotheses": args.hypotheses, "diversity_weight": args.diversity_weight,
         "parameters": sum(parameter.numel() for parameter in model.parameters()),
         "samples": {name: len(value) for name, value in splits.items()},
         "truncated_landmark_sets": truncation, "angle_names": ANGLE_NAMES,
@@ -522,7 +572,8 @@ def main():
     torch.save({"model": model.state_dict(), "vocab": vocab.itos,
                 "config": {"size": SIZE, "max_landmarks": MAX_LANDMARKS,
                            "angle_names": ANGLE_NAMES,
-                           "distance_meters": DISTANCE_METERS}}, args.run_dir / "model.pt")
+                           "distance_meters": DISTANCE_METERS,
+                           "hypotheses": args.hypotheses}}, args.run_dir / "model.pt")
     plot_results(args.run_dir, history, result, output_rows["val_unseen"])
     print(json.dumps({"passed": passed, "elapsed_seconds": result["elapsed_seconds"]}), flush=True)
 
