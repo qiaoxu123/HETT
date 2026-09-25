@@ -61,4 +61,8 @@ Semantic-reliance controls use the same checkpoint and views:
 A high unseen Hit@20 is evidence of semantic understanding only when the
 same-map wrong-condition and pose-only controls decrease materially.
 
+Before full training, `--target_eval_train_split` is used with a tiny fixed
+subset to verify that the new head can overfit its target labels.  This
+diagnostic number is never reported as generalization performance.
+
 `test_unseen` remains disabled unless `--include_test_unseen` is explicit.

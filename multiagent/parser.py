@@ -145,6 +145,8 @@ def parse_args():
                         choices=['none', 'zero_rgb', 'empty_instruction',
                                  'wrong_condition', 'pose_only'],
                         default='none')
+    parser.add_argument('--target_eval_train_split', action='store_true', default=False,
+                        help='diagnostic only: evaluate the selected train_seen subset for overfitting')
     parser.add_argument('--disable_task_interaction', action='store_true')
 
     # logger

@@ -55,6 +55,11 @@ def build_train_dataset(args, rank=0):
     # val_env_names = ['val_seen',]  # 'test_unseen'
 
     val_envs = {}
+    if getattr(args, 'target_eval_train_split', False):
+        val_envs['train_seen_fit'] = dataset_class(
+            'train_seen', args, batch_size=args.batch_size,
+            seed=args.seed + rank, rank=rank, world_size=1
+        )
     for split in val_env_names:
         val_env = dataset_class(
             split, args,
@@ -256,9 +261,12 @@ def train(args, train_env, val_envs, rank=-1):
             loss_str = "\nepoch {}".format(idx)
 
             agent.save(idx, os.path.join(GOAL_PREDICTOR_CHECKPOINT_DIR, "latest"))
-            # Immutable per-epoch archive, sharing disk blocks with latest.
-            archive = os.path.join(GOAL_PREDICTOR_CHECKPOINT_DIR, 'epoch_%02d.pt' % (idx + 1))
-            os.link(os.path.join(GOAL_PREDICTOR_CHECKPOINT_DIR, 'latest'), archive)
+            # Immutable periodic archive, sharing disk blocks with latest.
+            if (idx + 1) % args.save_every == 0 or (idx + 1) == args.epochs:
+                archive = os.path.join(
+                    GOAL_PREDICTOR_CHECKPOINT_DIR, 'epoch_%02d.pt' % (idx + 1)
+                )
+                os.link(os.path.join(GOAL_PREDICTOR_CHECKPOINT_DIR, 'latest'), archive)
             epoch_metrics = dict(epoch=idx + 1, elapsed_seconds=time.time()-start,
                                  il_loss=ml_loss, direction_loss=direction_loss,
                                  progress_loss=progress_loss, goal_loss=goal_predict_loss,
