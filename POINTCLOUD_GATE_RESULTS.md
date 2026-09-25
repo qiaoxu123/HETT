@@ -107,6 +107,35 @@ are rendered RGB, camera pose, and the named map landmark prism.
 This is a feasibility result on point-cloud-rendered RGB, not yet evidence of
 transfer to simulator RGB or of a navigation SR/SPL improvement.
 
+## Orthomosaic RGB transfer gate
+
+The AirSim endpoint was unavailable, so simulator perspective transfer was not
+claimed. As an intermediate domain gate, the same named-polygon binding was
+evaluated on the existing independent altitude benchmark: 1,910 val_unseen
+orthomosaic RGB crops and 1,243 evaluable named-landmark queries. Goal target
+coordinates are not used.
+
+| Semantic checkpoint | Correct binding | Wrong pose | Wrong-name leakage |
+|---|---:|---:|---:|
+| Orthomosaic-only baseline | 79.32% | 0.72% | 3.22% |
+| **Mixed point-cloud + orthomosaic** | **85.44%** | 0.88% | 3.22% |
+| Joint semantic + absolute depth | 75.30% | 0.48% | 3.22% |
+
+Mixed point-cloud supervision improves the real-RGB gate by 6.11 percentage
+points over the orthomosaic-only baseline. The absolute-depth multitask model
+hurts this gate and is not selected.
+
+For the selected mixed model, val_seen is 93.98% and val_unseen is 85.44%, an
+8.54-point generalization gap. The val_unseen altitude breakdown is 92.59% at
+30 m, 89.47% at 50 m, 86.38% at 60 m, 87.37% at 80 m, and 77.27% at 120 m.
+The high-altitude decline is caused primarily by small building footprints, so
+coarse navigation should preserve the map geometry prior rather than expecting
+RGB semantics alone to remain equally reliable.
+
+This gate uses real orthomosaic RGB, not perspective AirSim RGB. A paired
+AirSim capture at the exact point-cloud poses remains mandatory before temporal
+belief integration.
+
 ## Decision
 
 The point-cloud data passes the first feasibility gate. Keep mixed semantic
