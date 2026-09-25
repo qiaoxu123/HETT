@@ -124,8 +124,33 @@
 - No HETT training has been launched from this worktree.
 - Frozen RSRefSeg2 semantic inference is pending external asset download and
   release of the shared GPU; only the CPU geometry/image pilot is complete.
-- No claims about navigation improvement or runtime improvement.
+- No runtime-improvement claim; navigation claims are limited to the recorded
+  frozen full-split comparison below.
 
-The next implementation turn should begin with Gate 0 in
-`ACTIVE_ALTITUDE_DESIGN.md`, then wire one component at a time behind a single
-feature flag while preserving the baseline path byte-for-byte where practical.
+## 2026-09-25: target-free fixed-height candidate observations
+
+- Added `scripts/evaluate_target_free_candidate_views.py`.  It renders real
+  CityNav orthomosaic RGB at 50 m from the predicted candidates themselves;
+  view positions and order never use the target or the human trajectory.
+- Hyperparameters were selected on all 2,470 `val_seen` episodes, then frozen
+  for all 2,697 `val_unseen` episodes.  Two views and prior weight 0.3 were
+  selected.
+- Geometric candidate Top-1 is 21.95% Hit@20.  The frozen target-free RGB
+  fusion reaches 22.80% (+0.85 point).  The one-view diagnostic is 23.29%, but
+  was not selected on `val_seen` and is therefore not promoted.
+- Wrong target type falls to 18.95%; shuffled episode evidence falls to
+  20.69%.  This supports genuine class-conditioned RGB use, but the selected
+  fusion's mean error is 56.02 m versus 55.67 m for geometry alone.  It is not
+  yet accepted as the navigation default.
+- On the same full split, frozen HETT target prediction is 10.86% Hit@20 and
+  55.46 m mean error.  Target-free fusion is +11.94 Hit@20 points, but its mean
+  error is 0.55 m worse.  This is a target-selection comparison, not SR/SPL.
+- On the earlier matched 128-episode subset, HETT target prediction is 11.72%
+  Hit@20 and 53.19 m mean error.  Human-trajectory temporal replay reaches
+  28.91% and 38.39 m, but that replay remains an upper-bound-style diagnostic
+  because its observation poses were selected by target-distance bands.
+
+The next implementation turn should replace fixed rank-order visits with a
+learned information-gain view selector.  The current RGB evidence is real but
+too weak (+0.85 Hit@20 point and no mean-error gain) to promote into the
+autonomous controller yet.

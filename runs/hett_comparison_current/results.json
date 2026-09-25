@@ -1,0 +1,53 @@
+{
+  "split": "val_unseen",
+  "full_navigation": {
+    "episodes": 2697,
+    "frozen_hett": {
+      "sr": 9.86,
+      "spl": 8.06,
+      "mean_ne_m": 62.56
+    },
+    "independent_static_relation_navigation": {
+      "sr": 23.804226918798665,
+      "spl": 22.963016303557218,
+      "mean_ne_m": 44.19338486453624
+    },
+    "absolute_change": {
+      "sr_points": 13.944226918798665,
+      "spl_points": 14.903016303557218,
+      "mean_ne_m": -18.36661513546376
+    },
+    "note": "This is the current apples-to-apples autonomous navigation comparison."
+  },
+  "full_target_selection": {
+    "episodes": 2697,
+    "frozen_hett": {
+      "hit20": 10.863922877271042,
+      "mean_ne_m": 55.46329164584307
+    },
+    "target_free_fixed50_rgb_fusion": {
+      "hit20": 22.803114571746384,
+      "mean_ne_m": 56.01610170015303
+    },
+    "absolute_change": {
+      "hit20_points": 11.939191694475342,
+      "mean_ne_m": 0.5528099543099605
+    },
+    "note": "Target selection only; the RGB fusion has not been integrated into autonomous navigation."
+  },
+  "matched_128_target_selection": {
+    "frozen_hett": {
+      "hit20": 11.71875,
+      "mean_ne_m": 53.19190795788864
+    },
+    "human_trajectory_temporal_rgb_fusion": {
+      "hit20": 28.90625,
+      "mean_ne_m": 38.39299488090496
+    },
+    "absolute_change": {
+      "hit20_points": 17.1875,
+      "mean_ne_m": -14.798913076983682
+    },
+    "note": "Diagnostic only: replay observations were selected by target-distance bands."
+  }
+}

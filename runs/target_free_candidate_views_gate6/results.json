@@ -1,0 +1,74 @@
+{
+  "config": {
+    "altitude_m": 50.0,
+    "candidate_radius_m": 10.0,
+    "maximum_views": 3,
+    "views_selected_on_val_seen": 2,
+    "prior_weight_selected_on_val_seen": 0.3,
+    "view_order": "geometric candidate ranks 1..K"
+  },
+  "val_seen_episodes": 2470,
+  "val_unseen": {
+    "episodes": 2697,
+    "geometry_generator_top1": {
+      "count": 2697,
+      "hit20": 21.950315164998145,
+      "mean_ne_m": 55.66623524949316,
+      "median_ne_m": 37.99278042758254
+    },
+    "target_free_rgb_by_view_count": {
+      "1": {
+        "count": 2697,
+        "hit20": 23.285131627734522,
+        "mean_ne_m": 56.08320360542293,
+        "median_ne_m": 38.43624212098274
+      },
+      "2": {
+        "count": 2697,
+        "hit20": 22.803114571746384,
+        "mean_ne_m": 56.01610170015303,
+        "median_ne_m": 38.054048666944674
+      },
+      "3": {
+        "count": 2697,
+        "hit20": 22.54356692621431,
+        "mean_ne_m": 56.62034038809199,
+        "median_ne_m": 38.521476501276105
+      }
+    },
+    "selected_target_free_rgb_fusion": {
+      "count": 2697,
+      "hit20": 22.803114571746384,
+      "mean_ne_m": 56.01610170015303,
+      "median_ne_m": 38.054048666944674
+    },
+    "wrong_target_type_control": {
+      "count": 2697,
+      "hit20": 18.946978123841305,
+      "mean_ne_m": 57.123284601744224,
+      "median_ne_m": 39.69918684872992
+    },
+    "shuffled_episode_evidence_control": {
+      "count": 2697,
+      "hit20": 20.689655172413794,
+      "mean_ne_m": 56.31890260209362,
+      "median_ne_m": 38.733079470892015
+    },
+    "shuffled_evidence_changed_percent": 100.0,
+    "top5_oracle": {
+      "count": 2697,
+      "hit20": 50.24100852799407,
+      "mean_ne_m": 39.19312716181152,
+      "median_ne_m": 19.857496332189363
+    }
+  },
+  "anti_leakage": {
+    "view_position": "predicted candidate coordinates only",
+    "view_order": "candidate prior rank only",
+    "altitude": "fixed 50 m by default",
+    "target_coordinates": "val_seen hyperparameter selection and metrics only",
+    "target_mask_or_object_identity": false,
+    "val_unseen_used_for_selection": false
+  },
+  "scope": "target-free offline active-view candidate reranking; simulator dynamics excluded"
+}
