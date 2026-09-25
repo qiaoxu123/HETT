@@ -9,7 +9,7 @@ from torch.nn import functional as F
 import numpy as np
 
 from .goal_predictor import MapEncoder
-from .relation_goal import RelationGoalRanker, rms_normalize
+from .relation_goal import RelationGoalRanker, merge_goal_logits, rms_normalize
 
 
 class SoftDotAttention(nn.Module):
@@ -394,10 +394,12 @@ class ET(nn.Module):
                     use_relation=use_relation,
                 ))
             relation_logits = rms_normalize(torch.stack(relation_values).mean(0))
-            hett_scale = (hett_logits - hett_logits.mean(-1, keepdim=True)).square(
-                ).mean(-1, keepdim=True).sqrt().clamp_min(0.1)
-            final_logits = (hett_logits + self.args.relation_alpha
-                            * hett_scale * relation_logits)
+            final_logits = merge_goal_logits(
+                hett_logits,
+                relation_logits,
+                self.args.relation_alpha,
+                relation_only=self.multi_landmark_mode == 'relation_only',
+            )
             probability = F.softmax(final_logits, dim=-1)
             hard = F.one_hot(final_logits.argmax(-1), final_logits.shape[-1]).to(
                 probability.dtype)

@@ -5,6 +5,7 @@ import torch
 from multiagent.models.relation_goal import (
     RelationGoalRanker,
     candidate_landmark_geometry,
+    merge_goal_logits,
 )
 from multiagent.multi_landmark import MultiLandmarkIndex
 
@@ -32,6 +33,16 @@ def test_relation_ranker_is_candidate_permutation_equivariant():
     normal = model(candidates, centers, boundaries, valid, relation, cue)
     permuted = model(candidates[:, order], centers, boundaries, valid, relation, cue)
     assert torch.allclose(permuted, normal[:, order], atol=1e-5)
+
+
+def test_relation_only_removes_hett_goal_prior():
+    relation = torch.tensor([[1.0, -1.0, 0.5]])
+    first_hett = torch.tensor([[100.0, 0.0, 0.0]])
+    second_hett = torch.tensor([[0.0, 100.0, 0.0]])
+    first = merge_goal_logits(first_hett, relation, 0.5, relation_only=True)
+    second = merge_goal_logits(second_hett, relation, 0.5, relation_only=True)
+    assert torch.equal(first, relation)
+    assert torch.equal(second, relation)
 
 
 def test_exported_feature_artifact_has_independent_landmarks():

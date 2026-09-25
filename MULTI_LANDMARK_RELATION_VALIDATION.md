@@ -52,6 +52,22 @@ C improves SR by 1.41 points and SPL by 1.43 points over A. However, mean NE is
 still worse, showing that the branch creates more successful predictions but
 also some large misses. This is a positive validation, not a finished model.
 
+## Relation-only ablation
+
+The strict `relation_only` mode removes the HETT target heatmap entirely and
+scores all 400 map points using only per-landmark geometry and relation language.
+
+| split | overall Hit@20 | multi-landmark Hit@20 | goal NE |
+|---|---:|---:|---:|
+| val_seen | 1.38% | 2.13% | 247.91 m |
+| val_unseen | 0.56% | 0.95% | 226.17 m |
+
+This is decisively worse than both HETT and fused prediction, so a full
+navigation run is not warranted. The offline relation ranker was trained to
+order a small set of plausible candidates; it is not a global target proposal
+model. HETT remains necessary to provide the global location prior, while the
+relation branch is useful as a residual correction.
+
 ## Leakage and control audit
 
 The runtime feature artifact contains only episode IDs, landmark centers,
@@ -70,4 +86,3 @@ unchanged cases are groups with no distinct same-map/count alternative.
 - Held-out controls: `runs/control_v2_val_unseen_*` and
   `runs/control_val_unseen_{B_geometry,C_relation}`
 - Full navigation: `runs/full_val_unseen_alpha050_*`
-

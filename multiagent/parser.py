@@ -120,7 +120,8 @@ def parse_args():
     parser.add_argument('--disable_task_interaction', action='store_true')
     parser.add_argument('--multi_landmark_mode',
                         choices=['off', 'geometry', 'relation',
-                                 'wrong_relation', 'wrong_landmark'],
+                                 'relation_only', 'wrong_relation',
+                                 'wrong_landmark'],
                         default='off')
     parser.add_argument('--multi_landmark_features', type=str, default=None)
     parser.add_argument('--relation_checkpoints', type=str, nargs='*', default=None)

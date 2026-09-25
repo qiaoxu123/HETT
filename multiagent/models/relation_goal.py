@@ -91,3 +91,12 @@ class RelationGoalRanker(nn.Module):
 def rms_normalize(score):
     centered = score - score.mean(-1, keepdim=True)
     return centered / centered.square().mean(-1, keepdim=True).sqrt().clamp_min(1e-6)
+
+
+def merge_goal_logits(hett_logits, relation_logits, alpha, relation_only=False):
+    """Fuse goal scores, or remove the HETT target prior for the strict ablation."""
+    if relation_only:
+        return relation_logits
+    hett_scale = (hett_logits - hett_logits.mean(-1, keepdim=True)).square(
+        ).mean(-1, keepdim=True).sqrt().clamp_min(0.1)
+    return hett_logits + alpha * hett_scale * relation_logits
