@@ -273,3 +273,25 @@ evidence remains too weak to promote into the autonomous controller yet.
   specificity, not late observation. Next work should learn instance- and
   landmark-relation-conditioned RGB evidence before retrying learned stopping,
   action heads or dynamic height.
+
+## 2026-09-25: expanded path-local instance verifier
+
+- Added a permutation-equivariant Top-1/Top-2 verifier over target-free
+  path-local SigLIP patches, full instruction features, independent per-landmark
+  relation geometry, belief prior and coarse semantic evidence.
+- A 2,048-episode training subset did not generalize. Expanding only the
+  target-free `train_seen` observations to 8,192 raises full `val_seen` Hit@20
+  from 38.26% static / 39.27% coarse semantic to 39.96%.
+- The frozen one-shot `val_unseen` result is 23.95% Hit@20 versus 23.40% for
+  coarse semantics, with mean error reduced from 48.33 m to 47.24 m.
+- Strict online `val_unseen` execution reaches 23.84% SR / 34.00% OSR / 22.48%
+  SPL / 47.00 m NE. This improves the prior strict RGB branch by +0.59 SR and
+  +0.67 SPL and the strongest local HETT reproduction by +4.30 SR and +6.75
+  SPL. Mean/max actions are 6.17/12 and no episode exceeds the budget.
+- Candidate RGB swapping drops unseen Hit@20 to 19.32%, but a same-map wrong
+  instruction reaches 24.73%, above the correct 23.95%. The improvement is
+  therefore retained only as generic visual candidate verification; it does
+  not demonstrate reliable instruction or named-landmark grounding.
+- `test_unseen` remains sealed. The next gate must explicitly bind the correct
+  instruction landmarks/relations to visual evidence before learned stopping,
+  richer active actions or dynamic height are reconsidered.

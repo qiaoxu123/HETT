@@ -54,6 +54,7 @@ def test_rgb_observation_pose_replay_has_no_target_input():
 
 def test_unseen_geometry_builder_has_no_target_argument():
     assert "target" not in inspect.signature(geometry_records).parameters
+    assert "source_indices" in inspect.signature(geometry_records).parameters
 
 
 def test_strict_online_plan_and_rollout_exclude_target():

@@ -55,18 +55,22 @@ def parse_args():
     return parser.parse_args()
 
 
-def geometry_records(rows, beliefs):
-    trajectories = load_mturk_trajectories("val_unseen", "all", 50.0)
+def geometry_records(rows, beliefs, split="val_unseen", source_indices=None):
+    trajectories = load_mturk_trajectories(split, "all", 50.0)
+    if source_indices is None:
+        source_indices = list(range(len(rows)))
+    if len(rows) != len(source_indices):
+        raise ValueError("rows and source indices must align")
     records = []
-    for index, (row, logits, trajectory) in enumerate(
-            zip(rows, beliefs, trajectories)):
+    for row, logits, source_index in zip(rows, beliefs, source_indices):
+        trajectory = trajectories[int(source_index)]
         modes = belief_distinct_topk_xy(logits, 2)
         modes_world = np.stack([
             normalized_to_world(mode, row["map_name"]) for mode in modes])
         _, action_step, joint_visible = first_joint_path_observation(
             trajectory.start_pose, modes_world[0], modes_world[1])
         records.append({
-            "index": index, "map_name": row["map_name"],
+            "index": int(source_index), "map_name": row["map_name"],
             "target": np.asarray(row["target"]),
             "modes": np.asarray(modes), "prior": mode_prior(logits, modes),
             "observation_action_step": action_step,
@@ -143,4 +147,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

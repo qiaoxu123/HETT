@@ -196,3 +196,45 @@ the final stop, 209 do so after candidate RGB evidence has already been
 acquired. Observation timing is therefore not the main bottleneck. The next
 gate should improve instance- and relation-specific visual evidence before
 training a larger action head or enabling dynamic height.
+
+## Path-local instance-verifier gate
+
+The four-class semantic score was replaced by a frozen SigLIP candidate patch
+encoder plus a permutation-equivariant verifier. It consumes the full
+instruction embedding, per-landmark relation geometry, unified-belief prior and
+the two target-free path-local RGB patches. Candidate rank/order embeddings are
+not used. Expanding target-free `train_seen` observations from 2,048 to 8,192
+was necessary: the smaller model reached only 38.38% Hit@20 on Val Seen,
+whereas the expanded model reached 39.96%.
+
+Candidate-level results:
+
+| Method | Val Seen Hit@20 | Val Unseen Hit@20 | Val Unseen mean error |
+|---|---:|---:|---:|
+| Static Top-1 | 38.26 | 21.02 | 48.77 m |
+| Four-class semantic fusion | 39.27 | 23.40 | 48.33 m |
+| Frozen instance verifier | **39.96** | **23.95** | **47.24 m** |
+| Two-mode oracle | 54.74 | 34.45 | 39.22 m |
+
+The Val Unseen checkpoint and all hyperparameters were frozen before the split
+was loaded. Swapping the two RGB patches reduces Hit@20 to 19.32%, confirming
+that candidate-to-image binding matters. However, a same-map wrong instruction
+reaches 24.73%, above the correct instruction. The gain must therefore be
+described as generic candidate visual salience, not verified instruction
+grounding or spatial-language understanding.
+
+Strict online execution runs both SigLIP and the coarse semantic model on the
+current `obs["rgb"]` inside rollout:
+
+| Strict online Val Unseen | SR | OSR | SPL | NE | Mean / max actions |
+|---|---:|---:|---:|---:|---:|
+| Four-class semantic branch | 23.25 | 33.52 | 21.81 | 47.98 m | 6.16 / 12 |
+| Instance verifier | **23.84** | **34.00** | **22.48** | **47.00 m** | 6.17 / 12 |
+
+Online and cached candidate ranks agree in 99.30% of episodes. Relative to the
+four-class branch this is +0.59 SR, +0.67 SPL and -0.98 m NE; relative to the
+strongest local HETT reproduction it is +4.30 SR and +6.75 SPL. No trajectory
+exceeds 20 actions, no point cloud or target coordinate is used at runtime, and
+`test_unseen` remains sealed. The module is retained as a visual verifier, but
+the next training gate must make the gain conditional on the correct named
+landmarks and relation language.
