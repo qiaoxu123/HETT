@@ -2,6 +2,7 @@ import torch
 
 from scripts.train_relation_geometry_ranker import (
     RelationGeometryRanker,
+    audit_consistent_landmark_geometry,
     opposite_direction_cues,
     matched_same_map_switch_indices,
     ranking_loss,
@@ -13,6 +14,18 @@ from scripts.train_relation_geometry_ranker import (
 def test_rotate_270_reference_frame():
     delta = torch.tensor([[2.0, 3.0], [-4.0, 5.0]])
     assert torch.equal(rotate_270(delta), torch.tensor([[3.0, -2.0], [5.0, 4.0]]))
+
+
+def test_audit_consistent_geometry_uses_transpose_transform():
+    rows = [{
+        "candidates": [[0.75, 0.5]],
+        "landmark_centers": [[0.5, 0.5]],
+        "landmark_boundaries": [[[0.4, 0.5]] * 16],
+    }]
+    geometry, valid = audit_consistent_landmark_geometry(rows, max_landmarks=1)
+    assert torch.allclose(
+        geometry[0, 0, 0, :2].float(), torch.tensor([0.0, 0.25]), atol=1e-3)
+    assert valid.tolist() == [[True]]
 
 
 def test_ranker_candidate_permutation_equivariance():

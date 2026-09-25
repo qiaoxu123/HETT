@@ -31,7 +31,11 @@ from scripts.evaluate_path_local_rgb_evidence import (
     candidate_patches, reconstruct_observation_pose,
 )
 from scripts.train_path_local_candidate_verifier import rows_for_records
-from scripts.train_relation_geometry_ranker import matched_same_map_switch_indices
+from scripts.train_relation_geometry_ranker import (
+    corrected_landmark_geometry,
+    matched_same_map_switch_indices,
+    structured_relation_cues,
+)
 from scripts.train_rgb_candidate_ranker import encode_images, landmark_geometry, metrics
 
 
@@ -61,6 +65,13 @@ def parse_args():
     parser.add_argument("--learning-rate", type=float, default=3e-4)
     parser.add_argument("--switch-loss-weight", type=float, default=0.2)
     parser.add_argument("--switch-margin", type=float, default=0.5)
+    parser.add_argument(
+        "--geometry-frame", choices=("raw", "audited"), default="raw",
+        help=("Candidate/landmark coordinate frame. 'audited' applies the "
+              "train-selected map-to-language rotate_270 transform."))
+    parser.add_argument(
+        "--explicit-relation-cues", action="store_true",
+        help="Append deterministic per-landmark spatial-relation cues.")
     parser.add_argument("--seed", type=int, default=0)
     return parser.parse_args()
 
@@ -128,11 +139,53 @@ def encode_landmark_patches(records, rows, wrong_rows, split, vision_dim,
     return image, visible, wrong_image, wrong_visible
 
 
+def attach_geometry_frame(saved, records_all, args):
+    """Rebuild geometry after cache loading so stale caches cannot hide the frame."""
+    if args.geometry_frame == "raw":
+        return saved
+    for split, limit in (("train_seen", args.max_train),
+                         ("val_seen", args.max_val)):
+        records = records_all[split][:limit or None]
+        rows = rows_for_records(args.candidate_dir, split, records)
+        switched = matched_same_map_switch_indices(rows)
+        geometry, valid = corrected_landmark_geometry(
+            rows, args.max_landmarks)
+        wrong_geometry, wrong_valid = corrected_landmark_geometry(
+            rows, args.max_landmarks, switched)
+        saved[split]["geometry"] = geometry.float()
+        saved[split]["valid"] = valid
+        saved[split]["wrong_geometry"] = wrong_geometry.float()
+        saved[split]["wrong_valid"] = wrong_valid
+    return saved
+
+
+def attach_explicit_relation_cues(saved, records_all, args):
+    """Ground relation words to explicit axes without using target labels."""
+    if not args.explicit_relation_cues:
+        return saved
+    for split, limit in (("train_seen", args.max_train),
+                         ("val_seen", args.max_val)):
+        records = records_all[split][:limit or None]
+        rows = rows_for_records(args.candidate_dir, split, records)
+        switched = matched_same_map_switch_indices(rows)
+        cues = structured_relation_cues(rows, args.max_landmarks)
+        # Slice to the frozen BERT width so repeatedly loading an enriched
+        # in-memory dictionary cannot append the same cues twice.
+        saved[split]["relation"] = torch.cat(
+            (saved[split]["relation"][..., :768].float(), cues), dim=-1)
+        saved[split]["wrong_relation"] = torch.cat((
+            saved[split]["wrong_relation"][..., :768].float(), cues[switched]),
+            dim=-1)
+    return saved
+
+
 def load_or_encode(args, device):
-    if args.cache.exists():
-        return torch.load(args.cache, map_location="cpu", weights_only=False)
-    base = torch.load(args.base_features, map_location="cpu", weights_only=False)
     records_all = torch.load(args.records, map_location="cpu", weights_only=False)
+    if args.cache.exists():
+        saved = torch.load(args.cache, map_location="cpu", weights_only=False)
+        saved = attach_geometry_frame(saved, records_all, args)
+        return attach_explicit_relation_cues(saved, records_all, args)
+    base = torch.load(args.base_features, map_location="cpu", weights_only=False)
     processor = AutoImageProcessor.from_pretrained(
         args.model, cache_dir=str(args.hf_cache), local_files_only=True)
     encoder = AutoModel.from_pretrained(
@@ -164,7 +217,8 @@ def load_or_encode(args, device):
         saved[split] = data
     args.cache.parent.mkdir(parents=True, exist_ok=True)
     torch.save(saved, args.cache)
-    return saved
+    saved = attach_geometry_frame(saved, records_all, args)
+    return attach_explicit_relation_cues(saved, records_all, args)
 
 
 def train_dataset(data):
@@ -188,6 +242,13 @@ def predict(model, data, device, control="normal"):
     elif control == "wrong_landmark_rgb":
         landmark = data["wrong_landmark_image"]
         visual_valid = data["wrong_landmark_visual_valid"]
+    elif control == "wrong_text_only":
+        text = data["wrong_text"]
+    elif control == "wrong_relation_only":
+        relation = data["wrong_relation"]
+    elif control == "wrong_geometry_only":
+        geometry = data["wrong_geometry"]
+        valid = data["wrong_valid"]
     elif control == "same_map_wrong_instruction":
         landmark = data["wrong_landmark_image"]
         visual_valid = data["wrong_landmark_visual_valid"]
@@ -204,7 +265,8 @@ def predict(model, data, device, control="normal"):
 
 def train_model(train, val, args, device):
     random.seed(args.seed); np.random.seed(args.seed); torch.manual_seed(args.seed)
-    model = LandmarkAwareCandidateVerifier(train["image"].shape[-1]).to(device)
+    model = LandmarkAwareCandidateVerifier(
+        train["image"].shape[-1], relation_dim=train["relation"].shape[-1]).to(device)
     optimizer = torch.optim.AdamW(
         model.parameters(), lr=args.learning_rate, weight_decay=1e-3)
     best = None
@@ -219,19 +281,41 @@ def train_model(train, val, args, device):
             distance = values[9]
             ranking = soft_distance_ranking_loss(normal, distance)
             nearest = distance.argmin(-1)
-            positive = normal.gather(1, nearest[:, None]).squeeze(1)
-            negative = wrong.gather(1, nearest[:, None]).squeeze(1)
+            other = 1 - nearest
+            normal_margin = (
+                normal.gather(1, nearest[:, None]).squeeze(1)
+                - normal.gather(1, other[:, None]).squeeze(1))
+            wrong_margin = (
+                wrong.gather(1, nearest[:, None]).squeeze(1)
+                - wrong.gather(1, other[:, None]).squeeze(1))
+            # Candidate selection depends on relative scores.  Penalizing only
+            # an absolute score lets a wrong instruction shift both candidates
+            # equally without changing the selected goal.  The counterfactual
+            # must instead reduce the correct-vs-other ranking margin.
+            discriminative = distance.le(20).sum(-1).eq(1).float()
+            weight = 0.25 + 0.75 * discriminative
             contrast = F.softplus(
-                args.switch_margin - positive + negative).mean()
+                args.switch_margin - normal_margin + wrong_margin)
+            contrast = (contrast * weight).sum() / weight.sum().clamp_min(1)
             loss = ranking + args.switch_loss_weight * contrast
             optimizer.zero_grad(set_to_none=True); loss.backward(); optimizer.step()
         model.eval(); score = predict(model, val, device)
         value = metrics(val["distance"], score.argmax(-1))
-        key = value["hit20"], -value["mean_ne"], -epoch
+        wrong_score = predict(
+            model, val, device, "same_map_wrong_instruction")
+        wrong_value = metrics(val["distance"], wrong_score.argmax(-1))
+        control_gap = value["hit20"] - wrong_value["hit20"]
+        coarse = metrics(
+            val["distance"],
+            (val["prior"] + 0.5 * val["semantic"]).argmax(-1))
+        passes_gate = value["hit20"] >= coarse["hit20"] and control_gap >= 1.0
+        key = (int(passes_gate), value["hit20"], control_gap,
+               -value["mean_ne"], -epoch)
         if best is None or key > best[0]:
             best = key, copy.deepcopy(model.state_dict()), epoch, value
         print(f"epoch={epoch} hit20={value['hit20']:.3f} "
-              f"mean_ne={value['mean_ne']:.3f}", flush=True)
+              f"wrong={wrong_value['hit20']:.3f} gap={control_gap:.3f} "
+              f"gate={passes_gate} mean_ne={value['mean_ne']:.3f}", flush=True)
     model.load_state_dict(best[1]); return model.eval(), best[2], best[3]
 
 
@@ -246,18 +330,31 @@ def main():
     controls = {name: metrics(distance, predict(
         model, val, device, name).argmax(-1)) for name in (
             "swap_candidate_rgb", "zero_landmark_rgb", "wrong_landmark_rgb",
+            "wrong_text_only", "wrong_relation_only", "wrong_geometry_only",
             "same_map_wrong_instruction")}
+    coarse = metrics(
+        distance, (val["prior"] + 0.5 * val["semantic"]).argmax(-1))
+    language_gap = selected["hit20"] - controls[
+        "same_map_wrong_instruction"]["hit20"]
     result = {
         "experiment": "candidate plus per-named-landmark visual verifier",
+        "geometry_frame": args.geometry_frame,
+        "explicit_relation_cues": args.explicit_relation_cues,
         "counts": {split: len(data["distance"]) for split, data in saved.items()},
         "selected_on_val_seen": {"epoch": epoch, **selected},
         "val_seen": {
-            "coarse_semantic_fusion": metrics(
-                distance, (val["prior"] + 0.5 * val["semantic"]).argmax(-1)),
+            "coarse_semantic_fusion": coarse,
             "candidate_only_verifier_reference": None,
             "landmark_visual_verifier": metrics(distance, score.argmax(-1)),
             **controls,
             "two_mode_oracle": metrics(distance, distance.argmin(-1)),
+        },
+        "selection_gate": {
+            "minimum_wrong_instruction_drop_pp": 1.0,
+            "must_match_or_beat_coarse_semantic": True,
+            "language_control_gap_pp": language_gap,
+            "passed": (selected["hit20"] >= coarse["hit20"]
+                       and language_gap >= 1.0),
         },
         "visibility": {
             split: {
@@ -281,6 +378,7 @@ def main():
     args.output_dir.mkdir(parents=True, exist_ok=True)
     torch.save({
         "model": model.state_dict(), "vision_dim": val["image"].shape[-1],
+        "relation_dim": val["relation"].shape[-1],
         "epoch": epoch,
     }, args.output_dir / "model.pt")
     (args.output_dir / "results.json").write_text(

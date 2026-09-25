@@ -58,6 +58,12 @@ def parse_args():
     parser.add_argument("--mismatch-loss-weight", type=float, default=0.0)
     parser.add_argument("--mismatch-margin", type=float, default=0.2)
     parser.add_argument("--use-structured-cues", action="store_true")
+    parser.add_argument(
+        "--geometry-convention", choices=("legacy", "audit_transpose"),
+        default="legacy",
+        help=("Use M^T for map deltas when the reference-frame audit applies "
+              "M to language direction vectors."))
+    parser.add_argument("--relation-cache", type=Path, default=None)
     parser.add_argument("--seeds", default="0,1,2")
     return parser.parse_args()
 
@@ -174,17 +180,36 @@ def corrected_landmark_geometry(rows, max_landmarks=9, reference_indices=None):
     return geometry.half(), valid
 
 
-def build_split(rows, relation, max_landmarks):
+def audit_consistent_landmark_geometry(rows, max_landmarks=9,
+                                       reference_indices=None):
+    """Apply the transpose of the transform selected by the language audit."""
+    geometry, valid = corrected_landmark_geometry(
+        rows, max_landmarks, reference_indices)
+    geometry = geometry.float()
+    # For the selected quarter-turn, M^T delta is the negation of M delta.
+    # Distance channels (2 and 7) are invariant; all vector/direction channels
+    # must reverse together.
+    geometry[..., 0:2] *= -1
+    geometry[..., 3:5] *= -1
+    geometry[..., 5:7] *= -1
+    geometry[..., 8:10] *= -1
+    return geometry.half(), valid
+
+
+def build_split(rows, relation, max_landmarks, geometry_convention="legacy"):
     if relation.shape[:2] != (len(rows), max_landmarks):
         raise ValueError(
             f"relation cache mismatch: {tuple(relation.shape)} vs {(len(rows), max_landmarks)}")
     candidates = torch.tensor([row["candidates"] for row in rows])
     targets = torch.tensor([row["target"] for row in rows])
     distance = torch.linalg.vector_norm(candidates - targets[:, None], dim=-1) * 410.0
-    geometry, valid = corrected_landmark_geometry(rows, max_landmarks)
+    geometry_builder = (audit_consistent_landmark_geometry
+                        if geometry_convention == "audit_transpose"
+                        else corrected_landmark_geometry)
+    geometry, valid = geometry_builder(rows, max_landmarks)
     switched = matched_same_map_switch_indices(rows)
     cue = structured_relation_cues(rows, max_landmarks)
-    switched_geometry, switched_valid = corrected_landmark_geometry(
+    switched_geometry, switched_valid = geometry_builder(
         rows, max_landmarks, switched)
     return {
         "geometry": geometry,
@@ -435,7 +460,7 @@ def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     rows = {split: load_rows(args.candidate_dir / f"{split}.jsonl", args.top_k)
             for split in SPLITS}
-    cache_path = args.output_dir / "relation_features.pt"
+    cache_path = args.relation_cache or (args.output_dir / "relation_features.pt")
     if cache_path.exists():
         relations = torch.load(cache_path, map_location="cpu", weights_only=True)
     else:
@@ -445,7 +470,9 @@ def main():
             relations[split] = encode_landmark_relations(
                 rows[split], device, max_landmarks=args.max_landmarks)
         torch.save(relations, cache_path)
-    data = {split: build_split(rows[split], relations[split], args.max_landmarks)
+    data = {split: build_split(
+        rows[split], relations[split], args.max_landmarks,
+        args.geometry_convention)
             for split in SPLITS}
 
     seeds = [int(value) for value in args.seeds.split(",") if value]
@@ -453,7 +480,10 @@ def main():
         "config": {
             **vars(args), "candidate_dir": str(args.candidate_dir),
             "output_dir": str(args.output_dir), "seeds": seeds,
+            "relation_cache": (str(args.relation_cache)
+                               if args.relation_cache else None),
             "coordinate_transform": "fixed rotate_270 selected on train_seen",
+            "geometry_convention": args.geometry_convention,
             "language_encoder": "frozen bert-base-uncased [MASK] landmark token",
         },
         "counts": {split: len(rows[split]) for split in SPLITS},
