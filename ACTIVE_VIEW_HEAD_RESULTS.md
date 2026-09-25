@@ -38,3 +38,24 @@ Observation updates in this gate still use point-cloud teacher signatures.
 It isolates view selection and does not prove RGB observation transfer,
 closed-loop SR/SPL, stopping, or dynamic-height navigation. Point clouds remain
 training/evaluation teachers and are not allowed as runtime model inputs.
+
+## Closed-loop logic gate
+
+The independent runtime now composes learned view selection, altitude changes,
+signed evidence, goal reselection, geometric actions and conservative stopping.
+Its step interface has no target-coordinate argument. On the same 64-episode
+diagnostic subset, using teacher observations only after the learned view is
+reached:
+
+| Metric | Result |
+|---|---:|
+| SR | 39.06% |
+| OSR | 45.31% |
+| SPL | 37.60% |
+| mean NE | 27.15 m |
+| correct-stop rate | 95.31% |
+
+This agrees closely with the 40.63% offline candidate reranking result and
+verifies that the action/stop loop preserves most of the selected-view gain.
+It remains a point-cloud-teacher logic gate; replacing the teacher observation
+with sufficiently discriminative RGB evidence is still required.

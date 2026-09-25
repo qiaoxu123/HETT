@@ -216,3 +216,9 @@ evidence remains too weak to promote into the autonomous controller yet.
   for a fixed 35-m view and 42.19% for the teacher heuristic. Removing
   landmark geometry falls to 37.50%. This is a small teacher-observation gate,
   not RGB closed-loop navigation; see `ACTIVE_VIEW_HEAD_RESULTS.md`.
+- Added an independent target-free closed-loop runtime that alternates learned
+  observation views, altitude motion, signed belief updates, goal reselection,
+  geometric actions and multi-frame stopping. On the same 64-episode teacher
+  diagnostic it reaches 39.06% SR / 37.60% SPL / 45.31% OSR. This validates
+  closed-loop mechanics with teacher observations only; RGB transfer remains
+  the gating issue.
