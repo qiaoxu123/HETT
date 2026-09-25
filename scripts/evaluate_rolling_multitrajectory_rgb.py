@@ -72,6 +72,7 @@ def parse_args():
     parser.add_argument("--evidence-radius-m", type=float, default=10.0)
     parser.add_argument("--switch-margin", type=float, default=0.0,
                         help="Optional route hysteresis; zero keeps RGB corrections unrestricted")
+    parser.add_argument("--commit-stable-replans", type=int, default=2)
     parser.add_argument("--seed", type=int, default=0)
     return parser.parse_args()
 
@@ -179,7 +180,7 @@ def rollout_one(env, observation, index, modes, belief, inference, static,
     trace = RolloutTrace([pose])
     evidence_sum = np.zeros(8, dtype=np.float64)
     evidence_count = 0
-    selected_history, replans = [], 0
+    selected_history, replans, committed_actions = [], 0, 0
     previous_selected = None
     while trace.action_count < protocol.max_action_len:
         current = env.normalize_position(
@@ -205,6 +206,10 @@ def rollout_one(env, observation, index, modes, belief, inference, static,
                 selected = previous_selected
         previous_selected = selected
         selected_history.append(selected); replans += 1
+        selected_modes = [SLOT_TO_MODE[value] for value in selected_history]
+        stable = (evidence_count > 0
+                  and len(selected_modes) >= args.commit_stable_replans
+                  and len(set(selected_modes[-args.commit_stable_replans:])) == 1)
         endpoint = library[selected].positions[-1].tolist()
         destination = env.unnormalize_position(
             endpoint, observation["map_name"], protocol.map_size_m)
@@ -217,9 +222,12 @@ def rollout_one(env, observation, index, modes, belief, inference, static,
             trace.action_count += 1; trace.stop_step = trace.action_count
             break
         for step in range(movement):
-            waypoint = env.unnormalize_position(
-                library[selected].positions[step + 1].tolist(),
-                observation["map_name"], protocol.map_size_m)
+            if stable:
+                waypoint = destination; committed_actions += 1
+            else:
+                waypoint = env.unnormalize_position(
+                    library[selected].positions[step + 1].tolist(),
+                    observation["map_name"], protocol.map_size_m)
             pose = move_toward(pose, waypoint, protocol.move_iteration)
             trace.trajectory.append(pose); trace.action_count += 1
             trace.movement_actions += 1
@@ -232,7 +240,7 @@ def rollout_one(env, observation, index, modes, belief, inference, static,
         _, evidence = select_from_current_rgb(
             observation, plan, semantic, args, device, beta=0.0)
         evidence_sum += evidence; evidence_count += 1
-    return trace, selected_history, replans, evidence_count
+    return trace, selected_history, replans, evidence_count, committed_actions
 
 
 def main():
@@ -268,9 +276,10 @@ def main():
         args.split, environment_args(protocol, 1, args.max_episodes),
         batch_size=1, seed=0, rank=0, world_size=1)
     results, traces, histories, replan_counts, evidence_counts = {}, [], [], [], []
+    committed_counts = []
     for index, _ in enumerate(env):
         observation = env._get_obs(random_direction=False)[0]
-        trace, history, replans, evidence = rollout_one(
+        trace, history, replans, evidence, committed = rollout_one(
             env, observation, index, modes[index], beliefs[index], inference,
             static, diffusion, scorer, semantic, predicted_type[index], beta,
             args, device, protocol)
@@ -278,6 +287,7 @@ def main():
             results[item["instr_id"]] = item
         traces.append(trace); histories.append(history)
         replan_counts.append(replans); evidence_counts.append(evidence)
+        committed_counts.append(committed)
         if len(traces) >= len(rows): break
     metrics = env.eval_metrics(results)[0]
     result = {
@@ -291,6 +301,7 @@ def main():
             "mean_selected_route_changes": float(np.mean([
                 sum(a != b for a, b in zip(value, value[1:]))
                 for value in histories])),
+            "mean_direct_commit_actions": float(np.mean(committed_counts)),
         },
         "anti_leakage": {
             "target_in_policy_or_rollout": False,
