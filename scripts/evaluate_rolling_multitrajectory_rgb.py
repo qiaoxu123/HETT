@@ -20,7 +20,8 @@ from independent_nav.official_protocol import (
 )
 from independent_nav.semantic import ProjectSemanticNet
 from independent_nav.trajectory_diffusion import (
-    ConditionalUnet1D, bounded_endpoint_projection, ddim_sample,
+    ConditionalUnet1D, EndpointResidualUnet1D,
+    bounded_endpoint_projection, ddim_sample, ddim_sample_endpoint_residual,
 )
 from independent_nav.trajectory_library import (
     TrajectoryHypothesis, wrap_angle,
@@ -74,6 +75,8 @@ def parse_args():
     parser.add_argument("--switch-margin", type=float, default=0.0,
                         help="Optional route hysteresis; zero keeps RGB corrections unrestricted")
     parser.add_argument("--commit-stable-replans", type=int, default=2)
+    parser.add_argument("--scorer-component", choices=("final", "goal"),
+                        default="final")
     parser.add_argument("--trace-output", type=Path, default=None,
                         help="Optional post-rollout diagnostic trace JSON")
     parser.add_argument("--trace-episode-index", type=int, default=0)
@@ -119,14 +122,16 @@ def prepare(args, device):
 
 
 @torch.inference_mode()
-def score_routes(model, static, index, route, device):
-    return model(
+def score_routes(model, static, index, route, device, component="final"):
+    output = model(
         static["relation"][index:index + 1].to(device),
         static["cue"][index:index + 1].to(device),
         static["geometry"][index:index + 1].to(device),
         static["valid"][index:index + 1].to(device),
         route[None].to(device),
-        static["belief_feature"][index:index + 1].to(device))[0].cpu().numpy()
+        static["belief_feature"][index:index + 1].to(device),
+        return_components=True)
+    return output[component][0].cpu().numpy()
 
 
 @torch.inference_mode()
@@ -140,20 +145,27 @@ def sample_diffusion_library(model, inference, static, index, belief, modes,
         torch.tensor([[start[0], start[1], math.sin(yaw), math.cos(yaw),
                        remaining / protocol.max_action_len]]),
     )
-    sampled, length = ddim_sample(
-        model, condition, samples=8, diffusion_steps=args.diffusion_steps,
-        inference_steps=args.inference_steps)
     endpoints = torch.tensor([[modes[slot] for slot in SLOT_TO_MODE]])
     step_scale = protocol.maximum_translation_per_action_m / protocol.map_size_m
     required = torch.ceil(torch.linalg.vector_norm(
         endpoints - torch.tensor(start)[None, None], dim=-1) / step_scale).long()
-    # Rolling replanning must not renew an unrestricted detour budget at every
-    # cycle. Allow at most two sensing steps beyond the optimistic shortest path.
-    maximum = torch.minimum(required + 2, torch.full_like(required, remaining))
-    length = torch.minimum(length, maximum.to(length.device))
-    positions, effective = bounded_endpoint_projection(
-        sampled, length, torch.tensor([start]), endpoints,
-        step_scale)
+    if isinstance(model, EndpointResidualUnet1D):
+        positions, effective, _ = ddim_sample_endpoint_residual(
+            model, condition, endpoints, torch.tensor([start]), required,
+            torch.tensor([remaining]), samples=8,
+            diffusion_steps=args.diffusion_steps,
+            inference_steps=args.inference_steps, step_scale=step_scale)
+    else:
+        sampled, length = ddim_sample(
+            model, condition, samples=8, diffusion_steps=args.diffusion_steps,
+            inference_steps=args.inference_steps)
+        # Rolling replanning must not renew an unrestricted detour budget at every
+        # cycle. Allow at most two sensing steps beyond the optimistic shortest path.
+        maximum = torch.minimum(required + 2, torch.full_like(required, remaining))
+        length = torch.minimum(length, maximum.to(length.device))
+        positions, effective = bounded_endpoint_projection(
+            sampled, length, torch.tensor([start]), endpoints,
+            step_scale)
     output = []
     for slot in range(8):
         count = min(int(effective[0, slot]), remaining)
@@ -196,7 +208,8 @@ def rollout_one(env, observation, index, modes, belief, inference, static,
             diffusion, inference, static, index, belief, modes, current, yaw,
             remaining, args, device, protocol)
         route = route_features(library, belief)
-        score = score_routes(scorer, static, index, route, device)
+        score = score_routes(
+            scorer, static, index, route, device, args.scorer_component)
         if evidence_count:
             score = score + beta * (evidence_sum / evidence_count)
         selected = int(score.argmax())
@@ -284,7 +297,10 @@ def main():
     scorer.load_state_dict(saved["model"]); scorer.eval()
     diffusion_saved = torch.load(
         args.diffusion_checkpoint, map_location="cpu", weights_only=False)
-    diffusion = ConditionalUnet1D(base=32).to(device)
+    diffusion_architecture = diffusion_saved.get("architecture", "anchored_v1")
+    diffusion = (EndpointResidualUnet1D(base=32)
+                 if diffusion_architecture == "endpoint_residual_v2"
+                 else ConditionalUnet1D(base=32)).to(device)
     diffusion.load_state_dict(diffusion_saved["model"]); diffusion.eval()
     semantic = ProjectSemanticNet().to(device)
     semantic.load_state_dict(torch.load(
@@ -369,6 +385,7 @@ def main():
         "config": {key: str(value) if isinstance(value, Path) else value
                    for key, value in vars(args).items()},
     }
+    result["config"]["diffusion_architecture"] = diffusion_architecture
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(result, indent=2) + "\n")
     if args.trace_output is not None:
