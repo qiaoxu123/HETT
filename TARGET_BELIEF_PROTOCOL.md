@@ -45,6 +45,11 @@ implicit preference for longer Teacher rollouts.
 Run all comparisons with fixed altitude 50 m, `max_action_len=20`,
 `move_iteration=10`, the same split and the same seed.
 
+The RTX PRO 6000 formal run uses an actual per-step batch size of 16 with
+`grad_accum=1` (effective batch size 16).  It must not be compared as a
+same-optimizer ablation against the earlier batch-2/accumulation-4 baseline
+without explicitly reporting this optimisation difference.
+
 1. Released HETT: mean landmark representation + coordinate MSE.
 2. New input only: independent landmarks + original coordinate head.
 3. Belief head: independent landmarks + dense belief and offset.

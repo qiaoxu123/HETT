@@ -14,8 +14,8 @@ PYTHON_BIN="${PYTHON:-/home/rental/20260922_1/miniconda3/envs/AirVLN39/bin/pytho
     --feedback student \
     --altitude 50 \
     --learning_rate 1e-4 \
-    --batch_size 2 \
-    --grad_accum 4 \
+    --batch_size 16 \
+    --grad_accum 1 \
     --optim adamW \
     --train_trajectory_type mturk \
     --epochs 20 \
