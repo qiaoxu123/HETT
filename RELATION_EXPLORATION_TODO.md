@@ -7,24 +7,32 @@ gate passed before changing the next component.
   near-only relations on `val_seen`, including flipped-relation controls.
   **Executed; overall gate FAILED.** `near` passed, while directional
   correct-vs-flipped consistency was 59.04% against the fixed 60% gate.
-- [ ] Step 2: Add and validate soft/topological fields for `along`, `on`,
-  `off`, `corner`, `edge`, `between`, `across`, and `opposite`.
-- [ ] Step 3: Build the deterministic exploration-condition preprocessor and
-  verify strong/soft/ambiguous calibration without training Diffusion.
-- [ ] Step 4: Generate low/medium/high-exploration trajectory families and
-  compare fixed exploration, uncertainty-conditioned exploration, and
+- [ ] Step 2: Build and validate an online semantic-RGB fusion sample.  At
+  every time step it must combine language/landmark relation tokens, current
+  RGB evidence, pose-conditioned visibility, previous belief, and remaining
+  budget.  Missing or occluded visual evidence must remain unknown rather than
+  become negative evidence.
+- [ ] Step 3: Learn a continuous exploration-value head from the fused state.
+  Do not assign hand-written strong/soft/ambiguous classes.  Supervise the head
+  with the measured downstream advantage of exploratory trajectories over
+  direct trajectories, and output both a scalar exploration value and a
+  spatial exploration-value map.
+- [ ] Step 4: Generate continuously conditioned trajectory families and
+  compare no exploration, fixed exploration, learned exploration, and
   best-of-eight Oracle selection under the frozen 20-action budget.  Do not
-  use a shortest path as the trajectory backbone.
-- [ ] Step 5: Train exploration-conditioned full-trajectory Diffusion.  The
-  exploration condition controls trajectory shape and diversity; endpoint,
-  20-action budget, loop/overshoot penalties, and arrival error remain hard
-  constraints.  Shortest distance is an efficiency metric/penalty only, not
-  generation supervision.
-- [ ] Step 6: Add cleaned `landmark_clean` trajectories grouped by exploration
-  level.  Learn useful human search shapes while filtering loops, repeated
-  points, and post-arrival motion; do not reduce supervision to offsets from a
-  shortest-path skeleton.
-- [ ] Step 7: Add visibility-conditioned RGB belief updates and learned stop.
+  use a shortest path as the trajectory backbone or discretize exploration
+  into semantic keyword classes.
+- [ ] Step 5: Train online-fusion-conditioned full-trajectory Diffusion.  The
+  current semantic-RGB fused state and continuous exploration value control
+  trajectory shape/diversity; endpoint, 20-action budget, loop/overshoot
+  penalties, and arrival error remain constraints.  Shortest distance is an
+  efficiency metric/penalty only, not generation supervision.
+- [ ] Step 6: Add cleaned `landmark_clean` trajectories with continuous
+  exploration-value supervision.  Learn useful human search shapes while
+  filtering loops, repeated points, and post-arrival motion; do not reduce
+  supervision to offsets from a shortest-path skeleton.
+- [ ] Step 7: Add evidence-driven learned stop on top of the same online fused
+  state; do not create a separate RGB branch with inconsistent belief state.
 - [ ] Step 8: Freeze all weights and thresholds, run `val_unseen` once, and
   leave `test_unseen` untouched until the final paper evaluation.
 
