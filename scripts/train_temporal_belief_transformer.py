@@ -63,6 +63,7 @@ def parse_args():
     parser.add_argument("--evidence-radius-m", type=float, default=20.0)
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--checkpoint", type=Path)
+    parser.add_argument("--cache-only", action="store_true")
     return parser.parse_args()
 
 
@@ -373,6 +374,15 @@ def main():
     torch.cuda.manual_seed_all(args.seed)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     features = build_feature_cache(args, device)
+    if args.cache_only:
+        print(json.dumps({
+            "feature_cache": str(args.feature_cache),
+            "grid_size": features["metadata"]["grid_size"],
+            "evidence_radius_m": features["metadata"]["evidence_radius_m"],
+            "counts": {split: len(value["source_rows"])
+                       for split, value in features["splits"].items()},
+        }, indent=2))
+        return
     relation = torch.load(args.relation_cache, map_location="cpu", weights_only=True)
     train_data = aligned_dataset(
         args, "train_seen", features["splits"]["train_seen"], relation)

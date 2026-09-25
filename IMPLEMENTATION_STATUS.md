@@ -205,3 +205,8 @@ evidence remains too weak to promote into the autonomous controller yet.
   not promoted; relation-specific landmark/road evidence is required next.
 - Detailed results are in `BELIEF_TRANSFORMER_STAGE1.md` and
   `TEMPORAL_BELIEF_GATE.md`.
+- A 64x64 visual-relation follow-up retains nine independent landmark tokens.
+  Target-type ranking reaches 29.69% Hit@20 on the 512-episode `val_seen`
+  subset; explicit visual landmark confirmation adds only +0.59 point over
+  relation geometry, and road confirmation hurts. These inputs are not yet
+  accepted for the unified model; active-view teacher supervision is next.
