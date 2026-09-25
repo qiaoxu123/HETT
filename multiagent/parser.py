@@ -182,6 +182,8 @@ def parse_args():
     parser.add_argument('--epochs', type=int, default=20)
     parser.add_argument('--iters', type=int, default=200000)
     parser.add_argument('--checkpoint', type=str, default=None)
+    parser.add_argument('--warm_start', action='store_true', default=False,
+                        help='load checkpoint weights but restart target-only epoch counting at zero')
     parser.add_argument("--resume_optimizer", action="store_true", default=False)
     parser.add_argument('--save_every', type=int, default=1)
     parser.add_argument('--train_trajectory_type', type=str, choices=['sp', 'mturk', 'both'], default='mturk')

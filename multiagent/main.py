@@ -184,6 +184,8 @@ def train(args, train_env, val_envs, rank=-1):
     start_epoch = 0
     if args.checkpoint is not None:
         start_epoch = agent.load(os.path.join(args.checkpoint))
+        if args.warm_start:
+            start_epoch = 0
         if default_gpu:
             write_to_record_file(
                 "\nLOAD the model from {}, epoch {}".format(args.checkpoint, start_epoch),

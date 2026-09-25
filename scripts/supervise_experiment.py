@@ -120,7 +120,8 @@ def main():
         '--save_every', str(args.save_every),
         '--output_dir', str(checkpoint_dir),
     ] + ([] if args.init_checkpoint is None else [
-        '--checkpoint', str(Path(args.init_checkpoint).resolve())
+        '--checkpoint', str(Path(args.init_checkpoint).resolve()),
+        '--warm_start',
     ]) + common
     evaluation = [
         'bash', str(snapshot / 'multiagent/eval.sh'),

@@ -16,6 +16,8 @@ accumulated along a complete action trajectory?
 - Disable direction, progress, action, stopping and rollout losses.
 - The output used by this experiment is the target BEV distribution and its
   world-coordinate peak.
+- The official HETT checkpoint initializes shared encoders with `--warm_start`;
+  its stored epoch is not treated as the new experiment's resume epoch.
 
 ## Keyframe rule and leakage boundary
 
