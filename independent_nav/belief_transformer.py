@@ -175,6 +175,83 @@ class BeliefTransformer(nn.Module):
             batch, self.grid_size, self.grid_size)
 
 
+class TemporalBeliefTransformer(nn.Module):
+    """Update a static belief with visibility-gated RGB semantic evidence."""
+
+    def __init__(self, static_model: BeliefTransformer, semantic_channels: int = 5,
+                 hidden: int = 64, maximum_evidence: float = 4.0):
+        super().__init__()
+        self.static_model = static_model
+        self.maximum_evidence = float(maximum_evidence)
+        self.semantic = nn.Sequential(
+            nn.Conv2d(semantic_channels, hidden, 3, padding=1), nn.SiLU(),
+            nn.Conv2d(hidden, hidden, 3, padding=1))
+        self.state = nn.Sequential(
+            nn.Conv2d(3, hidden, 3, padding=1), nn.SiLU(),
+            nn.Conv2d(hidden, hidden, 3, padding=1))
+        self.language = nn.Sequential(
+            nn.Linear(768, hidden), nn.LayerNorm(hidden), nn.SiLU())
+        self.cue = nn.Sequential(
+            nn.Linear(12, hidden), nn.LayerNorm(hidden), nn.SiLU())
+        self.target_type = nn.Linear(hidden, 4)
+        self.fuse = nn.Sequential(
+            nn.Conv2d(hidden, hidden, 3, padding=1), nn.SiLU(),
+            nn.Conv2d(hidden, hidden, 3, padding=1), nn.SiLU())
+        self.evidence_head = nn.Conv2d(hidden, 1, 1)
+        self.quality_head = nn.Conv2d(hidden, 1, 1)
+
+    def forward(self, static_inputs, semantic_bev: torch.Tensor,
+                visibility: torch.Tensor, type_roll: int = 0):
+        """Return initial and per-frame belief logits plus signed evidence.
+
+        ``semantic_bev`` is ``[B,T,K,H,W]`` and ``visibility`` is
+        ``[B,T,H,W]``. Evidence is exactly zero outside visible cells.
+        """
+        relation, cue = static_inputs[:2]
+        valid = static_inputs[4]
+        weight = valid[..., None].float()
+        count = weight.sum(1).clamp_min(1.0)
+        language = self.language(
+            (relation.float() * weight).sum(1) / count)
+        cue_weight = valid[..., None].float()
+        cue_context = (cue.float() * cue_weight).sum(1) / count
+        language = language + self.cue(cue_context)
+        context = language[:, :, None, None]
+        type_logits = self.target_type(language)
+        type_probability = type_logits.softmax(-1)
+        if type_roll:
+            type_probability = torch.roll(type_probability, shifts=type_roll, dims=-1)
+
+        initial = self.static_model(*static_inputs)
+        belief = initial
+        beliefs, raw_evidence, applied_evidence, qualities = [], [], [], []
+        for step in range(semantic_bev.shape[1]):
+            visible = visibility[:, step].float()
+            observation = self.semantic(semantic_bev[:, step].float())
+            target_match = torch.einsum(
+                "bk,bkhw->bhw", type_probability,
+                semantic_bev[:, step, 1:5].float())
+            state = self.state(torch.stack(
+                (belief.sigmoid(), visible, target_match), dim=1))
+            feature = self.fuse(observation + state + context)
+            raw = torch.tanh(self.evidence_head(feature).squeeze(1)) * self.maximum_evidence
+            quality = torch.sigmoid(self.quality_head(feature).squeeze(1))
+            applied = raw * quality * visible
+            belief = (belief + applied).clamp(-10.0, 10.0)
+            beliefs.append(belief)
+            raw_evidence.append(raw)
+            applied_evidence.append(applied)
+            qualities.append(quality)
+        return {
+            "initial_logits": initial,
+            "belief_logits": torch.stack(beliefs, dim=1),
+            "raw_evidence": torch.stack(raw_evidence, dim=1),
+            "applied_evidence": torch.stack(applied_evidence, dim=1),
+            "quality": torch.stack(qualities, dim=1),
+            "target_type_logits": type_logits,
+        }
+
+
 def belief_loss(logits: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
     """Distribution loss plus a balanced 20 m region loss."""
     flat_logits = logits.flatten(1)

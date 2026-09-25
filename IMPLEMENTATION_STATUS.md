@@ -187,3 +187,21 @@ evidence remains too weak to promote into the autonomous controller yet.
 - This is a sampled teacher upper bound, not RGB navigation. Remaining controls
   and `train_seen` view-value training are required before integration.
 - Protocol and results are in `POINTCLOUD_ACTIVE_VIEW_ORACLE.md`.
+
+## 2026-09-25: unified belief and signed RGB temporal gate
+
+- Added a unified language + independent named-landmark + BEV transformer. On
+  `val_seen`, explicit per-cell/per-landmark relative geometry reaches 38.26%
+  Hit@20, versus 30.92% for the prior three-seed relation-ranker mean.
+- Averaging multiple landmarks reduces Hit@20 to 26.60%; removing language or
+  switching to wrong same-map landmarks reduces it to 18.99% and 18.54%.
+- Replaced positive-only noisy-OR with a visibility-gated signed log-odds
+  updater that ignores occlusion, low-quality and duplicate evidence.
+- Rejected a human-trajectory temporal result after visibility-only controls
+  exposed endpoint-position leakage (59.38% without RGB).
+- Built target-free candidate-centered RGB sequences. On the scaled 2,048
+  `train_seen` / 512 `val_seen` gate, the target-type head is 91.99% accurate,
+  but temporal Hit@20 is 39.45% versus 39.65% static. Type-only RGB evidence is
+  not promoted; relation-specific landmark/road evidence is required next.
+- Detailed results are in `BELIEF_TRANSFORMER_STAGE1.md` and
+  `TEMPORAL_BELIEF_GATE.md`.

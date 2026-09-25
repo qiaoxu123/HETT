@@ -3,7 +3,7 @@ import inspect
 import torch
 
 from independent_nav.belief_transformer import (
-    BeliefTransformer, belief_loss, grid_centers, grid_landmark_geometry,
+    BeliefTransformer, TemporalBeliefTransformer, belief_loss, grid_centers, grid_landmark_geometry,
     rasterize_landmarks, target_mask,
 )
 
@@ -73,3 +73,21 @@ def test_relative_geometry_uses_fixed_language_frame():
     assert torch.allclose(geometry[0, 0, 0, :2], torch.zeros(2), atol=1e-6)
     assert geometry[0, 3, 0, 0] > 0
     assert geometry[0, 3, 0, 1] < 0
+
+
+def test_temporal_evidence_is_visibility_gated():
+    inputs = synthetic_inputs(batch=2, landmarks=3, grid=8)
+    static = BeliefTransformer(
+        grid_size=8, hidden=32, layers=1, heads=4, dropout=0.0)
+    model = TemporalBeliefTransformer(static, hidden=16).eval()
+    semantic = torch.rand(2, 3, 5, 8, 8)
+    visibility = torch.ones(2, 3, 8, 8, dtype=torch.bool)
+    visibility[:, :, :2] = False
+    output = model(inputs, semantic, visibility)
+    assert output["belief_logits"].shape == (2, 3, 8, 8)
+    assert output["raw_evidence"].shape == (2, 3, 8, 8)
+    assert output["target_type_logits"].shape == (2, 4)
+    assert torch.equal(
+        output["applied_evidence"][:, :, :2],
+        torch.zeros_like(output["applied_evidence"][:, :, :2]))
+    assert torch.isfinite(output["belief_logits"]).all()
