@@ -8,6 +8,7 @@ from independent_nav.official_protocol import (
     canonical_instruction, optimistic_translation_steps,
     generate_budgeted_waypoints, route_fits_budget, rollout_static_goals,
 )
+from scripts.evaluate_multitrajectory_oracle import generate_trajectory_set
 
 
 def test_protocol_is_frozen_to_paper_settings():
@@ -45,6 +46,11 @@ def test_instruction_identity_ignores_processing_only_punctuation():
 
 def test_rollout_policy_has_no_target_argument():
     parameters = inspect.signature(rollout_static_goals).parameters
+    assert "target" not in parameters and "target_xy" not in parameters
+
+
+def test_multitrajectory_generator_has_no_target_argument():
+    parameters = inspect.signature(generate_trajectory_set).parameters
     assert "target" not in parameters and "target_xy" not in parameters
 
 

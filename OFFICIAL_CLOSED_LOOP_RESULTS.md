@@ -238,3 +238,24 @@ exceeds 20 actions, no point cloud or target coordinate is used at runtime, and
 `test_unseen` remains sealed. The module is retained as a visual verifier, but
 the next training gate must make the gain conditional on the correct named
 landmarks and relation language.
+
+## Multi-trajectory upper bound
+
+The frozen unified belief was converted into spatially distinct deterministic
+paths under the same official 20-action, fixed-50-m protocol. Every path was
+generated without target coordinates. A privileged selector then chose among
+the completed paths solely to measure the ceiling of a future language/RGB
+trajectory scorer.
+
+| Full Val Seen | SR | SPL | NE | Mean / max actions |
+|---|---:|---:|---:|---:|
+| Top-1 belief path | 36.92 | 35.56 | 35.02 m | 5.59 / 11 |
+| Top-2 path oracle | 53.44 | 51.51 | 26.84 m | 5.60 / 12 |
+| Top-3 path oracle | 63.89 | 61.72 | 22.83 m | 5.61 / 12 |
+| Top-5 path oracle | **75.63** | **73.01** | **18.43 m** | 5.63 / 12 |
+
+No path exceeds 20 actions. The +38.70 SR-point Top-5 ceiling passes the
+multi-trajectory feasibility gate, but remains privileged. The next gate is a
+target-free trajectory scorer conditioned on per-landmark language relations
+and online RGB. Diffusion trajectory generation should follow only after that
+selector outperforms the Top-1 score. See `MULTITRAJECTORY_GATE.md`.

@@ -2,7 +2,8 @@ import torch
 import inspect
 
 from independent_nav.path_local_verifier import (
-    PathLocalCandidateVerifier, soft_distance_ranking_loss,
+    LandmarkAwareCandidateVerifier, PathLocalCandidateVerifier,
+    soft_distance_ranking_loss,
 )
 from scripts.evaluate_candidate_verifier_closed_loop import deployment_plans
 from scripts.evaluate_online_candidate_verifier_closed_loop import (
@@ -34,6 +35,36 @@ def test_candidate_order_is_permutation_equivariant():
                    for key, value in values.items()}
         actual = model(**swapped)
     assert torch.allclose(actual, expected[:, [1, 0]], atol=1e-6)
+
+
+def test_landmark_aware_model_is_candidate_and_landmark_set_equivariant():
+    torch.manual_seed(2)
+    model = LandmarkAwareCandidateVerifier(16, relation_dim=8, hidden=16).eval()
+    values = {
+        "candidate_image": torch.randn(2, 2, 16),
+        "landmark_image": torch.randn(2, 3, 16),
+        "text": torch.randn(2, 16),
+        "geometry": torch.randn(2, 2, 3, 10),
+        "relation": torch.randn(2, 3, 8),
+        "landmark_valid": torch.ones(2, 3, dtype=torch.bool),
+        "landmark_visual_valid": torch.ones(2, 3, dtype=torch.bool),
+        "prior": torch.rand(2, 2),
+        "semantic_evidence": torch.rand(2, 2),
+    }
+    with torch.inference_mode():
+        expected = model(**values)
+        candidate_swap = dict(values)
+        for key in ("candidate_image", "geometry", "prior", "semantic_evidence"):
+            candidate_swap[key] = candidate_swap[key][:, [1, 0]]
+        landmark_swap = dict(values); order = [2, 0, 1]
+        for key in ("landmark_image", "relation", "landmark_valid",
+                    "landmark_visual_valid"):
+            landmark_swap[key] = landmark_swap[key][:, order]
+        landmark_swap["geometry"] = landmark_swap["geometry"][:, :, order]
+        actual_candidate = model(**candidate_swap)
+        actual_landmark = model(**landmark_swap)
+    assert torch.allclose(actual_candidate, expected[:, [1, 0]], atol=1e-6)
+    assert torch.allclose(actual_landmark, expected, atol=1e-6)
 
 
 def test_loss_prefers_score_for_nearer_candidate():

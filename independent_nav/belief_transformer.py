@@ -252,6 +252,108 @@ class TemporalBeliefTransformer(nn.Module):
         }
 
 
+class RelationConditionedTemporalBeliefTransformer(nn.Module):
+    """Update belief with RGB evidence conditioned on each named landmark.
+
+    The static prior and the evidence-conditioning inputs are deliberately
+    separate.  This lets evaluation replace a relation or landmark binding
+    while keeping the same initial belief, so a control measures the online
+    update rather than a different static prior.
+    """
+
+    def __init__(self, static_model: BeliefTransformer, semantic_channels: int = 5,
+                 hidden: int = 64, maximum_evidence: float = 4.0):
+        super().__init__()
+        self.static_model = static_model
+        self.semantic_channels = int(semantic_channels)
+        self.maximum_evidence = float(maximum_evidence)
+        self.relation = nn.Sequential(
+            nn.Linear(768, hidden), nn.LayerNorm(hidden), nn.SiLU())
+        self.cue = nn.Sequential(
+            nn.Linear(12, hidden), nn.LayerNorm(hidden), nn.SiLU())
+        self.geometry = nn.Sequential(
+            nn.Linear(10, hidden), nn.LayerNorm(hidden), nn.SiLU())
+        self.landmark_observation = nn.Sequential(
+            nn.Linear(semantic_channels + 2, hidden),
+            nn.LayerNorm(hidden), nn.SiLU())
+        self.cell_observation = nn.Sequential(
+            nn.Linear(semantic_channels, hidden),
+            nn.LayerNorm(hidden), nn.SiLU())
+        self.state = nn.Sequential(
+            nn.Linear(2, hidden), nn.LayerNorm(hidden), nn.SiLU())
+        self.pair = nn.Sequential(
+            nn.Linear(hidden, hidden), nn.SiLU(),
+            nn.Linear(hidden, hidden), nn.SiLU())
+        self.pair_evidence = nn.Linear(hidden, 1)
+        self.pair_quality = nn.Linear(hidden, 1)
+
+    @staticmethod
+    def _landmark_observation(semantic, visible, masks, valid):
+        """Pool current RGB semantics only inside each named landmark mask."""
+        region = masks[:, None].bool() & visible[:, :, None].bool()
+        weight = region[..., None].float()
+        semantic_cells = semantic.permute(0, 1, 3, 4, 2)[:, :, None]
+        count = weight.sum((-3, -2)).clamp_min(1.0)
+        pooled = (semantic_cells * weight).sum((-3, -2)) / count
+        mask_area = masks.sum((-2, -1)).clamp_min(1)[:, None].float()
+        coverage = region.sum((-2, -1)).float() / mask_area
+        observed = region.any((-2, -1)).float()
+        pooled = torch.cat((pooled, coverage[..., None], observed[..., None]), -1)
+        return pooled * valid[:, None, :, None].float()
+
+    def forward(self, static_inputs, semantic_bev: torch.Tensor,
+                visibility: torch.Tensor, evidence_inputs=None):
+        """Return visibility-gated signed updates for ``[B,T,K,H,W]`` RGB BEV."""
+        conditioning = evidence_inputs if evidence_inputs is not None else static_inputs
+        relation, cue, centers, boundaries, valid, masks = conditioning[:6]
+        batch, steps, _, height, width = semantic_bev.shape
+        if height != self.static_model.grid_size or width != self.static_model.grid_size:
+            raise ValueError("semantic grid must match the static belief grid")
+
+        initial = self.static_model(*static_inputs)
+        belief = initial
+        cell_xy = self.static_model.cell_xy.to(centers)
+        geometry = self.geometry(grid_landmark_geometry(
+            cell_xy, centers.float(), boundaries.float()))
+        relation_token = self.relation(relation.float())[:, None]
+        cue_token = self.cue(cue.float())[:, None]
+        landmark_observation = self._landmark_observation(
+            semantic_bev.float(), visibility, masks, valid)
+        landmark_token = self.landmark_observation(landmark_observation)
+        valid_pair = valid[:, None, :, None].float()
+        denominator = valid_pair.sum(2).clamp_min(1.0)
+
+        beliefs, raw_values, applied_values, quality_values = [], [], [], []
+        for step in range(steps):
+            semantic = semantic_bev[:, step].float().permute(0, 2, 3, 1).reshape(
+                batch, height * width, self.semantic_channels)
+            cell = self.cell_observation(semantic)[:, :, None]
+            state = self.state(torch.stack((
+                belief.sigmoid(), visibility[:, step].float()), -1).flatten(1, 2))
+            state = state[:, :, None]
+            pair = self.pair(
+                geometry + relation_token + cue_token
+                + landmark_token[:, step, None] + cell + state)
+            pair_evidence = self.pair_evidence(pair) * valid_pair
+            pair_quality = torch.sigmoid(self.pair_quality(pair)) * valid_pair
+            raw = torch.tanh(pair_evidence.sum(2).squeeze(-1) / denominator.squeeze(2))
+            raw = raw.reshape(batch, height, width) * self.maximum_evidence
+            quality = (pair_quality.sum(2).squeeze(-1) / denominator.squeeze(2))
+            quality = quality.reshape(batch, height, width)
+            applied = raw * quality * visibility[:, step].float()
+            belief = (belief + applied).clamp(-10.0, 10.0)
+            beliefs.append(belief); raw_values.append(raw)
+            applied_values.append(applied); quality_values.append(quality)
+        return {
+            "initial_logits": initial,
+            "belief_logits": torch.stack(beliefs, 1),
+            "raw_evidence": torch.stack(raw_values, 1),
+            "applied_evidence": torch.stack(applied_values, 1),
+            "quality": torch.stack(quality_values, 1),
+            "landmark_observation": landmark_observation,
+        }
+
+
 def belief_loss(logits: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
     """Distribution loss plus a balanced 20 m region loss."""
     flat_logits = logits.flatten(1)

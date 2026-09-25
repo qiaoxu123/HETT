@@ -295,3 +295,19 @@ evidence remains too weak to promote into the autonomous controller yet.
 - `test_unseen` remains sealed. The next gate must explicitly bind the correct
   instruction landmarks/relations to visual evidence before learned stopping,
   richer active actions or dynamic height are reconsidered.
+
+## 2026-09-25: strict multi-trajectory feasibility gate
+
+- Generated 2, 3 and 5 spatially distinct deterministic official-action paths
+  from the frozen unified belief. Path generation has no target input; a
+  privileged selector uses the target only after every path exists.
+- On all 2,470 `val_seen` episodes, Top-1 reaches 36.92% SR / 35.56% SPL.
+  The Top-5 trajectory oracle reaches 75.63% SR / 73.01% SPL, improvements of
+  +38.70 and +37.45 points. Top-2 and Top-3 reach 53.44% and 63.89% SR.
+- All Top-5 oracle trajectories satisfy the official budget (5.63 actions on
+  average, maximum 12, zero episodes above 20).
+- This is an upper bound, not a policy result. It proves that multi-hypothesis
+  paths are valuable, while identifying non-privileged trajectory scoring as
+  the next bottleneck. Train the scorer before Conditional 1D U-Net diffusion.
+- Full protocol and interpretation are in `MULTITRAJECTORY_GATE.md`;
+  `val_unseen` and `test_unseen` were not loaded.

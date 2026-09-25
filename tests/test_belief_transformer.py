@@ -3,8 +3,9 @@ import inspect
 import torch
 
 from independent_nav.belief_transformer import (
-    BeliefTransformer, TemporalBeliefTransformer, belief_loss, grid_centers, grid_landmark_geometry,
-    rasterize_landmarks, target_mask,
+    BeliefTransformer, RelationConditionedTemporalBeliefTransformer,
+    TemporalBeliefTransformer, belief_loss, grid_centers,
+    grid_landmark_geometry, rasterize_landmarks, target_mask,
 )
 
 
@@ -91,3 +92,26 @@ def test_temporal_evidence_is_visibility_gated():
         output["applied_evidence"][:, :, :2],
         torch.zeros_like(output["applied_evidence"][:, :, :2]))
     assert torch.isfinite(output["belief_logits"]).all()
+
+
+def test_relation_conditioned_temporal_update_is_gated_and_set_invariant():
+    inputs = list(synthetic_inputs(batch=2, landmarks=3, grid=8))
+    static = BeliefTransformer(
+        grid_size=8, hidden=32, layers=1, heads=4, dropout=0.0)
+    model = RelationConditionedTemporalBeliefTransformer(
+        static, hidden=16).eval()
+    semantic = torch.rand(2, 2, 5, 8, 8)
+    visibility = torch.ones(2, 2, 8, 8, dtype=torch.bool)
+    visibility[:, :, :2] = False
+    order = torch.tensor([2, 0, 1])
+    permuted = [value[:, order] if index < 6 else value
+                for index, value in enumerate(inputs)]
+    with torch.inference_mode():
+        expected = model(tuple(inputs), semantic, visibility)
+        actual = model(tuple(permuted), semantic, visibility)
+    assert expected["belief_logits"].shape == (2, 2, 8, 8)
+    assert torch.equal(
+        expected["applied_evidence"][:, :, :2],
+        torch.zeros_like(expected["applied_evidence"][:, :, :2]))
+    assert torch.allclose(
+        actual["belief_logits"], expected["belief_logits"], atol=1e-5)
