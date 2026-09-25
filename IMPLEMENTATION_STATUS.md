@@ -311,3 +311,14 @@ evidence remains too weak to promote into the autonomous controller yet.
   the next bottleneck. Train the scorer before Conditional 1D U-Net diffusion.
 - Full protocol and interpretation are in `MULTITRAJECTORY_GATE.md`;
   `val_unseen` and `test_unseen` were not loaded.
+- Added a permutation-equivariant trajectory scorer over route sequence,
+  belief support and per-landmark relations. A grounding-aware checkpoint gate
+  requires at least a one-point drop for opposite relation, wrong relation and
+  wrong landmark controls.
+- The frozen scorer improves full `val_seen` strict SR from 36.92% to 37.81%
+  and SPL from 35.56% to 36.42%; Hit@20 rises from 38.26% to 39.15%.
+  Wrong relation and wrong landmark controls fall to 36.88% and 38.02%.
+- Removing the route sequence gives 38.18% Hit@20, so the current gain is still
+  mostly static endpoint/relationship scoring. The next gate must score RGB
+  evidence acquired along each path and replan online; this checkpoint is not
+  yet an active observation policy.

@@ -46,6 +46,9 @@ def parse_args():
     parser.add_argument("--minimum-separation-m", type=float, default=25.0)
     parser.add_argument("--batch-size", type=int, default=4)
     parser.add_argument("--max-episodes", type=int, default=0)
+    parser.add_argument(
+        "--selection", type=Path,
+        help="Optional frozen target-free scorer selections for protocol evaluation")
     return parser.parse_args()
 
 
@@ -96,12 +99,20 @@ def main():
     mode_tensor = torch.tensor(modes)
     distances = torch.linalg.vector_norm(
         mode_tensor - targets[:, None], dim=-1) * protocol.map_size_m
+    learned_selection = None
+    if args.selection:
+        frozen = torch.load(args.selection, map_location="cpu", weights_only=True)
+        learned_selection = frozen["selected"][:len(rows)].long()
+        frozen_modes = frozen["modes"][:len(rows)]
+        if len(learned_selection) != len(rows) or not torch.allclose(
+                frozen_modes, mode_tensor, atol=1e-7):
+            raise ValueError("frozen scorer selection does not align with belief modes")
 
     env = CityNavBatch(
         args.split, environment_args(protocol, args.batch_size, args.max_episodes),
         batch_size=args.batch_size, seed=0, rank=0, world_size=1)
-    top1_results, oracle_results = {}, {}
-    top1_traces, oracle_traces, oracle_ranks = [], [], []
+    top1_results, oracle_results, learned_results = {}, {}, {}
+    top1_traces, oracle_traces, learned_traces, oracle_ranks = [], [], [], []
     start = 0
     for _ in env:
         observations = env._get_obs(random_direction=False)
@@ -114,13 +125,20 @@ def main():
             for paths, episode in zip(generated, env.batch)]
         selected_top1 = [paths[0] for paths in generated]
         selected_oracle = [paths[rank] for paths, rank in zip(generated, chosen)]
+        selected_learned = ([paths[int(learned_selection[index])]
+                             for paths, index in zip(generated, indices)]
+                            if learned_selection is not None else [])
         for item in attach_metric_only_ground_truth(env, selected_top1):
             top1_results[item["instr_id"]] = item
         for item in attach_metric_only_ground_truth(env, selected_oracle):
             oracle_results[item["instr_id"]] = item
+        if learned_selection is not None:
+            for item in attach_metric_only_ground_truth(env, selected_learned):
+                learned_results[item["instr_id"]] = item
         valid_count = min(args.batch_size, len(rows) - start)
         top1_traces.extend(selected_top1[:valid_count])
         oracle_traces.extend(selected_oracle[:valid_count])
+        learned_traces.extend(selected_learned[:valid_count])
         oracle_ranks.extend(chosen[:valid_count])
         start += args.batch_size
         if start >= len(rows):
@@ -128,6 +146,8 @@ def main():
 
     top1_metrics, _ = env.eval_metrics(top1_results)
     oracle_metrics, _ = env.eval_metrics(oracle_results)
+    learned_metrics = (env.eval_metrics(learned_results)[0]
+                       if learned_selection is not None else None)
     result = {
         "experiment": "strict deterministic Top-K trajectory selection upper bound",
         "split": args.split,
@@ -156,8 +176,18 @@ def main():
                 str(rank + 1): int(np.sum(np.asarray(oracle_ranks) == rank))
                 for rank in range(args.modes)},
         },
+        "E_frozen_target_free_scorer": ({
+            "official_metrics": learned_metrics,
+            "selection_file": str(args.selection.resolve()),
+            "selected_rank_histogram": {
+                str(rank + 1): int(learned_selection.eq(rank).sum())
+                for rank in range(args.modes)},
+        } if learned_selection is not None else None),
         "top1_rollout": summarize_traces(top1_traces, protocol.max_action_len),
         "oracle_rollout": summarize_traces(oracle_traces, protocol.max_action_len),
+        "learned_rollout": (summarize_traces(
+            learned_traces, protocol.max_action_len)
+            if learned_selection is not None else None),
         "privileged": True,
         "anti_leakage": {
             "target_argument_in_path_generator": (
@@ -172,6 +202,8 @@ def main():
     }
     args.output_dir.mkdir(parents=True, exist_ok=True)
     suffix = f"_{args.max_episodes}" if args.max_episodes else "_full"
+    if learned_selection is not None:
+        suffix += "_scored"
     output = args.output_dir / f"{args.split}_top{args.modes}{suffix}.json"
     output.write_text(json.dumps(result, indent=2) + "\n")
     print(json.dumps(result, indent=2)); print("saved", output)

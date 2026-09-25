@@ -1,0 +1,35 @@
+import torch
+
+from independent_nav.trajectory_scorer import TrajectoryHypothesisScorer
+
+
+def test_trajectory_scorer_is_candidate_equivariant_and_landmark_invariant():
+    torch.manual_seed(4)
+    model = TrajectoryHypothesisScorer(
+        relation_dim=16, cue_dim=3, hidden=16, dropout=0).eval()
+    values = {
+        "relation": torch.randn(2, 3, 16),
+        "cue": torch.randn(2, 3, 3),
+        "geometry": torch.randn(2, 4, 3, 10),
+        "landmark_valid": torch.tensor([[1, 1, 0], [1, 1, 1]]).bool(),
+        "trajectory": torch.randn(2, 4, 6, 5),
+        "belief_features": torch.randn(2, 4, 4),
+    }
+    values["trajectory"][..., -1] = 1
+    with torch.inference_mode():
+        expected = model(**values)
+        candidate_order = torch.tensor([2, 0, 3, 1])
+        candidate = dict(values)
+        for key in ("geometry", "trajectory", "belief_features"):
+            candidate[key] = candidate[key][:, candidate_order]
+        landmark_order = torch.tensor([2, 0, 1])
+        landmark = dict(values)
+        for key in ("relation", "cue", "landmark_valid"):
+            landmark[key] = landmark[key][:, landmark_order]
+        landmark["geometry"] = landmark["geometry"][:, :, landmark_order]
+        actual_candidate = model(**candidate)
+        actual_landmark = model(**landmark)
+    assert torch.allclose(
+        actual_candidate, expected[:, candidate_order], atol=1e-5)
+    assert torch.allclose(actual_landmark, expected, atol=1e-5)
+

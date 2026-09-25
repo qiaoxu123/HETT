@@ -253,9 +253,16 @@ trajectory scorer.
 | Top-2 path oracle | 53.44 | 51.51 | 26.84 m | 5.60 / 12 |
 | Top-3 path oracle | 63.89 | 61.72 | 22.83 m | 5.61 / 12 |
 | Top-5 path oracle | **75.63** | **73.01** | **18.43 m** | 5.63 / 12 |
+| Frozen target-free trajectory scorer | 37.81 | 36.42 | 32.70 m | 5.60 / 12 |
 
 No path exceeds 20 actions. The +38.70 SR-point Top-5 ceiling passes the
 multi-trajectory feasibility gate, but remains privileged. The next gate is a
 target-free trajectory scorer conditioned on per-landmark language relations
 and online RGB. Diffusion trajectory generation should follow only after that
 selector outperforms the Top-1 score. See `MULTITRAJECTORY_GATE.md`.
+
+The first static scorer does outperform Top-1 by +0.89 SR and +0.87 SPL while
+passing wrong-relation and wrong-landmark checkpoint controls. Its route
+ablation, however, removes most of the gain. It is retained as the static
+selection baseline; the remaining oracle gap must be addressed with RGB
+evidence collected along paths and rolling replanning, not a larger static MLP.
