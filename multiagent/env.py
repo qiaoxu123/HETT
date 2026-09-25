@@ -12,6 +12,7 @@ from shapely.ops import nearest_points
 
 from multiagent.cityreferobject import get_city_refer_objects
 from multiagent.dataset.generate import generate_episodes_from_mturk_trajectories
+from multiagent.dataset.episode import ReverseTeacherEpisode
 from multiagent.dataset.mturk_trajectory import load_mturk_trajectories
 from multiagent.mapdata import MAP_BOUNDS
 from multiagent.maps.landmark_nav_map import LandmarkNavMap
@@ -119,6 +120,7 @@ class CityNavBatch(torch.utils.data.IterableDataset):
         self.args = args
 
         self.nav_maps = []
+        self.reverse_teacher_mode = False
         # for anno_file in anno_files:
         #     with jsonlines.open(anno_file, 'r') as f:
         #         for item in f:
@@ -148,6 +150,35 @@ class CityNavBatch(torch.utils.data.IterableDataset):
 
     def size(self):
         return len(self.data)
+
+    def set_reverse_teacher_mode(self, enabled: bool):
+        """Switch the current batch between forward and reverse task views."""
+        self.reverse_teacher_mode = bool(enabled)
+
+    def get_reverse_target_views(self, view_count: int):
+        """Render terminal human views without using them as action frames."""
+        if not self.reverse_teacher_mode:
+            raise RuntimeError('target views are only available in reverse teacher mode')
+        if view_count < 1:
+            raise ValueError('view_count must be positive')
+
+        batches = []
+        for episode in self.active_batch:
+            poses = episode.target_view_poses[-view_count:]
+            if not poses:
+                raise ValueError(f'episode {episode.id} has no target views')
+            poses = [poses[0]] * (view_count - len(poses)) + list(poses)
+            batches.append([
+                cropclient.crop_image(episode.map_name, pose, (224, 224), 'rgb')
+                for pose in poses
+            ])
+        return np.asarray(batches)
+
+    @property
+    def active_batch(self):
+        if self.reverse_teacher_mode:
+            return [ReverseTeacherEpisode(episode) for episode in self.batch]
+        return self.batch
 
     # TODO: find where it is used and then write it
     # def _get_gt_trajs(self, data):
@@ -195,18 +226,19 @@ class CityNavBatch(torch.utils.data.IterableDataset):
     # TODO: provide whole environment per time step
     def _get_obs(self, poses: List[Pose4D] = None, random_direction = False):
         obs = []
+        episodes = self.active_batch
 
         if poses is None:
-            poses = [episode.start_pose for episode in self.batch]
+            poses = [episode.start_pose for episode in episodes]
             # poses = [episode.trajectory[max(0, len(episode.trajectory) - 20)] for episode in self.batch]
             self.nav_maps = [
                 LandmarkNavMap(
                     episode.map_name, self.args.map_shape, self.args.map_pixels_per_meter,
                     episode.description_landmarks)
-                for episode in self.batch]
+                for episode in episodes]
 
         for i in range(self.batch_size):
-            episode = self.batch[i]
+            episode = episodes[i]
 
             # if poses is None:
             #     # poses = episode.start_pose
@@ -282,8 +314,13 @@ class CityNavBatch(torch.utils.data.IterableDataset):
             pred_goal_xy = np.mean(centroids, axis=0) if centroids else np.array([0, 0])
 
             rgb = cropclient.crop_image(episode.map_name, poses[i], (224, 224), 'rgb')
+            if self.reverse_teacher_mode:
+                progress_denominator = episode.initial_distance_to_target
+            else:
+                # Preserve the released HETT definition for all forward runs.
+                progress_denominator = 100.
             progress = np.clip(
-                1 - episode.target_position.xy.dist_to(poses[i].xy) / 100,
+                1 - episode.target_position.xy.dist_to(poses[i].xy) / progress_denominator,
                 0, 1)
 
             obs.append({
@@ -308,6 +345,8 @@ class CityNavBatch(torch.utils.data.IterableDataset):
                 'normalized_goal': normalized_goal_xys,
                 'grid_goal': normalized_goal_id
             })
+            if self.reverse_teacher_mode:
+                obs[-1]['visual_alignment_text'] = episode.visual_alignment_text
 
             # TODO: what to use for a2c reward?
             # A3C reward. There are multiple gt end viewpoints on REVERIE.

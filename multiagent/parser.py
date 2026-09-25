@@ -108,6 +108,21 @@ def parse_args():
     parser.add_argument("--ml_weight", type=float, default=0.20)
     parser.add_argument('--entropy_loss_weight', type=float, default=0.01)
     parser.add_argument("--teacher_weight", type=float, default=1.)
+    parser.add_argument(
+        '--reverse_human_teacher', action='store_true',
+        help=(
+            'replace the forward teacher rollout during training with the '
+            'reversed human trajectory and a synthetic distance/direction instruction'
+        ),
+    )
+    parser.add_argument(
+        '--reverse_teacher_weight', type=float, default=0.20,
+        help='loss weight of the reverse human-trajectory teacher rollout',
+    )
+    parser.add_argument('--reverse_visual_align_weight', type=float, default=0.10,
+                        help='terminal human-view to parsed-target alignment weight')
+    parser.add_argument('--reverse_target_views', type=int, default=3,
+                        help='number of original terminal human views used for visual alignment')
 
     parser.add_argument('--darknet_model_file', type=str, default=str(WEIGHTS_DIR / 'yolo_v3.cfg'))
     parser.add_argument('--darknet_weight_file', type=str, default=str(WEIGHTS_DIR / 'best.pt'))
@@ -186,7 +201,8 @@ def parse_args():
 
 
     args = parser.parse_args()
-    if args.grad_accum < 1 or args.batch_size < 1 or args.max_episodes < 0:
+    if (args.grad_accum < 1 or args.batch_size < 1 or args.max_episodes < 0
+            or args.reverse_target_views < 1):
         parser.error('grad_accum/batch_size must be positive; max_episodes must be nonnegative')
     if args.checkpoint and not Path(args.checkpoint).is_absolute():
         args.checkpoint = str(PROJECT_ROOT / args.checkpoint)

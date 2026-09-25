@@ -202,6 +202,15 @@ class ET(nn.Module):
                 grid_size=self.args.belief_grid_size,
             )
 
+        # Project pooled Darknet features into BERT space for the separate
+        # terminal-view/target-phrase alignment objective.
+        self.target_view_projection = None
+        if getattr(self.args, 'reverse_human_teacher', False):
+            self.target_view_projection = nn.Sequential(
+                nn.Linear(512, self.args.demb),
+                nn.LayerNorm(self.args.demb),
+            )
+
         # pose embedding: 把当前的 [sin(yaw), cos(yaw), x, y] 映射到 d_model 维
         self.direction_embedding = nn.Linear(4, self.args.demb)
 
@@ -222,6 +231,11 @@ class ET(nn.Module):
             num_heads=self.args.encoder_heads,
             dropout=self.args.dropout_transformer_encoder,
         )
+
+    def project_target_views(self, pooled_visual_features):
+        if self.target_view_projection is None:
+            raise RuntimeError('reverse target-view projection is disabled')
+        return self.target_view_projection(pooled_visual_features)
 
     def forward(self, **inputs):
         """

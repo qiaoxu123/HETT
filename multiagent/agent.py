@@ -327,11 +327,26 @@ class NavCMTAgent:
                     self.feedback = 'teacher'
                     self.rollout(train_ml=self.args.teacher_weight)
                 elif feedback == 'student':  # agents in teacher and student separately
-
-                    self.feedback = 'teacher'
-                    self.rollout(train_ml=self.args.ml_weight)  # self.args.nss_w*nss_w_weighting, **kwargs)
-                    (self.loss / window_size).backward()
-                    self.loss = 0
+                    if getattr(self.args, 'reverse_human_teacher', False):
+                        # Training-only inverse task: begin at the final human
+                        # observation, follow the recorded poses backwards, and
+                        # navigate to the original route start from a synthetic
+                        # metric instruction.  The following student rollout is
+                        # reinitialized, so no reverse visual/history state leaks.
+                        self.feedback = 'teacher'
+                        self.env.set_reverse_teacher_mode(True)
+                        try:
+                            self.rollout(train_ml=self.args.reverse_teacher_weight)
+                            (self.loss / window_size).backward()
+                        finally:
+                            self.env.set_reverse_teacher_mode(False)
+                        self.loss = 0
+                    else:
+                        # Checkpoint-compatible released HETT teacher rollout.
+                        self.feedback = 'teacher'
+                        self.rollout(train_ml=self.args.ml_weight)  # self.args.nss_w*nss_w_weighting, **kwargs)
+                        (self.loss / window_size).backward()
+                        self.loss = 0
                     # if epoch_train > 10000:
                     self.feedback = 'student'
                     self.rollout(train_ml=self.args.ml_weight)
@@ -396,7 +411,10 @@ class NavCMTAgent:
         # 5. 计算损失并输出动作/目标/进度更新环境状态
         # rollout_start_time = time.time()
 
-        obs = self.env._get_obs(random_direction=(self.feedback == 'teacher'))
+        reverse_teacher = bool(getattr(self.env, 'reverse_teacher_mode', False))
+        obs = self.env._get_obs(
+            random_direction=(self.feedback == 'teacher' and not reverse_teacher)
+        )
         batch_size = len(obs)
 
         # --------------- 1. 语言输入：instruction -> token ids -> BERT embedding -----------------
@@ -415,6 +433,44 @@ class NavCMTAgent:
         input_ids = encoding['input_ids'].cuda()
         attention_mask = encoding['attention_mask'].cuda()
         lang_features, linear_cls, cls_hidden = self.lang_model(input_ids, attention_mask)
+
+        visual_alignment_loss = torch.tensor(0., device=input_ids.device)
+        if reverse_teacher and self.args.reverse_visual_align_weight > 0:
+            # Original terminal camera orientations are a separate visual
+            # supervision stream; reverse flight/action RGB remains re-rendered
+            # with motion-consistent headings.
+            target_views = self.env.get_reverse_target_views(self.args.reverse_target_views)
+            target_views = target_views[:, :, :, :, ::-1].transpose(0, 1, 4, 2, 3)
+            target_views = np.ascontiguousarray(target_views, dtype=np.float32)
+            target_views -= self.rgb_mean[None, None]
+            target_views /= self.rgb_std[None, None]
+            view_batch, view_count = target_views.shape[:2]
+            target_view_features = self.vision_model(
+                torch.from_numpy(target_views).cuda().flatten(0, 1)
+            )
+            # Darknet exposes the same flattened 512 x 7 x 7 tensor used by
+            # the navigation path, but its native layout is 3584 x 7.
+            target_view_features = target_view_features.view(
+                view_batch * view_count, 512, -1
+            )
+            pooled_target_views = target_view_features.mean(dim=-1).view(
+                view_batch, view_count, 512
+            ).mean(dim=1)
+            projected_target_views = self.vln_model_without_ddp.project_target_views(
+                pooled_target_views
+            )
+
+            target_encoding = self.tokenizer(
+                [ob['visual_alignment_text'] for ob in obs],
+                padding=True,
+                return_tensors='pt',
+            )
+            target_ids = target_encoding['input_ids'].cuda()
+            target_attention = target_encoding['attention_mask'].cuda()
+            _, _, target_cls = self.lang_model(target_ids, target_attention)
+            visual_alignment_loss = (
+                1.0 - F.cosine_similarity(projected_target_views, target_cls, dim=-1)
+            ).sum()
 
         landmark_centers = None
         landmark_name_features = None
@@ -489,11 +545,11 @@ class NavCMTAgent:
         # Init the logs
         # ml_loss = 0.
         direction_loss = torch.tensor(0.).cuda()
-        progress_loss = 0.
-        goal_predict_loss = 0.
-        target_predict_loss = 0.
-        belief_region_loss = 0.
-        belief_offset_loss = 0.
+        progress_loss = torch.tensor(0.).cuda()
+        goal_predict_loss = torch.tensor(0.).cuda()
+        target_predict_loss = torch.tensor(0.).cuda()
+        belief_region_loss = torch.tensor(0.).cuda()
+        belief_offset_loss = torch.tensor(0.).cuda()
         valid_step_count = 0
 
         stage1_step = 0
@@ -662,7 +718,9 @@ class NavCMTAgent:
 
                         progress_loss += self.progress_regression(pred_progress[i].view(-1),
                                                                   gt_progress[i].view(-1).cuda())
-                        if getattr(self.args, 'target_belief_head', False):
+                        if reverse_teacher:
+                            pass
+                        elif getattr(self.args, 'target_belief_head', False):
                             goal_predict_loss += F.smooth_l1_loss(
                                 pred_goals[i].view(-1), gt_goal_device[i].view(-1), reduction='sum'
                             )
@@ -681,7 +739,7 @@ class NavCMTAgent:
                     if progress_loss != progress_loss:  # debug for nan loss
                         print('0', progress_loss)
                 # print(at_direction, gt_direction, ml_loss)
-                if getattr(self.args, 'target_belief_head', False):
+                if getattr(self.args, 'target_belief_head', False) and not reverse_teacher:
                     belief_logits = pred_logits.squeeze(-1)
                     belief_grid_size = self.args.belief_grid_size
                     belief_targets = target_cell_ids(gt_goal_device, belief_grid_size)
@@ -712,12 +770,12 @@ class NavCMTAgent:
                             reduction='none',
                         ).sum(dim=-1)
                         belief_offset_loss += per_sample_offset[active_mask].sum()
-                elif getattr(self.args, 'normalize_rollout_loss', False):
+                elif getattr(self.args, 'normalize_rollout_loss', False) and not reverse_teacher:
                     logits = pred_logits.squeeze(-1)
                     target_predict_loss += F.cross_entropy(
                         logits[active_mask], gt_target.to(logits.device)[active_mask], reduction='sum'
                     )
-                else:
+                elif not reverse_teacher:
                     target_predict_loss += self.criterion(pred_logits, gt_target.unsqueeze(1).cuda())
                 # print(pred_logits.shape)
             # Log the trajectory
@@ -793,7 +851,12 @@ class NavCMTAgent:
                     # dst = Point2D(obs[i]['centroid_goal'][0], obs[i]['centroid_goal'][1])
                     # dst = self.env.unnormalize_position(global_position[cpu_goal[i]], obs[i]['map_name'], self.args.map_meters)
                     if self.feedback == 'teacher':
-                        cur_step = stage1_step * self.args.move_iteration
+                        # Reverse supervision must traverse each demonstration
+                        # in order.  The released forward path keeps its old
+                        # global counter for checkpoint-compatible controls.
+                        cur_step = ((t + 1) * self.args.move_iteration
+                                    if reverse_teacher else
+                                    stage1_step * self.args.move_iteration)
                         cur_step = cur_step if cur_step < len(obs[i]['trajectory']) else -1
                         poses[i] = obs[i]['trajectory'][cur_step]
                     else:
@@ -824,7 +887,10 @@ class NavCMTAgent:
                 if not ended[i]:
                     traj[i]['trajectory'].append(poses[i])
                     # Update the status
-            obs = self.env._get_obs(poses, random_direction=(self.feedback == 'teacher'))  # get gt_obs
+            obs = self.env._get_obs(
+                poses,
+                random_direction=(self.feedback == 'teacher' and not reverse_teacher),
+            )  # get gt_obs
             # current_view_corners = [np.array(ob['gt_path_corners'][0]) for ob in obs]
 
             # Early exit if all ended
@@ -854,11 +920,26 @@ class NavCMTAgent:
         if train_ml is not None:
             # print(ml_loss)
             # ml_loss = direction_loss + progress_loss
-            ml_loss = (self.args.direction_loss_weight * direction_loss
-                       + self.args.progress_loss_weight * progress_loss
-                       + self.args.goal_loss_weight * goal_predict_loss
-                       + self.args.target_loss_weight * target_predict_loss)
-            if getattr(self.args, 'target_belief_head', False):
+            if reverse_teacher:
+                # Original-start supervision must never update the forward
+                # landmark-conditioned target/belief heads.
+                visual_alignment_scale = (
+                    max(valid_step_count, 1) / batch_size
+                    if getattr(self.args, 'normalize_rollout_loss', False)
+                    else 1.0
+                )
+                ml_loss = (
+                    self.args.direction_loss_weight * direction_loss
+                    + self.args.progress_loss_weight * progress_loss
+                    + self.args.reverse_visual_align_weight
+                    * visual_alignment_scale * visual_alignment_loss
+                )
+            else:
+                ml_loss = (self.args.direction_loss_weight * direction_loss
+                           + self.args.progress_loss_weight * progress_loss
+                           + self.args.goal_loss_weight * goal_predict_loss
+                           + self.args.target_loss_weight * target_predict_loss)
+            if getattr(self.args, 'target_belief_head', False) and not reverse_teacher:
                 ml_loss = (ml_loss
                            + self.args.belief_region_loss_weight * belief_region_loss
                            + self.args.belief_offset_loss_weight * belief_offset_loss)
@@ -884,6 +965,13 @@ class NavCMTAgent:
                 (belief_offset_loss * train_ml / loss_normalizer).detach().item()
                 if torch.is_tensor(belief_offset_loss)
                 else float(belief_offset_loss * train_ml / loss_normalizer)
+            )
+            self.logs['visual_alignment_loss'].append(
+                (visual_alignment_loss * train_ml / loss_normalizer).detach().item()
+            )
+            rollout_name = 'reverse' if reverse_teacher else 'forward'
+            self.logs[f'{rollout_name}_IL_loss'].append(
+                (ml_loss * train_ml / loss_normalizer).detach().item()
             )
             self.logs['IL_loss'].append((ml_loss * train_ml / loss_normalizer).item())
 

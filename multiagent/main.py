@@ -212,6 +212,12 @@ def train(args, train_env, val_envs, rank=-1):
 
             progress_loss = sum(agent.logs['progress_loss']) / max(len(agent.logs['progress_loss']), 1)
             goal_predict_loss = sum(agent.logs['goal_predict_loss']) / max(len(agent.logs['goal_predict_loss']), 1)
+            reverse_loss = sum(agent.logs['reverse_IL_loss']) / max(len(agent.logs['reverse_IL_loss']), 1)
+            forward_loss = sum(agent.logs['forward_IL_loss']) / max(len(agent.logs['forward_IL_loss']), 1)
+            visual_alignment_loss = (
+                sum(agent.logs['visual_alignment_loss'])
+                / max(len(agent.logs['visual_alignment_loss']), 1)
+            )
             # target_predict_loss = sum(agent.logs['target_predict_loss']) / max(len(agent.logs['target_predict_loss']), 1)
             # writer.add_scalar("loss/IL_loss", IL_loss, iter)
 
@@ -219,6 +225,11 @@ def train(args, train_env, val_envs, rank=-1):
                 "\nIL_loss %.4f direction_loss %.4f progress_loss %.4f goal_predict_loss %.4f" % (
                     ml_loss, direction_loss, progress_loss, goal_predict_loss),
                 record_file
+            )
+            write_to_record_file(
+                "\nreverse_loss %.4f forward_loss %.4f visual_alignment_loss %.4f" % (
+                    reverse_loss, forward_loss, visual_alignment_loss),
+                record_file,
             )
             stage1_step = sum(agent.logs['stage1_step']) / max(len(agent.logs['stage1_step']), 1)
             stage2_step = sum(agent.logs['stage2_step']) / max(len(agent.logs['stage2_step']), 1)
@@ -240,6 +251,8 @@ def train(args, train_env, val_envs, rank=-1):
             epoch_metrics = dict(epoch=idx + 1, elapsed_seconds=time.time()-start,
                                  il_loss=ml_loss, direction_loss=direction_loss,
                                  progress_loss=progress_loss, goal_loss=goal_predict_loss,
+                                 reverse_loss=reverse_loss, forward_loss=forward_loss,
+                                 visual_alignment_loss=visual_alignment_loss,
                                  validation={})
             # Reuse the trained modules: avoid a second BERT/Darknet/ET on one GPU.
             agent_eval = agent
