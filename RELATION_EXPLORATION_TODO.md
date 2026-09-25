@@ -13,7 +13,12 @@ gate passed before changing the next component.
   budget.  Missing or occluded visual evidence must remain unknown rather than
   become negative evidence. **PASSED on an 8 train_seen + 8 val_seen pilot;
   82 causal frames passed alignment, budget, visibility and leakage checks.**
-- [ ] Step 3: Learn a continuous exploration-value head from the fused state.
+- [ ] Step 2b / Online Todo 2: Train the minimal recurrent semantic-RGB fusion
+  locator with the exact continuous target position as training supervision.
+  Use a coarse belief cell plus a continuous within-cell offset so the 20x20
+  map does not quantize supervision to roughly 20.5 m cells.  The 20 m radius
+  is evaluation-only (`Hit@20`/SR), never the training mask or model input.
+- [ ] Step 3 / Online Todo 3: Learn a continuous exploration-value head from the fused state.
   Do not assign hand-written strong/soft/ambiguous classes.  Supervise the head
   with the measured downstream advantage of exploratory trajectories over
   direct trajectories, and output both a scalar exploration value and a
