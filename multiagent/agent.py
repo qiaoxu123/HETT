@@ -25,6 +25,7 @@ from multiagent.models.dark_net import Darknet
 from multiagent.models.CLIP import CLIP
 # from direction.models.ddppo.resenet_encoders import TorchVisionResNet50
 from multiagent.models.goal_predictor import GoalPredictor, MapEncoder
+from multiagent.models.multilandmark_belief import target_cell_ids, target_region_mask
 from multiagent.observation import cropclient
 from multiagent.space import Pose4D, Point2D, Point3D
 from multiagent.teacher.algorithm.lookahead import lookahead_discrete_action
@@ -415,6 +416,33 @@ class NavCMTAgent:
         attention_mask = encoding['attention_mask'].cuda()
         lang_features, linear_cls, cls_hidden = self.lang_model(input_ids, attention_mask)
 
+        landmark_centers = None
+        landmark_name_features = None
+        landmark_valid = None
+        if getattr(self.args, 'target_belief_head', False):
+            max_landmarks = self.args.max_landmarks
+            centers_array = np.zeros((batch_size, max_landmarks, 2), dtype=np.float32)
+            valid_array = np.zeros((batch_size, max_landmarks), dtype=np.bool_)
+            landmark_texts = []
+            for batch_index, ob in enumerate(obs):
+                names = ob.get('landmark_names', [])
+                centers = ob.get('landmark_centers', [])
+                count = min(len(names), len(centers), max_landmarks)
+                if count:
+                    centers_array[batch_index, :count] = np.asarray(centers[:count], dtype=np.float32)
+                    valid_array[batch_index, :count] = True
+                landmark_texts.extend(list(names[:count]) + [''] * (max_landmarks - count))
+
+            landmark_encoding = self.tokenizer(
+                landmark_texts, padding=True, return_tensors='pt'
+            )
+            landmark_ids = landmark_encoding['input_ids'].cuda()
+            landmark_attention = landmark_encoding['attention_mask'].cuda()
+            _, _, landmark_cls = self.lang_model(landmark_ids, landmark_attention)
+            landmark_centers = torch.from_numpy(centers_array).cuda()
+            landmark_name_features = landmark_cls.view(batch_size, max_landmarks, -1)
+            landmark_valid = torch.from_numpy(valid_array).cuda()
+
         # lang_features --> 768
         # linear_cls --> 49 (used to attend to img features)
         # c_0 = cls_hidden
@@ -464,6 +492,9 @@ class NavCMTAgent:
         progress_loss = 0.
         goal_predict_loss = 0.
         target_predict_loss = 0.
+        belief_region_loss = 0.
+        belief_offset_loss = 0.
+        valid_step_count = 0
 
         stage1_step = 0
         stage2_step = 0
@@ -481,6 +512,13 @@ class NavCMTAgent:
             'lang_cls': linear_cls,
             'map_fts': torch.zeros(batch_size, 0, 512, 49).cuda(),
         }
+        if getattr(self.args, 'target_belief_head', False):
+            input.update({
+                'landmark_centers': landmark_centers,
+                'landmark_name_features': landmark_name_features,
+                'landmark_valid': landmark_valid,
+                'previous_belief': None,
+            })
 
         stage1_ended = np.array([False] * batch_size)
 
@@ -534,7 +572,7 @@ class NavCMTAgent:
             # - pred_goals: [B, 2]
             # - pred_logits: [B, N_cand, 1]
             # - grid_ft: [B, N_hist+1, 768]
-            pred_direction, pred_progress, pred_goals, pred_logits, grid_ft = self.vln_model(
+            model_inputs = dict(
                 directions=input['directions'],     # [B, 1, 4]
                 frames=input['frames'],             # [B, T_frame, 512, 49]
                 lenths=input['lenths'],             # [B]
@@ -547,6 +585,21 @@ class NavCMTAgent:
                 lang_cls=input['lang_cls'],          # [B, 49]
                 lang_mask=attention_mask,
             )
+            if getattr(self.args, 'target_belief_head', False):
+                model_inputs.update({
+                    'landmark_centers': input['landmark_centers'],
+                    'landmark_name_features': input['landmark_name_features'],
+                    'landmark_valid': input['landmark_valid'],
+                    'previous_belief': input['previous_belief'],
+                })
+            model_outputs = self.vln_model(**model_inputs)
+            if getattr(self.args, 'target_belief_head', False):
+                (pred_direction, pred_progress, pred_goals, pred_logits,
+                 grid_ft, belief_offsets) = model_outputs
+                input['previous_belief'] = pred_logits.squeeze(-1)
+            else:
+                pred_direction, pred_progress, pred_goals, pred_logits, grid_ft = model_outputs
+                belief_offsets = None
 
             # --------------- 5. 更新历史网格记忆：grid_fts / grid_index -----------------
             # 这里把当前 step 的输出特征追加到历史记忆里，供下一步 rollout 使用，从而形成 historical grid map。
@@ -589,6 +642,10 @@ class NavCMTAgent:
 
                 # Compute loss
 
+                active_mask = torch.from_numpy(~ended).to(device=pred_goals.device)
+                valid_step_count += int(active_mask.sum().item())
+                gt_goal_device = gt_goal.to(device=pred_goals.device)
+
                 for i in range(len(obs)):
                     true_direction = torch.tensor(gt_direction[i])
 
@@ -605,7 +662,14 @@ class NavCMTAgent:
 
                         progress_loss += self.progress_regression(pred_progress[i].view(-1),
                                                                   gt_progress[i].view(-1).cuda())
-                        goal_predict_loss += F.mse_loss(pred_goals[i].view(-1), gt_goal[i].view(-1).cuda())
+                        if getattr(self.args, 'target_belief_head', False):
+                            goal_predict_loss += F.smooth_l1_loss(
+                                pred_goals[i].view(-1), gt_goal_device[i].view(-1), reduction='sum'
+                            )
+                        else:
+                            goal_predict_loss += F.mse_loss(
+                                pred_goals[i].view(-1), gt_goal_device[i].view(-1)
+                            )
                         # print(pred_goals[i], gt_goal[i], goal_predict_loss)
 
                     # ml_loss += direction_loss
@@ -617,7 +681,44 @@ class NavCMTAgent:
                     if progress_loss != progress_loss:  # debug for nan loss
                         print('0', progress_loss)
                 # print(at_direction, gt_direction, ml_loss)
-                target_predict_loss += self.criterion(pred_logits, gt_target.unsqueeze(1).cuda())
+                if getattr(self.args, 'target_belief_head', False):
+                    belief_logits = pred_logits.squeeze(-1)
+                    belief_grid_size = self.args.belief_grid_size
+                    belief_targets = target_cell_ids(gt_goal_device, belief_grid_size)
+                    if active_mask.any():
+                        target_predict_loss += F.cross_entropy(
+                            belief_logits[active_mask], belief_targets[active_mask], reduction='sum'
+                        )
+
+                        grid_centers = self.vln_model_without_ddp.target_belief_head.grid_centers
+                        region_mask = target_region_mask(
+                            gt_goal_device,
+                            grid_centers.to(device=gt_goal_device.device, dtype=gt_goal_device.dtype),
+                            radius_m=self.args.belief_radius_m,
+                            map_meters=self.args.map_meters,
+                        )
+                        log_probs = F.log_softmax(belief_logits, dim=-1)
+                        region_log_mass = torch.logsumexp(
+                            log_probs.masked_fill(~region_mask, -float('inf')), dim=-1
+                        )
+                        belief_region_loss += (-region_log_mass[active_mask]).sum()
+
+                        batch_ids = torch.arange(batch_size, device=pred_goals.device)
+                        predicted_offsets = belief_offsets[batch_ids, belief_targets]
+                        target_offsets = gt_goal_device - grid_centers[belief_targets]
+                        per_sample_offset = F.smooth_l1_loss(
+                            predicted_offsets * belief_grid_size,
+                            target_offsets * belief_grid_size,
+                            reduction='none',
+                        ).sum(dim=-1)
+                        belief_offset_loss += per_sample_offset[active_mask].sum()
+                elif getattr(self.args, 'normalize_rollout_loss', False):
+                    logits = pred_logits.squeeze(-1)
+                    target_predict_loss += F.cross_entropy(
+                        logits[active_mask], gt_target.to(logits.device)[active_mask], reduction='sum'
+                    )
+                else:
+                    target_predict_loss += self.criterion(pred_logits, gt_target.unsqueeze(1).cuda())
                 # print(pred_logits.shape)
             # Log the trajectory
             # print(at_direction, gt_direction)
@@ -757,16 +858,34 @@ class NavCMTAgent:
                        + self.args.progress_loss_weight * progress_loss
                        + self.args.goal_loss_weight * goal_predict_loss
                        + self.args.target_loss_weight * target_predict_loss)
+            if getattr(self.args, 'target_belief_head', False):
+                ml_loss = (ml_loss
+                           + self.args.belief_region_loss_weight * belief_region_loss
+                           + self.args.belief_offset_loss_weight * belief_offset_loss)
             # ml_loss = progress_loss + goal_predict_loss
-            self.loss += ml_loss * train_ml / batch_size
+            if getattr(self.args, 'normalize_rollout_loss', False):
+                loss_normalizer = max(valid_step_count, 1)
+            else:
+                loss_normalizer = batch_size
+            self.loss += ml_loss * train_ml / loss_normalizer
 
             # self.logs['ml_loss'].append((ml_loss * train_ml / batch_size).item())
 
-            self.logs['direction_loss'].append((direction_loss * train_ml / batch_size).item())
-            self.logs['progress_loss'].append((progress_loss * train_ml / batch_size).item())
-            self.logs['goal_predict_loss'].append((goal_predict_loss * train_ml / batch_size).item())
-            self.logs['target_predict_loss'].append((target_predict_loss * train_ml / batch_size).item())
-            self.logs['IL_loss'].append((ml_loss * train_ml / batch_size).item())
+            self.logs['direction_loss'].append((direction_loss * train_ml / loss_normalizer).item())
+            self.logs['progress_loss'].append((progress_loss * train_ml / loss_normalizer).item())
+            self.logs['goal_predict_loss'].append((goal_predict_loss * train_ml / loss_normalizer).item())
+            self.logs['target_predict_loss'].append((target_predict_loss * train_ml / loss_normalizer).item())
+            self.logs['belief_region_loss'].append(
+                (belief_region_loss * train_ml / loss_normalizer).detach().item()
+                if torch.is_tensor(belief_region_loss)
+                else float(belief_region_loss * train_ml / loss_normalizer)
+            )
+            self.logs['belief_offset_loss'].append(
+                (belief_offset_loss * train_ml / loss_normalizer).detach().item()
+                if torch.is_tensor(belief_offset_loss)
+                else float(belief_offset_loss * train_ml / loss_normalizer)
+            )
+            self.logs['IL_loss'].append((ml_loss * train_ml / loss_normalizer).item())
 
         if type(self.loss) is int:  # For safety, it will be activated if no losses are added
             self.losses.append(0.)

@@ -299,7 +299,11 @@ class CityNavBatch(torch.utils.data.IterableDataset):
                 'cur_grid': normalized_pos_id,
                 'trajectory': episode.trajectory,
                 'progress': progress,
+                # Keep the released mean for checkpoint-compatible baseline runs,
+                # and expose the aligned per-landmark instances to the belief head.
                 'centroids': np.mean(normalized_centroids, axis=0) if normalized_centroids else np.array([0, 0]),
+                'landmark_centers': normalized_centroids,
+                'landmark_names': list(self.nav_maps[i].landmark_map.landmark_names),
                 'centroid_goal': pred_goal_xy,
                 'normalized_goal': normalized_goal_xys,
                 'grid_goal': normalized_goal_id

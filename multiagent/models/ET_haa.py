@@ -9,6 +9,7 @@ from torch.nn import functional as F
 import numpy as np
 
 from .goal_predictor import MapEncoder
+from .multilandmark_belief import MultiLandmarkBeliefHead
 
 
 class SoftDotAttention(nn.Module):
@@ -194,6 +195,13 @@ class ET(nn.Module):
             nn.Sigmoid(),
         )
 
+        self.target_belief_head = None
+        if getattr(self.args, 'target_belief_head', False):
+            self.target_belief_head = MultiLandmarkBeliefHead(
+                d_model=self.args.demb,
+                grid_size=self.args.belief_grid_size,
+            )
+
         # pose embedding: 把当前的 [sin(yaw), cos(yaw), x, y] 映射到 d_model 维
         self.direction_embedding = nn.Linear(4, self.args.demb)
 
@@ -338,7 +346,23 @@ class ET(nn.Module):
         # progress: [B, 1]
         progress = self.decoder_2_progress_full(decoder_input)
 
-        # target_logits: [B, N_cand, 1]
+        # target_logits: baseline [B, N_cand, 1], belief variant [B, G*G, 1].
         target_logits = self.decoder_2_logits_full(target_decoder_input)
+        if self.target_belief_head is not None:
+            belief_logits, belief_offsets, pred_goals, _ = self.target_belief_head(
+                context=goal_decoder_input,
+                landmark_centers=inputs['landmark_centers'],
+                landmark_name_features=inputs['landmark_name_features'],
+                landmark_valid=inputs['landmark_valid'],
+                previous_belief=inputs.get('previous_belief'),
+            )
+            return (
+                direction,
+                progress,
+                pred_goals,
+                belief_logits.unsqueeze(-1),
+                emb_frames + emb_directions,
+                belief_offsets,
+            )
 
         return direction, progress, pred_goals, target_logits, emb_frames + emb_directions
