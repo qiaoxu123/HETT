@@ -29,6 +29,7 @@ from multiagent.active_altitude.fine_refinement import (
 )
 from multiagent.defaultpaths import GOAL_PREDICTOR_CHECKPOINT_DIR
 from multiagent.mapdata import GROUND_LEVEL
+from multiagent.multi_landmark import MultiLandmarkIndex
 from multiagent.models.dark_net import Darknet
 from multiagent.models.CLIP import CLIP
 # from direction.models.ddppo.resenet_encoders import TorchVisionResNet50
@@ -159,6 +160,10 @@ class NavCMTAgent:
 
         # create the et model
         self.vln_model = ET(self.args).cuda()
+        self.multi_landmark_index = None
+        if getattr(self.args, 'multi_landmark_features', None):
+            self.multi_landmark_index = MultiLandmarkIndex(
+                self.args.multi_landmark_features)
         # self.map_encoder = MapEncoder(240)
         # self.goal_predictpr = GoalPredictor(240, 7)
         self.progress_regression = nn.MSELoss(reduction='sum')
@@ -440,6 +445,13 @@ class NavCMTAgent:
                 fine_altitude_controller.initial_state() for _ in range(batch_size)
             ]
         frozen_coarse_goals = [None] * batch_size
+        multi_landmarks = None
+        if self.multi_landmark_index is not None:
+            control = self.args.multi_landmark_mode
+            if control not in ('wrong_relation', 'wrong_landmark'):
+                control = 'normal'
+            multi_landmarks = self.multi_landmark_index.batch(
+                [ob['id'] for ob in obs], torch.device('cuda'), control=control)
 
         # --------------- 1. 语言输入：instruction -> token ids -> BERT embedding -----------------
         # lang_inputs: list[str]，长度= batch_size
@@ -499,6 +511,11 @@ class NavCMTAgent:
             traj[i]['camera_altitudes_m'] = [
                 poses[i].z - GROUND_LEVEL[ob['map_name']]
             ]
+            traj[i]['landmark_count'] = (
+                int(multi_landmarks.valid[i].sum().item())
+                if multi_landmarks is not None
+                else len(self.env.nav_maps[i].landmark_map.landmarks)
+            )
         # print(np.array([len(ob['trajectory']) for ob in obs]))
 
         # Initialization the finishing status
@@ -528,6 +545,14 @@ class NavCMTAgent:
             'lang_cls': linear_cls,
             'map_fts': torch.zeros(batch_size, 0, 512, 49).cuda(),
         }
+        if multi_landmarks is not None:
+            input.update({
+                'landmark_centers': multi_landmarks.centers,
+                'landmark_boundaries': multi_landmarks.boundaries,
+                'landmark_valid': multi_landmarks.valid,
+                'relation_features': multi_landmarks.relation,
+                'relation_cues': multi_landmarks.cue,
+            })
 
         stage1_ended = np.array([False] * batch_size)
 
@@ -546,7 +571,6 @@ class NavCMTAgent:
             images /= self.rgb_std
             im_feature = self.vision_model(torch.from_numpy(images).cuda())
             im_feature = im_feature.view(im_feature.size(0), im_feature.size(1), -1)
-
 
             current_direct = direction_t.view(-1, 1).cuda()
             current_pos = position_t.view(-1, 2).cuda()
@@ -594,6 +618,13 @@ class NavCMTAgent:
                 centroids=input['centroids'],       # [B, N_centroid, 2]
                 lang_cls=input['lang_cls'],          # [B, 49]
                 lang_mask=attention_mask,
+                **({
+                    'landmark_centers': input['landmark_centers'],
+                    'landmark_boundaries': input['landmark_boundaries'],
+                    'landmark_valid': input['landmark_valid'],
+                    'relation_features': input['relation_features'],
+                    'relation_cues': input['relation_cues'],
+                } if multi_landmarks is not None else {}),
             )
 
             # --------------- 5. 更新历史网格记忆：grid_fts / grid_index -----------------
@@ -677,7 +708,16 @@ class NavCMTAgent:
                     if progress_loss != progress_loss:  # debug for nan loss
                         print('0', progress_loss)
                 # print(at_direction, gt_direction, ml_loss)
-                target_predict_loss += self.criterion(pred_logits, gt_target.unsqueeze(1).cuda())
+                target_grid_size = int(round(pred_logits.shape[1] ** 0.5))
+                if target_grid_size != self.args.grid_size:
+                    target_xy = torch.floor(gt_goal * target_grid_size).long()
+                    target_xy = target_xy.clamp(0, target_grid_size - 1)
+                    target_label = (target_xy[:, 0] * target_grid_size
+                                    + target_xy[:, 1])
+                else:
+                    target_label = gt_target
+                target_predict_loss += self.criterion(
+                    pred_logits, target_label.unsqueeze(1).cuda())
                 # print(pred_logits.shape)
             # Log the trajectory
             # print(at_direction, gt_direction)
@@ -744,6 +784,7 @@ class NavCMTAgent:
                 )
                 dst = self.env.unnormalize_position(navigation_goal, obs[i]['map_name'],
                                                     self.args.map_meters)
+                traj[i]['last_predicted_goal'] = dst
 
                 # gt_center = self.env.unnormalize_position(global_position[gt_goal.cpu().detach().numpy()[i]], obs[i]['map_name'],
                 #                                     self.args.map_meters)
@@ -973,11 +1014,16 @@ class NavCMTAgent:
                 print("NOTICE: DIFFERENT KEYS IN THE ", name)
                 missing = sorted(model_keys - load_keys)
                 required_missing = [k for k in missing if not (
-                    self.args.disable_task_interaction and k.startswith('task_interaction.'))]
+                    (self.args.disable_task_interaction and k.startswith('task_interaction.'))
+                    or k.startswith('relation_rankers.'))]
                 if required_missing and self.args.mode != 'train':
                     raise ValueError(f'{name}: checkpoint is missing parameters: {required_missing}')
-                if missing:
-                    print('New parameters initialized randomly:', missing)
+                random_missing = [k for k in missing
+                                  if not k.startswith('relation_rankers.')]
+                if random_missing:
+                    print('New parameters initialized randomly:', random_missing)
+                if any(k.startswith('relation_rankers.') for k in missing):
+                    print('Relation rankers retained from external checkpoints')
                 # if not list(model_keys)[0].startswith('module.') and list(load_keys)[0].startswith('module.'):
                 #     state_dict = {k.replace('module.', ''): v for k, v in state_dict.items()}
                 state_dict = {k: v for k, v in states[name]['state_dict'].items() if k in model_keys}

@@ -9,6 +9,7 @@ from torch.nn import functional as F
 import numpy as np
 
 from .goal_predictor import MapEncoder
+from .relation_goal import RelationGoalRanker, rms_normalize
 
 
 class SoftDotAttention(nn.Module):
@@ -215,6 +216,26 @@ class ET(nn.Module):
             dropout=self.args.dropout_transformer_encoder,
         )
 
+        self.multi_landmark_mode = getattr(args, 'multi_landmark_mode', 'off')
+        self.relation_rankers = nn.ModuleList()
+        if self.multi_landmark_mode != 'off':
+            for checkpoint in args.relation_checkpoints:
+                ranker = RelationGoalRanker()
+                ranker.load_state_dict(torch.load(
+                    checkpoint, map_location='cpu', weights_only=True))
+                ranker.eval()
+                for parameter in ranker.parameters():
+                    parameter.requires_grad_(False)
+                self.relation_rankers.append(ranker)
+            fine_size = int(args.relation_goal_grid_size)
+            axis = (torch.arange(fine_size, dtype=torch.float32) + 0.5) / fine_size
+            xx, yy = torch.meshgrid(axis, axis, indexing='ij')
+            self.register_buffer(
+                'relation_goal_candidates',
+                torch.stack((xx.flatten(), yy.flatten()), dim=-1),
+                persistent=False,
+            )
+
     def forward(self, **inputs):
         """
         forward the model for multiple time-steps (used for training)
@@ -345,5 +366,44 @@ class ET(nn.Module):
 
         # target_logits: [B, N_cand, 1]
         target_logits = self.decoder_2_logits_full(target_decoder_input)
+
+        # A: branch disabled -> exact released continuous goal path.
+        # B/C: upsample HETT's target heatmap and add an independent
+        # candidate-to-each-landmark score.  No landmark averaging occurs.
+        if self.multi_landmark_mode != 'off':
+            fine_size = int(self.args.relation_goal_grid_size)
+            coarse_size = int(self.args.grid_size)
+            coarse = target_logits.squeeze(-1).reshape(
+                batch_size, coarse_size, coarse_size)
+            hett_logits = F.interpolate(
+                coarse[:, None], size=(fine_size, fine_size),
+                mode='bilinear', align_corners=False).flatten(1)
+            candidates = self.relation_goal_candidates[None].expand(
+                batch_size, -1, -1)
+            relation_values = []
+            use_relation = self.multi_landmark_mode != 'geometry'
+            for ranker in self.relation_rankers:
+                ranker.eval()
+                relation_values.append(ranker(
+                    candidates,
+                    inputs['landmark_centers'],
+                    inputs['landmark_boundaries'],
+                    inputs['landmark_valid'],
+                    inputs['relation_features'],
+                    inputs['relation_cues'],
+                    use_relation=use_relation,
+                ))
+            relation_logits = rms_normalize(torch.stack(relation_values).mean(0))
+            hett_scale = (hett_logits - hett_logits.mean(-1, keepdim=True)).square(
+                ).mean(-1, keepdim=True).sqrt().clamp_min(0.1)
+            final_logits = (hett_logits + self.args.relation_alpha
+                            * hett_scale * relation_logits)
+            probability = F.softmax(final_logits, dim=-1)
+            hard = F.one_hot(final_logits.argmax(-1), final_logits.shape[-1]).to(
+                probability.dtype)
+            straight_through = hard + probability - probability.detach()
+            pred_goals = torch.einsum(
+                'bk,kd->bd', straight_through, self.relation_goal_candidates)
+            target_logits = final_logits.unsqueeze(-1)
 
         return direction, progress, pred_goals, target_logits, emb_frames + emb_directions

@@ -118,6 +118,14 @@ def parse_args():
     parser.add_argument('--target_loss_weight', type=float, default=0.1,
                         help='auxiliary grid loss from released code (not specified in paper)')
     parser.add_argument('--disable_task_interaction', action='store_true')
+    parser.add_argument('--multi_landmark_mode',
+                        choices=['off', 'geometry', 'relation',
+                                 'wrong_relation', 'wrong_landmark'],
+                        default='off')
+    parser.add_argument('--multi_landmark_features', type=str, default=None)
+    parser.add_argument('--relation_checkpoints', type=str, nargs='*', default=None)
+    parser.add_argument('--relation_alpha', type=float, default=1.0)
+    parser.add_argument('--relation_goal_grid_size', type=int, default=20)
 
     # logger
     parser.add_argument('--log_every', type=int, default=1)
@@ -203,6 +211,13 @@ def parse_args():
             parser.error('--fine_altitude_levels must be strictly high-to-low')
         if abs(args.altitude - levels[0]) > 1e-6:
             parser.error('--altitude must equal the first canonical fine-altitude level')
+    if args.multi_landmark_mode != 'off':
+        if not args.multi_landmark_features or not args.relation_checkpoints:
+            parser.error('multi-landmark mode requires features and relation checkpoints')
+        if args.relation_goal_grid_size < args.grid_size:
+            parser.error('--relation_goal_grid_size must be >= --grid_size')
+        if args.relation_alpha < 0:
+            parser.error('--relation_alpha must be non-negative')
     if args.checkpoint and not Path(args.checkpoint).is_absolute():
         args.checkpoint = str(PROJECT_ROOT / args.checkpoint)
     output_dir = Path(args.output_dir)

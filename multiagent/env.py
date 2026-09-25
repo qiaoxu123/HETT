@@ -412,6 +412,18 @@ class CityNavBatch(torch.utils.data.IterableDataset):
                 # else:
                 metrics[k].append(v)
 
+            if item.get('last_predicted_goal') is not None:
+                goal_ne = item['last_predicted_goal'].dist_to(item['goal'])
+            else:
+                predicted_goals = item.get('pred_goal', [])
+                if predicted_goals:
+                    goal_ne = predicted_goals[-1].dist_to(item['goal'])
+                else:
+                    goal_ne = item['trajectory'][-1].xy.dist_to(item['goal'])
+            metrics['goal_ne'].append(goal_ne)
+            metrics['goal_hit20'].append(float(goal_ne <= self.args.success_dist))
+            metrics['landmark_count'].append(int(item.get('landmark_count', 0)))
+
             altitudes = np.asarray(item.get('camera_altitudes_m', []), dtype=np.float64)
             if altitudes.size:
                 canonical_altitude = float(getattr(
@@ -476,6 +488,13 @@ class CityNavBatch(torch.utils.data.IterableDataset):
             'stage2_ne': np.mean(metrics['stage2_ne']),
             'stage2_oracle_ne': np.mean(metrics['stage2_oracle_ne']),
             'gt_length': np.mean(metrics['gt_length']),
+            'goal_ne': np.mean(metrics['goal_ne']),
+            'goal_hit20': np.mean(metrics['goal_hit20']) * 100,
+            'goal_hit20_multi_landmark': (
+                np.mean(np.asarray(metrics['goal_hit20'])[
+                    np.asarray(metrics['landmark_count']) >= 2]) * 100
+                if np.any(np.asarray(metrics['landmark_count']) >= 2) else 0.0
+            ),
             'mean_camera_altitude_m': (
                 np.mean(metrics['mean_camera_altitude_m'])
                 if metrics['mean_camera_altitude_m'] else float(self.args.altitude)
