@@ -59,3 +59,38 @@ grid-cell-to-landmark relative geometry inside the unified transformer instead
 of requiring generic self-attention to infer subtraction and direction from
 two absolute coordinate tokens. Repeat the 128-sample and three-epoch gates
 before adding RGB or any other subsystem.
+
+## Relative-geometry v2 result
+
+The controlled change above was implemented and rerun with the same seed,
+splits, model width and three-epoch budget. `val_seen` Hit@20 increased from
+29.47% to 38.26% (+8.79 points). The established three-seed relation-ranker
+mean was 30.92%, so v2 exceeds it by 7.34 points on the same split.
+
+The v2 validation trajectory was 31.21%, 36.32%, and 38.26%; epoch 3 remained
+the best checkpoint. Its mean navigation error was 34.98 m.
+
+Strict inference-time controls on `val_seen`:
+
+| Input condition | Hit@20 | Change |
+|---|---:|---:|
+| Correct independent landmarks | 38.26% | -- |
+| No language features or cues | 18.99% | -19.27 |
+| Wrong same-map landmarks | 18.54% | -19.72 |
+| First landmark only | 27.57% | -10.69 |
+| Landmarks averaged into one | 26.60% | -11.66 |
+| Landmark order shuffled | 38.26% | 0.00 |
+
+The benefit is concentrated where independent instances matter:
+
+| Original instruction | Independent instances | Averaged instance |
+|---|---:|---:|
+| One landmark | 31.31% | 31.31% |
+| Two landmarks | 42.95% | 23.38% |
+| Three or more | 55.50% | 15.18% |
+
+These controls show that the gain is not explained by an absolute map prior:
+language removal and wrong bindings both destroy roughly half the performance,
+while landmark permutation leaves the result numerically unchanged. Stage 1
+therefore passes and the next allowed increment is RGB projection plus a
+visibility-gated signed temporal evidence update.

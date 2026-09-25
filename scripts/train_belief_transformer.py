@@ -48,6 +48,8 @@ def parse_args():
     parser.add_argument("--overfit-epochs", type=int, default=120)
     parser.add_argument("--bind-loss-weight", type=float, default=0.1)
     parser.add_argument("--relation-loss-weight", type=float, default=0.1)
+    parser.add_argument("--checkpoint", type=Path,
+                        help="Evaluate a saved checkpoint without training")
     return parser.parse_args()
 
 
@@ -163,10 +165,58 @@ def predict_metrics(logits, targets, grid_size):
     }
 
 
+def select_landmark_representation(batch, mode):
+    if mode == "normal":
+        return batch
+    result = dict(batch)
+    valid = batch["valid"]
+    if mode == "no_language":
+        result["relation"] = torch.zeros_like(batch["relation"])
+        result["cue"] = torch.zeros_like(batch["cue"])
+        return result
+    if mode == "no_structured_cue":
+        result["cue"] = torch.zeros_like(batch["cue"])
+        return result
+    if mode == "first_landmark":
+        result["valid"] = torch.zeros_like(valid)
+        result["valid"][:, 0] = valid.any(-1)
+        return result
+    if mode != "average_landmarks":
+        raise ValueError(mode)
+    weight = valid[..., None].float()
+    count = weight.sum(1).clamp_min(1.0)
+    result["relation"] = torch.zeros_like(batch["relation"])
+    result["relation"][:, 0] = (batch["relation"].float() * weight).sum(1) / count
+    result["cue"] = torch.zeros_like(batch["cue"])
+    result["cue"][:, 0] = batch["cue"].amax(1)
+    result["centers"] = torch.zeros_like(batch["centers"])
+    result["centers"][:, 0] = (batch["centers"] * weight).sum(1) / count
+    boundary_weight = weight[..., None]
+    result["boundaries"] = torch.zeros_like(batch["boundaries"])
+    result["boundaries"][:, 0] = (
+        batch["boundaries"] * boundary_weight).sum(1) / count[..., None]
+    result["instance_masks"] = torch.zeros_like(batch["instance_masks"])
+    result["instance_masks"][:, 0] = batch["instance_masks"].any(1)
+    result["valid"] = torch.zeros_like(valid)
+    result["valid"][:, 0] = valid.any(-1)
+    return result
+
+
+def grouped_metrics(logits, targets, landmark_count, grid_size):
+    groups = {
+        "one": landmark_count.eq(1),
+        "two": landmark_count.eq(2),
+        "three_plus": landmark_count.ge(3),
+    }
+    return {name: predict_metrics(logits[selected], targets[selected], grid_size)
+            for name, selected in groups.items() if selected.any()}
+
+
 @torch.inference_mode()
 def evaluate(model, dataset, device, batch_size):
     model.eval()
-    normal, flipped, wrong, shuffled, targets = [], [], [], [], []
+    normal, flipped, wrong, shuffled, no_language, no_cue = [], [], [], [], [], []
+    first, averaged, targets, counts = [], [], [], []
     for batch in DataLoader(dataset, batch_size=batch_size, shuffle=False):
         normal.append(model(*to_model_args(batch, device)).cpu())
         flipped.append(model(*to_model_args(
@@ -178,20 +228,42 @@ def evaluate(model, dataset, device, batch_size):
                     "instance_masks"):
             shuffled_batch[key] = batch[key][:, order]
         shuffled.append(model(*to_model_args(shuffled_batch, device)).cpu())
+        no_language.append(model(*to_model_args(
+            select_landmark_representation(batch, "no_language"), device)).cpu())
+        no_cue.append(model(*to_model_args(
+            select_landmark_representation(batch, "no_structured_cue"), device)).cpu())
+        first.append(model(*to_model_args(
+            select_landmark_representation(batch, "first_landmark"), device)).cpu())
+        averaged.append(model(*to_model_args(
+            select_landmark_representation(batch, "average_landmarks"), device)).cpu())
         targets.append(batch["target"])
-    normal, flipped, wrong, shuffled = map(
-        torch.cat, (normal, flipped, wrong, shuffled))
+        counts.append(batch["valid"].sum(-1))
+    normal, flipped, wrong, shuffled, no_language, no_cue, first, averaged = map(
+        torch.cat, (normal, flipped, wrong, shuffled, no_language, no_cue,
+                    first, averaged))
     targets = torch.cat(targets)
-    return {
+    counts = torch.cat(counts)
+    result = {
         "normal": predict_metrics(normal, targets, model.grid_size),
         "opposite_relation": predict_metrics(flipped, targets, model.grid_size),
         "wrong_landmark": predict_metrics(wrong, targets, model.grid_size),
         "shuffled_landmark_order": predict_metrics(
             shuffled, targets, model.grid_size),
+        "no_language": predict_metrics(no_language, targets, model.grid_size),
+        "no_structured_cue": predict_metrics(no_cue, targets, model.grid_size),
+        "first_landmark_only": predict_metrics(first, targets, model.grid_size),
+        "averaged_landmarks": predict_metrics(averaged, targets, model.grid_size),
         "flip_changes_top1_percent": (normal.flatten(1).argmax(-1) !=
                                       flipped.flatten(1).argmax(-1)).float().mean().mul(100).item(),
         "shuffle_max_logit_difference": (normal - shuffled).abs().max().item(),
     }
+    result["normal"]["by_landmark_count"] = grouped_metrics(
+        normal, targets, counts, model.grid_size)
+    result["averaged_landmarks"]["by_landmark_count"] = grouped_metrics(
+        averaged, targets, counts, model.grid_size)
+    result["first_landmark_only"]["by_landmark_count"] = grouped_metrics(
+        first, targets, counts, model.grid_size)
+    return result
 
 
 def train(model, dataset, device, epochs, batch_size, learning_rate,
@@ -260,13 +332,21 @@ def main():
     model = BeliefTransformer(
         grid_size=args.grid_size, hidden=args.hidden, layers=args.layers)
     epochs = args.overfit_epochs if args.overfit_count else args.epochs
-    model, best_epoch = train(
-        model, train_data, device, epochs, args.batch_size,
-        args.learning_rate, args.bind_loss_weight, args.relation_loss_weight,
-        validation=None if args.overfit_count else val_data)
+    if args.checkpoint:
+        saved = torch.load(args.checkpoint, map_location="cpu", weights_only=True)
+        model.load_state_dict(saved["model"])
+        model.to(device).eval()
+        best_epoch = saved.get("config", {}).get("best_epoch", 0)
+        mode = "evaluation_only"
+    else:
+        model, best_epoch = train(
+            model, train_data, device, epochs, args.batch_size,
+            args.learning_rate, args.bind_loss_weight, args.relation_loss_weight,
+            validation=None if args.overfit_count else val_data)
+        mode = "overfit" if args.overfit_count else "train_seen"
     result = {
         "stage": "language + independent landmark instances + named-landmark BEV",
-        "mode": "overfit" if args.overfit_count else "train_seen",
+        "mode": mode,
         "train_count": len(train_data), "validation_count": len(val_data),
         "epochs": epochs, "best_epoch": best_epoch,
         "train": evaluate(model, train_data, device, args.batch_size),
@@ -290,11 +370,15 @@ def main():
                    for key, value in vars(args).items()},
     }
     args.output_dir.mkdir(parents=True, exist_ok=True)
-    suffix = f"overfit{args.overfit_count}" if args.overfit_count else "train3epoch"
+    suffix = ("evaluation" if args.checkpoint else
+              f"overfit{args.overfit_count}" if args.overfit_count else "train3epoch")
     (args.output_dir / f"results_{suffix}.json").write_text(
         json.dumps(result, indent=2) + "\n")
-    torch.save({"model": model.state_dict(), "config": result["config"]},
-               args.output_dir / f"model_{suffix}.pt")
+    if not args.checkpoint:
+        checkpoint_config = dict(result["config"])
+        checkpoint_config["best_epoch"] = best_epoch
+        torch.save({"model": model.state_dict(), "config": checkpoint_config},
+                   args.output_dir / f"model_{suffix}.pt")
     print(json.dumps(result["train"], indent=2), flush=True)
     print("saved", args.output_dir / f"results_{suffix}.json", flush=True)
 

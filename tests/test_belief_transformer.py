@@ -3,7 +3,8 @@ import inspect
 import torch
 
 from independent_nav.belief_transformer import (
-    BeliefTransformer, belief_loss, rasterize_landmarks, target_mask,
+    BeliefTransformer, belief_loss, grid_centers, grid_landmark_geometry,
+    rasterize_landmarks, target_mask,
 )
 
 
@@ -60,3 +61,15 @@ def test_target_mask_is_metric_radius():
     mask = target_mask(target, grid_size=20, radius_m=20.0)
     assert mask.any()
     assert not mask.all()
+
+
+def test_relative_geometry_uses_fixed_language_frame():
+    cells = grid_centers(2).reshape(-1, 2)
+    centers = torch.tensor([[[0.25, 0.25]]])
+    boundaries = centers[:, :, None].expand(-1, -1, 16, -1).clone()
+    geometry = grid_landmark_geometry(cells, centers, boundaries)
+    # The bottom-left grid cell coincides with the landmark; the top-right cell
+    # has positive map dy, which becomes positive language-frame x after R270.
+    assert torch.allclose(geometry[0, 0, 0, :2], torch.zeros(2), atol=1e-6)
+    assert geometry[0, 3, 0, 0] > 0
+    assert geometry[0, 3, 0, 1] < 0

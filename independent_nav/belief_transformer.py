@@ -62,6 +62,36 @@ def landmark_shape_features(centers: torch.Tensor, boundaries: torch.Tensor) -> 
     return torch.cat((centers, minimum, maximum, size, area), dim=-1)
 
 
+def grid_landmark_geometry(cell_xy: torch.Tensor, centers: torch.Tensor,
+                           boundaries: torch.Tensor) -> torch.Tensor:
+    """Explicit cell-to-landmark geometry in the audited language frame."""
+    delta = cell_xy[None, :, None] - centers[:, None]
+    delta = torch.stack((delta[..., 1], -delta[..., 0]), dim=-1)
+    distance = torch.linalg.vector_norm(delta, dim=-1).clamp_min(1e-6)
+    centroid = torch.cat((
+        delta,
+        (torch.log1p(distance * 410.0) / math.log1p(410.0)).unsqueeze(-1),
+        (delta[..., 1] / distance).unsqueeze(-1),
+        (delta[..., 0] / distance).unsqueeze(-1),
+    ), dim=-1)
+
+    boundary_delta = cell_xy[None, :, None, None] - boundaries[:, None]
+    boundary_distance = torch.linalg.vector_norm(boundary_delta, dim=-1)
+    nearest = boundary_distance.argmin(-1)
+    gather = nearest[..., None, None].expand(-1, -1, -1, 1, 2)
+    nearest_delta = boundary_delta.gather(3, gather).squeeze(3)
+    nearest_delta = torch.stack(
+        (nearest_delta[..., 1], -nearest_delta[..., 0]), dim=-1)
+    nearest_distance = torch.linalg.vector_norm(nearest_delta, dim=-1).clamp_min(1e-6)
+    boundary = torch.cat((
+        nearest_delta,
+        (torch.log1p(nearest_distance * 410.0) / math.log1p(410.0)).unsqueeze(-1),
+        (nearest_delta[..., 1] / nearest_distance).unsqueeze(-1),
+        (nearest_delta[..., 0] / nearest_distance).unsqueeze(-1),
+    ), dim=-1)
+    return torch.cat((centroid, boundary), dim=-1)
+
+
 class BeliefTransformer(nn.Module):
     """Fuse per-landmark language/geometry tokens with a BEV token grid."""
 
@@ -82,12 +112,19 @@ class BeliefTransformer(nn.Module):
             nn.Linear(relation_dim, hidden), nn.LayerNorm(hidden), nn.SiLU())
         self.map_token = nn.Sequential(
             nn.Linear(4, hidden), nn.LayerNorm(hidden), nn.SiLU())
+        self.relative_geometry = nn.Sequential(
+            nn.Linear(10, hidden), nn.LayerNorm(hidden), nn.SiLU(),
+            nn.Linear(hidden, hidden))
         layer = nn.TransformerEncoderLayer(
             d_model=hidden, nhead=heads, dim_feedforward=hidden * 4,
             dropout=dropout, activation="gelu", batch_first=True, norm_first=True)
         self.encoder = nn.TransformerEncoder(
             layer, num_layers=layers, enable_nested_tensor=False)
         self.goal_head = nn.Sequential(nn.LayerNorm(hidden), nn.Linear(hidden, 1))
+        self.pair_score = nn.Sequential(
+            nn.Linear(hidden * 4, hidden), nn.LayerNorm(hidden), nn.SiLU(),
+            nn.Linear(hidden, 1))
+        self.relation_scale = nn.Parameter(torch.tensor(0.0))
         self.register_buffer("cell_xy", grid_centers(grid_size).reshape(-1, 2))
 
     def forward(self, relation_features: torch.Tensor, relation_cues: torch.Tensor,
@@ -119,8 +156,22 @@ class BeliefTransformer(nn.Module):
             torch.zeros(batch, self.grid_size ** 2, dtype=torch.bool,
                         device=sequence.device)), dim=1)
         encoded = self.encoder(sequence, src_key_padding_mask=padding)
+        encoded_landmarks = encoded[:, 1:1 + landmarks]
         grid = encoded[:, 1 + landmarks:]
-        return self.goal_head(grid).squeeze(-1).reshape(
+        relative = self.relative_geometry(grid_landmark_geometry(
+            self.cell_xy.to(landmark_centers), landmark_centers.float(),
+            landmark_boundaries.float()))
+        grid_pair = grid[:, :, None].expand(-1, -1, landmarks, -1)
+        landmark_pair = encoded_landmarks[:, None].expand(
+            -1, self.grid_size ** 2, -1, -1)
+        pair = self.pair_score(torch.cat((
+            grid_pair, landmark_pair, relative, grid_pair * landmark_pair), dim=-1)
+        ).squeeze(-1)
+        pair = pair.masked_fill(~landmark_valid[:, None], 0.0)
+        relation_score = pair.sum(-1) / landmark_valid.sum(-1, keepdim=True).clamp_min(1)
+        logits = (self.goal_head(grid).squeeze(-1)
+                  + F.softplus(self.relation_scale) * relation_score)
+        return logits.reshape(
             batch, self.grid_size, self.grid_size)
 
 
