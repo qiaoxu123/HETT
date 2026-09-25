@@ -13,11 +13,14 @@ gate passed before changing the next component.
   budget.  Missing or occluded visual evidence must remain unknown rather than
   become negative evidence. **PASSED on an 8 train_seen + 8 val_seen pilot;
   82 causal frames passed alignment, budget, visibility and leakage checks.**
-- [ ] Step 2b / Online Todo 2: Train the minimal recurrent semantic-RGB fusion
+- [x] Step 2b / Online Todo 2: Train the minimal recurrent semantic-RGB fusion
   locator with the exact continuous target position as training supervision.
   Use a coarse belief cell plus a continuous within-cell offset so the 20x20
   map does not quantize supervision to roughly 20.5 m cells.  The 20 m radius
   is evaluation-only (`Hit@20`/SR), never the training mask or model input.
+  **Executed; gate FAILED.** Seven of eight train episodes were localized to
+  0.03--0.13 m, but one never-visible target selected the wrong coarse cell;
+  train Hit@20 was 87.5% and the 8-episode val_seen diagnostic was 12.5%.
 - [ ] Step 3 / Online Todo 3: Learn a continuous exploration-value head from the fused state.
   Do not assign hand-written strong/soft/ambiguous classes.  Supervise the head
   with the measured downstream advantage of exploratory trajectories over
@@ -42,5 +45,5 @@ gate passed before changing the next component.
 - [ ] Step 8: Freeze all weights and thresholds, run `val_unseen` once, and
   leave `test_unseen` untouched until the final paper evaluation.
 
-Current state: **Stopped after Online Todo 1 as requested.  The fusion model
-and exploration-value head have not started.**
+Current state: **Stopped after the failed Online Todo 2 gate.  The
+exploration-value head and Diffusion have not started.**
