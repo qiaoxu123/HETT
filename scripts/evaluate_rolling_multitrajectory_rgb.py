@@ -74,6 +74,9 @@ def parse_args():
     parser.add_argument("--switch-margin", type=float, default=0.0,
                         help="Optional route hysteresis; zero keeps RGB corrections unrestricted")
     parser.add_argument("--commit-stable-replans", type=int, default=2)
+    parser.add_argument("--trace-output", type=Path, default=None,
+                        help="Optional post-rollout diagnostic trace JSON")
+    parser.add_argument("--trace-episode-index", type=int, default=0)
     parser.add_argument("--seed", type=int, default=0)
     return parser.parse_args()
 
@@ -182,6 +185,7 @@ def rollout_one(env, observation, index, modes, belief, inference, static,
     evidence_sum = np.zeros(8, dtype=np.float64)
     evidence_count = 0
     selected_history, replans, committed_actions = [], 0, 0
+    diagnostic_steps = []
     previous_selected = None
     while trace.action_count < protocol.max_action_len:
         current = env.normalize_position(
@@ -211,6 +215,27 @@ def rollout_one(env, observation, index, modes, belief, inference, static,
         stable = (evidence_count > 0
                   and len(selected_modes) >= args.commit_stable_replans
                   and len(set(selected_modes[-args.commit_stable_replans:])) == 1)
+        if (args.trace_output is not None
+                and (args.trace_episode_index < 0
+                     or index == args.trace_episode_index)):
+            diagnostic_steps.append({
+                "action_index": trace.action_count,
+                "current_xy": [float(current[0]), float(current[1])],
+                "remaining_actions": remaining,
+                "scores": [float(value) for value in score],
+                "selected_slot": selected,
+                "selected_mode": int(SLOT_TO_MODE[selected]),
+                "stable_commit": bool(stable),
+                "rgb_evidence_count": evidence_count,
+                "candidate_routes": [
+                    [[float(x), float(y)] for x, y in
+                     candidate.positions[:candidate.movement_steps + 1]]
+                    for candidate in library
+                ],
+                "candidate_lengths_m": [
+                    float(candidate.path_length_m) for candidate in library
+                ],
+            })
         endpoint = library[selected].positions[-1].tolist()
         destination = env.unnormalize_position(
             endpoint, observation["map_name"], protocol.map_size_m)
@@ -241,7 +266,8 @@ def rollout_one(env, observation, index, modes, belief, inference, static,
         _, evidence = select_from_current_rgb(
             observation, plan, semantic, args, device, beta=0.0)
         evidence_sum += evidence; evidence_count += 1
-    return trace, selected_history, replans, evidence_count, committed_actions
+    return (trace, selected_history, replans, evidence_count,
+            committed_actions, diagnostic_steps)
 
 
 def main():
@@ -278,9 +304,10 @@ def main():
         batch_size=1, seed=0, rank=0, world_size=1)
     results, traces, histories, replan_counts, evidence_counts = {}, [], [], [], []
     committed_counts = []
+    diagnostic_traces = []
     for index, _ in enumerate(env):
         observation = env._get_obs(random_direction=False)[0]
-        trace, history, replans, evidence, committed = rollout_one(
+        trace, history, replans, evidence, committed, diagnostic_steps = rollout_one(
             env, observation, index, modes[index], beliefs[index], inference,
             static, diffusion, scorer, semantic, predicted_type[index], beta,
             args, device, protocol)
@@ -289,6 +316,35 @@ def main():
         traces.append(trace); histories.append(history)
         replan_counts.append(replans); evidence_counts.append(evidence)
         committed_counts.append(committed)
+        if (args.trace_output is not None
+                and (args.trace_episode_index < 0
+                     or index == args.trace_episode_index)):
+            episode = env.batch[0]
+            normalized_trace = [env.normalize_position(
+                pose.xy, observation["map_name"], protocol.map_size_m)
+                for pose in trace.trajectory]
+            normalized_goal = env.normalize_position(
+                episode.target_position.xy, observation["map_name"],
+                protocol.map_size_m)
+            diagnostic_traces.append({
+                "split": args.split,
+                "episode_index": index,
+                "instruction_id": episode.id,
+                "instruction": episode.target_description,
+                "map_name": observation["map_name"],
+                "map_size_m": protocol.map_size_m,
+                "success_radius_m": protocol.success_distance_m,
+                "goal_xy_metric_only": [float(value) for value in normalized_goal],
+                "executed_xy": [[float(x), float(y)]
+                                for x, y in normalized_trace],
+                "final_distance_m": float(
+                    trace.trajectory[-1].xy.dist_to(episode.target_position.xy)),
+                "action_count": trace.action_count,
+                "replans": diagnostic_steps,
+                "anti_leakage": (
+                    "goal_xy_metric_only is attached after rollout and was not "
+                    "available to generation, scoring, or control"),
+            })
         if len(traces) >= len(rows): break
     metrics = env.eval_metrics(results)[0]
     result = {
@@ -315,6 +371,13 @@ def main():
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(result, indent=2) + "\n")
+    if args.trace_output is not None:
+        if not diagnostic_traces:
+            raise ValueError("trace episode index was not evaluated")
+        args.trace_output.parent.mkdir(parents=True, exist_ok=True)
+        payload = (diagnostic_traces if args.trace_episode_index < 0
+                   else diagnostic_traces[0])
+        args.trace_output.write_text(json.dumps(payload, indent=2) + "\n")
     print(json.dumps(result, indent=2))
 
 
