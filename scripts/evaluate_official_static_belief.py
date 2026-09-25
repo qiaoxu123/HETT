@@ -95,7 +95,7 @@ class BeliefInferenceDataset(Dataset):
 
 
 @torch.inference_mode()
-def predict_goals(checkpoint_path, dataset, device, batch_size):
+def predict_beliefs(checkpoint_path, dataset, device, batch_size):
     saved = torch.load(checkpoint_path, map_location="cpu", weights_only=True)
     config = saved["config"]
     model = BeliefTransformer(
@@ -103,11 +103,17 @@ def predict_goals(checkpoint_path, dataset, device, batch_size):
         layers=int(config["layers"]))
     model.load_state_dict(saved["model"])
     model.to(device).eval()
-    goals = []
+    beliefs = []
     for batch in DataLoader(dataset, batch_size=batch_size, shuffle=False):
         logits = model(*(value.to(device) for value in batch)).cpu()
-        goals.extend(belief_argmax_xy(item) for item in logits)
-    return goals, config
+        beliefs.append(logits)
+    return torch.cat(beliefs), config
+
+
+def predict_goals(checkpoint_path, dataset, device, batch_size):
+    beliefs, config = predict_beliefs(
+        checkpoint_path, dataset, device, batch_size)
+    return [belief_argmax_xy(item) for item in beliefs], config
 
 
 def environment_args(protocol, batch_size, max_episodes):

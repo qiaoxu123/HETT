@@ -4,7 +4,8 @@ import pytest
 import torch
 
 from independent_nav.official_protocol import (
-    OfficialProtocol, belief_argmax_xy, canonical_instruction, optimistic_translation_steps,
+    OfficialProtocol, belief_argmax_xy, belief_distinct_topk_xy,
+    canonical_instruction, optimistic_translation_steps,
     generate_budgeted_waypoints, route_fits_budget, rollout_static_goals,
 )
 
@@ -21,6 +22,13 @@ def test_belief_argmax_uses_xy_not_row_column_order():
     logits = torch.zeros(4, 4)
     logits[1, 3] = 1
     assert belief_argmax_xy(logits) == (0.875, 0.375)
+
+
+def test_distinct_topk_merges_modes_within_success_radius():
+    logits = torch.zeros(20, 20)
+    logits[10, 10], logits[10, 11], logits[10, 13] = 3, 2, 1
+    modes = belief_distinct_topk_xy(logits, 2)
+    assert modes == [(0.525, 0.525), (0.675, 0.525)]
 
 
 def test_budget_filter_counts_route_via_observation_point():

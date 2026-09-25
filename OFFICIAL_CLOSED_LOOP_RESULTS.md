@@ -76,3 +76,25 @@ the remaining 20-step budget. First measure a constrained teacher upper bound;
 only then train the joint progress/information action head. No 24-view orbit or
 30 m candidate-circle action is allowed in this gate.
 
+## Path-local two-mode upper bound
+
+The first constrained upper-bound test is now complete on full Val Seen. The
+first action is target-independent and goes toward the midpoint of the two
+spatially distinct belief modes (falling back to Top-1 if needed). Only after
+that online observation does a privileged teacher choose the mode closest to
+the reference target. Thus this is an upper bound, not a deployable result.
+
+| Val Seen method | SR | OSR | SPL | NE | Mean actions | Mean path |
+|---|---:|---:|---:|---:|---:|---:|
+| Static Top-1 | 36.92 | 43.04 | 35.56 | 35.02 m | 5.59 | 196.47 m |
+| Perfect two-mode disambiguation | **53.56** | **59.07** | **51.44** | **26.90 m** | 5.71 | 197.06 m |
+
+The raw Top-1 Hit@20 is 38.26%; the two-mode oracle coverage is 54.74%.
+Perfect selection therefore adds 16.64 closed-loop SR points while adding only
+0.12 actions and 0.59 m of path length. This validates the budgeted action
+geometry but does not yet show that RGB can infer the teacher choice.
+
+The next gate is narrow: at only these path-local 50 m observations, test
+whether point-cloud supervision and then RGB prediction can rank Top-1 versus
+Top-2. The full action transformer should be trained only if that non-privileged
+ranking is reliably better than static Top-1.

@@ -71,6 +71,25 @@ def belief_argmax_xy(logits) -> tuple[float, float]:
     return (column + 0.5) / size, (row + 0.5) / size
 
 
+def belief_distinct_topk_xy(logits, k: int = 2,
+                            minimum_separation_m: float = 25.0,
+                            map_size_m: float = 410.0):
+    """Return spatially distinct belief modes instead of adjacent grid cells."""
+    if logits.ndim != 2 or logits.shape[0] != logits.shape[1]:
+        raise ValueError("belief logits must be a square 2-D map")
+    size = int(logits.shape[0])
+    selected = []
+    for index in logits.flatten().argsort(descending=True).tolist():
+        row, column = divmod(index, size)
+        point = ((column + 0.5) / size, (row + 0.5) / size)
+        if all(np.linalg.norm(np.asarray(point) - np.asarray(previous))
+               * map_size_m > minimum_separation_m for previous in selected):
+            selected.append(point)
+            if len(selected) == k:
+                break
+    return selected
+
+
 def optimistic_translation_steps(start_xy, destination_xy,
                                  protocol: OfficialProtocol) -> int:
     """Lower bound on official outer actions needed for a translation.
