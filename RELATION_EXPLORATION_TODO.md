@@ -11,12 +11,19 @@ gate passed before changing the next component.
   `off`, `corner`, `edge`, `between`, `across`, and `opposite`.
 - [ ] Step 3: Build the deterministic exploration-condition preprocessor and
   verify strong/soft/ambiguous calibration without training Diffusion.
-- [ ] Step 4: Compare direct, fixed-exploration, dynamic-exploration, and
-  best-of-eight Oracle rule trajectories under the frozen 20-action budget.
-- [ ] Step 5: Condition endpoint-residual Diffusion V2 on exploration features
-  and require SR/SPL non-regression against frozen V1.
-- [ ] Step 6: Add `landmark_clean` human lateral-offset supervision and test
-  whether it improves exploration without increasing redundant path length.
+- [ ] Step 4: Generate low/medium/high-exploration trajectory families and
+  compare fixed exploration, uncertainty-conditioned exploration, and
+  best-of-eight Oracle selection under the frozen 20-action budget.  Do not
+  use a shortest path as the trajectory backbone.
+- [ ] Step 5: Train exploration-conditioned full-trajectory Diffusion.  The
+  exploration condition controls trajectory shape and diversity; endpoint,
+  20-action budget, loop/overshoot penalties, and arrival error remain hard
+  constraints.  Shortest distance is an efficiency metric/penalty only, not
+  generation supervision.
+- [ ] Step 6: Add cleaned `landmark_clean` trajectories grouped by exploration
+  level.  Learn useful human search shapes while filtering loops, repeated
+  points, and post-arrival motion; do not reduce supervision to offsets from a
+  shortest-path skeleton.
 - [ ] Step 7: Add visibility-conditioned RGB belief updates and learned stop.
 - [ ] Step 8: Freeze all weights and thresholds, run `val_unseen` once, and
   leave `test_unseen` untouched until the final paper evaluation.
