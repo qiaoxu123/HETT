@@ -117,6 +117,18 @@ def parse_args():
     parser.add_argument('--progress_loss_weight', type=float, default=0.1)
     parser.add_argument('--target_loss_weight', type=float, default=0.1,
                         help='auxiliary grid loss from released code (not specified in paper)')
+    parser.add_argument('--target_belief_head', action='store_true',
+                        help='replace single-coordinate target regression with a multi-landmark belief head')
+    parser.add_argument('--belief_grid_size', type=int, default=41,
+                        help='spatial resolution of the dense target belief')
+    parser.add_argument('--belief_radius_m', type=float, default=20.0,
+                        help='radius used by the target-region probability loss')
+    parser.add_argument('--max_landmarks', type=int, default=9,
+                        help='maximum number of independently encoded instruction landmarks')
+    parser.add_argument('--belief_region_loss_weight', type=float, default=1.0)
+    parser.add_argument('--belief_offset_loss_weight', type=float, default=1.0)
+    parser.add_argument('--normalize_rollout_loss', action='store_true',
+                        help='normalize each rollout loss by its number of active sample-steps')
     parser.add_argument('--disable_task_interaction', action='store_true')
 
     # logger
