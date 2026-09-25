@@ -7,11 +7,12 @@ gate passed before changing the next component.
   near-only relations on `val_seen`, including flipped-relation controls.
   **Executed; overall gate FAILED.** `near` passed, while directional
   correct-vs-flipped consistency was 59.04% against the fixed 60% gate.
-- [ ] Step 2: Build and validate an online semantic-RGB fusion sample.  At
+- [x] Step 2 / Online Todo 1: Build and validate an online semantic-RGB fusion sample.  At
   every time step it must combine language/landmark relation tokens, current
   RGB evidence, pose-conditioned visibility, previous belief, and remaining
   budget.  Missing or occluded visual evidence must remain unknown rather than
-  become negative evidence.
+  become negative evidence. **PASSED on an 8 train_seen + 8 val_seen pilot;
+  82 causal frames passed alignment, budget, visibility and leakage checks.**
 - [ ] Step 3: Learn a continuous exploration-value head from the fused state.
   Do not assign hand-written strong/soft/ambiguous classes.  Supervise the head
   with the measured downstream advantage of exploratory trajectories over
@@ -36,4 +37,5 @@ gate passed before changing the next component.
 - [ ] Step 8: Freeze all weights and thresholds, run `val_unseen` once, and
   leave `test_unseen` untouched until the final paper evaluation.
 
-Current state: **Stopped after Step 1 as requested.  Step 2 has not started.**
+Current state: **Stopped after Online Todo 1 as requested.  The fusion model
+and exploration-value head have not started.**
