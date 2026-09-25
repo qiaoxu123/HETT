@@ -8,17 +8,18 @@ import sys
 from pathlib import Path
 
 import numpy as np
+import rasterio
 import torch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from independent_nav.controller import GeometricGoalController
-from multiagent.mapdata import MAP_BOUNDS
 
 
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--trajectories", type=Path,
                         default=Path("data/processed_citynav/citynav_val_unseen.json"))
+    parser.add_argument("--data-root", type=Path, default=Path("data"))
     parser.add_argument("--goals", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--map-meters", type=float, default=410.0)
@@ -31,10 +32,15 @@ def episode_id(item):
             str(item["object_ids"][0]), int(item["ann_ids"][0])]
 
 
-def unnormalize_goal(normalized, map_name, map_meters):
-    bounds = MAP_BOUNDS[map_name]
-    return (bounds.x_min + float(normalized[0]) * map_meters,
-            bounds.y_max - float(normalized[1]) * map_meters)
+def map_origin(data_root, map_name):
+    with rasterio.open(data_root / "rgbd" / f"{map_name}.tif") as dataset:
+        return dataset.bounds.left, dataset.bounds.top
+
+
+def unnormalize_goal(normalized, origin, map_meters):
+    x_min, y_max = origin
+    return (x_min + float(normalized[0]) * map_meters,
+            y_max - float(normalized[1]) * map_meters)
 
 
 def path_length(path):
@@ -63,13 +69,16 @@ def main():
     rows = [row for row in rows if row.get("dist_marker_to_target", 0.0) <= 30.0]
     controller = GeometricGoalController()
     results = []
+    origins = {}
 
     for row in rows:
         key = tuple(episode_id(row))
         if key not in predicted:
             raise KeyError(f"missing predicted goal for {key}")
         map_name = key[0]
-        goal_xy = unnormalize_goal(predicted[key], map_name, args.map_meters)
+        if map_name not in origins:
+            origins[map_name] = map_origin(args.data_root, map_name)
+        goal_xy = unnormalize_goal(predicted[key], origins[map_name], args.map_meters)
         pose = row["trajectory"][0]
         if len(pose) == 6:
             start_yaw = math.atan2(pose[4], pose[3])
@@ -104,6 +113,8 @@ def main():
             "hett_model": False,
             "hett_goal_candidates": False,
             "hett_action_generator": False,
+            "hett_utility_imports": False,
+            "map_coordinates": "read directly from source GeoTIFF metadata",
             "height": "fixed 50 m; as in HETT, SR/SPL use horizontal XY distance",
         },
     }
