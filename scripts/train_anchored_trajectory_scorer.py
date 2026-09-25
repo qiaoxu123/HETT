@@ -63,11 +63,11 @@ def parse_args():
 SLOT_TO_MODE = (0, 1, 2, 3, 4, 0, 0, 1)
 
 
-def build_features(args, relation_all, start, count, device):
-    stop = start + count
-    rows = load_rows(args.candidate_dir / "train_seen.jsonl")[start:stop]
+def build_features(args, relation_all, start, count, device, split="train_seen"):
+    stop = start + count if count else None
+    rows = load_rows(args.candidate_dir / f"{split}.jsonl")[start:stop]
     trajectories = json.loads((args.data_root / "processed_citynav" /
-                               "citynav_train_seen.json").read_text())[start:stop]
+                               f"citynav_{split}.json").read_text())[start:stop]
     relation = relation_all[start:stop]
     inference = BeliefInferenceDataset(rows, relation)
     beliefs, _ = predict_beliefs(
@@ -78,7 +78,7 @@ def build_features(args, relation_all, start, count, device):
             zip(rows, trajectories, modes)):
         map_name = f'{trajectory["area"]}_block_{trajectory["block"]}'
         if map_name != row["map_name"] or trajectory["descriptions"][0] != row["description"]:
-            raise ValueError(f"row alignment mismatch at train_seen:{start + index}")
+            raise ValueError(f"row alignment mismatch at {split}:{start + index}")
         start_xy = normalized_start(trajectory["trajectory"][0], map_name)
         _, _, yaw = pose_xy_yaw(trajectory["trajectory"][0])
         library = generate_rule_trajectory_set(start_xy, yaw, hypotheses)
