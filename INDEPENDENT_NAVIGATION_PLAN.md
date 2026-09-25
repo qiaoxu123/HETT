@@ -130,13 +130,17 @@ On 2,697 `val_unseen` episodes:
 
 | System | SR | SPL | final NE |
 |---|---:|---:|---:|
-| Frozen HETT baseline | 9.86% | 8.06% | 62.56 m |
+| Published HETT* (refined CityNav) | 19.10% | 16.70% | 51.30 m |
+| Earlier local 20-epoch run, best checkpoint | 19.54% | 15.73% | 50.52 m |
 | Independent model + independent controller | **23.80%** | **22.96%** | **44.20 m** |
 
-This uses HETT's exact evaluation convention: both trajectory and goal are reduced
-to XY before the 20-metre success check. SR improves by **13.94 points**, SPL by
-**14.90 points**, and navigation error falls by **18.36 m**. Height affects the
-quality of visual observations, but it is not included directly in SR or SPL.
+The earlier 9.86% record was an epoch-2 structural-ablation control, not the
+paper-quality HETT baseline, and must not be used for the headline comparison.
+Against the stronger earlier local best on the same 2,697 refined
+`val_unseen` episodes, SR improves by **4.26 points**, SPL by **7.23 points**,
+and navigation error falls by **6.33 m**. The current independent system has
+not been evaluated on complete `test_unseen`, so it cannot yet be compared with
+the paper's 28.90% or the earlier local run's 27.97% `test_unseen` SR.
 
 ## Next validation gates
 

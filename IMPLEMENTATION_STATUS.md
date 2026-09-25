@@ -142,13 +142,20 @@
   20.69%.  This supports genuine class-conditioned RGB use, but the selected
   fusion's mean error is 56.02 m versus 55.67 m for geometry alone.  It is not
   yet accepted as the navigation default.
-- On the same full split, frozen HETT target prediction is 10.86% Hit@20 and
-  55.46 m mean error.  Target-free fusion is +11.94 Hit@20 points, but its mean
-  error is 0.55 m worse.  This is a target-selection comparison, not SR/SPL.
-- On the earlier matched 128-episode subset, HETT target prediction is 11.72%
+- On the same full split, the epoch-2 structural-ablation HETT target predictor
+  is 10.86% Hit@20 and 55.46 m mean error. It is not the paper-quality HETT
+  baseline. Target-free fusion is +11.94 Hit@20 points against this diagnostic,
+  but its mean error is 0.55 m worse. This is target selection, not SR/SPL.
+- On the earlier matched 128-episode subset, that same epoch-2 predictor is 11.72%
   Hit@20 and 53.19 m mean error.  Human-trajectory temporal replay reaches
   28.91% and 38.39 m, but that replay remains an upper-bound-style diagnostic
   because its observation poses were selected by target-distance bands.
+- Corrected navigation comparison: published HETT* is 19.10% SR / 16.70% SPL /
+  51.30 m NE on refined `val_unseen`; the earlier local 20-epoch training run's
+  best checkpoint is 19.54% / 15.73% / 50.52 m. The independent static system
+  reaches 23.80% / 22.96% / 44.19 m, a gain of 4.26 SR points, 7.23 SPL points,
+  and 6.33 m NE over the strongest local baseline. No complete `test_unseen`
+  comparison exists yet.
 
 The next implementation turn should replace fixed rank-order visits with a
 learned information-gain view selector.  The current RGB evidence is real but
