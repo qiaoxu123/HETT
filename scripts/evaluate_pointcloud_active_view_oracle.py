@@ -24,6 +24,8 @@ from shapely.geometry import LineString, Polygon
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from independent_nav.pointcloud import PerspectivePointRenderer, read_ply, unproject_depth
 from scripts.build_altitude_view_benchmark import resolve_landmarks
+from scripts.validate_candidate_geometry import mask_landmark_span
+from scripts.train_relation_geometry_ranker import relation_cue_vector
 from scripts.evaluate_temporal_candidate_reranking import (
     episode_key,
     navigation_metrics,
@@ -281,6 +283,15 @@ def collect(args, split, items, metadata, objects):
             for landmark in landmarks:
                 polygon = Polygon(landmark["contour"])
                 landmark_polygons.append(polygon if polygon.is_valid else polygon.buffer(0))
+            landmark_centers = np.asarray(
+                [[polygon.centroid.x, polygon.centroid.y]
+                 for polygon in landmark_polygons], dtype=np.float64).reshape(-1, 2)
+            relation_cues = []
+            for query in episode["landmark_names"][:len(landmark_polygons)]:
+                prompt, _ = mask_landmark_span(episode["description"], query, query)
+                relation_cues.append(relation_cue_vector(prompt).numpy())
+            relation_cue = (np.max(relation_cues, axis=0) if relation_cues
+                            else np.zeros(12, dtype=np.float32))
             description = episode["description"].lower()
             road_required = any(word in description for word in (
                 "across", "road", "street", "corner", "junction", "intersection"))
@@ -309,6 +320,10 @@ def collect(args, split, items, metadata, objects):
                 "valid_fraction": np.asarray(validity),
                 "road_required": road_required,
                 "landmark_count_resolved": len(landmark_polygons),
+                "landmark_centers_world": landmark_centers,
+                "relation_cue": relation_cue,
+                "landmark_relation_cues": np.asarray(
+                    relation_cues, dtype=np.float32).reshape(-1, 12),
             })
             del renderer
         print(split, map_name, len(map_items), flush=True)

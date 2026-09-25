@@ -210,3 +210,9 @@ evidence remains too weak to promote into the autonomous controller yet.
   subset; explicit visual landmark confirmation adds only +0.59 point over
   relation geometry, and road confirmation hurts. These inputs are not yet
   accepted for the unified model; active-view teacher supervision is next.
+- Added a relation-conditioned active-view head trained from point-cloud
+  teacher utilities on `train_seen`. With per-landmark relation cues it reaches
+  40.63% Hit@20 on a 64-episode `val_seen` diagnostic subset, versus 39.06%
+  for a fixed 35-m view and 42.19% for the teacher heuristic. Removing
+  landmark geometry falls to 37.50%. This is a small teacher-observation gate,
+  not RGB closed-loop navigation; see `ACTIVE_VIEW_HEAD_RESULTS.md`.
