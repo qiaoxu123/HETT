@@ -942,10 +942,14 @@ class NavCMTAgent:
 
             # self.logs['ml_loss'].append((ml_loss * train_ml / batch_size).item())
 
-            self.logs['direction_loss'].append((direction_loss * train_ml / loss_normalizer).item())
-            self.logs['progress_loss'].append((progress_loss * train_ml / loss_normalizer).item())
-            self.logs['goal_predict_loss'].append((goal_predict_loss * train_ml / loss_normalizer).item())
-            self.logs['target_predict_loss'].append((target_predict_loss * train_ml / loss_normalizer).item())
+            def normalized_item(value):
+                value = value * train_ml / loss_normalizer
+                return value.detach().item() if torch.is_tensor(value) else float(value)
+
+            self.logs['direction_loss'].append(normalized_item(direction_loss))
+            self.logs['progress_loss'].append(normalized_item(progress_loss))
+            self.logs['goal_predict_loss'].append(normalized_item(goal_predict_loss))
+            self.logs['target_predict_loss'].append(normalized_item(target_predict_loss))
             self.logs['belief_region_loss'].append(
                 (belief_region_loss * train_ml / loss_normalizer).detach().item()
                 if torch.is_tensor(belief_region_loss)
