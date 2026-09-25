@@ -63,3 +63,9 @@ subset to verify that the new head can overfit its target labels.  This
 diagnostic number is never reported as generalization performance.
 
 `test_unseen` remains disabled unless `--include_test_unseen` is explicit.
+## Exact target supervision
+
+Target-only training uses the true continuous target position as its label:
+cross entropy on the exact 41 x 41 target cell plus regression of the exact
+within-cell offset.  The 20 m radius is an evaluation metric only and is not
+used as a training target.

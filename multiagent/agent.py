@@ -942,8 +942,10 @@ class NavCMTAgent:
             # print(ml_loss)
             # ml_loss = direction_loss + progress_loss
             if getattr(self.args, 'target_only_keyframes', False):
+                # Target-only training uses the exact target cell and the exact
+                # within-cell offset as supervision.  The 20 m region is kept
+                # only as a reported navigation metric, never as a soft label.
                 ml_loss = (self.args.target_loss_weight * target_predict_loss
-                           + self.args.belief_region_loss_weight * belief_region_loss
                            + self.args.belief_offset_loss_weight * belief_offset_loss)
             else:
                 ml_loss = (self.args.direction_loss_weight * direction_loss

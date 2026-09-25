@@ -127,7 +127,8 @@ def parse_args():
                         help='maximum number of independently encoded instruction landmarks')
     parser.add_argument('--landmark_boundary_points', type=int, default=16,
                         help='fixed number of points sampled from every landmark contour')
-    parser.add_argument('--belief_region_loss_weight', type=float, default=1.0)
+    parser.add_argument('--belief_region_loss_weight', type=float, default=1.0,
+                        help='20 m region loss weight for rollout training; ignored in target-only mode')
     parser.add_argument('--belief_offset_loss_weight', type=float, default=1.0)
     parser.add_argument('--normalize_rollout_loss', action='store_true',
                         help='normalize each rollout loss by its number of active sample-steps')
