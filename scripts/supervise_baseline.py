@@ -43,6 +43,12 @@ def main():
     parser.add_argument('--python', required=True)
     parser.add_argument('--max-episodes', type=int, default=0)
     parser.add_argument('--epochs', type=int, default=20)
+    parser.add_argument('--batch-size', type=int, default=2)
+    parser.add_argument('--grad-accum', type=int, default=4)
+    parser.add_argument('--train-fine-altitude', action='store_true')
+    parser.add_argument('--fine-altitude-levels', type=float, nargs='+', default=[50., 40.])
+    parser.add_argument('--wait-run', default=None,
+                        help='snapshot now, then wait for this run to complete before using the GPU')
     parser.add_argument('--interval', type=int, default=60)
     args = parser.parse_args()
     root = Path(__file__).resolve().parent.parent
@@ -73,20 +79,60 @@ def main():
                for p in sorted((root / 'data/rgbd').iterdir()) if p.is_file()]
     atomic_json(run / 'provenance.json', dict(started=stamp(), git_head=command_output(['git','rev-parse','HEAD'],root).strip(),
                 source_sha256=source_hashes, input_sha256=inputs, raster_inventory=rasters,
-                variant='fixed training code, task interaction disabled; not historical buggy baseline'))
+                variant=(
+                    'teacher-forced 50-to-low fine-altitude training; task interaction disabled'
+                    if args.train_fine_altitude else
+                    'fixed training code, task interaction disabled; not historical buggy baseline'
+                )))
     environment = os.environ.copy()
     environment.update(CUDA_VISIBLE_DEVICES='0', PYTHONUNBUFFERED='1', PYTHON=args.python,
                        HF_HUB_OFFLINE='1', TRANSFORMERS_OFFLINE='1')
     checkpoint_dir = run / 'checkpoints'
     train = ['bash', str(snapshot / 'multiagent/train.sh'), '--disable_task_interaction',
              '--epochs', str(args.epochs), '--max_episodes', str(args.max_episodes),
+             '--batch_size', str(args.batch_size), '--grad_accum', str(args.grad_accum),
              '--output_dir', str(checkpoint_dir)]
+    if args.train_fine_altitude:
+        train += ['--train_fine_altitude', '--fine_altitude_levels',
+                  *[str(level) for level in args.fine_altitude_levels]]
     evaluation = ['bash', str(snapshot / 'multiagent/eval.sh'), '--disable_task_interaction',
                   '--checkpoint', str(checkpoint_dir / 'best_val_unseen'),
                   '--max_episodes', str(args.max_episodes), '--output_dir', str(run / 'evaluation')]
+    phases = [('training', train), ('evaluation', evaluation)]
+    dynamic_evaluation = None
+    if args.train_fine_altitude:
+        dynamic_evaluation = [
+            'bash', str(snapshot / 'multiagent/eval.sh'), '--disable_task_interaction',
+            '--checkpoint', str(checkpoint_dir / 'best_val_unseen'),
+            '--max_episodes', str(args.max_episodes),
+            '--output_dir', str(run / 'evaluation_dynamic'),
+            '--eval_splits', 'val_seen', 'val_unseen',
+            '--fine_altitude_refinement', '--fine_altitude_levels',
+            *[str(level) for level in args.fine_altitude_levels],
+        ]
+        phases.append(('evaluation_dynamic', dynamic_evaluation))
     atomic_json(run / 'commands.json', dict(train=train, evaluation=evaluation,
+                evaluation_dynamic=dynamic_evaluation,
                 environment_overrides={k:environment[k] for k in ['CUDA_VISIBLE_DEVICES','PYTHONUNBUFFERED','PYTHON',
                                                                  'HF_HUB_OFFLINE','TRANSFORMERS_OFFLINE']}))
+    if args.wait_run:
+        predecessor_status = Path(args.wait_run).resolve() / 'status.json'
+        while True:
+            try:
+                predecessor = json.loads(predecessor_status.read_text())
+            except (FileNotFoundError, json.JSONDecodeError):
+                predecessor = {}
+            if predecessor.get('phase') == 'complete':
+                break
+            exit_code = predecessor.get('exit_code')
+            if exit_code not in (None, 0):
+                atomic_json(run / 'status.json', dict(
+                    time=stamp(), phase='blocked',
+                    reason=f'predecessor failed with exit {exit_code}'))
+                raise SystemExit(1)
+            atomic_json(run / 'status.json', dict(
+                time=stamp(), phase='queued', waiting_for=str(predecessor_status)))
+            time.sleep(args.interval)
     stopped = False
     child = None
     def stop(signum, frame):
@@ -104,7 +150,7 @@ def main():
                     append(run / 'checkpoint_hashes.jsonl', dict(time=stamp(), file=path.name,
                            bytes=path.stat().st_size, sha256=digest(path)))
                     seen.add(path.name)
-    for phase, command in [('training', train), ('evaluation', evaluation)]:
+    for phase, command in phases:
         if stopped:
             break
         with (run / (phase + '.log')).open('w') as log:

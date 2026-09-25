@@ -68,7 +68,15 @@ def build_val_dataset(args, rank=0):
     # print(rank)
     dataset_class = CityNavBatch
 
-    val_env_names = ['val_seen', 'val_unseen', 'test_unseen', ]  # 'test_unseen'
+    # Fine-altitude thresholds are development-time decisions.  Keep
+    # test_unseen sealed until the policy and thresholds are frozen.
+    val_env_names = getattr(args, 'eval_splits', None)
+    if val_env_names is None:
+        val_env_names = (
+            ['val_seen', 'val_unseen']
+            if getattr(args, 'fine_altitude_refinement', False)
+            else ['val_seen', 'val_unseen', 'test_unseen']
+        )
     # val_env_names = ['visualization' ]  # 'test_unseen'
 
     val_envs = {}
@@ -212,6 +220,8 @@ def train(args, train_env, val_envs, rank=-1):
 
             progress_loss = sum(agent.logs['progress_loss']) / max(len(agent.logs['progress_loss']), 1)
             goal_predict_loss = sum(agent.logs['goal_predict_loss']) / max(len(agent.logs['goal_predict_loss']), 1)
+            train_low_altitude_fraction = sum(agent.logs['low_altitude_fraction']) / max(len(agent.logs['low_altitude_fraction']), 1)
+            train_altitude_changes = sum(agent.logs['altitude_changes']) / max(len(agent.logs['altitude_changes']), 1)
             # target_predict_loss = sum(agent.logs['target_predict_loss']) / max(len(agent.logs['target_predict_loss']), 1)
             # writer.add_scalar("loss/IL_loss", IL_loss, iter)
 
@@ -240,6 +250,8 @@ def train(args, train_env, val_envs, rank=-1):
             epoch_metrics = dict(epoch=idx + 1, elapsed_seconds=time.time()-start,
                                  il_loss=ml_loss, direction_loss=direction_loss,
                                  progress_loss=progress_loss, goal_loss=goal_predict_loss,
+                                 train_low_altitude_fraction=train_low_altitude_fraction,
+                                 train_altitude_changes=train_altitude_changes,
                                  validation={})
             # Reuse the trained modules: avoid a second BERT/Darknet/ET on one GPU.
             agent_eval = agent

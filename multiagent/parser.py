@@ -129,6 +129,14 @@ def parse_args():
     parser.add_argument('--map_update_interval', type=int, default=5)
     parser.add_argument('--max_depth', type=float, default=200.)
     parser.add_argument('--altitude', type=float, default=50)
+    parser.add_argument('--fine_altitude_refinement', action='store_true', default=False,
+                        help='eval-only: keep coarse map canonical and refine RGB at lower AGL')
+    parser.add_argument('--train_fine_altitude', action='store_true', default=False,
+                        help='train-only: teacher-force low RGB altitude in the true fine stage')
+    parser.add_argument('--fine_altitude_levels', type=float, nargs='+', default=[50., 45.],
+                        metavar='M', help='strictly descending AGL levels; first is canonical')
+    parser.add_argument('--fine_altitude_enter_distance', type=float, default=40.)
+    parser.add_argument('--fine_altitude_containment_margin', type=float, default=5.)
     parser.add_argument('--ablate', type=str, choices=['rgb', 'depth', 'tracking', 'landmark', 'gsam', ''], default='')
     parser.add_argument('--alt_env', type=str, choices=['', 'flood', 'ground_fissure'], default='')
 
@@ -163,6 +171,11 @@ def parse_args():
     # eval params
     parser.add_argument('--eval_every', type=int, default=1)
     parser.add_argument('--eval_first', action='store_true', default=False)
+    parser.add_argument(
+        '--eval_splits', nargs='+',
+        choices=['val_seen', 'val_unseen', 'test_unseen'], default=None,
+        help='optional explicit evaluation splits; useful for paired development runs'
+    )
     parser.add_argument('--max_action_len', type=int, default=20)
     parser.add_argument('--eval_client', type=str, choices=['crop', 'airsim'], default='crop')
     parser.add_argument('--success_dist', type=float, default=20.)
@@ -176,6 +189,20 @@ def parse_args():
     args = parser.parse_args()
     if args.grad_accum < 1 or args.batch_size < 1 or args.max_episodes < 0:
         parser.error('grad_accum/batch_size must be positive; max_episodes must be nonnegative')
+    if args.fine_altitude_refinement and args.train_fine_altitude:
+        parser.error('use --fine_altitude_refinement for eval or --train_fine_altitude for train, not both')
+    if args.fine_altitude_refinement or args.train_fine_altitude:
+        levels = args.fine_altitude_levels
+        if args.fine_altitude_refinement and (args.mode != 'eval' or args.feedback != 'student'):
+            parser.error('--fine_altitude_refinement is initially restricted to student evaluation')
+        if args.train_fine_altitude and args.mode != 'train':
+            parser.error('--train_fine_altitude is restricted to training')
+        if args.fine_altitude_refinement and args.eval_splits and 'test_unseen' in args.eval_splits:
+            parser.error('--fine_altitude_refinement must be frozen before evaluating test_unseen')
+        if len(levels) < 2 or any(lower >= upper for upper, lower in zip(levels, levels[1:])):
+            parser.error('--fine_altitude_levels must be strictly high-to-low')
+        if abs(args.altitude - levels[0]) > 1e-6:
+            parser.error('--altitude must equal the first canonical fine-altitude level')
     if args.checkpoint and not Path(args.checkpoint).is_absolute():
         args.checkpoint = str(PROJECT_ROOT / args.checkpoint)
     output_dir = Path(args.output_dir)

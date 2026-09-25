@@ -20,7 +20,15 @@ from torchvision import transforms
 
 # from r2r.agent_cmt import Seq2SeqCMTAgent
 from multiagent.actions import Action
+from multiagent.active_altitude.fine_refinement import (
+    FineAltitudeConfig,
+    FineAltitudeController,
+    FineAltitudeSignals,
+    FineNavigationPhase,
+    oracle_training_altitude,
+)
 from multiagent.defaultpaths import GOAL_PREDICTOR_CHECKPOINT_DIR
+from multiagent.mapdata import GROUND_LEVEL
 from multiagent.models.dark_net import Darknet
 from multiagent.models.CLIP import CLIP
 # from direction.models.ddppo.resenet_encoders import TorchVisionResNet50
@@ -395,8 +403,43 @@ class NavCMTAgent:
         # 5. 计算损失并输出动作/目标/进度更新环境状态
         # rollout_start_time = time.time()
 
-        obs = self.env._get_obs(random_direction=(self.feedback == 'teacher'))
+        # Training receives an oracle *height label* from true distance.  At
+        # validation/deployment that privileged signal is unavailable and the
+        # predicted controller is used.  Keeping these booleans separate is a
+        # guard against target leakage.
+        oracle_fine_altitude_enabled = bool(
+            getattr(self.args, 'train_fine_altitude', False) and train_ml is not None
+        )
+        predicted_fine_altitude_enabled = bool(
+            getattr(self.args, 'fine_altitude_refinement', False)
+            or (getattr(self.args, 'train_fine_altitude', False) and train_ml is None)
+        )
+        fine_altitude_enabled = (
+            oracle_fine_altitude_enabled or predicted_fine_altitude_enabled
+        )
+        fine_altitude_controller = None
+        fine_altitude_states = None
+        canonical_map_altitude = None
+        if fine_altitude_enabled:
+            fine_config = FineAltitudeConfig(
+                altitude_levels_m=tuple(self.args.fine_altitude_levels),
+                enter_distance_m=self.args.fine_altitude_enter_distance,
+                containment_margin_m=self.args.fine_altitude_containment_margin,
+            )
+            if predicted_fine_altitude_enabled:
+                fine_altitude_controller = FineAltitudeController(fine_config)
+            canonical_map_altitude = fine_config.altitude_levels_m[0]
+
+        obs = self.env._get_obs(
+            random_direction=(self.feedback == 'teacher'),
+            canonical_map_altitude_m=canonical_map_altitude,
+        )
         batch_size = len(obs)
+        if predicted_fine_altitude_enabled:
+            fine_altitude_states = [
+                fine_altitude_controller.initial_state() for _ in range(batch_size)
+            ]
+        frozen_coarse_goals = [None] * batch_size
 
         # --------------- 1. 语言输入：instruction -> token ids -> BERT embedding -----------------
         # lang_inputs: list[str]，长度= batch_size
@@ -453,6 +496,9 @@ class NavCMTAgent:
             traj[i]['gt_trajectory'] = ob['trajectory']
             traj[i]['trajectory'] = [poses[i]]
             traj[i]['stage1_trajectory'] = [poses[i]]
+            traj[i]['camera_altitudes_m'] = [
+                poses[i].z - GROUND_LEVEL[ob['map_name']]
+            ]
         # print(np.array([len(ob['trajectory']) for ob in obs]))
 
         # Initialization the finishing status
@@ -473,6 +519,7 @@ class NavCMTAgent:
             'directions': torch.zeros((batch_size, 0, 4)).cuda(),
             'grid_fts': torch.zeros(batch_size, 0, 768).cuda(),
             'grid_index': torch.zeros(batch_size, 0).cuda(),
+            'grid_valid': torch.zeros(batch_size, 0, dtype=torch.bool).cuda(),
             'frames': torch.zeros(batch_size, 0, 512, 49).cuda(),
             'lenths': [0 for _ in range(batch_size)],
             'lang': lang_features,
@@ -540,6 +587,7 @@ class NavCMTAgent:
                 lenths=input['lenths'],             # [B]
                 grid_fts=input['grid_fts'],         # [B, N_hist, 768]
                 grid_index=input['grid_index'],     # [B, N_hist]
+                grid_valid=input['grid_valid'],     # low-altitude probes stay out of global memory
                 maps=input['maps'],                 # [B, ...]
                 lang=input['lang'],                 # [B, L_lang, 768]
                 candidates=input['candidates'],     # [B, N_cand, 2]
@@ -555,6 +603,18 @@ class NavCMTAgent:
             # print(input['grid_index'], grid_index)
 
             input['grid_index'] = torch.cat((input['grid_index'], grid_index), dim=1)
+            if fine_altitude_enabled:
+                memory_valid = torch.tensor([
+                    abs(
+                        ob['pose'].z - GROUND_LEVEL[ob['map_name']]
+                        - canonical_map_altitude
+                    ) <= 1e-6
+                    for ob in obs
+                ], dtype=torch.bool, device=input['grid_valid'].device).unsqueeze(1)
+            else:
+                memory_valid = torch.ones(
+                    batch_size, 1, dtype=torch.bool, device=input['grid_valid'].device)
+            input['grid_valid'] = torch.cat((input['grid_valid'], memory_valid), dim=1)
             # print("- model prediction takes %s seconds ---" % (time.time() - rollingout_action_start_time))
             # pred_direction = output
             # pred_progress = progress
@@ -647,12 +707,42 @@ class NavCMTAgent:
                 sys.exit('Invalid feedback option')
 
             cpu_goal = at_goal.cpu().detach().numpy()
+            goal_probabilities = torch.softmax(
+                pred_logits.squeeze(-1), dim=-1).detach().cpu().numpy()
             # print(cpu_goal)
 
             # Interact with the simulator with actions
             for i in range(len(obs)):
 
-                dst = self.env.unnormalize_position(cpu_goal[i], obs[i]['map_name'],
+                predicted_dst = self.env.unnormalize_position(
+                    cpu_goal[i], obs[i]['map_name'], self.args.map_meters)
+
+                fine_altitude_decision = None
+                # The altitude policy belongs strictly to fine navigation.
+                # Do not even accumulate its stability history during the
+                # coarse waypoint-following phase: this guarantees that the
+                # complete stage-1 trajectory is the fixed-50 m baseline.
+                if predicted_fine_altitude_enabled and stage1_ended[i] and not ended[i]:
+                    fine_altitude_decision = fine_altitude_controller.step(
+                        fine_altitude_states[i],
+                        FineAltitudeSignals(
+                            goal_probabilities=goal_probabilities[i],
+                            predicted_goal_xy=tuple(cpu_goal[i]),
+                            predicted_distance_m=predicted_dst.dist_to(poses[i].xy),
+                        ),
+                    )
+                    if fine_altitude_decision.phase == FineNavigationPhase.REFINE:
+                        if frozen_coarse_goals[i] is None:
+                            frozen_coarse_goals[i] = np.array(cpu_goal[i], copy=True)
+                    else:
+                        frozen_coarse_goals[i] = None
+
+                navigation_goal = (
+                    frozen_coarse_goals[i]
+                    if fine_altitude_enabled and frozen_coarse_goals[i] is not None
+                    else cpu_goal[i]
+                )
+                dst = self.env.unnormalize_position(navigation_goal, obs[i]['map_name'],
                                                     self.args.map_meters)
 
                 # gt_center = self.env.unnormalize_position(global_position[gt_goal.cpu().detach().numpy()[i]], obs[i]['map_name'],
@@ -718,12 +808,42 @@ class NavCMTAgent:
                     if not ended[i]:
                         traj[i]['stage2_trajectory'].append(poses[i])
 
+                # Height is a sensing-only decision: apply it after the unchanged
+                # horizontal/rotation action so the next RGB observation uses the
+                # selected scale without altering coarse motion or stop control.
+                target_altitude_m = None
+                if oracle_fine_altitude_enabled and not ended[i]:
+                    # This is the only privileged-data use: it creates a
+                    # training label after the unchanged horizontal action.
+                    true_distance_m = poses[i].xy.dist_to(ob['goal'])
+                    target_altitude_m = oracle_training_altitude(
+                        bool(stage1_ended[i]), true_distance_m, fine_config)
+                elif fine_altitude_decision is not None and not ended[i]:
+                    target_altitude_m = fine_altitude_decision.target_altitude_m
+
+                if target_altitude_m is not None:
+                    pose = poses[i]
+                    poses[i] = Pose4D(
+                        pose.x,
+                        pose.y,
+                        GROUND_LEVEL[obs[i]['map_name']]
+                        + target_altitude_m,
+                        pose.yaw,
+                    )
+
             # Save trajectory output
             for i, ob in enumerate(obs):
                 if not ended[i]:
                     traj[i]['trajectory'].append(poses[i])
+                    traj[i]['camera_altitudes_m'].append(
+                        poses[i].z - GROUND_LEVEL[ob['map_name']]
+                    )
                     # Update the status
-            obs = self.env._get_obs(poses, random_direction=(self.feedback == 'teacher'))  # get gt_obs
+            obs = self.env._get_obs(
+                poses,
+                random_direction=(self.feedback == 'teacher'),
+                canonical_map_altitude_m=canonical_map_altitude,
+            )  # get gt_obs
             # current_view_corners = [np.array(ob['gt_path_corners'][0]) for ob in obs]
 
             # Early exit if all ended
@@ -778,6 +898,25 @@ class NavCMTAgent:
         self.logs['stage1_step'].append(float(stage1_step) / batch_size)
         self.logs['stage2_step'].append(float(stage2_step) / batch_size)
         self.logs['stage2_rotate'].append(float(stage2_rotate) / batch_size)
+        camera_altitudes = [
+            altitude
+            for item in traj
+            for altitude in item.get('camera_altitudes_m', [])
+        ]
+        canonical_altitude = (
+            fine_config.altitude_levels_m[0]
+            if fine_altitude_enabled else float(self.args.altitude)
+        )
+        low_fraction = (
+            float(np.mean(np.asarray(camera_altitudes) < canonical_altitude - 1e-6))
+            if camera_altitudes else 0.0
+        )
+        altitude_changes = sum(
+            np.count_nonzero(np.abs(np.diff(item.get('camera_altitudes_m', []))) > 1e-6)
+            for item in traj
+        )
+        self.logs['low_altitude_fraction'].append(low_fraction)
+        self.logs['altitude_changes'].append(float(altitude_changes) / batch_size)
 
         # print('[3]')
         # debug_memory()

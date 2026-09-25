@@ -16,6 +16,15 @@ from .controller import (
     UncertaintyAltitudeController,
 )
 from .teacher import TeacherTargets, build_teacher_targets
+from .fine_refinement import (
+    FineAltitudeConfig,
+    FineAltitudeController,
+    FineAltitudeDecision,
+    FineAltitudeSignals,
+    FineAltitudeState,
+    FineNavigationPhase,
+    canonical_map_pose,
+)
 
 __all__ = [
     "AltitudeAction",
@@ -24,9 +33,16 @@ __all__ = [
     "ControllerDecision",
     "ControllerSignals",
     "ControllerState",
+    "FineAltitudeConfig",
+    "FineAltitudeController",
+    "FineAltitudeDecision",
+    "FineAltitudeSignals",
+    "FineAltitudeState",
+    "FineNavigationPhase",
     "MultiScaleBelief",
     "NavigationPhase",
     "TeacherTargets",
     "UncertaintyAltitudeController",
     "build_teacher_targets",
+    "canonical_map_pose",
 ]

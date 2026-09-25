@@ -51,3 +51,32 @@ def test_high_entropy_can_reopen_phase_and_ascend():
     decision = controller.step(state, signals(uniform, distance=50))
     assert decision.phase == NavigationPhase.COARSE_APPROACH
     assert decision.altitude_action == AltitudeAction.ASCEND
+
+
+def test_randomized_rollouts_preserve_safety_invariants():
+    rng = np.random.default_rng(0)
+    controller = UncertaintyAltitudeController()
+    for _ in range(100):
+        state = controller.initial_state()
+        for _ in range(50):
+            previous_level = state.current_level
+            probabilities = rng.dirichlet(np.ones(25))
+            decision = controller.step(
+                state,
+                signals(
+                    probabilities,
+                    xy=tuple(rng.random(2)),
+                    distance=float(rng.uniform(0, 150)),
+                    stop=float(rng.random()),
+                    landmark=float(rng.random()),
+                    semantic=float(rng.random()),
+                ),
+            )
+            assert 0 <= state.current_level < len(controller.config.altitude_levels_m)
+            assert abs(state.current_level - previous_level) <= 1
+            assert decision.target_level == state.current_level
+            assert decision.target_altitude_m == controller.config.altitude_levels_m[state.current_level]
+            assert 0.0 <= decision.confidence <= 1.0
+            assert 0.0 <= decision.normalized_entropy <= 1.0
+            if decision.should_stop:
+                assert decision.phase == NavigationPhase.REFINEMENT

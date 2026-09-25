@@ -13,7 +13,7 @@ from shapely.ops import nearest_points
 from multiagent.cityreferobject import get_city_refer_objects
 from multiagent.dataset.generate import generate_episodes_from_mturk_trajectories
 from multiagent.dataset.mturk_trajectory import load_mturk_trajectories
-from multiagent.mapdata import MAP_BOUNDS
+from multiagent.mapdata import MAP_BOUNDS, GROUND_LEVEL
 from multiagent.maps.landmark_nav_map import LandmarkNavMap
 from multiagent.observation import cropclient
 from multiagent.space import Pose4D, modulo_radians, Point2D
@@ -193,7 +193,8 @@ class CityNavBatch(torch.utils.data.IterableDataset):
                        MAP_BOUNDS[map_name].y_max - (float(id) % self.args.grid_size + 0.5) * map_meters)
 
     # TODO: provide whole environment per time step
-    def _get_obs(self, poses: List[Pose4D] = None, random_direction = False):
+    def _get_obs(self, poses: List[Pose4D] = None, random_direction=False,
+                 canonical_map_altitude_m=None):
         obs = []
 
         if poses is None:
@@ -266,8 +267,19 @@ class CityNavBatch(torch.utils.data.IterableDataset):
             next_yaw = np.arctan2(dy, dx)
             direction = 0 if forward_stride < 0.01 else modulo_radians(next_yaw - poses[i].yaw)
 
-            # update map
-            self.nav_maps[i].update_observations(poses[i])
+            # Fine-altitude visual probes must not change the distribution of
+            # the three-channel coarse-navigation map.  When requested, map
+            # coverage is updated at canonical altitude while RGB is still
+            # cropped from the real camera pose below.
+            map_pose = poses[i]
+            if canonical_map_altitude_m is not None:
+                map_pose = Pose4D(
+                    poses[i].x,
+                    poses[i].y,
+                    GROUND_LEVEL[episode.map_name] + canonical_map_altitude_m,
+                    poses[i].yaw,
+                )
+            self.nav_maps[i].update_observations(map_pose)
 
             landmarks = self.nav_maps[i].landmark_map.get_contours()
             centroids = _convert_contours_to_centroids(landmarks)
@@ -400,6 +412,16 @@ class CityNavBatch(torch.utils.data.IterableDataset):
                 # else:
                 metrics[k].append(v)
 
+            altitudes = np.asarray(item.get('camera_altitudes_m', []), dtype=np.float64)
+            if altitudes.size:
+                canonical_altitude = float(getattr(
+                    self.args, 'fine_altitude_levels', [self.args.altitude])[0])
+                metrics['mean_camera_altitude_m'].append(float(altitudes.mean()))
+                metrics['low_altitude_fraction'].append(
+                    float(np.mean(altitudes < canonical_altitude - 1e-6)))
+                metrics['altitude_changes'].append(
+                    int(np.count_nonzero(np.abs(np.diff(altitudes)) > 1e-6)))
+
             traj = [pose.xy for pose in item['stage1_trajectory']]  # x = (corners, directions)
             if len(traj) == 0:
                 traj = [item['trajectory'][0].xy]
@@ -454,6 +476,18 @@ class CityNavBatch(torch.utils.data.IterableDataset):
             'stage2_ne': np.mean(metrics['stage2_ne']),
             'stage2_oracle_ne': np.mean(metrics['stage2_oracle_ne']),
             'gt_length': np.mean(metrics['gt_length']),
+            'mean_camera_altitude_m': (
+                np.mean(metrics['mean_camera_altitude_m'])
+                if metrics['mean_camera_altitude_m'] else float(self.args.altitude)
+            ),
+            'low_altitude_fraction': (
+                np.mean(metrics['low_altitude_fraction']) * 100
+                if metrics['low_altitude_fraction'] else 0.0
+            ),
+            'altitude_changes': (
+                np.mean(metrics['altitude_changes'])
+                if metrics['altitude_changes'] else 0.0
+            ),
             # 'oracle_goal_sr': np.mean(metrics['oracle_goal_success']),
             # 'goal_sr': np.mean(metrics['goal_success'])
             # 'oracle_pred_sr': np.mean(item['oracle_success']) * 100,

@@ -1,5 +1,31 @@
 # Implementation status
 
+## 2026-09-23: fine-stage-only altitude refinement
+
+- Replaced the intended full-trajectory altitude intervention with an
+  evaluation-only fine-refinement feature flag.
+- Coarse navigation remains at canonical 50 m; only RGB camera height may use
+  40/30 m probes.
+- Canonical map coverage, low-altitude global-memory exclusion, frozen coarse
+  goals, containment gating, recovery ascent and altitude diagnostics are
+  implemented.
+- Development mode excludes `test_unseen` while the feature flag is enabled.
+- The implementation and exact ablation order are recorded in
+  `FINE_ALTITUDE_REFINEMENT.md`.
+- No GPU evaluation has been launched; the prior baseline run was stopped at
+  the user's request.
+
+## 2026-09-23: Gate 0 pure-logic validation
+
+- The complete local test suite passes: 20 tests.
+- Added runtime composition and per-episode state-isolation coverage.
+- Added auxiliary-head/loss forward and backward coverage.
+- Added randomized controller safety-invariant coverage.
+- The exact environment, scope and remaining limitations are recorded in
+  `GATE0_VALIDATION.md`.
+- Passing Gate 0 does not establish a navigation improvement; Gate 1 oracle
+  ceiling measurements are still required before learned-policy integration.
+
 ## 2026-09-23: paired visual validation
 
 - Added `scripts/build_altitude_view_benchmark.py` for same-pose multi-height
@@ -14,6 +40,69 @@
   validation are recorded in `ALTITUDE_VIEW_RESULTS.md`.
 - The active-altitude policy remains unwired to HETT rollout until the frozen
   semantic comparison passes.
+
+## 2026-09-24: target grounding and fine-view semantic checkpoint
+
+- The accepted untouched-split Top-5 scorer remains frozen relation/type
+  fusion at 44.15% `test_unseen` Hit@20. Top-5 oracle is 74.23%.
+- Post-test exploratory full-instruction/RGB appearance fusion reaches 48.49%;
+  it is not promoted to a blind benchmark because its hypothesis followed
+  test-error inspection.
+- Rejected ranking variants: 40/20 m embedding fusion (no map-holdout gain),
+  nonlinear score calibration (overfit), and frozen-feature semantic-distance
+  regression (about 19.2 m component-distance MAE).
+- An annotation-only semantic-component diagnostic reaches 52.41% without
+  target identity or target coordinates. It is an input upper bound, not a
+  deployable RGB result.
+- A lightweight RGB U-Net trained only on `train_seen` maps reaches 52.77%
+  foreground mIoU on unseen maps at a 40 m view, confirming that lower altitude
+  improves dense semantic perception. Its candidate fusion reaches only 48.89%.
+- A center heatmap is valid for compact cars (64.47% F1 and about 0.81 m
+  localization error), but polygon centers are not a stable local target for
+  buildings, ground, or parking. The class-specific hybrid reaches 48.99% and
+  is also rejected as a ranking upgrade.
+- The current bottleneck is binding a particular object instance to each named
+  landmark relation, not recognizing the coarse target class.
+- Directly snapping grid candidates to the nearest annotated instance reduced
+  the ideal-component fusion on both development and test, confirming a
+  representation mismatch with the grid-trained relation model. Retraining the
+  relation model on snapped instance coordinates produced 37.82% relation-only
+  `test_unseen` Hit@20 and 52.60% ideal-component fusion. The latter is +0.89
+  over the matched old-relation fusion, but `val_unseen` moved in the opposite
+  direction (34.52% to 33.89%), so it is not accepted as a stable improvement.
+- An interpretable cue-by-cue relation scorer was trained to make left/right,
+  above/below, near, between, across, and front/behind geometry explicit. Its
+  controlled removals confirm that it genuinely uses those cues, but its
+  standalone `test_unseen` Hit@20 is only 35.85%. Adding it to the exploratory
+  relation/type/appearance scorer with weights selected only on `val_unseen`
+  changes Hit@20 from 48.15% to 48.32% (+0.17 point). This branch is retained
+  only as a diagnostic, not promoted as the main scorer.
+- A shape-aware named-landmark-mask ranker then retained each landmark's full
+  oriented extent instead of only its centroid and nearest boundary point.
+  Relation-only `val_unseen` Hit@20 is 23.77%, slightly below the accepted
+  24.04% relation model. As a complementary branch it changes the exploratory
+  full fusion from 32.37% to 32.41% on `val_unseen`, and from 48.13% to 48.70%
+  on `test_unseen`. The development gain is too small to accept the larger test
+  change as stable; this representation is retained for instance-binding
+  diagnostics only.
+- An ideal candidate-object-instance diagnostic bound every Top-5 point to the
+  nearest annotated component of the language-predicted target class, then
+  scored that component's center and boundary against each named landmark.
+  It reached 24.13% relation-only `val_unseen` Hit@20 versus 24.04% for the
+  accepted relation model. Wrong relations and wrong landmarks reduced it to
+  23.38% and 23.51%, confirming real binding, but the +0.09 point result is
+  negligible. On unseen maps the hard association moves candidates by 20.52 m
+  on average, so nearest-instance snapping is too discontinuous; future work
+  should use soft evidence over multiple candidate instances instead.
+- A follow-up soft-set ranker retained the two nearest annotated instances of
+  every semantic class and weighted them by text-class probability and spatial
+  distance before relation scoring. Across three seeds it collapsed exactly to
+  candidate rank 1 on `val_unseen` (20.76% Hit@20); wrong relation, wrong
+  landmark, and no-relation controls produced the same ranking. The nearest
+  component still dominates all candidate sets, so this formulation is
+  rejected. Future instance evidence must be candidate-specific RGB/semantic
+  likelihood, not map-wide proximity alone.
+- Full HETT baseline training remains stopped by explicit user request.
 
 ## Present in this worktree
 

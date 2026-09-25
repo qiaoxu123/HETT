@@ -1,5 +1,10 @@
 # Uncertainty-Guided Active Altitude Navigation
 
+> Update (2026-09-23): the deployable experiment has been narrowed to
+> fine-stage-only altitude refinement.  Coarse navigation remains at canonical
+> 50 m.  See `FINE_ALTITUDE_REFINEMENT.md`.  The four-phase policy below is
+> retained as the broader research design, not the current default experiment.
+
 ## Status and scope
 
 This worktree contains a design implementation only.  It has not been wired

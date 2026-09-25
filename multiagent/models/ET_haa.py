@@ -259,6 +259,10 @@ class ET(nn.Module):
         max_cell_num = self.args.grid_size ** 2
         grid_fts = inputs['grid_fts']               # 历史网格特征，通常是 [B, N_hist, 768]
         grid_map_indexs = inputs['grid_index']      # 每个历史特征对应到哪个 cell，通常是 [B, N_hist]
+        grid_valid = inputs.get('grid_valid')
+        if grid_valid is None:
+            # Backward-compatible baseline path: every historical feature is valid.
+            grid_valid = torch.ones_like(grid_map_indexs, dtype=torch.bool)
         for b in range(batch_size):
             # tmp_fts: [N_hist, 768]
             tmp_fts = grid_fts[b].to(torch.float32)
@@ -272,7 +276,8 @@ class ET(nn.Module):
 
             for i in range(self.args.grid_size ** 2):
                 # cell_fts: [num_hist_in_cell, 768]
-                cell_fts = tmp_fts[grid_map_indexs[b] == i]
+                cell_mask = (grid_map_indexs[b] == i) & grid_valid[b].bool()
+                cell_fts = tmp_fts[cell_mask]
                 if cell_fts.shape[0] == 0:
                     grid_masks[b].append(0)
                 else:
@@ -281,7 +286,7 @@ class ET(nn.Module):
                 # 对同一 cell 中的历史特征按语言相关性做加权求和，得到该 cell 的汇总表示
                 # 结果：grid_map_input[b, i] -> [768]
                 grid_map_input[b, i] = (
-                    cell_fts * torch.softmax(grid_fts_weight[grid_map_indexs[b] == i], dim=-1).unsqueeze(-1)
+                    cell_fts * torch.softmax(grid_fts_weight[cell_mask], dim=-1).unsqueeze(-1)
                 ).sum(-2)
 
             # if max_cell_num < sum(grid_masks[b]):
