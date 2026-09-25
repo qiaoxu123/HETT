@@ -66,10 +66,53 @@ almost every visible landmark, including difficult adjacent buildings that are
 merged into large components. End-to-end identity still improves by 7.14 points.
 The next bottleneck is component-to-polygon binding, not building visibility.
 
+## Oracle ladder and RGB depth test
+
+The component bottleneck was isolated by replacing whole-component identity
+with per-pixel polygon binding on the same 42 visible val_unseen queries.
+
+| Binding method | End-to-end confirmation |
+|---|---:|
+| Teacher semantic + teacher depth + landmark ID | 100.00% |
+| Predicted semantic + teacher depth, per pixel | **97.62%** |
+| Predicted semantic + teacher depth, whole component | 52.38% |
+| Predicted semantic + RGB-predicted depth, per pixel | 42.86% |
+
+The RGB semantic/depth model was selected on val_seen at epoch 13. On
+val_unseen it obtains 44.43% perspective foreground mIoU, but absolute depth
+MAE is 36.50 m. Expanding the accepted landmark polygon to 20 m raises the
+correct-name result to 71.43%, but also raises the nearest-wrong-name control to
+66.67%. Therefore spatial tolerance cannot repair generic monocular depth
+without destroying identity discrimination.
+
+## Direct map-conditioned landmark projection
+
+CityRefer already provides each named building's footprint, center height, and
+dimensions. The independent binder now projects that annotated 3D prism into
+the camera using the measured pose, then intersects it with the RGB-only
+building prediction. It does not predict absolute depth and is not trained on
+val data.
+
+| Split | Visible queries | Correct name + pose | Wrong pose | Nearest wrong name |
+|---|---:|---:|---:|---:|
+| val_seen | 253 | **93.28%** | 4.35% | 11.51% |
+| val_unseen | 42 | **95.24%** | 0.00% | 9.52% |
+
+With a two-pixel calibration tolerance, val_unseen reaches 97.62%, while the
+wrong-pose and wrong-name controls remain 2.38% and 16.67%. Larger dilation is
+not used because it increases wrong-name acceptance. These metrics use teacher
+semantic/depth only to determine visibility and score the result; runtime inputs
+are rendered RGB, camera pose, and the named map landmark prism.
+
+This is a feasibility result on point-cloud-rendered RGB, not yet evidence of
+transfer to simulator RGB or of a navigation SR/SPL improvement.
+
 ## Decision
 
 The point-cloud data passes the first feasibility gate. Keep mixed semantic
-training. The next experiment should train `MapLandmarkBinder` on projected
-component/polygon overlap and compare it with the current hand-written binding.
-Do not claim a navigation SR/SPL gain until the resulting evidence is inserted
-into the temporal belief map and tested in closed loop.
+training, but do not use generic monocular absolute depth as the primary binding
+path. Use the direct map-conditioned prism projection as `MapLandmarkBinder`'s
+geometric prior, and learn only RGB alignment/visibility confidence as a
+residual. The next gate is paired simulator RGB at identical poses. Do not claim
+a navigation SR/SPL gain until this evidence is inserted into the temporal
+belief map and tested in closed loop.

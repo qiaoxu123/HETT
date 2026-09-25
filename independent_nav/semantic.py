@@ -33,7 +33,7 @@ class ProjectSemanticNet(nn.Module):
         self.dec1 = Block(width * 2 + width, width)
         self.output = nn.Conv2d(width, classes, 1)
 
-    def forward(self, value):
+    def decode_features(self, value):
         first = self.enc1(value)
         second = self.enc2(F.max_pool2d(first, 2))
         third = self.enc3(F.max_pool2d(second, 2))
@@ -41,7 +41,26 @@ class ProjectSemanticNet(nn.Module):
         value = self.dec3(torch.cat((F.interpolate(value, scale_factor=2), third), 1))
         value = self.dec2(torch.cat((F.interpolate(value, scale_factor=2), second), 1))
         value = self.dec1(torch.cat((F.interpolate(value, scale_factor=2), first), 1))
-        return self.output(value)
+        return value
+
+    def forward(self, value):
+        return self.output(self.decode_features(value))
+
+
+class ProjectSemanticDepthNet(ProjectSemanticNet):
+    """Shared RGB encoder with semantic and normalized log-depth heads."""
+
+    def __init__(self, classes=len(CLASSES), width=24):
+        super().__init__(classes, width)
+        self.depth_output = nn.Conv2d(width, 1, 1)
+
+    def predict_all(self, value):
+        features = self.decode_features(value)
+        return self.output(features), torch.sigmoid(self.depth_output(features)).squeeze(1)
+
+    def forward(self, value):
+        semantic, _ = self.predict_all(value)
+        return semantic
 
 
 # Compatibility name for checkpoints produced during the feasibility gate.

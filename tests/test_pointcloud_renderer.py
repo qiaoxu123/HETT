@@ -1,6 +1,9 @@
 import numpy as np
+import torch
 
+from independent_nav.landmark import project_landmark_prism
 from independent_nav.pointcloud import PerspectivePointRenderer, unproject_depth
+from independent_nav.semantic import ProjectSemanticDepthNet
 
 
 def test_renderer_keeps_nearest_semantic_point():
@@ -30,3 +33,19 @@ def test_depth_unprojection_recovers_world_point():
     depth[8, 8] = 5.0
     world = unproject_depth(depth, [0, 0, 0, 1, 0, 0])
     assert np.allclose(world[8, 8], [5.0, 0.0, 0.0])
+
+
+def test_multitask_model_outputs_semantics_and_depth():
+    semantic, depth = ProjectSemanticDepthNet().predict_all(torch.zeros(2, 3, 32, 32))
+    assert semantic.shape == (2, 5, 32, 32)
+    assert depth.shape == (2, 32, 32)
+    assert depth.min() >= 0 and depth.max() <= 1
+
+
+def test_landmark_prism_projects_in_front_of_camera():
+    mask = project_landmark_prism(
+        [[-2, 8], [2, 8], [2, 12], [-2, 12]], [0, 10, 2], [4, 4, 4],
+        [0, 0, 3, 0, 1, 0], (64, 64), 90)
+    assert mask.shape == (64, 64)
+    assert mask.sum() > 0
+    assert mask[:, 24:40].sum() > 0
