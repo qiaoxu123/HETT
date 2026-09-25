@@ -180,6 +180,8 @@ def parse_args():
     parser.add_argument("--nss_r", type=int, default=0)
     parser.add_argument('--epsilon', type=float, default=0.1, help='')
     parser.add_argument('--learning_rate', type=float, default=1.0e-04)
+    parser.add_argument('--target_head_learning_rate', type=float, default=1.0e-03,
+                        help='learning rate for the randomly initialized target belief head')
     parser.add_argument('--batch_size', type=int, default=2)
     parser.add_argument('--epochs', type=int, default=20)
     parser.add_argument('--iters', type=int, default=200000)

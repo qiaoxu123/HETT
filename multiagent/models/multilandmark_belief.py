@@ -59,11 +59,15 @@ class MultiLandmarkBeliefHead(nn.Module):
         d_model: int = 768,
         hidden_dim: int = 96,
         grid_size: int = 41,
+        pose_prior_sigma: float = 20.0 / 410.0,
+        pose_prior_scale: float = 4.0,
     ) -> None:
         super().__init__()
         self.d_model = d_model
         self.hidden_dim = hidden_dim
         self.grid_size = grid_size
+        self.pose_prior_sigma = pose_prior_sigma
+        self.pose_prior_scale = pose_prior_scale
 
         self.register_buffer("grid_centers", make_grid_centers(grid_size), persistent=True)
 
@@ -131,6 +135,7 @@ class MultiLandmarkBeliefHead(nn.Module):
         landmark_boundaries: torch.Tensor,
         landmark_name_features: torch.Tensor,
         landmark_valid: torch.Tensor,
+        current_positions: torch.Tensor | None = None,
         previous_belief: torch.Tensor | None = None,
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         """Return ``belief_logits, offsets, pred_goal, fused_context``.
@@ -141,6 +146,7 @@ class MultiLandmarkBeliefHead(nn.Module):
           landmark_boundaries: ``[B, N, P, 2]``
           landmark_name_features: ``[B, N, D]``
           landmark_valid: ``[B, N]``
+          current_positions: optional normalized camera positions ``[B, 2]``
           previous_belief: optional ``[B, G*G]``
         """
         landmark_valid = landmark_valid.bool()
@@ -193,6 +199,23 @@ class MultiLandmarkBeliefHead(nn.Module):
         relation_logits = (pair_logits * valid_float).sum(dim=-1)
         relation_logits = relation_logits / valid_float.sum(dim=-1).clamp_min(1.0)
         evidence_logits = evidence_logits + relation_logits
+
+        # A final human keyframe is already a local observation near the goal.
+        # Encode that fact explicitly instead of asking a randomly initialized
+        # global classifier to rediscover it.  This is an input-pose prior, not
+        # target truth: the learned RGB/language/landmark evidence can move the
+        # peak away from the camera when the visible evidence warrants it.
+        if current_positions is not None:
+            if current_positions.shape != (batch_size, 2):
+                raise ValueError(
+                    "current_positions must have shape "
+                    f"{(batch_size, 2)}, got {tuple(current_positions.shape)}"
+                )
+            pose_distance_sq = (
+                grid_batch - current_positions.to(dtype=context.dtype).unsqueeze(1)
+            ).square().sum(dim=-1)
+            pose_prior = -0.5 * pose_distance_sq / (self.pose_prior_sigma ** 2)
+            evidence_logits = evidence_logits + self.pose_prior_scale * pose_prior
 
         if previous_belief is not None:
             if previous_belief.shape != evidence_logits.shape:

@@ -188,8 +188,29 @@ class NavCMTAgent:
         # - et_optimizer: 训练 ET 及其 Transformer + decoder heads
         assert args.optim in ("adam", "adamW")
         OptimizerClass = torch.optim.Adam if args.optim == "adam" else torch.optim.AdamW
-        self.et_optimizer = OptimizerClass(filter(lambda p: p.requires_grad, self.vln_model.parameters()),
-                                           lr=args.learning_rate, weight_decay=args.weight_decay)
+        if (getattr(args, 'target_only_keyframes', False)
+                and self.vln_model_without_ddp.target_belief_head is not None):
+            target_parameters = list(
+                self.vln_model_without_ddp.target_belief_head.parameters()
+            )
+            target_parameter_ids = {id(parameter) for parameter in target_parameters}
+            shared_parameters = [
+                parameter for parameter in self.vln_model.parameters()
+                if parameter.requires_grad and id(parameter) not in target_parameter_ids
+            ]
+            self.et_optimizer = OptimizerClass(
+                [
+                    {'params': shared_parameters, 'lr': args.learning_rate},
+                    {'params': target_parameters, 'lr': args.target_head_learning_rate},
+                ],
+                weight_decay=args.weight_decay,
+            )
+        else:
+            self.et_optimizer = OptimizerClass(
+                filter(lambda p: p.requires_grad, self.vln_model.parameters()),
+                lr=args.learning_rate,
+                weight_decay=args.weight_decay,
+            )
         self.lang_model_optimizer = OptimizerClass(filter(lambda p: p.requires_grad, self.lang_model.parameters()),
                                                    lr=self.args.learning_rate, weight_decay=args.weight_decay)
         self.vision_model_optimizer = OptimizerClass(filter(lambda p: p.requires_grad, self.vision_model.parameters()),
@@ -626,6 +647,7 @@ class NavCMTAgent:
                     'landmark_boundaries': input['landmark_boundaries'],
                     'landmark_name_features': input['landmark_name_features'],
                     'landmark_valid': input['landmark_valid'],
+                    'current_positions': current_pos,
                     'previous_belief': input['previous_belief'],
                 })
             model_outputs = self.vln_model(**model_inputs)

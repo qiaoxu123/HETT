@@ -104,3 +104,20 @@ def test_inference_head_cannot_receive_target_truth():
     parameters = inspect.signature(MultiLandmarkBeliefHead.forward).parameters
     forbidden = {'target', 'goal', 'gt_goal', 'target_position', 'normalized_goal'}
     assert forbidden.isdisjoint(parameters)
+
+
+def test_camera_pose_prior_peaks_near_current_position():
+    model = MultiLandmarkBeliefHead(d_model=32, hidden_dim=16, grid_size=41).eval()
+    context, centers, boundaries, names, valid = make_inputs()
+    current_positions = torch.tensor([[0.20, 0.30], [0.75, 0.60]])
+    with torch.no_grad():
+        _, _, goals, _ = model(
+            context,
+            centers,
+            boundaries,
+            names,
+            valid,
+            current_positions=current_positions,
+        )
+    errors_m = torch.linalg.vector_norm(goals - current_positions, dim=-1) * 410.0
+    assert torch.all(errors_m < 20.0)

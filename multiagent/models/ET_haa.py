@@ -355,6 +355,7 @@ class ET(nn.Module):
                 landmark_boundaries=inputs['landmark_boundaries'],
                 landmark_name_features=inputs['landmark_name_features'],
                 landmark_valid=inputs['landmark_valid'],
+                current_positions=inputs.get('current_positions'),
                 previous_belief=inputs.get('previous_belief'),
             )
             return (

@@ -10,6 +10,7 @@ cd "$(dirname "$0")"
     --feedback student \
     --altitude 50 \
     --learning_rate 1e-4 \
+    --target_head_learning_rate 1e-3 \
     --batch_size 2 \
     --grad_accum 4 \
     --optim adamW \
