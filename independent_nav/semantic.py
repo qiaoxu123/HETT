@@ -21,7 +21,7 @@ class Block(nn.Module):
         return self.layers(value)
 
 
-class TinyUNet(nn.Module):
+class ProjectSemanticNet(nn.Module):
     def __init__(self, classes=len(CLASSES), width=24):
         super().__init__()
         self.enc1 = Block(3, width)
@@ -42,3 +42,7 @@ class TinyUNet(nn.Module):
         value = self.dec2(torch.cat((F.interpolate(value, scale_factor=2), second), 1))
         value = self.dec1(torch.cat((F.interpolate(value, scale_factor=2), first), 1))
         return self.output(value)
+
+
+# Compatibility name for checkpoints produced during the feasibility gate.
+TinyUNet = ProjectSemanticNet

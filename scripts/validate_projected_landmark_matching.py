@@ -21,7 +21,7 @@ from independent_nav.projection import (
     view_corners,
     world_to_image_homography,
 )
-from independent_nav.semantic import TinyUNet
+from independent_nav.semantic import ProjectSemanticNet
 
 
 def parse_args():
@@ -104,6 +104,23 @@ def infer(model, rows, image_root, resolution, batch_size, device):
 
 
 def summarize(records):
+    if not records:
+        return {
+            "queries": 0,
+            "mean_visible_landmark_coverage_percent": None,
+            "median_visible_landmark_coverage_percent": None,
+            "detection_rate_coverage_10_percent": None,
+            "detection_rate_coverage_25_percent": None,
+            "detection_rate_coverage_50_percent": None,
+            "named_top1_given_detected": None,
+            "end_to_end_named_top1": None,
+            "wrong_pose_named_top1_given_detected": None,
+            "wrong_name_named_top1_given_detected": None,
+            "mean_projected_component_centroid_error_m": None,
+            "median_projected_component_centroid_error_m": None,
+            "geometry_roundtrip_mean_error_m": None,
+            "geometry_roundtrip_max_error_m": None,
+        }
     coverage = np.asarray([row["coverage"] for row in records], dtype=np.float64)
     detected = coverage >= 0.25
     correct = np.asarray([row["correct_identity"] for row in records], dtype=bool)
@@ -141,7 +158,7 @@ def summarize(records):
 def main():
     args = parse_args()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = TinyUNet().to(device)
+    model = ProjectSemanticNet().to(device)
     model.load_state_dict(torch.load(args.checkpoint, map_location="cpu", weights_only=True))
     model.eval()
 
@@ -251,7 +268,7 @@ def main():
             "resolution": args.resolution,
             "min_visible_fraction": args.min_visible_fraction,
             "detection_threshold_coverage": 0.25,
-            "visual_model": "TinyUNet trained on train_seen map classes",
+            "visual_model": "ProjectSemanticNet trained on train_seen map classes",
             "camera": "top-down orthomosaic crop with exact pose homography",
         },
         "anti_leakage": {

@@ -4,7 +4,20 @@ This branch builds a navigation stack that does not call the HETT goal model,
 candidate generator, policy, or action generator. HETT is retained only as a
 frozen comparison baseline.
 
-## Proposed system
+## Dependency boundary
+
+The system is a new project architecture named **Landmark Belief Navigation
+(LBN)**. GeoNav is used only as literature-level motivation for decomposing
+navigation into search and localization. LBN does **not** import or modify
+GeoNav code, checkpoints, model definitions, prompts, perception interfaces, or
+action policies. It also does not use HETT components at runtime.
+
+Allowed dependencies are general-purpose numerical and deep-learning libraries
+such as PyTorch, OpenCV, and rasterio. In the finished system, every task-specific
+runtime model will be trained from the current project's data and owned by
+`independent_nav`.
+
+## LBN system
 
 ```text
 instruction
@@ -29,22 +42,56 @@ The belief map is the central state. The model does not predict a new unrelated
 goal from every frame. Each observation adds positive evidence where the target
 type is seen and negative evidence inside visible regions where it is absent.
 
-## Modules
+## Newly designed modules
 
-1. `LanguageMapPrior`: keeps each landmark separate and produces a static target
-   heatmap from its polygon and language relation.
-2. `GeoSemanticPerception`: segments RGB into building, vehicle, ground, parking,
-   and later road; projects masks into world coordinates with pose and altitude.
-3. `LandmarkAssociator`: assigns projected building components to named polygons,
-   with geography weighted more strongly than appearance.
-4. `BeliefUpdater`: fuses static relation evidence, temporal RGB evidence, and
-   already-observed empty space in log-odds form.
-5. `ViewPlanner`: maximizes expected uncertainty reduction minus travel cost;
-   altitude is one of its actions rather than an always-on heuristic.
-6. `GeometricGoalController`: converts the chosen observation point into 30-degree
-   turns, 5-metre forward moves, vertical moves, and stop.
-7. `StopController`: stops only when the 20-metre mass is concentrated, the
-   estimate is stable across frames, and target-type and relation evidence agree.
+1. `InstructionGraphEncoder` converts the instruction into target-type and
+   `(landmark, relation)` nodes. Two landmarks remain two independent nodes.
+2. `RelationFieldPrior` represents each map cell by its distance and angle to
+   every named polygon, then uses masked cross-attention to create a static goal
+   heatmap. Multiple constraints are combined as a product of evidence, not by
+   averaging landmark centers.
+3. `ProjectSemanticNet` is our own encoder-decoder trained with Building, Car,
+   Ground, and Parking map labels. It predicts both class probability and pixel
+   uncertainty. No external open-vocabulary detector or segmentation model is
+   required by the base system.
+4. `PoseProjector` is deterministic camera geometry. It places semantic
+   probabilities and uncertainty into world-map cells.
+5. `MapLandmarkBinder` associates visual components with named map polygons using
+   projected overlap, position, size, and type. Appearance is an optional learned
+   residual and never overrides an incompatible geographic position.
+6. `LogOddsBelief` maintains persistent target state:
+
+   ```text
+   belief_t = belief_(t-1)
+              + relation evidence
+              + visible target-type evidence
+              - confidently observed empty-space evidence
+   ```
+
+   Observation uncertainty controls the size of each update so a poor frame
+   cannot erase reliable history.
+7. `InformationViewPlanner` creates viewpoints around the top belief regions and
+   scores `expected uncertainty reduction - travel cost - revisit cost`.
+8. `GeometricGoalController` converts the selected viewpoint into 30-degree turns,
+   5-metre forward moves, vertical moves, and stop.
+9. `EvidenceStopController` stops only when probability mass is concentrated in a
+   20-metre circle, stable across frames, target type is supported, and stated
+   landmark relations remain valid.
+
+## Training strategy
+
+Training remains modular so each claimed improvement is measurable:
+
+1. Train `RelationFieldPrior` on `train_seen` target heatmaps with target
+   coordinates used only as supervision.
+2. Train `ProjectSemanticNet` from map-derived semantic masks; select checkpoints
+   only on `val_seen`.
+3. Replay training trajectories to train uncertainty calibration and temporal
+   belief updates. At inference, the updater receives no target coordinates.
+4. First use the deterministic information-gain planner and controller. Only if
+   this plateaus, train a planner by imitation from target-free information-gain
+   search traces; reinforcement learning is not required for the first version.
+5. Keep `val_unseen` for final evaluation and anti-cheating controls.
 
 ## Completed feasibility gate: RGB to named landmark
 

@@ -17,7 +17,7 @@ from shapely.geometry import Polygon
 from torch.utils.data import DataLoader, TensorDataset
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from independent_nav.semantic import CLASSES, TinyUNet
+from independent_nav.semantic import CLASSES, ProjectSemanticNet
 
 
 TYPE_TO_INDEX = {name: index for index, name in enumerate(CLASSES) if index}
@@ -160,7 +160,7 @@ def main():
     selection_loader = DataLoader(TensorDataset(*selection), batch_size=32)
     final_loader = DataLoader(TensorDataset(*final), batch_size=32)
 
-    model = TinyUNet().to(device)
+    model = ProjectSemanticNet().to(device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=2e-3, weight_decay=1e-3)
     weights = torch.tensor([0.2, 1.0, 2.0, 1.0, 1.5], device=device)
     best_state, best_score, best_epoch, history = None, -1.0, None, []
