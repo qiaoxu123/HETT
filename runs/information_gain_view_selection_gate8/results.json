@@ -1,0 +1,114 @@
+{
+  "config": {
+    "altitude_m": 50.0,
+    "views": 2,
+    "prior_weight_fixed_from_previous_val_seen_gate": 0.3,
+    "separation_weight_selected_on_val_seen": 1.0,
+    "travel_weight_selected_on_val_seen": 0.1,
+    "view_options": "start, five predicted candidates, centroid, prior-weighted centroid"
+  },
+  "val_seen_episodes": 2470,
+  "val_unseen": {
+    "episodes": 2697,
+    "geometry_generator_top1": {
+      "count": 2697,
+      "hit20": 21.950315164998145,
+      "mean_ne_m": 55.66623524949316,
+      "median_ne_m": 37.99278042758254
+    },
+    "fixed_rank_order_two_views": {
+      "count": 2697,
+      "hit20": 22.803114571746384,
+      "mean_ne_m": 56.01610170015303,
+      "median_ne_m": 38.054048666944674
+    },
+    "adaptive_challenger_two_views": {
+      "count": 2697,
+      "hit20": 22.54356692621431,
+      "mean_ne_m": 55.930084723341444,
+      "median_ne_m": 38.04674033092351
+    },
+    "information_gain_two_views": {
+      "count": 2697,
+      "hit20": 22.395253985910273,
+      "mean_ne_m": 56.3396747149945,
+      "median_ne_m": 38.12383039426693
+    },
+    "learned_single_view_value": {
+      "count": 2697,
+      "hit20": 23.655913978494624,
+      "mean_ne_m": 55.94654182615904,
+      "median_ne_m": 38.28413629039956
+    },
+    "wrong_target_type_control": {
+      "count": 2697,
+      "hit20": 18.5761957730812,
+      "mean_ne_m": 57.26173504006853,
+      "median_ne_m": 39.82638430710983
+    },
+    "privileged_single_view_oracle": {
+      "count": 2697,
+      "hit20": 32.81423804226919,
+      "mean_ne_m": 50.311941482322204,
+      "median_ne_m": 31.577782910889226
+    },
+    "privileged_two_view_oracle": {
+      "count": 2697,
+      "hit20": 30.515387467556543,
+      "mean_ne_m": 51.11551580078473,
+      "median_ne_m": 32.745954129568425
+    },
+    "privileged_candidate_centered_two_view_oracle": {
+      "count": 2697,
+      "hit20": 26.251390433815352,
+      "mean_ne_m": 53.431626979002196,
+      "median_ne_m": 35.736125478947095
+    },
+    "view_selection_percent": {
+      "candidate_1": 18.594734890619208,
+      "candidate_2": 13.051538746755654,
+      "candidate_3": 9.510567296996664,
+      "candidate_4": 5.135335558027438,
+      "candidate_5": 3.1516499814608823,
+      "candidate_centroid": 32.27660363366704,
+      "prior_weighted_centroid": 18.27956989247312
+    },
+    "challenger_view_selection_percent": {
+      "candidate_1": 50.0,
+      "candidate_2": 30.57100482017056,
+      "candidate_3": 9.844271412680756,
+      "candidate_4": 5.85836114200964,
+      "candidate_5": 3.7263626251390436
+    },
+    "fixed_view_selection_percent": {
+      "candidate_1": 50.0,
+      "candidate_2": 50.0
+    },
+    "learned_view_selection_percent": {
+      "candidate_1": 58.13867259918428,
+      "candidate_2": 1.075268817204301,
+      "candidate_3": 5.005561735261401,
+      "candidate_4": 3.411197626992955,
+      "candidate_5": 20.170559881349647,
+      "candidate_centroid": 10.604375231738969,
+      "prior_weighted_centroid": 0.5190952910641453,
+      "start": 1.075268817204301
+    },
+    "top5_oracle": {
+      "count": 2697,
+      "hit20": 50.24100852799407,
+      "mean_ne_m": 39.19312716181152,
+      "median_ne_m": 19.857496332189363
+    }
+  },
+  "anti_leakage": {
+    "selector_inputs": "candidate belief, candidate geometry, start/current pose, fixed camera footprint",
+    "rgb_timing": "RGB evidence is consumed only after a view is selected",
+    "target_coordinates": "val_seen selector-weight selection and final metrics only",
+    "target_mask_or_identity": false,
+    "val_unseen_used_for_selection": false,
+    "learned_selector_training": "val_seen targets only; object-grouped 4/1 train/selection split"
+  },
+  "learned_selector_validation_bce": 1.093578577041626,
+  "scope": "offline target-free next-view selection at fixed 50 m; dynamics excluded"
+}

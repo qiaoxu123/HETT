@@ -157,7 +157,20 @@
   and 6.33 m NE over the strongest local baseline. No complete `test_unseen`
   comparison exists yet.
 
-The next implementation turn should replace fixed rank-order visits with a
-learned information-gain view selector.  The current RGB evidence is real but
-too weak (+0.85 Hit@20 point and no mean-error gain) to promote into the
-autonomous controller yet.
+The fixed rank-order limitation is evaluated in the next section. The RGB
+evidence remains too weak to promote into the autonomous controller yet.
+
+## 2026-09-25: fixed-height observation selection
+
+- Exhaustively rendered eight target-free view options per episode and tested
+  fixed order, a geometric information-gain proxy, an adaptive challenger, and
+  a learned single-view value model.
+- Hand-written information gain (22.40% Hit@20) and adaptive challenger
+  (22.54%) do not beat fixed rank order (22.80%) on full `val_unseen`.
+- A geometry/type-only view-value model trained on `val_seen` reaches 23.66%,
+  +0.85 point over fixed order and +1.71 over geometry alone. This is a
+  feasibility result; it is not promoted until trained on `train_seen`.
+- The privileged single-view oracle is 32.81%, while the two-view noisy-OR
+  oracle falls to 30.52%. View choice has useful headroom, but positive-only
+  evidence accumulation introduces false positives.
+- Full protocol and interpretation are in `OBSERVATION_SELECTION_RESULTS.md`.
