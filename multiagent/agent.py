@@ -323,7 +323,13 @@ class NavCMTAgent:
                 # - build map / candidates / direction input
                 # - self.vln_model(...) 触发 ET.forward
                 # - 计算方向、进度、目标、候选目标损失
-                if feedback == 'teacher':
+                if getattr(self.args, 'target_only_keyframes', False):
+                    # A target-only batch contains one deliberately selected
+                    # keyframe.  There is no action rollout and therefore no
+                    # teacher/student double pass.
+                    self.feedback = 'teacher'
+                    self.rollout(train_ml=1.0)
+                elif feedback == 'teacher':
                     self.feedback = 'teacher'
                     self.rollout(train_ml=self.args.teacher_weight)
                 elif feedback == 'student':  # agents in teacher and student separately
@@ -396,7 +402,16 @@ class NavCMTAgent:
         # 5. 计算损失并输出动作/目标/进度更新环境状态
         # rollout_start_time = time.time()
 
-        obs = self.env._get_obs(random_direction=(self.feedback == 'teacher'))
+        keyframe_mode = None
+        if getattr(self.args, 'target_only_keyframes', False):
+            keyframe_mode = (
+                self.args.target_keyframe_mode if train_ml is not None
+                else self.args.target_eval_view
+            )
+        obs = self.env._get_obs(
+            random_direction=(self.feedback == 'teacher' and keyframe_mode is None),
+            keyframe_mode=keyframe_mode,
+        )
         batch_size = len(obs)
 
         # --------------- 1. 语言输入：instruction -> token ids -> BERT embedding -----------------
@@ -411,25 +426,37 @@ class NavCMTAgent:
             #     lang_inputs.append('')
             # else:
             lang_inputs.append(ob['instruction'])
+        if getattr(self.args, 'target_eval_ablation', 'none') in {
+                'empty_instruction', 'pose_only'}:
+            lang_inputs = ['' for _ in lang_inputs]
         encoding = self.tokenizer(lang_inputs, padding=True, return_tensors="pt")
         input_ids = encoding['input_ids'].cuda()
         attention_mask = encoding['attention_mask'].cuda()
         lang_features, linear_cls, cls_hidden = self.lang_model(input_ids, attention_mask)
 
         landmark_centers = None
+        landmark_boundaries = None
         landmark_name_features = None
         landmark_valid = None
         if getattr(self.args, 'target_belief_head', False):
             max_landmarks = self.args.max_landmarks
             centers_array = np.zeros((batch_size, max_landmarks, 2), dtype=np.float32)
+            boundaries_array = np.zeros(
+                (batch_size, max_landmarks, self.args.landmark_boundary_points, 2),
+                dtype=np.float32,
+            )
             valid_array = np.zeros((batch_size, max_landmarks), dtype=np.bool_)
             landmark_texts = []
             for batch_index, ob in enumerate(obs):
                 names = ob.get('landmark_names', [])
                 centers = ob.get('landmark_centers', [])
-                count = min(len(names), len(centers), max_landmarks)
+                boundaries = ob.get('landmark_boundaries', [])
+                count = min(len(names), len(centers), len(boundaries), max_landmarks)
                 if count:
                     centers_array[batch_index, :count] = np.asarray(centers[:count], dtype=np.float32)
+                    boundaries_array[batch_index, :count] = np.asarray(
+                        boundaries[:count], dtype=np.float32
+                    )
                     valid_array[batch_index, :count] = True
                 landmark_texts.extend(list(names[:count]) + [''] * (max_landmarks - count))
 
@@ -440,8 +467,11 @@ class NavCMTAgent:
             landmark_attention = landmark_encoding['attention_mask'].cuda()
             _, _, landmark_cls = self.lang_model(landmark_ids, landmark_attention)
             landmark_centers = torch.from_numpy(centers_array).cuda()
+            landmark_boundaries = torch.from_numpy(boundaries_array).cuda()
             landmark_name_features = landmark_cls.view(batch_size, max_landmarks, -1)
             landmark_valid = torch.from_numpy(valid_array).cuda()
+            if getattr(self.args, 'target_eval_ablation', 'none') == 'pose_only':
+                landmark_valid.zero_()
 
         # lang_features --> 768
         # linear_cls --> 49 (used to attend to img features)
@@ -515,6 +545,7 @@ class NavCMTAgent:
         if getattr(self.args, 'target_belief_head', False):
             input.update({
                 'landmark_centers': landmark_centers,
+                'landmark_boundaries': landmark_boundaries,
                 'landmark_name_features': landmark_name_features,
                 'landmark_valid': landmark_valid,
                 'previous_belief': None,
@@ -522,7 +553,9 @@ class NavCMTAgent:
 
         stage1_ended = np.array([False] * batch_size)
 
-        for t in range(self.args.max_action_len):
+        rollout_steps = 1 if getattr(self.args, 'target_only_keyframes', False) \
+            else self.args.max_action_len
+        for t in range(rollout_steps):
             direction_t = torch.tensor([ob['pose'].yaw for ob in obs], dtype=torch.float32)
             position_t = torch.tensor(np.array([ob['position'] for ob in obs]), dtype=torch.float32)
 
@@ -533,6 +566,8 @@ class NavCMTAgent:
                 images.append(obs[i]['rgb'].copy())
             images = np.stack(images)[:, :, :, ::-1].transpose(0, 3, 1, 2)  # W x H x C to C x W x H
             images = np.ascontiguousarray(images, dtype=np.float32)
+            if getattr(self.args, 'target_eval_ablation', 'none') in {'zero_rgb', 'pose_only'}:
+                images.fill(0.0)
             images -= self.rgb_mean
             images /= self.rgb_std
             im_feature = self.vision_model(torch.from_numpy(images).cuda())
@@ -588,6 +623,7 @@ class NavCMTAgent:
             if getattr(self.args, 'target_belief_head', False):
                 model_inputs.update({
                     'landmark_centers': input['landmark_centers'],
+                    'landmark_boundaries': input['landmark_boundaries'],
                     'landmark_name_features': input['landmark_name_features'],
                     'landmark_valid': input['landmark_valid'],
                     'previous_belief': input['previous_belief'],
@@ -643,6 +679,13 @@ class NavCMTAgent:
                 # Compute loss
 
                 active_mask = torch.from_numpy(~ended).to(device=pred_goals.device)
+                if getattr(self.args, 'target_only_keyframes', False):
+                    keyframe_valid = torch.tensor(
+                        [ob['target_keyframe_valid'] for ob in obs],
+                        dtype=torch.bool,
+                        device=pred_goals.device,
+                    )
+                    active_mask = active_mask & keyframe_valid
                 valid_step_count += int(active_mask.sum().item())
                 gt_goal_device = gt_goal.to(device=pred_goals.device)
 
@@ -656,7 +699,7 @@ class NavCMTAgent:
                     # print(pred_direction[i].view(-1).shape, pred_progress[i].view(-1).shape, true_sin_cos.shape, gt_progress[i].view(-1).shape)
                     # cuda_gt_next_pos_ratio = torch.from_numpy(target[i][0]).cuda()
                     # print(pred_direction[i].view(-1), true_sin_cos)
-                    if not ended[i]:
+                    if not ended[i] and not getattr(self.args, 'target_only_keyframes', False):
                         # if stage1_ended[i]:
                         direction_loss += self.progress_regression(pred_direction[i].view(-1), true_sin_cos)
 
@@ -712,6 +755,13 @@ class NavCMTAgent:
                             reduction='none',
                         ).sum(dim=-1)
                         belief_offset_loss += per_sample_offset[active_mask].sum()
+                    elif getattr(self.args, 'target_only_keyframes', False):
+                        # Keep a differentiable zero for the rare batch where
+                        # every recorded human pose lies inside the guarded
+                        # annulus and is therefore excluded.
+                        target_predict_loss = belief_logits.sum() * 0.0
+                        belief_region_loss = belief_logits.sum() * 0.0
+                        belief_offset_loss = belief_offsets.sum() * 0.0
                 elif getattr(self.args, 'normalize_rollout_loss', False):
                     logits = pred_logits.squeeze(-1)
                     target_predict_loss += F.cross_entropy(
@@ -730,6 +780,21 @@ class NavCMTAgent:
                         traj[i]['gt_progress'].append(gt_progress[i].item())
                         traj[i]['gt_goal'].append(gt_goal[i])
                     traj[i]['progress'].append(pred_progress[i].item())
+
+            if getattr(self.args, 'target_only_keyframes', False):
+                predicted = pred_goals.detach().cpu().numpy()
+                for i, ob in enumerate(obs):
+                    world_prediction = self.env.unnormalize_position(
+                        predicted[i], ob['map_name'], self.args.map_meters
+                    )
+                    traj[i]['target_prediction'] = world_prediction
+                    traj[i]['target_error_m'] = world_prediction.dist_to(ob['goal'])
+                    traj[i]['view_goal_distance_m'] = ob['view_goal_distance_m']
+                    traj[i]['target_eval_valid'] = ob['target_keyframe_valid']
+                    traj[i]['pred_goal'].append(world_prediction)
+                # Target-only supervision deliberately has no action, progress,
+                # stopping, or trajectory loss.
+                break
 
             if self.feedback == 'teacher':
                 at_goal = gt_goal
@@ -854,11 +919,17 @@ class NavCMTAgent:
         if train_ml is not None:
             # print(ml_loss)
             # ml_loss = direction_loss + progress_loss
-            ml_loss = (self.args.direction_loss_weight * direction_loss
-                       + self.args.progress_loss_weight * progress_loss
-                       + self.args.goal_loss_weight * goal_predict_loss
-                       + self.args.target_loss_weight * target_predict_loss)
-            if getattr(self.args, 'target_belief_head', False):
+            if getattr(self.args, 'target_only_keyframes', False):
+                ml_loss = (self.args.target_loss_weight * target_predict_loss
+                           + self.args.belief_region_loss_weight * belief_region_loss
+                           + self.args.belief_offset_loss_weight * belief_offset_loss)
+            else:
+                ml_loss = (self.args.direction_loss_weight * direction_loss
+                           + self.args.progress_loss_weight * progress_loss
+                           + self.args.goal_loss_weight * goal_predict_loss
+                           + self.args.target_loss_weight * target_predict_loss)
+            if (getattr(self.args, 'target_belief_head', False)
+                    and not getattr(self.args, 'target_only_keyframes', False)):
                 ml_loss = (ml_loss
                            + self.args.belief_region_loss_weight * belief_region_loss
                            + self.args.belief_offset_loss_weight * belief_offset_loss)

@@ -83,7 +83,10 @@ class MultiLandmarkBeliefHead(nn.Module):
         self.grid_hidden = nn.Linear(2, hidden_dim)
         self.context_hidden = nn.Linear(d_model, hidden_dim)
         self.landmark_hidden = nn.Linear(d_model, hidden_dim)
-        self.geometry_hidden = nn.Linear(5, hidden_dim)
+        # Five centroid-relative values plus five nearest-boundary-relative
+        # values.  The latter prevents a large landmark from being collapsed
+        # into the same representation as a small object with the same centre.
+        self.geometry_hidden = nn.Linear(10, hidden_dim)
 
         self.base_score = nn.Sequential(
             nn.Tanh(),
@@ -125,6 +128,7 @@ class MultiLandmarkBeliefHead(nn.Module):
         self,
         context: torch.Tensor,
         landmark_centers: torch.Tensor,
+        landmark_boundaries: torch.Tensor,
         landmark_name_features: torch.Tensor,
         landmark_valid: torch.Tensor,
         previous_belief: torch.Tensor | None = None,
@@ -134,6 +138,7 @@ class MultiLandmarkBeliefHead(nn.Module):
         Shapes:
           context: ``[B, D]``
           landmark_centers: ``[B, N, 2]``
+          landmark_boundaries: ``[B, N, P, 2]``
           landmark_name_features: ``[B, N, D]``
           landmark_valid: ``[B, N]``
           previous_belief: optional ``[B, G*G]``
@@ -159,7 +164,23 @@ class MultiLandmarkBeliefHead(nn.Module):
         delta = grid_batch[:, :, None, :] - landmark_centers[:, None, :, :]
         distance = torch.linalg.vector_norm(delta, dim=-1, keepdim=True)
         unit = delta / distance.clamp_min(1e-6)
-        geometry = torch.cat((delta, unit, distance), dim=-1)
+
+        boundary_delta = (
+            grid_batch[:, :, None, None, :]
+            - landmark_boundaries[:, None, :, :, :]
+        )
+        boundary_distance = torch.linalg.vector_norm(boundary_delta, dim=-1)
+        nearest = boundary_distance.argmin(dim=-1)
+        gather_index = nearest[..., None, None].expand(-1, -1, -1, 1, 2)
+        nearest_delta = boundary_delta.gather(3, gather_index).squeeze(3)
+        nearest_distance = torch.linalg.vector_norm(
+            nearest_delta, dim=-1, keepdim=True
+        )
+        nearest_unit = nearest_delta / nearest_distance.clamp_min(1e-6)
+        geometry = torch.cat(
+            (delta, unit, distance, nearest_delta, nearest_unit, nearest_distance),
+            dim=-1,
+        )
 
         pair_hidden = (
             grid_h[:, :, None, :]

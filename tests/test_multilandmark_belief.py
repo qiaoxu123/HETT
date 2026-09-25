@@ -14,9 +14,10 @@ def make_inputs(batch=2, landmarks=4, dim=32):
     torch.manual_seed(7)
     context = torch.randn(batch, dim)
     centers = torch.rand(batch, landmarks, 2)
+    boundaries = centers[:, :, None, :] + 0.02 * torch.randn(batch, landmarks, 16, 2)
     names = torch.randn(batch, landmarks, dim)
     valid = torch.tensor([[1, 1, 1, 0], [1, 1, 0, 0]], dtype=torch.bool)
-    return context, centers, names, valid
+    return context, centers, boundaries, names, valid
 
 
 def test_output_shapes_bounds_and_gradients():
@@ -35,13 +36,14 @@ def test_output_shapes_bounds_and_gradients():
 
 def test_landmark_order_is_permutation_invariant():
     model = MultiLandmarkBeliefHead(d_model=32, hidden_dim=16, grid_size=7).eval()
-    context, centers, names, valid = make_inputs()
+    context, centers, boundaries, names, valid = make_inputs()
     permutation = torch.tensor([2, 0, 3, 1])
     with torch.no_grad():
-        original = model(context, centers, names, valid)
+        original = model(context, centers, boundaries, names, valid)
         permuted = model(
             context,
             centers[:, permutation],
+            boundaries[:, permutation],
             names[:, permutation],
             valid[:, permutation],
         )
@@ -51,14 +53,16 @@ def test_landmark_order_is_permutation_invariant():
 
 def test_invalid_landmarks_are_ignored():
     model = MultiLandmarkBeliefHead(d_model=32, hidden_dim=16, grid_size=7).eval()
-    context, centers, names, valid = make_inputs()
+    context, centers, boundaries, names, valid = make_inputs()
     changed_centers = centers.clone()
+    changed_boundaries = boundaries.clone()
     changed_names = names.clone()
     changed_centers[~valid] = 1000
     changed_names[~valid] = 1000
+    changed_boundaries[~valid] = 1000
     with torch.no_grad():
-        original = model(context, centers, names, valid)
-        changed = model(context, changed_centers, changed_names, valid)
+        original = model(context, centers, boundaries, names, valid)
+        changed = model(context, changed_centers, changed_boundaries, changed_names, valid)
     for original_tensor, changed_tensor in zip(original, changed):
         torch.testing.assert_close(original_tensor, changed_tensor, rtol=1e-5, atol=1e-6)
 
@@ -72,6 +76,17 @@ def test_previous_belief_is_accumulated():
         without_history = model(*inputs)[0]
         with_history = model(*inputs, previous_belief=previous)[0]
     assert torch.all(with_history[:, 3] > without_history[:, 3])
+
+
+def test_valid_landmark_boundary_changes_spatial_logits():
+    model = MultiLandmarkBeliefHead(d_model=32, hidden_dim=16, grid_size=7).eval()
+    context, centers, boundaries, names, valid = make_inputs()
+    expanded = boundaries.clone()
+    expanded[:, 0] += torch.tensor([0.15, -0.10])
+    with torch.no_grad():
+        original = model(context, centers, boundaries, names, valid)[0]
+        changed = model(context, centers, expanded, names, valid)[0]
+    assert not torch.allclose(original, changed)
 
 
 def test_target_labels_use_metric_success_region():

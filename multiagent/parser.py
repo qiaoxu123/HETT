@@ -125,10 +125,26 @@ def parse_args():
                         help='radius used by the target-region probability loss')
     parser.add_argument('--max_landmarks', type=int, default=9,
                         help='maximum number of independently encoded instruction landmarks')
+    parser.add_argument('--landmark_boundary_points', type=int, default=16,
+                        help='fixed number of points sampled from every landmark contour')
     parser.add_argument('--belief_region_loss_weight', type=float, default=1.0)
     parser.add_argument('--belief_offset_loss_weight', type=float, default=1.0)
     parser.add_argument('--normalize_rollout_loss', action='store_true',
                         help='normalize each rollout loss by its number of active sample-steps')
+    parser.add_argument('--target_only_keyframes', action='store_true',
+                        help='train/evaluate one target prediction per selected keyframe; no action losses')
+    parser.add_argument('--target_keyframe_mode', choices=['near_ring', 'closest', 'start'],
+                        default='near_ring', help='training-view selection for target-only mode')
+    parser.add_argument('--target_eval_view', choices=['near_ring', 'closest', 'start'],
+                        default='near_ring', help='evaluation-view selection for target-only mode')
+    parser.add_argument('--target_near_min_m', type=float, default=25.0,
+                        help='inner keyframe radius; default remains outside the 20 m success circle')
+    parser.add_argument('--target_near_max_m', type=float, default=60.0,
+                        help='outer target-neighbourhood keyframe radius')
+    parser.add_argument('--target_eval_ablation',
+                        choices=['none', 'zero_rgb', 'empty_instruction',
+                                 'wrong_condition', 'pose_only'],
+                        default='none')
     parser.add_argument('--disable_task_interaction', action='store_true')
 
     # logger
@@ -175,6 +191,8 @@ def parse_args():
     # eval params
     parser.add_argument('--eval_every', type=int, default=1)
     parser.add_argument('--eval_first', action='store_true', default=False)
+    parser.add_argument('--include_test_unseen', action='store_true', default=False,
+                        help='explicitly allow final test_unseen evaluation')
     parser.add_argument('--max_action_len', type=int, default=20)
     parser.add_argument('--eval_client', type=str, choices=['crop', 'airsim'], default='crop')
     parser.add_argument('--success_dist', type=float, default=20.)
@@ -188,6 +206,12 @@ def parse_args():
     args = parser.parse_args()
     if args.grad_accum < 1 or args.batch_size < 1 or args.max_episodes < 0:
         parser.error('grad_accum/batch_size must be positive; max_episodes must be nonnegative')
+    if args.target_only_keyframes and not args.target_belief_head:
+        parser.error('--target_only_keyframes requires --target_belief_head')
+    if args.target_near_min_m < args.success_dist:
+        parser.error('--target_near_min_m must be outside the success radius')
+    if args.target_near_max_m < args.target_near_min_m:
+        parser.error('--target_near_max_m must be >= --target_near_min_m')
     if args.checkpoint and not Path(args.checkpoint).is_absolute():
         args.checkpoint = str(PROJECT_ROOT / args.checkpoint)
     output_dir = Path(args.output_dir)

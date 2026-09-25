@@ -31,6 +31,12 @@ def get_tokenizer(args):
     return tokenizer
 
 
+def evaluate_predictions(args, env, predictions):
+    if getattr(args, 'target_only_keyframes', False):
+        return env.eval_target_metrics(predictions)
+    return env.eval_metrics(predictions)
+
+
 def build_train_dataset(args, rank=0):
     # tok = get_tokenizer(args)
     # print(rank)
@@ -68,7 +74,9 @@ def build_val_dataset(args, rank=0):
     # print(rank)
     dataset_class = CityNavBatch
 
-    val_env_names = ['val_seen', 'val_unseen', 'test_unseen', ]  # 'test_unseen'
+    val_env_names = ['val_seen', 'val_unseen']
+    if getattr(args, 'include_test_unseen', False):
+        val_env_names.append('test_unseen')
     # val_env_names = ['visualization' ]  # 'test_unseen'
 
     val_envs = {}
@@ -119,7 +127,11 @@ def train(args, train_env, val_envs, rank=-1):
         record_file = os.path.join(GOAL_PREDICTOR_CHECKPOINT_DIR, 'train.txt')
         write_to_record_file(str(args) + '\n\n', record_file)
 
-    best_val = {'val_unseen': {"sr": 0., "state": ""}, 'val_unseen_full_traj': {"sr": 0., "state": ""}}
+    selection_metric = 'hit20' if args.target_only_keyframes else 'sr'
+    best_val = {
+        'val_seen': {"metric": 0., "state": ""},
+        'val_unseen': {"metric": 0., "state": ""},
+    }
     best_metrics_path = os.path.join(GOAL_PREDICTOR_CHECKPOINT_DIR, 'best_metrics.json')
     if args.checkpoint and os.path.exists(best_metrics_path):
         with open(best_metrics_path) as stream:
@@ -150,13 +162,16 @@ def train(args, train_env, val_envs, rank=-1):
                 agent_eval.test(loader, feedback='student')
                 pred_results = agent_eval.get_results()
 
-                score_summary, result = env.eval_metrics(pred_results)
+                score_summary, result = evaluate_predictions(args, env, pred_results)
                 loss_str += ", %s \n" % env_name
                 for metric, val in score_summary.items():
                     loss_str += ', %s: %.2f' % (metric, val)
                 if env_name in best_val:
-                    if score_summary['sr'] >= best_val[env_name]['sr']:
-                        best_val[env_name]['sr'] = score_summary['sr']
+                    previous = best_val[env_name].get(
+                        'metric', best_val[env_name].get(selection_metric, 0.0)
+                    )
+                    if score_summary[selection_metric] >= previous:
+                        best_val[env_name]['metric'] = score_summary[selection_metric]
                         best_val[env_name]['state'] = 'Epoch %d %s' % (start_epoch, loss_str)
                 del agent_eval
             write_to_record_file(loss_str, record_file)
@@ -212,12 +227,17 @@ def train(args, train_env, val_envs, rank=-1):
 
             progress_loss = sum(agent.logs['progress_loss']) / max(len(agent.logs['progress_loss']), 1)
             goal_predict_loss = sum(agent.logs['goal_predict_loss']) / max(len(agent.logs['goal_predict_loss']), 1)
+            target_predict_loss = sum(agent.logs['target_predict_loss']) / max(len(agent.logs['target_predict_loss']), 1)
+            belief_region_loss = sum(agent.logs['belief_region_loss']) / max(len(agent.logs['belief_region_loss']), 1)
+            belief_offset_loss = sum(agent.logs['belief_offset_loss']) / max(len(agent.logs['belief_offset_loss']), 1)
             # target_predict_loss = sum(agent.logs['target_predict_loss']) / max(len(agent.logs['target_predict_loss']), 1)
             # writer.add_scalar("loss/IL_loss", IL_loss, iter)
 
             write_to_record_file(
-                "\nIL_loss %.4f direction_loss %.4f progress_loss %.4f goal_predict_loss %.4f" % (
-                    ml_loss, direction_loss, progress_loss, goal_predict_loss),
+                ("\nIL_loss %.4f direction_loss %.4f progress_loss %.4f "
+                 "goal_predict_loss %.4f target_loss %.4f region_loss %.4f offset_loss %.4f") % (
+                    ml_loss, direction_loss, progress_loss, goal_predict_loss,
+                    target_predict_loss, belief_region_loss, belief_offset_loss),
                 record_file
             )
             stage1_step = sum(agent.logs['stage1_step']) / max(len(agent.logs['stage1_step']), 1)
@@ -240,6 +260,9 @@ def train(args, train_env, val_envs, rank=-1):
             epoch_metrics = dict(epoch=idx + 1, elapsed_seconds=time.time()-start,
                                  il_loss=ml_loss, direction_loss=direction_loss,
                                  progress_loss=progress_loss, goal_loss=goal_predict_loss,
+                                 target_loss=target_predict_loss,
+                                 region_loss=belief_region_loss,
+                                 offset_loss=belief_offset_loss,
                                  validation={})
             # Reuse the trained modules: avoid a second BERT/Darknet/ET on one GPU.
             agent_eval = agent
@@ -251,7 +274,7 @@ def train(args, train_env, val_envs, rank=-1):
                 agent_eval.test(loader, feedback='student')
                 pred_results = agent_eval.get_results()
 
-                score_summary, result = env.eval_metrics(pred_results)
+                score_summary, result = evaluate_predictions(args, env, pred_results)
                 epoch_metrics['validation'][env_name] = score_summary
                 stage1_step = sum(agent_eval.logs['stage1_step']) / max(len(agent_eval.logs['stage1_step']), 1)
                 stage2_step = sum(agent_eval.logs['stage2_step']) / max(len(agent_eval.logs['stage2_step']), 1)
@@ -267,8 +290,11 @@ def train(args, train_env, val_envs, rank=-1):
                     loss_str += ', %s: %.2f' % (metric, val)
                     # writer.add_scalar('%s/%s' % (metric, env_name), score_summary[metric], iter)
                 if env_name in best_val:
-                    if score_summary['sr'] >= best_val[env_name]['sr']:
-                        best_val[env_name]['sr'] = score_summary['sr']
+                    previous = best_val[env_name].get(
+                        'metric', best_val[env_name].get(selection_metric, 0.0)
+                    )
+                    if score_summary[selection_metric] >= previous:
+                        best_val[env_name]['metric'] = score_summary[selection_metric]
                         best_val[env_name]['state'] = 'Epoch %d %s' % (idx, loss_str)
                         agent_eval.save(idx, os.path.join(GOAL_PREDICTOR_CHECKPOINT_DIR, "best_%s" % (env_name)))
 
@@ -313,7 +339,7 @@ def valid(args, val_envs, rank=-1):
             agent_eval.test(loader, feedback='student')
             pred_results = agent_eval.get_results()
 
-            score_summary, result = env.eval_metrics(pred_results)
+            score_summary, result = evaluate_predictions(args, env, pred_results)
             with open(os.path.join(GOAL_PREDICTOR_CHECKPOINT_DIR, env_name + '_metrics.json'), 'w') as stream:
                 json.dump(score_summary, stream, indent=2)
             torch.save(pred_results, os.path.join(GOAL_PREDICTOR_CHECKPOINT_DIR, env_name + '_predictions.pt'))

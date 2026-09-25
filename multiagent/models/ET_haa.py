@@ -352,6 +352,7 @@ class ET(nn.Module):
             belief_logits, belief_offsets, pred_goals, _ = self.target_belief_head(
                 context=goal_decoder_input,
                 landmark_centers=inputs['landmark_centers'],
+                landmark_boundaries=inputs['landmark_boundaries'],
                 landmark_name_features=inputs['landmark_name_features'],
                 landmark_valid=inputs['landmark_valid'],
                 previous_belief=inputs.get('previous_belief'),

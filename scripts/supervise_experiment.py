@@ -48,6 +48,8 @@ def main():
     parser.add_argument('--seed', type=int, default=0)
     parser.add_argument('--max-episodes', type=int, default=0)
     parser.add_argument('--save-every', type=int, default=1)
+    parser.add_argument('--init-checkpoint', default=None,
+                        help='HETT checkpoint used only to initialise training')
     parser.add_argument('--interval', type=int, default=60)
     parser.add_argument('--variant-arg', action='append', default=[])
     parser.add_argument(
@@ -73,7 +75,7 @@ def main():
             )
     for name in [
         'README.md', 'SINGLE_GPU.md', 'requirements.txt', 'CHANGELOG.md',
-        'TARGET_BELIEF_PROTOCOL.md',
+        'TARGET_BELIEF_PROTOCOL.md', 'TARGET_ONLY_KEYFRAME_PROTOCOL.md',
     ]:
         if (root / name).exists():
             shutil.copy2(root / name, snapshot / name)
@@ -92,6 +94,8 @@ def main():
         root / 'weights/yolo_v3.cfg',
     ]
     input_paths += sorted((root / 'data/processed_citynav').glob('citynav_*.json'))
+    if args.init_checkpoint is not None:
+        input_paths.append(Path(args.init_checkpoint).resolve())
     input_hashes = {
         str(path): {
             'resolved': str(path.resolve()),
@@ -115,7 +119,9 @@ def main():
         '--epochs', str(args.epochs),
         '--save_every', str(args.save_every),
         '--output_dir', str(checkpoint_dir),
-    ] + common
+    ] + ([] if args.init_checkpoint is None else [
+        '--checkpoint', str(Path(args.init_checkpoint).resolve())
+    ]) + common
     evaluation = [
         'bash', str(snapshot / 'multiagent/eval.sh'),
         '--checkpoint', str(checkpoint_dir / 'best_val_unseen'),
@@ -137,8 +143,10 @@ def main():
         'input_sha256': input_hashes,
         'seed': args.seed,
         'epochs': args.epochs,
+        'init_checkpoint': args.init_checkpoint,
         'variant_args': args.variant_arg,
-        'note': 'multi-landmark HETT belief head; fixed-height official 20-step protocol',
+        'note': ('target-only HETT keyframe supervision with independent landmark '
+                 'names, centres and contours; no action loss'),
     })
     atomic_json(run / 'commands.json', {
         'train': train,

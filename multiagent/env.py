@@ -17,6 +17,12 @@ from multiagent.mapdata import MAP_BOUNDS
 from multiagent.maps.landmark_nav_map import LandmarkNavMap
 from multiagent.observation import cropclient
 from multiagent.space import Pose4D, modulo_radians, Point2D
+from multiagent.target_only import (
+    pose_goal_distance,
+    resample_contour,
+    select_keyframe_pose,
+    target_prediction_metrics,
+)
 from typing import List, Dict, Callable, Tuple
 
 
@@ -139,6 +145,9 @@ class CityNavBatch(torch.utils.data.IterableDataset):
 
         # 分片：每个进程处理不同部分
         self.data = full_data[rank::world_size]
+        self.episodes_by_map = defaultdict(list)
+        for episode in self.data:
+            self.episodes_by_map[episode.map_name].append(episode)
         # self.data = full_data
 
         self.ix = 0
@@ -165,6 +174,15 @@ class CityNavBatch(torch.utils.data.IterableDataset):
                 batch += [self.data[j % len(self.data)] for j in range(ix)]
 
             self.batch = batch
+            self.condition_batch = list(batch)
+            if getattr(self.args, 'target_eval_ablation', 'none') == 'wrong_condition':
+                for batch_index, episode in enumerate(batch):
+                    alternatives = self.episodes_by_map[episode.map_name]
+                    if len(alternatives) > 1:
+                        current_index = alternatives.index(episode)
+                        self.condition_batch[batch_index] = alternatives[
+                            (current_index + 1) % len(alternatives)
+                        ]
             used_map_names = []
             for i in range(batch_size):
                 used_map_names.append(self.batch[i].map_name)
@@ -193,20 +211,39 @@ class CityNavBatch(torch.utils.data.IterableDataset):
                        MAP_BOUNDS[map_name].y_max - (float(id) % self.args.grid_size + 0.5) * map_meters)
 
     # TODO: provide whole environment per time step
-    def _get_obs(self, poses: List[Pose4D] = None, random_direction = False):
+    def _get_obs(self, poses: List[Pose4D] = None, random_direction=False,
+                 keyframe_mode=None):
         obs = []
 
         if poses is None:
-            poses = [episode.start_pose for episode in self.batch]
-            # poses = [episode.trajectory[max(0, len(episode.trajectory) - 20)] for episode in self.batch]
             self.nav_maps = [
                 LandmarkNavMap(
                     episode.map_name, self.args.map_shape, self.args.map_pixels_per_meter,
-                    episode.description_landmarks)
-                for episode in self.batch]
+                    condition.description_landmarks)
+                for episode, condition in zip(self.batch, self.condition_batch)]
+            if keyframe_mode is None:
+                poses = [episode.start_pose for episode in self.batch]
+            else:
+                poses = [
+                    select_keyframe_pose(
+                        episode.trajectory,
+                        episode.target_position,
+                        keyframe_mode,
+                        near_min_m=self.args.target_near_min_m,
+                        near_max_m=self.args.target_near_max_m,
+                    )
+                    for episode in self.batch
+                ]
+        elif not self.nav_maps:
+            self.nav_maps = [
+                LandmarkNavMap(
+                    episode.map_name, self.args.map_shape, self.args.map_pixels_per_meter,
+                    condition.description_landmarks)
+                for episode, condition in zip(self.batch, self.condition_batch)]
 
         for i in range(self.batch_size):
             episode = self.batch[i]
+            condition = self.condition_batch[i]
 
             # if poses is None:
             #     # poses = episode.start_pose
@@ -277,6 +314,14 @@ class CityNavBatch(torch.utils.data.IterableDataset):
             normalized_centroids = [self.normalize_position(Point2D(centroid[0], centroid[1]),
                                                             episode.map_name,
                                                             self.args.map_meters) for centroid in centroids]
+            normalized_boundaries = []
+            for contour in landmarks:
+                sampled = resample_contour(contour, self.args.landmark_boundary_points)
+                normalized_boundaries.append([
+                    self.normalize_position(Point2D(float(point[0]), float(point[1])),
+                                            episode.map_name, self.args.map_meters)
+                    for point in sampled
+                ])
             # normalized_centroids
             # print(landmarks, centroids)
             pred_goal_xy = np.mean(centroids, axis=0) if centroids else np.array([0, 0])
@@ -287,7 +332,7 @@ class CityNavBatch(torch.utils.data.IterableDataset):
                 0, 1)
 
             obs.append({
-                'instruction': episode.target_description,
+                'instruction': condition.target_description,
                 'map_name': episode.map_name,
                 'id': episode.id,
                 'maps': self.nav_maps[i].to_array(),
@@ -303,7 +348,14 @@ class CityNavBatch(torch.utils.data.IterableDataset):
                 # and expose the aligned per-landmark instances to the belief head.
                 'centroids': np.mean(normalized_centroids, axis=0) if normalized_centroids else np.array([0, 0]),
                 'landmark_centers': normalized_centroids,
+                'landmark_boundaries': normalized_boundaries,
                 'landmark_names': list(self.nav_maps[i].landmark_map.landmark_names),
+                'view_goal_distance_m': pose_goal_distance(poses[i], episode.target_position),
+                'target_keyframe_valid': (
+                    pose_goal_distance(poses[i], episode.target_position)
+                    >= self.args.target_near_min_m
+                ),
+                'wrong_condition': condition is not episode,
                 'centroid_goal': pred_goal_xy,
                 'normalized_goal': normalized_goal_xys,
                 'grid_goal': normalized_goal_id
@@ -320,6 +372,29 @@ class CityNavBatch(torch.utils.data.IterableDataset):
             # obs[-1]['distance'] = min_dist
 
         return obs
+
+    def eval_target_metrics(self, preds):
+        """Evaluate static world-coordinate target predictions only."""
+        errors = []
+        view_distances = []
+        excluded = 0
+        for item in preds.values():
+            if 'target_error_m' not in item:
+                continue
+            if not item.get('target_eval_valid', True):
+                excluded += 1
+                continue
+            errors.append(float(item['target_error_m']))
+            if 'view_goal_distance_m' in item:
+                view_distances.append(float(item['view_goal_distance_m']))
+        metrics = target_prediction_metrics(errors)
+        metrics['excluded_inside_annulus'] = excluded
+        if view_distances:
+            metrics['mean_view_goal_distance_m'] = float(np.mean(view_distances))
+            metrics['view_inside_20_rate'] = float(
+                (np.asarray(view_distances) <= 20.0).mean() * 100.0
+            )
+        return metrics, {'errors_m': errors, 'view_goal_distances_m': view_distances}
 
     ############### Nav Evaluation ###############
     def _eval_item(self, gt_path, path, goal):
