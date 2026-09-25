@@ -20,8 +20,8 @@ cd "$(dirname "$0")"
     --grid_size 5 \
     --target_belief_head \
     --target_only_keyframes \
-    --target_keyframe_mode near_ring \
-    --target_eval_view near_ring \
+    --target_keyframe_mode final \
+    --target_eval_view final \
     --target_near_min_m 25 \
     --target_near_max_m 60 \
     --belief_grid_size 41 \

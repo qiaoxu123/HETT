@@ -133,10 +133,10 @@ def parse_args():
                         help='normalize each rollout loss by its number of active sample-steps')
     parser.add_argument('--target_only_keyframes', action='store_true',
                         help='train/evaluate one target prediction per selected keyframe; no action losses')
-    parser.add_argument('--target_keyframe_mode', choices=['near_ring', 'closest', 'start'],
-                        default='near_ring', help='training-view selection for target-only mode')
-    parser.add_argument('--target_eval_view', choices=['near_ring', 'closest', 'start'],
-                        default='near_ring', help='evaluation-view selection for target-only mode')
+    parser.add_argument('--target_keyframe_mode', choices=['final', 'near_ring', 'closest', 'start'],
+                        default='final', help='training-view selection for target-only mode')
+    parser.add_argument('--target_eval_view', choices=['final', 'near_ring', 'closest', 'start'],
+                        default='final', help='evaluation-view selection for target-only mode')
     parser.add_argument('--target_near_min_m', type=float, default=25.0,
                         help='inner keyframe radius; default remains outside the 20 m success circle')
     parser.add_argument('--target_near_max_m', type=float, default=60.0,

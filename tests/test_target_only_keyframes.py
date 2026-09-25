@@ -31,6 +31,11 @@ def test_near_ring_fallback_does_not_choose_inside_pose_when_possible():
     assert selected.dist_to(XY(0, 0)) == 70
 
 
+def test_final_keyframe_is_exact_human_trajectory_endpoint():
+    trajectory = [XY(100, 0), XY(50, 0), XY(7, 0)]
+    assert select_keyframe_pose(trajectory, XY(0, 0), "final") is trajectory[-1]
+
+
 def test_resample_contour_has_fixed_shape_and_boundary_points():
     square = [XY(0, 0), XY(1, 0), XY(1, 1), XY(0, 1)]
     result = resample_contour(square, 16)

@@ -70,6 +70,8 @@ def select_keyframe_pose(
     distances = np.asarray([pose_goal_distance(pose, target) for pose in trajectory])
     if mode == "start":
         return trajectory[0]
+    if mode == "final":
+        return trajectory[-1]
     if mode == "closest":
         return trajectory[int(distances.argmin())]
     if mode != "near_ring":

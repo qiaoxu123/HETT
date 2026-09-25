@@ -21,18 +21,15 @@ accumulated along a complete action trajectory?
 
 ## Keyframe rule and leakage boundary
 
-The primary train/evaluation view is selected from the human trajectory in a
-25--60 m annulus around the target.  This is deliberately outside the 20 m
-success circle.  If the annulus is empty, select the closest available frame
-that remains at least 25 m away; only trajectories wholly inside that radius
-fall back to their farthest frame.  Episodes whose entire recorded trajectory
-remains inside 25 m are masked out of the primary loss and metrics rather than
-being counted as easy target-neighbourhood predictions.
+Following the requested perception-upper-bound experiment, the primary
+train/evaluation image is rendered at the **final recorded human-trajectory
+pose**.  No earlier trajectory frame or accumulated trajectory loss is used.
 
-Target truth may select a **training/evaluation diagnostic view** and construct
-the target label, but it is never passed to the model.  Because view selection
-is privileged, this experiment measures a perception/localisation upper bound,
-not a deployable navigation score.
+Target truth constructs the target label but is never passed to the model.
+The human endpoint is privileged and is often already close to the target, so
+this experiment measures a perception/localisation upper bound, not deployable
+navigation.  Every result must therefore include the `pose_copy_hit20`
+baseline: predicting the camera XY without reading RGB or language.
 
 ## Loss
 

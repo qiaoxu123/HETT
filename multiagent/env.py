@@ -352,7 +352,8 @@ class CityNavBatch(torch.utils.data.IterableDataset):
                 'landmark_names': list(self.nav_maps[i].landmark_map.landmark_names),
                 'view_goal_distance_m': pose_goal_distance(poses[i], episode.target_position),
                 'target_keyframe_valid': (
-                    pose_goal_distance(poses[i], episode.target_position)
+                    keyframe_mode != 'near_ring'
+                    or pose_goal_distance(poses[i], episode.target_position)
                     >= self.args.target_near_min_m
                 ),
                 'wrong_condition': condition is not episode,
@@ -394,6 +395,8 @@ class CityNavBatch(torch.utils.data.IterableDataset):
             metrics['view_inside_20_rate'] = float(
                 (np.asarray(view_distances) <= 20.0).mean() * 100.0
             )
+            metrics['pose_copy_hit20'] = metrics['view_inside_20_rate']
+            metrics['pose_copy_mean_error_m'] = metrics['mean_view_goal_distance_m']
         return metrics, {'errors_m': errors, 'view_goal_distances_m': view_distances}
 
     ############### Nav Evaluation ###############

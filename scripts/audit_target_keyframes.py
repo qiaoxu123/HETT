@@ -16,6 +16,8 @@ def main():
     parser.add_argument('--altitude', type=float, default=50.0)
     parser.add_argument('--near-min-m', type=float, default=25.0)
     parser.add_argument('--near-max-m', type=float, default=60.0)
+    parser.add_argument('--mode', choices=['final', 'near_ring', 'closest', 'start'],
+                        default='final')
     parser.add_argument('--splits', nargs='+', default=['train_seen', 'val_seen', 'val_unseen'])
     args = parser.parse_args()
     objects = get_city_refer_objects()
@@ -36,12 +38,13 @@ def main():
                 & (all_distances <= args.near_max_m)
             ))
             pose = select_keyframe_pose(
-                episode.trajectory, episode.target_position, 'near_ring',
+                episode.trajectory, episode.target_position, args.mode,
                 args.near_min_m, args.near_max_m,
             )
             distances.append(pose_goal_distance(pose, episode.target_position))
         distances = np.asarray(distances)
         output[split] = {
+            'mode': args.mode,
             'episodes': len(episodes),
             'exact_ring_available_pct': exact_ring / max(len(episodes), 1) * 100.0,
             'selected_distance_mean_m': float(distances.mean()),
