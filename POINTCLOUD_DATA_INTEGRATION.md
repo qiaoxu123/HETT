@@ -59,6 +59,12 @@ selection, validity, candidate generation, or inference-time belief updates.
 
 ## How LBN should use the data
 
+Keep the native 13-class SensatUrban label during teacher-data generation.
+Runtime heads may group rare classes, but road, footpath, parking, vegetation,
+wall/fence, and water must not be collapsed into Background before supervision.
+Road and footpath topology directly supervise relations such as `across`,
+`corner`, `along`, and `on the road`; vegetation and walls are useful occluders.
+
 ### 1. PoseProjector calibration
 
 Project predicted pixels back to the map and compare them with the stored
@@ -79,6 +85,11 @@ visual-component/landmark pairs. Train position, overlap, size, and type terms;
 appearance remains a residual term. This teaches oblique visual components to
 bind to names without asking RGB to read landmark names.
 
+Do not assign one identity to an entire connected component. Generate a
+`landmark_id` for each valid projected point and train soft per-pixel assignment.
+This lets a geometrically merged visual component contribute to several named
+polygons while retaining a separate confidence for each.
+
 ### 4. Temporal LogOddsBelief training
 
 Replay several frames from the same trajectory and require world-map semantic
@@ -91,6 +102,35 @@ Use valid-pixel ratio, point density, depth discontinuity, and semantic entropy
 to predict whether an observation is useful. This can teach the planner that a
 lower viewpoint is not automatically better. Do not train the height policy to
 copy the recorded human altitude directly.
+
+For active views, optimize candidate discrimination rather than generic image
+quality. The point-cloud teacher can estimate how different the expected
+observation would be for the top two goal candidates. A useful score is:
+
+```text
+candidate separation - travel cost - predicted invalid/occluded fraction
+```
+
+This directly asks whether a new position or altitude will resolve the current
+ambiguity.
+
+## Belief-map dimensionality
+
+Use the point cloud as a 3D teacher but keep the online state as a 2.5D world
+grid unless experiments prove voxels are necessary. Each XY cell stores semantic
+probabilities, surface height/depth uncertainty, landmark identity, observed and
+occluded state, observation confidence, and target probability. CityNav's
+relations and 20-m success metric are primarily planar, so a full dense voxel map
+would add substantial memory and learning complexity without a demonstrated gain.
+
+## Paired simulator RGB requirement
+
+The current rendered RGB and labels come from the same point cloud. They prove
+that perspective supervision is useful, but they do not by themselves train a
+model to transfer from photorealistic simulator RGB. Before claiming that
+capability, capture simulator RGB at the exact same pose, direction, FOV, and
+resolution and pair it with point-cloud depth/semantic/landmark labels. Reject
+or down-weight pairs whose silhouettes or coordinate calibration disagree.
 
 ## What the data should not be used for
 

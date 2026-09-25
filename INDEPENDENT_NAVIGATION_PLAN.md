@@ -151,6 +151,37 @@ quality of visual observations, but it is not included directly in SR or SPL.
 5. Compare the complete independent system with the frozen HETT baseline using
    exactly the same episode IDs and XY SR/SPL implementation.
 
-The immediate next implementation is the persistent belief updater, not a larger
-vision backbone. The current detector already finds most visible buildings; the
-main loss is ambiguous component-to-name association and lack of temporal evidence.
+The immediate next implementation is the landmark binder, followed by the
+persistent belief updater—not a larger vision backbone. The detector already
+finds most visible buildings; the main loss is ambiguous component-to-name
+association and lack of temporal evidence.
+
+## Locked next step after point-cloud gate
+
+The next trainable module is `MapLandmarkBinder`. Before implementing temporal
+belief updates, replace whole-component nearest-centroid matching with per-pixel
+soft assignment to named map polygons:
+
+```text
+RGB pixel feature + predicted depth + camera pose
+  -> world XYZ distribution
+  -> affinity to every visible named polygon
+  -> per-pixel landmark identity probability
+  -> per-landmark evidence map
+```
+
+Point-cloud `world_xyz`, semantic class, landmark ID, validity, and occlusion are
+training labels only. Runtime inputs remain RGB, source map, instruction, and
+camera pose. A merged two-building mask may therefore be separated by projected
+world position instead of requiring the 2D segmenter to split it first.
+
+The binder must pass an oracle ladder before entering the belief updater:
+
+1. static LBN prior and independent controller;
+2. plus oracle point-cloud depth and full semantics;
+3. plus oracle landmark ID, validity, and occlusion;
+4. replace each oracle channel with the RGB model prediction.
+
+All four variants use identical episode IDs. This identifies whether the next
+bottleneck is geometry, RGB perception, or control/stop rather than attributing
+all changes to one end-to-end number.
