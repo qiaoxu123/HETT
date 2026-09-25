@@ -179,6 +179,9 @@ def parse_args():
     parser.add_argument('--max_action_len', type=int, default=20)
     parser.add_argument('--eval_client', type=str, choices=['crop', 'airsim'], default='crop')
     parser.add_argument('--success_dist', type=float, default=20.)
+    parser.add_argument(
+        '--progress_stop_threshold', type=float, default=0.95,
+        help='student rollout stop threshold; 0.95 preserves the released HETT behavior')
     # parser.add_argument('--success_iou', type=float, default=0.4)
     parser.add_argument('--move_iteration', type=int, default=10)
     # parser.add_argument('--progress_stop_val', type=float, default=0.75)
@@ -189,6 +192,8 @@ def parse_args():
     args = parser.parse_args()
     if args.grad_accum < 1 or args.batch_size < 1 or args.max_episodes < 0:
         parser.error('grad_accum/batch_size must be positive; max_episodes must be nonnegative')
+    if not 0.0 <= args.progress_stop_threshold <= 1.0:
+        parser.error('--progress_stop_threshold must be in [0, 1]')
     if args.fine_altitude_refinement and args.train_fine_altitude:
         parser.error('use --fine_altitude_refinement for eval or --train_fine_altitude for train, not both')
     if args.fine_altitude_refinement or args.train_fine_altitude:

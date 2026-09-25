@@ -499,6 +499,8 @@ class NavCMTAgent:
             traj[i]['camera_altitudes_m'] = [
                 poses[i].z - GROUND_LEVEL[ob['map_name']]
             ]
+            traj[i]['stop_reason'] = 'horizon'
+            traj[i]['stop_progress'] = None
         # print(np.array([len(ob['trajectory']) for ob in obs]))
 
         # Initialization the finishing status
@@ -755,8 +757,11 @@ class NavCMTAgent:
                 #     continue
 
 
-                elif pred_progress_t[i] > 0.95 and self.feedback == 'student' and stage1_ended[i]:
+                elif (pred_progress_t[i] > self.args.progress_stop_threshold
+                      and self.feedback == 'student' and stage1_ended[i]):
                     # Updated 'ended' list and make environment action
+                    traj[i]['stop_reason'] = 'progress'
+                    traj[i]['stop_progress'] = float(pred_progress_t[i])
                     ended[i] = True
                     continue
                 elif t == self.args.max_action_len:

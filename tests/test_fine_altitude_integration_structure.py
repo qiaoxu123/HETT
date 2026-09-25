@@ -12,14 +12,15 @@ def test_low_altitude_history_has_an_explicit_global_memory_mask():
 
 
 def test_fine_altitude_does_not_replace_existing_stop_condition():
-    tree = ast.parse(Path("multiagent/agent.py").read_text())
-    comparisons = [
-        node for node in ast.walk(tree)
-        if isinstance(node, ast.Compare)
-        and any(isinstance(comparator, ast.Constant) and comparator.value == 0.95
-                for comparator in node.comparators)
-    ]
-    assert comparisons
+    source = Path("multiagent/agent.py").read_text()
+    tree = ast.parse(source)
+    stop_conditions = [node for node in ast.walk(tree)
+                       if isinstance(node, ast.BoolOp)]
+    assert "pred_progress_t[i] > self.args.progress_stop_threshold" in source
+    assert any(
+        "progress_stop_threshold" in ast.unparse(node)
+        and "stage1_ended" in ast.unparse(node)
+        for node in stop_conditions)
 
 
 def test_fine_altitude_is_gated_by_the_existing_fine_navigation_stage():
