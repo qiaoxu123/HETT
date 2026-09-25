@@ -152,10 +152,10 @@
   because its observation poses were selected by target-distance bands.
 - Corrected navigation comparison: published HETT* is 19.10% SR / 16.70% SPL /
   51.30 m NE on refined `val_unseen`; the earlier local 20-epoch training run's
-  best checkpoint is 19.54% / 15.73% / 50.52 m. The independent static system
-  reaches 23.80% / 22.96% / 44.19 m, a gain of 4.26 SR points, 7.23 SPL points,
-  and 6.33 m NE over the strongest local baseline. No complete `test_unseen`
-  comparison exists yet.
+  best checkpoint is 19.54% / 15.73% / 50.52 m. The previously reported
+  independent 23.80% SR used a 200-action idealized geometric controller and
+  is not comparable to HETT. It is retained only as a diagnostic and no longer
+  supports an improvement claim.
 
 The fixed rank-order limitation is evaluated in the next section. The RGB
 evidence remains too weak to promote into the autonomous controller yet.
@@ -222,3 +222,30 @@ evidence remains too weak to promote into the autonomous controller yet.
   diagnostic it reaches 39.06% SR / 37.60% SPL / 45.31% OSR. This validates
   closed-loop mechanics with teacher observations only; RGB transfer remains
   the gating issue.
+
+## 2026-09-25: official path-local RGB closed loop
+
+- Added a strict HETT-protocol evaluator: 20 outer actions, 10 official
+  discrete motion iterations per action, fixed 50 m altitude, online crop
+  observations and unchanged `CityNavBatch.eval_metrics`.
+- The unified static belief reaches 36.92% SR on `val_seen` and 21.10% on
+  `val_unseen`. The latter is only +1.56 over the local HETT best and is within
+  known student-evaluation variation.
+- Replaced unrestricted 24-view orbits with budget-feasible path actions. The
+  first disambiguating view lies on the Top-1/Top-2 midpoint progress path and
+  becomes jointly visible after 3.86 actions on average.
+- The point-cloud teacher raises full `val_seen` closed-loop SR from 36.92% to
+  40.00%, but remains privileged and is not a deployable result.
+- A frozen RGB semantic branch raises candidate Hit@20 from 38.26% to 39.27%
+  on `val_seen`, and from 21.02% to 23.40% in a one-shot `val_unseen` test.
+  Wrong target type and shuffled evidence controls both reduce performance.
+- The semantic model was then moved inside the actual rollout and consumes the
+  current `obs["rgb"]`. On full `val_unseen`, strict online RGB reaches 23.25%
+  SR / 33.52% OSR / 21.81% SPL / 47.98 m NE. This is +3.71 SR and +6.08 SPL
+  over the strongest recorded local HETT baseline; all trajectories stay below
+  20 actions (mean 6.16, maximum 12).
+- Point cloud is absent at runtime and `test_unseen` remains sealed. Stopping is
+  still deterministic at the predicted goal; learned evidence stopping and a
+  jointly trained budget-aware action head are the next gates.
+- Full protocol, controls and results are recorded in
+  `OFFICIAL_CLOSED_LOOP_RESULTS.md`.

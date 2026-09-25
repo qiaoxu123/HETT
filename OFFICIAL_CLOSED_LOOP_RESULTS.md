@@ -98,3 +98,49 @@ The next gate is narrow: at only these path-local 50 m observations, test
 whether point-cloud supervision and then RGB prediction can rank Top-1 versus
 Top-2. The full action transformer should be trained only if that non-privileged
 ranking is reliably better than static Top-1.
+
+## Path-local point-cloud and RGB transfer
+
+That gate is now complete. The observation pose is the first budget-feasible
+point on the midpoint progress path where both modes enter the official 50 m
+top-down crop. It uses only the start pose and predicted modes. On Val Seen,
+joint visibility is 99.72% and occurs after 3.86 actions on average.
+
+Candidate ranking results:
+
+| Input / split | Hit@20 | Mean error |
+|---|---:|---:|
+| Static / Val Seen | 38.26 | 34.98 m |
+| Point-cloud teacher / Val Seen | 40.45 | 34.15 m |
+| Online RGB / Val Seen | 39.27 | 34.52 m |
+| Static / Val Unseen | 21.02 | 48.77 m |
+| Frozen online RGB / Val Unseen | **23.40** | **48.33 m** |
+
+The point-cloud teacher uses the language-predicted target type. Replacing it
+with the true language type changes Val Seen Hit@20 only from 40.45 to 40.61,
+so language type classification is not the main bottleneck. Wrong type falls to
+34.41 and shuffled evidence to 36.80. For RGB, wrong type falls to 35.75 and
+shuffled evidence to 37.81 on Val Seen. On frozen Val Unseen they fall to 19.73
+and 20.65 versus 23.40 for correct RGB evidence.
+
+## Strict online official result
+
+The semantic model was finally executed inside the rollout on the current
+`obs["rgb"]`, rather than replaying a cached choice. Its rank agrees with the
+cached deterministic observation in 99.93% of Val Unseen episodes.
+
+| Val Unseen model | SR | OSR | SPL | NE | Mean actions | Max actions |
+|---|---:|---:|---:|---:|---:|---:|
+| Local HETT best | 19.54 | 35.97 | 15.73 | 50.52 m | — | 20 |
+| Static unified belief | 21.10 | 29.51 | 20.34 | 48.59 m | 5.86 | 12 |
+| **Strict online path-local RGB** | **23.25** | 33.52 | **21.81** | **47.98 m** | 6.16 | 12 |
+
+Relative to the static model, online RGB adds 2.15 SR and 4.00 OSR points.
+Relative to the strongest recorded local HETT baseline, it adds 3.71 SR and
+6.08 SPL points and reduces NE by 2.54 m. No episode exceeds 20 actions. The
+runtime uses no point cloud and no target coordinate; point cloud served only
+as a development teacher. `test_unseen` remains unopened.
+
+This result still uses a deterministic stop within 5 m of the predicted goal.
+It validates the belief/action observation loop, but a learned evidence stop
+head and a jointly trained budget-aware action head remain outstanding.
