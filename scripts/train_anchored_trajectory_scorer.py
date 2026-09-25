@@ -23,7 +23,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from independent_nav.official_protocol import belief_distinct_topk_xy
 from independent_nav.trajectory_library import generate_rule_trajectory_set
-from independent_nav.trajectory_scorer import TrajectoryHypothesisScorer
+from independent_nav.trajectory_scorer import MultiObjectiveTrajectoryScorer
+from independent_nav.trajectory_utility import geometric_trajectory_utility
 from scripts.build_temporal_belief_dataset import pose_xy_yaw
 from scripts.evaluate_official_static_belief import (
     DEFAULT_SOURCE, BeliefInferenceDataset, load_rows, predict_beliefs,
@@ -52,6 +53,9 @@ def parse_args():
     parser.add_argument("--batch-size", type=int, default=128)
     parser.add_argument("--learning-rate", type=float, default=3e-4)
     parser.add_argument("--hit-loss-weight", type=float, default=0.2)
+    parser.add_argument("--utility-reward-m", type=float, default=20.0)
+    parser.add_argument("--utility-loss-weight", type=float, default=1.0)
+    parser.add_argument("--utility-score-scale", type=float, default=1.0)
     parser.add_argument("--seed", type=int, default=0)
     return parser.parse_args()
 
@@ -69,7 +73,7 @@ def build_features(args, relation_all, start, count, device):
     beliefs, _ = predict_beliefs(
         args.belief_checkpoint, inference, device, args.batch_size)
     modes = [belief_distinct_topk_xy(value, 5, 25.0) for value in beliefs]
-    enriched_rows, paths, endpoints = [], [], []
+    enriched_rows, paths, path_positions, path_valids, endpoints = [], [], [], [], []
     for index, (row, trajectory, hypotheses) in enumerate(
             zip(rows, trajectories, modes)):
         map_name = f'{trajectory["area"]}_block_{trajectory["block"]}'
@@ -93,6 +97,7 @@ def build_features(args, relation_all, start, count, device):
         # representation rather than another endpoint-only candidate scorer.
         paths.append(torch.cat((
             action, position, path_belief, valid[..., None].float()), -1))
+        path_positions.append(position); path_valids.append(valid)
     data = build_split(enriched_rows, relation, 9)
     belief = belief_features(beliefs, endpoints)
     for slot, mode in enumerate(SLOT_TO_MODE):
@@ -102,13 +107,20 @@ def build_features(args, relation_all, start, count, device):
         "belief": belief,
         "endpoints": torch.tensor(endpoints),
     })
+    teacher = geometric_trajectory_utility(
+        torch.stack(path_positions), torch.stack(path_valids),
+        data["endpoints"], inference.centers, inference.valid,
+        torch.tensor(modes))
+    data.update(teacher)
+    data["training_distance"] = (
+        data["distance"] - args.utility_reward_m * data["utility"])
     return data
 
 
 def scorer_dataset(data):
     return TensorDataset(
         data["relation"], data["cue"], data["geometry"], data["valid"],
-        data["trajectory"], data["belief"], data["distance"])
+        data["trajectory"], data["belief"], data["distance"], data["utility"])
 
 
 @torch.inference_mode()
@@ -128,24 +140,35 @@ def predict(model, data, device, ablation=None):
 
 def evaluate(model, data, device):
     score = predict(model, data, device)
+    no_route_score = predict(model, data, device, "no_route")
+    no_belief_score = predict(model, data, device, "no_belief")
     distance = data["distance"]
     selected = score.argmax(-1)
+    no_route_selected = no_route_score.argmax(-1)
+    no_belief_selected = no_belief_score.argmax(-1)
     return {
         "selected": metrics(distance, selected),
         "belief_top1": metrics(
             distance, torch.zeros(len(distance), dtype=torch.long)),
         "best_of_8_oracle": metrics(distance, distance.argmin(-1)),
-        "no_route": metrics(distance, predict(
-            model, data, device, "no_route").argmax(-1)),
-        "no_belief": metrics(distance, predict(
-            model, data, device, "no_belief").argmax(-1)),
+        "no_route": metrics(distance, no_route_selected),
+        "no_belief": metrics(distance, no_belief_selected),
         "selection_histogram": {
             str(index): int(selected.eq(index).sum()) for index in range(8)},
+        "selected_teacher_utility": float(
+            data["utility"].gather(1, selected[:, None]).mean()),
+        "no_route_selected_teacher_utility": float(
+            data["utility"].gather(1, no_route_selected[:, None]).mean()),
+        "no_belief_selected_teacher_utility": float(
+            data["utility"].gather(1, no_belief_selected[:, None]).mean()),
+        "top1_teacher_utility": float(data["utility"][:, 0].mean()),
+        "oracle_teacher_utility": float(data["utility"].amax(-1).mean()),
     }, score
 
 
 def train(train_data, holdout, args, device):
-    model = TrajectoryHypothesisScorer(route_channels=8).to(device)
+    model = MultiObjectiveTrajectoryScorer(
+        route_channels=8, utility_scale=args.utility_score_scale).to(device)
     optimizer = torch.optim.AdamW(
         model.parameters(), lr=args.learning_rate, weight_decay=1e-3)
     best_key, best_state, best_epoch, history = None, None, 0, []
@@ -154,10 +177,19 @@ def train(train_data, holdout, args, device):
         loader = DataLoader(scorer_dataset(train_data), batch_size=args.batch_size,
                             shuffle=True, pin_memory=True)
         for batch in loader:
-            relation, cue, geometry, valid, trajectory, belief, distance = (
+            relation, cue, geometry, valid, trajectory, belief, distance, utility = (
                 value.to(device, non_blocking=True) for value in batch)
-            score = model(relation, cue, geometry, valid, trajectory, belief)
-            loss = ranking_loss(score, distance, args.hit_loss_weight)[0]
+            output = model(
+                relation, cue, geometry, valid, trajectory, belief,
+                return_components=True)
+            goal_loss = ranking_loss(
+                output["goal"], distance, args.hit_loss_weight)[0]
+            final_loss = ranking_loss(
+                output["final"], distance - args.utility_reward_m * utility,
+                args.hit_loss_weight)[0]
+            utility_loss = torch.nn.functional.mse_loss(
+                output["utility"], utility)
+            loss = goal_loss + final_loss + args.utility_loss_weight * utility_loss
             optimizer.zero_grad(set_to_none=True); loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), 5.0)
             optimizer.step(); losses.append(float(loss.detach()))

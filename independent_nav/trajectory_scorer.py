@@ -41,8 +41,8 @@ class TrajectoryHypothesisScorer(nn.Module):
             nn.LayerNorm(hidden), nn.Linear(hidden, hidden), nn.SiLU(),
             nn.Dropout(dropout), nn.Linear(hidden, 1))
 
-    def forward(self, relation, cue, geometry, landmark_valid,
-                trajectory, belief_features):
+    def encode(self, relation, cue, geometry, landmark_valid,
+               trajectory, belief_features):
         batch, candidates, landmarks = geometry.shape[:3]
         language = (self.relation(relation.float())
                     + self.cue(cue.float()))[:, None].expand(
@@ -62,6 +62,33 @@ class TrajectoryHypothesisScorer(nn.Module):
         route = route.reshape(batch, candidates, -1)
         belief = self.belief(belief_features.float())
         token = self.fuse(torch.cat((relation_summary, route, belief), -1))
-        token = self.candidate_context(token)
-        return self.score(token).squeeze(-1)
+        return self.candidate_context(token)
 
+    def forward(self, relation, cue, geometry, landmark_valid,
+                trajectory, belief_features):
+        return self.score(self.encode(
+            relation, cue, geometry, landmark_valid,
+            trajectory, belief_features)).squeeze(-1)
+
+
+class MultiObjectiveTrajectoryScorer(TrajectoryHypothesisScorer):
+    """Separate endpoint correctness from target-free observation utility."""
+
+    def __init__(self, *args, utility_scale=1.0, **kwargs):
+        super().__init__(*args, **kwargs)
+        hidden = self.score[1].in_features
+        self.utility_score = nn.Sequential(
+            nn.LayerNorm(hidden), nn.Linear(hidden, hidden), nn.SiLU(),
+            nn.Linear(hidden, 1))
+        self.utility_scale = float(utility_scale)
+
+    def forward(self, relation, cue, geometry, landmark_valid,
+                trajectory, belief_features, return_components=False):
+        token = self.encode(relation, cue, geometry, landmark_valid,
+                            trajectory, belief_features)
+        goal = self.score(token).squeeze(-1)
+        utility = self.utility_score(token).squeeze(-1)
+        final = goal + self.utility_scale * utility
+        if return_components:
+            return {"final": final, "goal": goal, "utility": utility}
+        return final
