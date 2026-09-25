@@ -1,0 +1,36 @@
+{
+  "frozen_after_commit": "3facd88419d38e438241558f54f2eecc4fcf2d92",
+  "protocol": {
+    "max_action_len": 20,
+    "move_iteration": 10,
+    "altitude_m": 50,
+    "execute_steps": 2,
+    "diffusion_train_steps": 100,
+    "diffusion_inference_steps": 20,
+    "trajectory_samples": 8,
+    "switch_margin": 0.0,
+    "commit_stable_replans": 2,
+    "test_unseen_allowed": false
+  },
+  "checkpoints": {
+    "belief": {
+      "path": "runs/belief_transformer_stage1_relative/model_train3epoch.pt",
+      "sha256": "b1bd0ec67c073c3702d1b3d013c8020f3749b1a356562dc79f1b2f8c05f62bf5"
+    },
+    "trajectory_scorer": {
+      "path": "runs/anchored_trajectory_scorer_full_trainseen/model.pt",
+      "sha256": "c39ccc259ba1f8604741fb58aabb15e2105fa2ad792ec43a6ae4d5a01d0e70ad"
+    },
+    "trajectory_diffusion": {
+      "path": "runs/trajectory_diffusion_slot_train1024_holdout256/model.pt",
+      "sha256": "1ff4727c735af2ef0687639ea6685d015d44885c3074a3e93f6fc55ae6af5814"
+    },
+    "semantic_rgb": {
+      "path": "runs/independent_semantic_trainseen_valseen_select/model.pt",
+      "sha256": "1a0b8c56d1a459b308e36e5a0585fcc83d44fd06d6d40253a0d5f40eeb9629bc"
+    }
+  },
+  "selection_policy": "No model, fusion-weight, action, sampling, stop, or commit hyperparameter changes after val_unseen evaluation begins.",
+  "target_policy": "Target coordinates are permitted only for training labels and post-rollout metrics.",
+  "unseen_policy": "Run val_unseen once after this freeze. Do not load test_unseen."
+}

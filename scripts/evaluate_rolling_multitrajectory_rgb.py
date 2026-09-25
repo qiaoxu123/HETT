@@ -41,7 +41,8 @@ from scripts.train_trajectory_hypothesis_scorer import belief_features
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--split", choices=("val_seen",), default="val_seen")
+    parser.add_argument("--split", choices=("val_seen", "val_unseen"),
+                        default="val_seen")
     parser.add_argument("--candidate-dir", type=Path, default=DEFAULT_SOURCE /
                         "candidate_rgb_data/geometry_top5_oof_grouped_enriched")
     parser.add_argument("--relation-cache", type=Path, default=DEFAULT_SOURCE /
