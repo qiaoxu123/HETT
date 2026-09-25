@@ -142,5 +142,57 @@ runtime uses no point cloud and no target coordinate; point cloud served only
 as a development teacher. `test_unseen` remains unopened.
 
 This result still uses a deterministic stop within 5 m of the predicted goal.
-It validates the belief/action observation loop, but a learned evidence stop
-head and a jointly trained budget-aware action head remain outstanding.
+It validates the belief/action observation loop. The two follow-up gates below
+test whether a hand-designed joint action utility or learned stopping can yet
+replace that rule.
+
+## Budget-aware joint action gate
+
+A target-free action utility was implemented over legal one-action waypoints:
+Top-1, Top-2, their midpoint, and 10 m path-left/path-right offsets. It combines
+expected goal progress, joint-candidate visibility and remaining-budget
+shortfall. At fixed 50 m, evidence acquisition is followed by an explicit
+posterior-mode commitment so that the policy cannot remain at the midpoint.
+
+On the same first 256 Val Seen episodes:
+
+| Method | SR | OSR | SPL | NE | Mean actions |
+|---|---:|---:|---:|---:|---:|
+| Static unified belief | 21.88 | 25.78 | 21.13 | 46.34 m | 6.14 |
+| Cached midpoint RGB rule | **25.39** | 32.42 | **23.82** | **45.10 m** | 6.49 |
+| Joint progress/information utility | 23.83 | **33.20** | 22.69 | 46.19 m | 6.88 |
+
+The joint utility improves over static navigation but is 1.56 SR and 1.13 SPL
+points below the simpler midpoint rule. In the fixed-altitude orthographic
+crop, the midpoint already makes both hypotheses visible early; unsupported
+lateral offsets add path cost without predicting a new appearance. This rule
+is therefore rejected and is not distilled into a learned action head.
+
+## Learned evidence-stop gate
+
+An MLP stop head was trained on 2,048 `train_seen` episodes and selected on all
+2,470 `val_seen` episodes. Runtime features contain only predicted-goal
+distance, two-mode posterior/evidence, current RGB target-type statistics,
+local unified-belief support and remaining budget. Ground-truth distance is
+used only to create the training label.
+
+| Val Seen stop rule | SR | Mean stop step |
+|---|---:|---:|
+| Deterministic predicted-goal stop | 39.109 | 5.910 |
+| RGB-only learned stop | 39.231 | 5.902 |
+| RGB + local-belief learned stop | 39.231 | 5.854 |
+| Trajectory privileged oracle | 49.636 | — |
+
+Both learned variants add only 0.12 SR point on the full validation set. The
+local-belief version selects epoch 0 and threshold 0.83, so the apparent gain
+is not considered stable enough for deployment. Zeroing either center semantics
+or local belief returns SR to 39.109; shuffling them reduces SR to 38.826 and
+38.745, respectively, but the head almost never has confidence to stop early.
+
+The failure is concentrated in the two dominant target types. Center semantic
+state AUC is 0.577 for Building and only 0.525 for Car; together they account
+for 2,283/2,470 episodes. Of 260 trajectories that pass within 20 m and fail at
+the final stop, 209 do so after candidate RGB evidence has already been
+acquired. Observation timing is therefore not the main bottleneck. The next
+gate should improve instance- and relation-specific visual evidence before
+training a larger action head or enabling dynamic height.

@@ -249,3 +249,27 @@ evidence remains too weak to promote into the autonomous controller yet.
   jointly trained budget-aware action head are the next gates.
 - Full protocol, controls and results are recorded in
   `OFFICIAL_CLOSED_LOOP_RESULTS.md`.
+
+## 2026-09-25: budget-aware action and evidence-stop gates
+
+- Implemented a target-free progress + information + budget utility over only
+  official one-action path waypoints. On the first 256 `val_seen` episodes it
+  reaches 23.83% SR, below the existing midpoint RGB rule at 25.39%; it is not
+  promoted into a learned action head.
+- The failed action test is informative: at fixed 50 m, the current top-down
+  RGB observation changes coverage but provides little viewpoint-dependent
+  appearance. Midpoint progress already exposes both candidate modes; lateral
+  motion adds cost without a reliable predicted information benefit.
+- Trained an evidence-stop MLP on 2,048 `train_seen` trajectories with RGB
+  target-type evidence, two-mode posterior, remaining budget and local unified
+  belief support. Full `val_seen` rises only from 39.109% to 39.231% SR, so the
+  head is rejected despite positive 512-episode pilots.
+- Anti-shortcut controls zeroing either RGB center semantics or local belief
+  return to the deterministic baseline; shuffling them reduces SR below it.
+  However, full-data target-state AUC is only 0.577 for Building and 0.525 for
+  Car, the two dominant classes.
+- Of 260 recoverable `val_seen` trajectories, 209 pass the target after RGB
+  candidate evidence is already available. The main blocker is visual
+  specificity, not late observation. Next work should learn instance- and
+  landmark-relation-conditioned RGB evidence before retrying learned stopping,
+  action heads or dynamic height.

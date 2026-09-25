@@ -11,6 +11,9 @@ from scripts.evaluate_path_local_teacher_closed_loop import (
 from scripts.evaluate_path_local_rgb_evidence import reconstruct_observation_pose
 from scripts.evaluate_path_local_rgb_unseen import geometry_records
 from scripts.evaluate_online_rgb_closed_loop import inference_plans, rollout_online_rgb
+from scripts.evaluate_budget_aware_rgb_policy import (
+    inference_plans as budget_inference_plans, rollout_budget_aware,
+)
 
 
 def test_official_crop_visibility_rotates_with_yaw():
@@ -62,3 +65,13 @@ def test_strict_online_plan_and_rollout_exclude_target():
     plan = inference_plans([record], [1])[0]
     assert "target" not in plan
     assert "target" not in inspect.signature(rollout_online_rgb).parameters
+
+
+def test_budget_policy_plan_and_rollout_exclude_target():
+    record = {
+        "index": 0, "modes": [[0.2, 0.3], [0.7, 0.8]],
+        "prior": [0.6, 0.4], "target": [0.7, 0.8],
+    }
+    plan = budget_inference_plans([record], [1])[0]
+    assert "target" not in plan
+    assert "target" not in inspect.signature(rollout_budget_aware).parameters
