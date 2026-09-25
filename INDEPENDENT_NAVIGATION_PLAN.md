@@ -151,6 +151,15 @@ quality of visual observations, but it is not included directly in SR or SPL.
 5. Compare the complete independent system with the frozen HETT baseline using
    exactly the same episode IDs and XY SR/SPL implementation.
 
+The first two replay gates are now complete. At fixed 50 m, temporal landmark
+confirmation reaches 95.92% on val_unseen versus 78.57% from the first
+observation. On the 128-episode candidate replay subset, multi-frame target-type
+evidence raises Hit@20 from 21.88% to 28.91%; single-frame fusion falls to
+16.41%, and wrong-type/shuffled controls fall to 20.31%. Because replay poses
+were selected using target-distance bands, these are perception/reranking
+results, not autonomous navigation metrics. The next gate is target-free
+next-view selection at fixed 50 m.
+
 The immediate next implementation is the landmark binder, followed by the
 persistent belief updater—not a larger vision backbone. The detector already
 finds most visible buildings; the main loss is ambiguous component-to-name

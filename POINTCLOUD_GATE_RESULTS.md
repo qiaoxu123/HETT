@@ -132,16 +132,60 @@ The high-altitude decline is caused primarily by small building footprints, so
 coarse navigation should preserve the map geometry prior rather than expecting
 RGB semantics alone to remain equally reliable.
 
-This gate uses real orthomosaic RGB, not perspective AirSim RGB. A paired
-AirSim capture at the exact point-cloud poses remains mandatory before temporal
-belief integration.
+This gate uses real orthomosaic RGB, not perspective AirSim RGB. AirSim is an
+optional robustness domain, not a CityNav data source or a prerequisite for the
+standard benchmark. CityNav uses real-city orthomosaics and SensatUrban
+geometry; human demonstrations were collected in a web 3D environment. The
+standard local evaluation path uses the crop client, so temporal validation
+continues on CityNav orthomosaic RGB.
+
+## Fixed-50-m temporal landmark belief
+
+A positive-only noisy-OR updater accumulates landmark evidence and never treats
+an unconfirmed frame as negative evidence, because occlusion is unknown. The
+confirmation threshold is selected on val_seen only.
+
+| val_unseen metric | First observation | Temporal (2.52 observations) |
+|---|---:|---:|
+| Named-landmark confirmation | 78.57% | **95.92%** |
+
+Temporal accumulation improves confirmation by 17.35 points. Wrong-pose and
+nearest-wrong-name acceptance remain 1.02% and 6.12%. This proves persistent
+landmark identity, not target localization.
+
+## Fixed-50-m temporal target-candidate replay
+
+The independent geometry generator's five candidates are projected into each
+RGB crop. A train_seen/val_seen text probe predicts the instruction target type;
+the RGB semantic model supplies type evidence around each candidate. The fusion
+weight is selected on val_seen only. The predeclared 10-m candidate neighborhood
+is retained for the primary result.
+
+| val_unseen replay method | Hit@20 | mean NE |
+|---|---:|---:|
+| Geometry generator Top-1 | 21.88% | 43.36 m |
+| Single-frame visual fusion | 16.41% | 44.54 m |
+| **Multi-frame visual fusion** | **28.91%** | **38.39 m** |
+| Wrong target type | 20.31% | 42.08 m |
+| Evidence shuffled across episodes | 20.31% | 44.13 m |
+| Top-5 oracle | 51.56% | 27.02 m |
+
+Multi-frame RGB improves Hit@20 by 7.03 points over the generator's first
+candidate, while single-frame fusion hurts. Radius sensitivity is directionally
+consistent: 5, 10, 15, and 20 m produce 27.34%, 28.91%, 29.69%, and 31.25%
+Hit@20. These radii were inspected after the primary 10-m result, so the larger
+numbers are robustness analysis and are not used for model selection.
+
+This is a 128-episode teacher-forced replay. The benchmark observation poses
+were selected from human trajectories by target-distance bands; therefore it is
+not an autonomous navigation or SR/SPL result. It establishes that correctly
+aligned, correctly typed multi-frame RGB evidence can close part of the gap to
+the Top-5 ceiling. The next fair test must generate observation poses without
+reading target distance.
 
 ## Decision
 
-The point-cloud data passes the first feasibility gate. Keep mixed semantic
-training, but do not use generic monocular absolute depth as the primary binding
-path. Use the direct map-conditioned prism projection as `MapLandmarkBinder`'s
-geometric prior, and learn only RGB alignment/visibility confidence as a
-residual. The next gate is paired simulator RGB at identical poses. Do not claim
-a navigation SR/SPL gain until this evidence is inserted into the temporal
-belief map and tested in closed loop.
+Keep mixed semantic training, but do not use generic monocular absolute depth as
+the primary binding path. Use direct map-conditioned projection as the geometric
+prior and multi-frame RGB as evidence. The next gate is target-free next-view
+selection at fixed 50 m, followed by closed-loop SR/SPL. AirSim is optional.
