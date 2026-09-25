@@ -1,0 +1,71 @@
+{
+  "config": {
+    "samples_per_split": 64,
+    "heights_m": [
+      20.0,
+      35.0,
+      50.0
+    ],
+    "directions_per_candidate": 8,
+    "orbit_radius_m": 30.0,
+    "view_mode": "cluster",
+    "candidate_evidence_radius_m": 10.0,
+    "resolution": 48,
+    "point_stride": 24,
+    "weights_selected_on_val_seen": {
+      "discrimination": 0.5,
+      "joint_view": 0.0,
+      "travel_cost": 0.1,
+      "target_update": 2.0,
+      "joint_update": 1.0
+    }
+  },
+  "diagnostic_population": {
+    "val_seen": 826,
+    "val_unseen": 763
+  },
+  "val_unseen_top5_contains_target_top1_wrong": {
+    "sample_count": 64,
+    "baseline_top1_hit20": 0.0,
+    "relation_conditioned_pointcloud_oracle": {
+      "count": 64,
+      "hit20": 39.0625,
+      "mean_ne_m": 23.756341219645478,
+      "median_ne_m": 23.86073724454689
+    },
+    "wrong_target_type_control": {
+      "count": 64,
+      "hit20": 10.9375,
+      "mean_ne_m": 29.239352886944367,
+      "median_ne_m": 25.99134005352014
+    },
+    "privileged_best_rendered_view": {
+      "count": 64,
+      "hit20": 85.9375,
+      "mean_ne_m": 11.814116017447162,
+      "median_ne_m": 10.345018236852066
+    },
+    "top5_oracle": {
+      "count": 64,
+      "hit20": 100.0,
+      "mean_ne_m": 10.043663848505652,
+      "median_ne_m": 8.826824435554
+    },
+    "selected_height_percent": {
+      "20.0": 21.875,
+      "35.0": 48.4375,
+      "50.0": 29.6875
+    },
+    "road_relation_percent": 40.625,
+    "mean_resolved_landmarks": 1.5625
+  },
+  "anti_leakage": {
+    "target_use": "diagnostic-subset filtering and final metrics only",
+    "view_generation": "Top-5 candidates, fixed orbit, fixed heights and directions",
+    "view_selection": "candidate priors, teacher semantic visibility, named landmarks, roads, travel and validity",
+    "target_coordinate_or_identity_in_view_utility": false,
+    "weights": "selected on val_seen before val_unseen evaluation",
+    "near_candidate_pairs": "pairwise discrimination weight suppressed inside 20 m"
+  },
+  "scope": "sampled point-cloud teacher upper-bound gate; not RGB or closed-loop navigation"
+}

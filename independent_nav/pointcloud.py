@@ -46,7 +46,7 @@ def unproject_depth(depth, pose, hfov_deg=90.0):
     return np.asarray(pose[:3], dtype=np.float64) + depth[..., None] * rays
 
 
-def read_ply(path: Path, stride: int = 8):
+def read_ply(path: Path, stride: int = 8, return_native_semantic: bool = False):
     count = None
     with path.open("rb") as stream:
         while True:
@@ -64,7 +64,10 @@ def read_ply(path: Path, stride: int = 8):
     sampled = cloud[::stride]
     xyz = np.column_stack((sampled["x"], sampled["y"], sampled["z"])).astype(np.float32)
     rgb = np.column_stack((sampled["red"], sampled["green"], sampled["blue"])).astype(np.uint8)
-    semantic = SENSAT_TO_LBN[np.minimum(sampled["class"], len(SENSAT_TO_LBN) - 1)]
+    native_semantic = np.asarray(sampled["class"], dtype=np.uint8)
+    semantic = SENSAT_TO_LBN[np.minimum(native_semantic, len(SENSAT_TO_LBN) - 1)]
+    if return_native_semantic:
+        return xyz, rgb, semantic, native_semantic
     return xyz, rgb, semantic
 
 

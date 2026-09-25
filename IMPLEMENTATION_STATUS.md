@@ -174,3 +174,16 @@ evidence remains too weak to promote into the autonomous controller yet.
   oracle falls to 30.52%. View choice has useful headroom, but positive-only
   evidence accumulation introduces false positives.
 - Full protocol and interpretation are in `OBSERVATION_SELECTION_RESULTS.md`.
+
+## 2026-09-25: point-cloud active-view oracle pilot
+
+- Identified 763 `val_unseen` episodes where Top-5 contains a 20-m success but
+  rank 1 is wrong; evaluated a map-balanced 64-episode pilot.
+- Enumerated 24 target-free cluster views from eight directions and heights
+  20/35/50 m. Point-cloud teacher semantics retain roads and footpaths.
+- Relation-conditioned teacher selection corrects 39.06% of initial failures;
+  wrong target type corrects 10.94%. Privileged best-view selection reaches
+  85.94%, confirming substantial view-choice headroom.
+- This is a sampled teacher upper bound, not RGB navigation. Remaining controls
+  and `train_seen` view-value training are required before integration.
+- Protocol and results are in `POINTCLOUD_ACTIVE_VIEW_ORACLE.md`.
