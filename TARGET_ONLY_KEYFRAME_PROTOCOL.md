@@ -28,7 +28,7 @@ pose**.  No earlier trajectory frame or accumulated trajectory loss is used.
 Target truth constructs the target label but is never passed to the model.
 The human endpoint is privileged and is often already close to the target, so
 this experiment measures a perception/localisation upper bound, not deployable
-navigation.  Every result must therefore include the `pose_copy_hit20`
+navigation.  Every result must therefore include the `pose_copy_hit5` and `pose_copy_hit20`
 baseline: predicting the camera XY without reading RGB or language.
 
 ## Loss
@@ -36,14 +36,14 @@ baseline: predicting the camera XY without reading RGB or language.
 The only optimized quantities are:
 
 1. exact 41x41 target-cell cross entropy;
-2. negative log probability mass inside the metric 20 m target region;
-3. within-cell offset SmoothL1.
+2. within-cell offset SmoothL1 to the exact continuous target coordinate.
 
 Loss is normalized per active sample, not accumulated over trajectory length.
 
 ## Metrics
 
-Report target error mean/median, Hit@20 and Hit@50 separately for `val_seen`
+Use Hit@5 as the primary checkpoint metric. Report target error mean/median,
+Hit@5, Hit@20 and Hit@50 separately for `val_seen`
 and frozen `val_unseen`.  Also report mean camera-to-target distance and the
 fraction accidentally inside 20 m (expected to be zero for the main annulus).
 
@@ -55,7 +55,7 @@ Semantic-reliance controls use the same checkpoint and views:
 - zero RGB;
 - pose only (empty instruction, zero RGB, no valid landmarks).
 
-A high unseen Hit@20 is evidence of semantic understanding only when the
+A high unseen Hit@5 is evidence of semantic understanding only when the
 same-map wrong-condition and pose-only controls decrease materially.
 
 Before full training, `--target_eval_train_split` is used with a tiny fixed
@@ -67,5 +67,5 @@ diagnostic number is never reported as generalization performance.
 
 Target-only training uses the true continuous target position as its label:
 cross entropy on the exact 41 x 41 target cell plus regression of the exact
-within-cell offset.  The 20 m radius is an evaluation metric only and is not
-used as a training target.
+within-cell offset.  The 5 m and 20 m radii are evaluation metrics only and
+are not used as training targets.

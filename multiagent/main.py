@@ -132,7 +132,7 @@ def train(args, train_env, val_envs, rank=-1):
         record_file = os.path.join(GOAL_PREDICTOR_CHECKPOINT_DIR, 'train.txt')
         write_to_record_file(str(args) + '\n\n', record_file)
 
-    selection_metric = 'hit20' if args.target_only_keyframes else 'sr'
+    selection_metric = 'hit5' if args.target_only_keyframes else 'sr'
     best_val = {
         'val_seen': {"metric": 0., "state": ""},
         'val_unseen': {"metric": 0., "state": ""},

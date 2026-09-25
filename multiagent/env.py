@@ -392,9 +392,13 @@ class CityNavBatch(torch.utils.data.IterableDataset):
         metrics['excluded_inside_annulus'] = excluded
         if view_distances:
             metrics['mean_view_goal_distance_m'] = float(np.mean(view_distances))
+            metrics['view_inside_5_rate'] = float(
+                (np.asarray(view_distances) <= 5.0).mean() * 100.0
+            )
             metrics['view_inside_20_rate'] = float(
                 (np.asarray(view_distances) <= 20.0).mean() * 100.0
             )
+            metrics['pose_copy_hit5'] = metrics['view_inside_5_rate']
             metrics['pose_copy_hit20'] = metrics['view_inside_20_rate']
             metrics['pose_copy_mean_error_m'] = metrics['mean_view_goal_distance_m']
         return metrics, {'errors_m': errors, 'view_goal_distances_m': view_distances}

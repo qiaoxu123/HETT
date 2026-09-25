@@ -48,5 +48,6 @@ def test_resample_contour_has_fixed_shape_and_boundary_points():
 def test_target_metrics_report_20m_accuracy():
     metrics = target_prediction_metrics([0, 10, 25, 100])
     assert metrics["count"] == 4
+    assert metrics["hit5"] == 25.0
     assert metrics["hit20"] == 50.0
     assert metrics["median_error_m"] == 17.5

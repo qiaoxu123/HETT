@@ -91,12 +91,14 @@ def target_prediction_metrics(errors_m: Sequence[float]) -> dict:
     errors = np.asarray(errors_m, dtype=np.float64)
     if errors.size == 0:
         return {"count": 0, "mean_error_m": float("nan"),
-                "median_error_m": float("nan"), "hit20": float("nan"),
+                "median_error_m": float("nan"), "hit5": float("nan"),
+                "hit20": float("nan"),
                 "hit50": float("nan")}
     return {
         "count": int(errors.size),
         "mean_error_m": float(errors.mean()),
         "median_error_m": float(np.median(errors)),
+        "hit5": float((errors <= 5.0).mean() * 100.0),
         "hit20": float((errors <= 20.0).mean() * 100.0),
         "hit50": float((errors <= 50.0).mean() * 100.0),
     }
