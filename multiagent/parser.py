@@ -127,6 +127,8 @@ def parse_args():
     parser.add_argument('--relation_checkpoints', type=str, nargs='*', default=None)
     parser.add_argument('--relation_alpha', type=float, default=1.0)
     parser.add_argument('--relation_goal_grid_size', type=int, default=20)
+    parser.add_argument('--independent_relation_goals', type=str, default=None,
+                        help='target-free HETT-independent goal artifact for evaluation')
 
     # logger
     parser.add_argument('--log_every', type=int, default=1)

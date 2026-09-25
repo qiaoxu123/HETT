@@ -29,7 +29,7 @@ from multiagent.active_altitude.fine_refinement import (
 )
 from multiagent.defaultpaths import GOAL_PREDICTOR_CHECKPOINT_DIR
 from multiagent.mapdata import GROUND_LEVEL
-from multiagent.multi_landmark import MultiLandmarkIndex
+from multiagent.multi_landmark import IndependentGoalIndex, MultiLandmarkIndex
 from multiagent.models.dark_net import Darknet
 from multiagent.models.CLIP import CLIP
 # from direction.models.ddppo.resenet_encoders import TorchVisionResNet50
@@ -161,9 +161,13 @@ class NavCMTAgent:
         # create the et model
         self.vln_model = ET(self.args).cuda()
         self.multi_landmark_index = None
+        self.independent_goal_index = None
         if getattr(self.args, 'multi_landmark_features', None):
             self.multi_landmark_index = MultiLandmarkIndex(
                 self.args.multi_landmark_features)
+        if getattr(self.args, 'independent_relation_goals', None):
+            self.independent_goal_index = IndependentGoalIndex(
+                self.args.independent_relation_goals)
         # self.map_encoder = MapEncoder(240)
         # self.goal_predictpr = GoalPredictor(240, 7)
         self.progress_regression = nn.MSELoss(reduction='sum')
@@ -452,6 +456,11 @@ class NavCMTAgent:
                 control = 'normal'
             multi_landmarks = self.multi_landmark_index.batch(
                 [ob['id'] for ob in obs], torch.device('cuda'), control=control)
+        independent_goals = (
+            self.independent_goal_index.batch(
+                [ob['id'] for ob in obs], torch.device('cuda'))
+            if self.independent_goal_index is not None else None
+        )
 
         # --------------- 1. 语言输入：instruction -> token ids -> BERT embedding -----------------
         # lang_inputs: list[str]，长度= batch_size
@@ -747,6 +756,8 @@ class NavCMTAgent:
                 sys.exit('Invalid feedback option')
 
             cpu_goal = at_goal.cpu().detach().numpy()
+            if independent_goals is not None:
+                cpu_goal = independent_goals.cpu().float().numpy()
             goal_probabilities = torch.softmax(
                 pred_logits.squeeze(-1), dim=-1).detach().cpu().numpy()
             # print(cpu_goal)

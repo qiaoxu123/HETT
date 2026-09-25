@@ -68,6 +68,38 @@ order a small set of plausible candidates; it is not a global target proposal
 model. HETT remains necessary to provide the global location prior, while the
 relation branch is useful as a residual correction.
 
+## HETT-independent proposal generator
+
+A separate supervised geometry generator creates five candidates directly from
+instruction text and per-landmark centers/boundaries. It never reads HETT goal
+logits. The frozen relation-ranker ensemble then selects one of those candidates.
+
+| val_unseen target method | overall Hit@20 | multi-landmark Hit@20 | goal NE |
+|---|---:|---:|---:|
+| independent generator Top-1 | 20.76% | 28.44% | 45.47 m |
+| independent Top-5 oracle | 50.76% | 62.80% | 29.63 m |
+| **generator + relation ranker** | **24.29%** | **34.20%** | **44.17 m** |
+| wrong relation control | 23.32% | 32.15% | 44.73 m |
+| wrong landmark control | 18.50% | 25.43% | 48.75 m |
+
+The proposal generator and ranker use no HETT candidates. Targets stored in the
+offline evaluation JSON are read only after scores are fixed; the runtime goal
+artifact contains episode IDs and predictions, not targets.
+
+Using the independent prediction as the navigation goal while retaining HETT
+only for movement, turning, and stopping gives:
+
+| full val_unseen navigation | SR | SPL | final NE |
+|---|---:|---:|---:|
+| A: current HETT | 9.86% | 8.06% | 62.56 m |
+| HETT + relation heatmap | 11.27% | 9.49% | 79.27 m |
+| **independent goal + HETT executor** | **14.91%** | **13.56%** | **54.85 m** |
+
+The independent run has stage-1 SR 23.99%, but final SR falls to 14.91% after
+HETT fine navigation. Thus the next largest navigation loss is no longer global
+proposal generation: it is movement away from a good predicted goal during the
+fine-navigation/stop phase.
+
 ## Leakage and control audit
 
 The runtime feature artifact contains only episode IDs, landmark centers,

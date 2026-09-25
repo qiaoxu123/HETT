@@ -93,3 +93,25 @@ class MultiLandmarkIndex:
         return MultiLandmarkBatch(*[
             torch.stack(field).to(device) for field in fields
         ])
+
+
+class IndependentGoalIndex:
+    """Lookup for target-free goals produced without HETT goal logits."""
+
+    def __init__(self, path):
+        payload = torch.load(path, map_location="cpu", weights_only=True)
+        if payload.get("schema") != 1:
+            raise ValueError("unsupported independent-goal artifact")
+        self.rows = {
+            episode_key(episode_id): payload["goals"][index]
+            for index, episode_id in enumerate(payload["episode_ids"])
+        }
+
+    def batch(self, episode_ids, device):
+        missing = [episode_key(value) for value in episode_ids
+                   if episode_key(value) not in self.rows]
+        if missing:
+            raise KeyError(f"missing independent goals: {missing[:3]}")
+        return torch.stack([
+            self.rows[episode_key(value)] for value in episode_ids
+        ]).to(device)
