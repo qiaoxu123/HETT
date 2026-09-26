@@ -162,6 +162,16 @@ class ET(nn.Module):
             nn.Linear(32, 2),
             nn.Tanh()
         )
+        self.decoder_2_reverse_goal_direction = nn.Sequential(
+            nn.Linear(self.args.demb, 256),
+            nn.ReLU(),
+            nn.Dropout(0.2),
+            nn.Linear(256, 32),
+            nn.ReLU(),
+            nn.Dropout(0.2),
+            nn.Linear(32, 2),
+            nn.Tanh(),
+        )
 
         self.attention_layer_vision = SoftDotAttention(49) # 让语言特征关注视觉帧；输入为 [B, dim] 与 [B, seq_len, dim]
 
@@ -210,6 +220,12 @@ class ET(nn.Module):
                 nn.Linear(512, self.args.demb),
                 nn.LayerNorm(self.args.demb),
             )
+            self.target_view_attention = nn.Linear(512, 1)
+        else:
+            self.target_view_attention = None
+
+        self.branch_embedding = nn.Embedding(2, self.args.demb)
+        nn.init.zeros_(self.branch_embedding.weight)
 
         # pose embedding: 把当前的 [sin(yaw), cos(yaw), x, y] 映射到 d_model 维
         self.direction_embedding = nn.Linear(4, self.args.demb)
@@ -232,10 +248,15 @@ class ET(nn.Module):
             dropout=self.args.dropout_transformer_encoder,
         )
 
-    def project_target_views(self, pooled_visual_features):
+    def project_target_views(self, visual_features):
         if self.target_view_projection is None:
             raise RuntimeError('reverse target-view projection is disabled')
-        return self.target_view_projection(pooled_visual_features)
+        if visual_features.ndim != 4:
+            raise ValueError('visual_features must have shape [B, V, 512, S]')
+        tokens = visual_features.permute(0, 1, 3, 2).flatten(1, 2)
+        attention = torch.softmax(self.target_view_attention(tokens).squeeze(-1), dim=-1)
+        pooled = (tokens * attention.unsqueeze(-1)).sum(dim=1)
+        return self.target_view_projection(pooled)
 
     def forward(self, **inputs):
         """
@@ -352,10 +373,25 @@ class ET(nn.Module):
         action_decoder_input = motion_tokens[:, 0]             # [B, d_model]
         decoder_input = motion_tokens[:, 1]                    # [B, d_model]
 
+        task_ids = inputs.get('task_ids')
+        if task_ids is None:
+            task_ids = torch.zeros(
+                action_decoder_input.shape[0], dtype=torch.long,
+                device=action_decoder_input.device,
+            )
+        branch = self.branch_embedding(task_ids)
+        goal_decoder_input = goal_decoder_input + branch
+        action_decoder_input = action_decoder_input + branch
+        decoder_input = decoder_input + branch
+
         output = self.decoder_2_action_full(action_decoder_input) # [B, 2] 归一化方向向量
         pred_goals = self.decoder_2_goal_full(goal_decoder_input) # [B, 2] 归一化目标位置
         norm = torch.norm(output, dim=1, keepdim=True) + 1e-6     # 避免除零
         direction = output / norm
+        reverse_goal_output = self.decoder_2_reverse_goal_direction(action_decoder_input)
+        reverse_goal_direction = reverse_goal_output / (
+            torch.norm(reverse_goal_output, dim=1, keepdim=True) + 1e-6
+        )
 
         # progress: [B, 1]
         progress = self.decoder_2_progress_full(decoder_input)
@@ -368,6 +404,7 @@ class ET(nn.Module):
                 landmark_centers=inputs['landmark_centers'],
                 landmark_name_features=inputs['landmark_name_features'],
                 landmark_valid=inputs['landmark_valid'],
+                landmark_confidence=inputs.get('landmark_confidence'),
                 previous_belief=inputs.get('previous_belief'),
             )
             return (
@@ -377,6 +414,10 @@ class ET(nn.Module):
                 belief_logits.unsqueeze(-1),
                 emb_frames + emb_directions,
                 belief_offsets,
+                reverse_goal_direction,
             )
 
-        return direction, progress, pred_goals, target_logits, emb_frames + emb_directions
+        return (
+            direction, progress, pred_goals, target_logits,
+            emb_frames + emb_directions, reverse_goal_direction,
+        )

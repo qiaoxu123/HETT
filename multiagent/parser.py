@@ -121,8 +121,14 @@ def parse_args():
     )
     parser.add_argument('--reverse_visual_align_weight', type=float, default=0.10,
                         help='terminal human-view to parsed-target alignment weight')
+    parser.add_argument('--reverse_goal_direction_weight', type=float, default=0.10,
+                        help='weight for the separate bearing-to-original-start head')
     parser.add_argument('--reverse_target_views', type=int, default=3,
                         help='number of original terminal human views used for visual alignment')
+    parser.add_argument('--reverse_visual_temperature', type=float, default=0.07,
+                        help='temperature for terminal-view/text contrastive alignment')
+    parser.add_argument('--reverse_freeze_text_targets', action='store_true',
+                        help='detach target-phrase embeddings in visual contrastive learning')
 
     parser.add_argument('--darknet_model_file', type=str, default=str(WEIGHTS_DIR / 'yolo_v3.cfg'))
     parser.add_argument('--darknet_weight_file', type=str, default=str(WEIGHTS_DIR / 'best.pt'))
@@ -140,10 +146,18 @@ def parse_args():
                         help='radius used by the target-region probability loss')
     parser.add_argument('--max_landmarks', type=int, default=9,
                         help='maximum number of independently encoded instruction landmarks')
+    parser.add_argument('--landmark_match_min_similarity', type=float, default=0.0,
+                        help='reject fuzzy landmark matches below this normalized similarity')
     parser.add_argument('--belief_region_loss_weight', type=float, default=1.0)
     parser.add_argument('--belief_offset_loss_weight', type=float, default=1.0)
     parser.add_argument('--normalize_rollout_loss', action='store_true',
                         help='normalize each rollout loss by its number of active sample-steps')
+    parser.add_argument(
+        '--progress_normalization',
+        choices=['fixed_100m', 'initial_distance'],
+        default='fixed_100m',
+        help='progress label denominator; initial_distance is shared by both branches',
+    )
     parser.add_argument('--disable_task_interaction', action='store_true')
 
     # logger
@@ -190,11 +204,19 @@ def parse_args():
     # eval params
     parser.add_argument('--eval_every', type=int, default=1)
     parser.add_argument('--eval_first', action='store_true', default=False)
+    parser.add_argument('--save_validation_predictions', action='store_true',
+                        help='archive per-episode validation trajectories for each epoch')
     parser.add_argument('--max_action_len', type=int, default=20)
     parser.add_argument('--eval_client', type=str, choices=['crop', 'airsim'], default='crop')
     parser.add_argument('--success_dist', type=float, default=20.)
     # parser.add_argument('--success_iou', type=float, default=0.4)
     parser.add_argument('--move_iteration', type=int, default=10)
+    parser.add_argument('--stage1_arrival_distance_m', type=float, default=5.0)
+    parser.add_argument('--stage2_replan_distance_m', type=float, default=15.0)
+    parser.add_argument('--progress_stop_threshold', type=float, default=0.95)
+    parser.add_argument('--stop_goal_distance_m', type=float, default=10.0)
+    parser.add_argument('--goal_stability_distance_m', type=float, default=5.0)
+    parser.add_argument('--goal_stability_steps', type=int, default=2)
     # parser.add_argument('--progress_stop_val', type=float, default=0.75)
     # parser.add_argument('--eval_goal_selector', type=str, choices=['gdino', 'llava'], default='gdino')
     parser.add_argument('--gps_noise_scale', type=float, default=0.)
@@ -202,8 +224,17 @@ def parse_args():
 
     args = parser.parse_args()
     if (args.grad_accum < 1 or args.batch_size < 1 or args.max_episodes < 0
-            or args.reverse_target_views < 1):
-        parser.error('grad_accum/batch_size must be positive; max_episodes must be nonnegative')
+            or args.reverse_target_views < 1 or args.reverse_visual_temperature <= 0
+            or args.reverse_teacher_weight < 0
+            or args.reverse_visual_align_weight < 0
+            or args.reverse_goal_direction_weight < 0
+            or not 0 <= args.landmark_match_min_similarity <= 1):
+        parser.error('batch sizes, reverse weights, temperature, and similarity are invalid')
+    if (args.stage1_arrival_distance_m <= 0 or args.stage2_replan_distance_m <= 0
+            or args.stop_goal_distance_m <= 0 or args.goal_stability_distance_m < 0
+            or args.goal_stability_steps < 1
+            or not 0 <= args.progress_stop_threshold <= 1):
+        parser.error('stage/stop distances and goal_stability_steps must be positive')
     if args.checkpoint and not Path(args.checkpoint).is_absolute():
         args.checkpoint = str(PROJECT_ROOT / args.checkpoint)
     output_dir = Path(args.output_dir)

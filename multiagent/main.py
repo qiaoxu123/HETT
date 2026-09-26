@@ -218,6 +218,21 @@ def train(args, train_env, val_envs, rank=-1):
                 sum(agent.logs['visual_alignment_loss'])
                 / max(len(agent.logs['visual_alignment_loss']), 1)
             )
+            diagnostic_keys = (
+                'forward_direction_loss', 'forward_progress_loss',
+                'reverse_direction_loss', 'reverse_progress_loss',
+                'reverse_goal_direction_loss', 'target_predict_loss',
+                'belief_region_loss', 'belief_offset_loss',
+                'visual_alignment_positive_cosine', 'visual_alignment_accuracy',
+                'target_error_mean_m', 'target_hit5', 'target_hit20',
+                'belief_entropy', 'belief_peak_shift_m', 'stop_step',
+                'stopped_rate', 'replan_count',
+            )
+            diagnostics = {
+                key: float(np.mean(agent.logs[key]))
+                for key in diagnostic_keys if agent.logs[key]
+            }
+            optimization_loss = reverse_loss + forward_loss
             # target_predict_loss = sum(agent.logs['target_predict_loss']) / max(len(agent.logs['target_predict_loss']), 1)
             # writer.add_scalar("loss/IL_loss", IL_loss, iter)
 
@@ -227,8 +242,12 @@ def train(args, train_env, val_envs, rank=-1):
                 record_file
             )
             write_to_record_file(
-                "\nreverse_loss %.4f forward_loss %.4f visual_alignment_loss %.4f" % (
-                    reverse_loss, forward_loss, visual_alignment_loss),
+                "\noptimization_loss %.4f reverse_loss %.4f forward_loss %.4f visual_alignment_loss %.4f" % (
+                    optimization_loss, reverse_loss, forward_loss, visual_alignment_loss),
+                record_file,
+            )
+            write_to_record_file(
+                "\ndiagnostics " + json.dumps(diagnostics, sort_keys=True),
                 record_file,
             )
             stage1_step = sum(agent.logs['stage1_step']) / max(len(agent.logs['stage1_step']), 1)
@@ -252,7 +271,9 @@ def train(args, train_env, val_envs, rank=-1):
                                  il_loss=ml_loss, direction_loss=direction_loss,
                                  progress_loss=progress_loss, goal_loss=goal_predict_loss,
                                  reverse_loss=reverse_loss, forward_loss=forward_loss,
+                                 optimization_loss=optimization_loss,
                                  visual_alignment_loss=visual_alignment_loss,
+                                 diagnostics=diagnostics,
                                  validation={})
             # Reuse the trained modules: avoid a second BERT/Darknet/ET on one GPU.
             agent_eval = agent
@@ -265,7 +286,24 @@ def train(args, train_env, val_envs, rank=-1):
                 pred_results = agent_eval.get_results()
 
                 score_summary, result = env.eval_metrics(pred_results)
+                validation_diagnostic_keys = (
+                    'target_error_mean_m', 'target_hit5', 'target_hit20',
+                    'belief_entropy', 'belief_peak_shift_m', 'stop_step',
+                    'stopped_rate', 'replan_count',
+                )
+                score_summary['diagnostics'] = {
+                    key: float(np.mean(agent_eval.logs[key]))
+                    for key in validation_diagnostic_keys if agent_eval.logs[key]
+                }
                 epoch_metrics['validation'][env_name] = score_summary
+                if getattr(args, 'save_validation_predictions', False):
+                    torch.save(
+                        pred_results,
+                        os.path.join(
+                            GOAL_PREDICTOR_CHECKPOINT_DIR,
+                            'epoch_%02d_%s_predictions.pt' % (idx + 1, env_name),
+                        ),
+                    )
                 stage1_step = sum(agent_eval.logs['stage1_step']) / max(len(agent_eval.logs['stage1_step']), 1)
                 stage2_step = sum(agent_eval.logs['stage2_step']) / max(len(agent_eval.logs['stage2_step']), 1)
                 stage2_rotate = sum(agent_eval.logs['stage2_rotate']) / max(len(agent_eval.logs['stage2_rotate']), 1)
@@ -277,6 +315,8 @@ def train(args, train_env, val_envs, rank=-1):
                 )
                 loss_str += "\n%s " % env_name
                 for metric, val in score_summary.items():
+                    if isinstance(val, dict):
+                        continue
                     loss_str += ', %s: %.2f' % (metric, val)
                     # writer.add_scalar('%s/%s' % (metric, env_name), score_summary[metric], iter)
                 if env_name in best_val:

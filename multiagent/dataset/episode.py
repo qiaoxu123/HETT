@@ -63,6 +63,11 @@ class Episode:
     @property
     def time_step(self):
         return len(self.teacher_actions)
+
+    @property
+    def initial_distance_to_target(self):
+        """Metric start-to-target distance used by normalized progress."""
+        return max(self.start_pose.xy.dist_to(self.target_position.xy), 1e-6)
     
     @property
     def trajectory(self):
@@ -114,6 +119,33 @@ def reverse_flight_trajectory(trajectory: List[Pose4D]) -> List[Pose4D]:
         Pose4D(pose.x, pose.y, pose.z, yaw)
         for pose, yaw in zip(reversed_poses, headings)
     ]
+
+
+def relative_direction_to_waypoint(current: Pose4D, waypoint: Pose4D) -> float:
+    """Return the signed camera-relative bearing to a local waypoint."""
+    dx = waypoint.x - current.x
+    dy = waypoint.y - current.y
+    if math.hypot(dx, dy) <= 1e-6:
+        return 0.0
+    angle = math.atan2(dy, dx) - current.yaw
+    return (angle + math.pi) % (2 * math.pi) - math.pi
+
+
+def reverse_waypoint_direction(
+    trajectory: List[Pose4D],
+    step: int,
+    stride: int,
+) -> float:
+    """Direction from the current sampled reverse pose to its next waypoint."""
+    if not trajectory:
+        raise ValueError('trajectory must not be empty')
+    if stride < 1:
+        raise ValueError('stride must be positive')
+    current_index = min(step * stride, len(trajectory) - 1)
+    next_index = min((step + 1) * stride, len(trajectory) - 1)
+    return relative_direction_to_waypoint(
+        trajectory[current_index], trajectory[next_index]
+    )
 
 
 @dataclass(frozen=True)

@@ -234,7 +234,11 @@ class CityNavBatch(torch.utils.data.IterableDataset):
             self.nav_maps = [
                 LandmarkNavMap(
                     episode.map_name, self.args.map_shape, self.args.map_pixels_per_meter,
-                    episode.description_landmarks)
+                    episode.description_landmarks,
+                    landmark_match_min_similarity=getattr(
+                        self.args, 'landmark_match_min_similarity', 0.0
+                    ),
+                )
                 for episode in episodes]
 
         for i in range(self.batch_size):
@@ -314,11 +318,13 @@ class CityNavBatch(torch.utils.data.IterableDataset):
             pred_goal_xy = np.mean(centroids, axis=0) if centroids else np.array([0, 0])
 
             rgb = cropclient.crop_image(episode.map_name, poses[i], (224, 224), 'rgb')
-            if self.reverse_teacher_mode:
+            progress_mode = getattr(self.args, 'progress_normalization', 'fixed_100m')
+            if progress_mode == 'initial_distance':
                 progress_denominator = episode.initial_distance_to_target
-            else:
-                # Preserve the released HETT definition for all forward runs.
+            elif progress_mode == 'fixed_100m':
                 progress_denominator = 100.
+            else:
+                raise ValueError(f'unsupported progress normalization: {progress_mode}')
             progress = np.clip(
                 1 - episode.target_position.xy.dist_to(poses[i].xy) / progress_denominator,
                 0, 1)
@@ -341,6 +347,9 @@ class CityNavBatch(torch.utils.data.IterableDataset):
                 'centroids': np.mean(normalized_centroids, axis=0) if normalized_centroids else np.array([0, 0]),
                 'landmark_centers': normalized_centroids,
                 'landmark_names': list(self.nav_maps[i].landmark_map.landmark_names),
+                'landmark_confidences': list(
+                    self.nav_maps[i].landmark_map.landmark_confidences
+                ),
                 'centroid_goal': pred_goal_xy,
                 'normalized_goal': normalized_goal_xys,
                 'grid_goal': normalized_goal_id

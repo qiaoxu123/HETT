@@ -19,12 +19,16 @@ class LandmarkNavMap(Map):
             map_shape: Tuple[int, int],
             map_pixels_per_meter: float,
             landmark_names: List[str],
+            landmark_match_min_similarity: float = 0.0,
             # target_name: str, surroundings_names: List[str],
     ):
         super().__init__(map_name, map_shape, map_pixels_per_meter)
 
         self.tracking_map = TrackingMap(map_name, map_shape, map_pixels_per_meter)
-        self.landmark_map = LandmarkMap(map_name, map_shape, map_pixels_per_meter, landmark_names)
+        self.landmark_map = LandmarkMap(
+            map_name, map_shape, map_pixels_per_meter, landmark_names,
+            min_similarity=landmark_match_min_similarity,
+        )
 
     def update_observations(
             self,

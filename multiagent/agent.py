@@ -21,11 +21,13 @@ from torchvision import transforms
 # from r2r.agent_cmt import Seq2SeqCMTAgent
 from multiagent.actions import Action
 from multiagent.defaultpaths import GOAL_PREDICTOR_CHECKPOINT_DIR
+from multiagent.dataset.episode import reverse_waypoint_direction
 from multiagent.models.dark_net import Darknet
 from multiagent.models.CLIP import CLIP
 # from direction.models.ddppo.resenet_encoders import TorchVisionResNet50
 from multiagent.models.goal_predictor import GoalPredictor, MapEncoder
 from multiagent.models.multilandmark_belief import target_cell_ids, target_region_mask
+from multiagent.navigation_control import should_replan_stage2, should_stop_navigation
 from multiagent.observation import cropclient
 from multiagent.space import Pose4D, Point2D, Point3D
 from multiagent.teacher.algorithm.lookahead import lookahead_discrete_action
@@ -381,7 +383,7 @@ class NavCMTAgent:
                         with open(os.path.join(self.args.output_dir, 'batch_metrics.jsonl'), 'a') as stream:
                             stream.write(json.dumps(dict(time=time.time(), batch=acc, batches=num_batches,
                                 epoch=getattr(self, 'current_epoch', None),
-                                recent_il_loss=float(np.mean(self.logs['IL_loss'][-2:])),
+                                recent_optimization_loss=float(np.sum(self.logs['IL_loss'][-2:])),
                                 grad_norm=float(grad_norm),
                                 peak_gpu_gib=torch.cuda.max_memory_allocated()/2**30)) + '\n')
                 # print("---------- One iter takes %s seconds ---" % (time.time() - train_loop_start_time))
@@ -435,6 +437,8 @@ class NavCMTAgent:
         lang_features, linear_cls, cls_hidden = self.lang_model(input_ids, attention_mask)
 
         visual_alignment_loss = torch.tensor(0., device=input_ids.device)
+        visual_alignment_positive_cosine = torch.tensor(0., device=input_ids.device)
+        visual_alignment_accuracy = torch.tensor(0., device=input_ids.device)
         if reverse_teacher and self.args.reverse_visual_align_weight > 0:
             # Original terminal camera orientations are a separate visual
             # supervision stream; reverse flight/action RGB remains re-rendered
@@ -451,42 +455,78 @@ class NavCMTAgent:
             # Darknet exposes the same flattened 512 x 7 x 7 tensor used by
             # the navigation path, but its native layout is 3584 x 7.
             target_view_features = target_view_features.view(
-                view_batch * view_count, 512, -1
+                view_batch, view_count, 512, -1
             )
-            pooled_target_views = target_view_features.mean(dim=-1).view(
-                view_batch, view_count, 512
-            ).mean(dim=1)
             projected_target_views = self.vln_model_without_ddp.project_target_views(
-                pooled_target_views
+                target_view_features
             )
 
+            target_texts = [ob['visual_alignment_text'] for ob in obs]
             target_encoding = self.tokenizer(
-                [ob['visual_alignment_text'] for ob in obs],
+                target_texts,
                 padding=True,
                 return_tensors='pt',
             )
             target_ids = target_encoding['input_ids'].cuda()
             target_attention = target_encoding['attention_mask'].cuda()
-            _, _, target_cls = self.lang_model(target_ids, target_attention)
-            visual_alignment_loss = (
-                1.0 - F.cosine_similarity(projected_target_views, target_cls, dim=-1)
-            ).sum()
+            if getattr(self.args, 'reverse_freeze_text_targets', False):
+                with torch.no_grad():
+                    _, _, target_cls = self.lang_model(target_ids, target_attention)
+                target_cls = target_cls.detach()
+            else:
+                _, _, target_cls = self.lang_model(target_ids, target_attention)
+            visual_embeddings = F.normalize(projected_target_views, dim=-1)
+            text_embeddings = F.normalize(target_cls, dim=-1)
+            contrastive_logits = visual_embeddings @ text_embeddings.T
+            contrastive_logits = contrastive_logits / self.args.reverse_visual_temperature
+            normalized_texts = [text.strip().casefold() for text in target_texts]
+            positive_mask = torch.tensor(
+                [[left == right for right in normalized_texts] for left in normalized_texts],
+                dtype=torch.bool, device=input_ids.device,
+            )
+            positive_logits = contrastive_logits.masked_fill(
+                ~positive_mask, -float('inf')
+            )
+            visual_alignment_positive_cosine = (
+                visual_embeddings * text_embeddings
+            ).sum(dim=-1).mean()
+            if view_batch == 1:
+                # InfoNCE has no negatives for a one-item smoke-test batch.
+                # Keep the alignment branch trainable in that case.
+                visual_alignment_loss = 1.0 - visual_alignment_positive_cosine
+            else:
+                visual_alignment_loss = -(
+                    torch.logsumexp(positive_logits, dim=-1)
+                    - torch.logsumexp(contrastive_logits, dim=-1)
+                ).sum()
+            visual_alignment_accuracy = (
+                positive_mask[
+                    torch.arange(view_batch, device=input_ids.device),
+                    contrastive_logits.argmax(dim=-1),
+                ]
+            ).float().mean()
 
         landmark_centers = None
         landmark_name_features = None
         landmark_valid = None
+        landmark_confidence = None
         if getattr(self.args, 'target_belief_head', False):
             max_landmarks = self.args.max_landmarks
             centers_array = np.zeros((batch_size, max_landmarks, 2), dtype=np.float32)
             valid_array = np.zeros((batch_size, max_landmarks), dtype=np.bool_)
+            confidence_array = np.zeros((batch_size, max_landmarks), dtype=np.float32)
             landmark_texts = []
             for batch_index, ob in enumerate(obs):
                 names = ob.get('landmark_names', [])
                 centers = ob.get('landmark_centers', [])
-                count = min(len(names), len(centers), max_landmarks)
+                confidences = ob.get('landmark_confidences', [1.0] * len(names))
+                count = min(len(names), len(centers), len(confidences), max_landmarks)
                 if count:
                     centers_array[batch_index, :count] = np.asarray(centers[:count], dtype=np.float32)
                     valid_array[batch_index, :count] = True
+                    confidence_array[batch_index, :count] = np.asarray(
+                        confidences[:count], dtype=np.float32
+                    )
                 landmark_texts.extend(list(names[:count]) + [''] * (max_landmarks - count))
 
             landmark_encoding = self.tokenizer(
@@ -498,6 +538,7 @@ class NavCMTAgent:
             landmark_centers = torch.from_numpy(centers_array).cuda()
             landmark_name_features = landmark_cls.view(batch_size, max_landmarks, -1)
             landmark_valid = torch.from_numpy(valid_array).cuda()
+            landmark_confidence = torch.from_numpy(confidence_array).cuda()
 
         # lang_features --> 768
         # linear_cls --> 49 (used to attend to img features)
@@ -545,6 +586,7 @@ class NavCMTAgent:
         # Init the logs
         # ml_loss = 0.
         direction_loss = torch.tensor(0.).cuda()
+        reverse_goal_direction_loss = torch.tensor(0.).cuda()
         progress_loss = torch.tensor(0.).cuda()
         goal_predict_loss = torch.tensor(0.).cuda()
         target_predict_loss = torch.tensor(0.).cuda()
@@ -573,10 +615,25 @@ class NavCMTAgent:
                 'landmark_centers': landmark_centers,
                 'landmark_name_features': landmark_name_features,
                 'landmark_valid': landmark_valid,
+                'landmark_confidence': landmark_confidence,
                 'previous_belief': None,
             })
 
         stage1_ended = np.array([False] * batch_size)
+        stage2_anchor_goals = [None] * batch_size
+        previous_predicted_goals = [None] * batch_size
+        goal_stable_steps = np.zeros(batch_size, dtype=np.int64)
+        stop_steps = np.full(batch_size, self.args.max_action_len, dtype=np.int64)
+        replan_count = 0
+
+        target_error_sum = 0.0
+        target_hit5_count = 0
+        target_hit20_count = 0
+        target_metric_count = 0
+        belief_entropy_sum = 0.0
+        belief_peak_shift_sum = 0.0
+        belief_diagnostic_count = 0
+        belief_peak_shift_count = 0
 
         for t in range(self.args.max_action_len):
             direction_t = torch.tensor([ob['pose'].yaw for ob in obs], dtype=torch.float32)
@@ -640,21 +697,45 @@ class NavCMTAgent:
                 centroids=input['centroids'],       # [B, N_centroid, 2]
                 lang_cls=input['lang_cls'],          # [B, 49]
                 lang_mask=attention_mask,
+                task_ids=torch.full(
+                    (batch_size,), int(reverse_teacher), dtype=torch.long,
+                    device=input['lang'].device,
+                ),
             )
             if getattr(self.args, 'target_belief_head', False):
                 model_inputs.update({
                     'landmark_centers': input['landmark_centers'],
                     'landmark_name_features': input['landmark_name_features'],
                     'landmark_valid': input['landmark_valid'],
+                    'landmark_confidence': input['landmark_confidence'],
                     'previous_belief': input['previous_belief'],
                 })
             model_outputs = self.vln_model(**model_inputs)
             if getattr(self.args, 'target_belief_head', False):
+                previous_belief = input['previous_belief']
                 (pred_direction, pred_progress, pred_goals, pred_logits,
-                 grid_ft, belief_offsets) = model_outputs
+                 grid_ft, belief_offsets, pred_reverse_goal_direction) = model_outputs
                 input['previous_belief'] = pred_logits.squeeze(-1)
+                belief_probs = torch.softmax(input['previous_belief'], dim=-1)
+                belief_entropy = -(
+                    belief_probs * torch.log(belief_probs.clamp_min(1e-12))
+                ).sum(dim=-1)
+                active_tensor = torch.from_numpy(~ended).to(belief_entropy.device)
+                if active_tensor.any():
+                    belief_entropy_sum += belief_entropy[active_tensor].sum().item()
+                    belief_diagnostic_count += int(active_tensor.sum().item())
+                    if previous_belief is not None:
+                        grid = self.vln_model_without_ddp.target_belief_head.grid_centers
+                        old_peak = grid[previous_belief.argmax(dim=-1)]
+                        new_peak = grid[input['previous_belief'].argmax(dim=-1)]
+                        shifts = torch.linalg.vector_norm(new_peak - old_peak, dim=-1)
+                        belief_peak_shift_sum += (
+                            shifts[active_tensor].sum().item() * self.args.map_meters
+                        )
+                        belief_peak_shift_count += int(active_tensor.sum().item())
             else:
-                pred_direction, pred_progress, pred_goals, pred_logits, grid_ft = model_outputs
+                (pred_direction, pred_progress, pred_goals, pred_logits,
+                 grid_ft, pred_reverse_goal_direction) = model_outputs
                 belief_offsets = None
 
             # --------------- 5. 更新历史网格记忆：grid_fts / grid_index -----------------
@@ -687,7 +768,16 @@ class NavCMTAgent:
             #     a_t_altitude[i] = min(1., max(0., a_t_altitude[i]))
             # for i in range(len(pred_progress_t)):
             #     pred_progress_t[i] = min(1., max(0., pred_progress_t[i]))
-            gt_direction = np.array([ob['direction'] for ob in obs], dtype=np.float32)
+            gt_goal_direction = np.array([ob['direction'] for ob in obs], dtype=np.float32)
+            if reverse_teacher:
+                gt_direction = np.array([
+                    reverse_waypoint_direction(
+                        ob['trajectory'], step=t, stride=self.args.move_iteration
+                    )
+                    for ob in obs
+                ], dtype=np.float32)
+            else:
+                gt_direction = gt_goal_direction
             gt_goal = torch.from_numpy(np.array([ob['normalized_goal'] for ob in obs], dtype=np.float32))
             gt_progress = torch.from_numpy(np.array([ob['progress'] for ob in obs], dtype=np.float32))
             gt_target = torch.from_numpy(np.array([ob['grid_goal'] for ob in obs], dtype=np.int64))
@@ -702,12 +792,26 @@ class NavCMTAgent:
                 valid_step_count += int(active_mask.sum().item())
                 gt_goal_device = gt_goal.to(device=pred_goals.device)
 
+                if not reverse_teacher and active_mask.any():
+                    target_errors = torch.linalg.vector_norm(
+                        pred_goals - gt_goal_device, dim=-1
+                    ) * self.args.map_meters
+                    active_errors = target_errors[active_mask].detach()
+                    target_error_sum += active_errors.sum().item()
+                    target_hit5_count += int((active_errors <= 5.0).sum().item())
+                    target_hit20_count += int((active_errors <= 20.0).sum().item())
+                    target_metric_count += int(active_errors.numel())
+
                 for i in range(len(obs)):
                     true_direction = torch.tensor(gt_direction[i])
 
                     true_sin = torch.sin(true_direction)
                     true_cos = torch.cos(true_direction)
                     true_sin_cos = torch.stack([true_sin, true_cos], dim=-1).cuda()
+                    goal_direction = torch.tensor(gt_goal_direction[i])
+                    goal_sin_cos = torch.stack(
+                        [torch.sin(goal_direction), torch.cos(goal_direction)], dim=-1
+                    ).cuda()
                     # gt_progress = torch.tensor(obs[i]['progress']).cuda()
                     # print(pred_direction[i].view(-1).shape, pred_progress[i].view(-1).shape, true_sin_cos.shape, gt_progress[i].view(-1).shape)
                     # cuda_gt_next_pos_ratio = torch.from_numpy(target[i][0]).cuda()
@@ -715,6 +819,11 @@ class NavCMTAgent:
                     if not ended[i]:
                         # if stage1_ended[i]:
                         direction_loss += self.progress_regression(pred_direction[i].view(-1), true_sin_cos)
+
+                        if reverse_teacher:
+                            reverse_goal_direction_loss += self.progress_regression(
+                                pred_reverse_goal_direction[i].view(-1), goal_sin_cos
+                            )
 
                         progress_loss += self.progress_regression(pred_progress[i].view(-1),
                                                                   gt_progress[i].view(-1).cuda())
@@ -814,6 +923,23 @@ class NavCMTAgent:
                 dst = self.env.unnormalize_position(cpu_goal[i], obs[i]['map_name'],
                                                     self.args.map_meters)
 
+                if self.feedback == 'student':
+                    previous_goal = previous_predicted_goals[i]
+                    if (previous_goal is not None
+                            and dst.dist_to(previous_goal) <= self.args.goal_stability_distance_m):
+                        goal_stable_steps[i] += 1
+                    else:
+                        goal_stable_steps[i] = 1
+                    previous_predicted_goals[i] = dst
+
+                    anchor = stage2_anchor_goals[i]
+                    if should_replan_stage2(
+                            stage1_ended[i], anchor, dst,
+                            self.args.stage2_replan_distance_m):
+                        stage1_ended[i] = False
+                        stage2_anchor_goals[i] = None
+                        replan_count += 1
+
                 # gt_center = self.env.unnormalize_position(global_position[gt_goal.cpu().detach().numpy()[i]], obs[i]['map_name'],
                 #                                     self.args.map_meters)
                 # dst = Point2D(obs[i]['centroid_goal'][0], obs[i]['centroid_goal'][1])
@@ -824,12 +950,12 @@ class NavCMTAgent:
                 #     continue
 
 
-                elif pred_progress_t[i] > 0.95 and self.feedback == 'student' and stage1_ended[i]:
+                elif (self.feedback == 'student' and should_stop_navigation(
+                        stage1_ended[i], pred_progress_t[i],
+                        dst.dist_to(poses[i].xy), goal_stable_steps[i], self.args)):
                     # Updated 'ended' list and make environment action
                     ended[i] = True
-                    continue
-                elif t == self.args.max_action_len:
-                    ended[i] = True
+                    stop_steps[i] = t
                     continue
 
                 # print(cpu_goal[i], global_position[cpu_goal[i]])
@@ -842,7 +968,8 @@ class NavCMTAgent:
 
                 # if pred_progress_t[i] > 0.9 and not stage1_ended[i]:
                 #     stage1_ended[i] = True
-                if dst.dist_to(poses[i].xy) > 5 and not stage1_ended[i]:
+                if (dst.dist_to(poses[i].xy) > self.args.stage1_arrival_distance_m
+                        and not stage1_ended[i]):
                     stage1_step += 1
                     traj[i]['pred_goal'].append(dst)
                     # pred_goal_xys = [
@@ -867,6 +994,8 @@ class NavCMTAgent:
 
                 elif abs(a_t[i]) < np.pi / 12:
                     stage1_ended[i] = True
+                    if stage2_anchor_goals[i] is None:
+                        stage2_anchor_goals[i] = dst
                     stage2_step += 1
                     poses[i] = _moved_pose(poses[i], *Action(5, 0, 0))
                     if len(traj[i]['stage2_trajectory']) == 0:
@@ -875,6 +1004,8 @@ class NavCMTAgent:
                         traj[i]['stage2_trajectory'].append(poses[i])
                 else:
                     stage1_ended[i] = True
+                    if stage2_anchor_goals[i] is None:
+                        stage2_anchor_goals[i] = dst
                     stage2_rotate += 1
                     poses[i] = _moved_pose(poses[i], *Action(0, a_t[i], 0))
                     if len(traj[i]['stage2_trajectory']) == 0:
@@ -931,6 +1062,7 @@ class NavCMTAgent:
                 ml_loss = (
                     self.args.direction_loss_weight * direction_loss
                     + self.args.progress_loss_weight * progress_loss
+                    + self.args.reverse_goal_direction_weight * reverse_goal_direction_loss
                     + self.args.reverse_visual_align_weight
                     * visual_alignment_scale * visual_alignment_loss
                 )
@@ -953,6 +1085,9 @@ class NavCMTAgent:
             # self.logs['ml_loss'].append((ml_loss * train_ml / batch_size).item())
 
             self.logs['direction_loss'].append((direction_loss * train_ml / loss_normalizer).item())
+            self.logs['reverse_goal_direction_loss'].append(
+                (reverse_goal_direction_loss * train_ml / loss_normalizer).item()
+            )
             self.logs['progress_loss'].append((progress_loss * train_ml / loss_normalizer).item())
             self.logs['goal_predict_loss'].append((goal_predict_loss * train_ml / loss_normalizer).item())
             self.logs['target_predict_loss'].append((target_predict_loss * train_ml / loss_normalizer).item())
@@ -969,7 +1104,19 @@ class NavCMTAgent:
             self.logs['visual_alignment_loss'].append(
                 (visual_alignment_loss * train_ml / loss_normalizer).detach().item()
             )
+            self.logs['visual_alignment_positive_cosine'].append(
+                visual_alignment_positive_cosine.detach().item()
+            )
+            self.logs['visual_alignment_accuracy'].append(
+                visual_alignment_accuracy.detach().item()
+            )
             rollout_name = 'reverse' if reverse_teacher else 'forward'
+            self.logs[f'{rollout_name}_direction_loss'].append(
+                (direction_loss * train_ml / loss_normalizer).detach().item()
+            )
+            self.logs[f'{rollout_name}_progress_loss'].append(
+                (progress_loss * train_ml / loss_normalizer).detach().item()
+            )
             self.logs[f'{rollout_name}_IL_loss'].append(
                 (ml_loss * train_ml / loss_normalizer).detach().item()
             )
@@ -985,6 +1132,24 @@ class NavCMTAgent:
         self.logs['stage1_step'].append(float(stage1_step) / batch_size)
         self.logs['stage2_step'].append(float(stage2_step) / batch_size)
         self.logs['stage2_rotate'].append(float(stage2_rotate) / batch_size)
+        if not reverse_teacher:
+            self.logs['stop_step'].append(float(stop_steps.mean()))
+            self.logs['stopped_rate'].append(float((stop_steps < self.args.max_action_len).mean()))
+            self.logs['replan_count'].append(float(replan_count) / batch_size)
+            if target_metric_count:
+                self.logs['target_error_mean_m'].append(
+                    target_error_sum / target_metric_count
+                )
+                self.logs['target_hit5'].append(target_hit5_count / target_metric_count)
+                self.logs['target_hit20'].append(target_hit20_count / target_metric_count)
+            if belief_diagnostic_count:
+                self.logs['belief_entropy'].append(
+                    belief_entropy_sum / belief_diagnostic_count
+                )
+                if belief_peak_shift_count:
+                    self.logs['belief_peak_shift_m'].append(
+                        belief_peak_shift_sum / belief_peak_shift_count
+                    )
 
         # print('[3]')
         # debug_memory()
@@ -1022,12 +1187,18 @@ class NavCMTAgent:
                      ]
         for param in all_tuple:
             create_state(*param)
+        states['training_state'] = {
+            'python_random': random.getstate(),
+            'numpy_random': np.random.get_state(),
+            'torch_random': torch.get_rng_state(),
+            'cuda_random': torch.cuda.get_rng_state_all(),
+        }
         temporary = path + '.tmp'
         torch.save(states, temporary)
         os.replace(temporary, path)
 
     def load(self, path):
-        ''' Loads parameters (but not training state) '''
+        '''Load model parameters and, when present, reproducibility state.'''
         states = torch.load(path, map_location='cpu', weights_only=False)
 
         def recover_state(name, model, optimizer):
@@ -1065,4 +1236,10 @@ class NavCMTAgent:
                      ]
         for param in all_tuple:
             recover_state(*param)
+        training_state = states.get('training_state')
+        if training_state is not None:
+            random.setstate(training_state['python_random'])
+            np.random.set_state(training_state['numpy_random'])
+            torch.set_rng_state(training_state['torch_random'])
+            torch.cuda.set_rng_state_all(training_state['cuda_random'])
         return states['vln_model']['epoch']

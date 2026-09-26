@@ -28,11 +28,23 @@ cd "$(dirname "$0")"
     --reverse_human_teacher \
     --reverse_teacher_weight 0.20 \
     --reverse_visual_align_weight 0.10 \
+    --reverse_goal_direction_weight 0.10 \
     --reverse_target_views 3 \
+    --reverse_visual_temperature 0.07 \
+    --reverse_freeze_text_targets \
     --target_belief_head \
     --belief_grid_size 41 \
     --belief_radius_m 20 \
     --max_landmarks 9 \
+    --landmark_match_min_similarity 0.70 \
     --normalize_rollout_loss \
+    --progress_normalization initial_distance \
+    --stage1_arrival_distance_m 5 \
+    --stage2_replan_distance_m 15 \
+    --progress_stop_threshold 0.95 \
+    --stop_goal_distance_m 10 \
+    --goal_stability_distance_m 5 \
+    --goal_stability_steps 2 \
+    --save_validation_predictions \
     --output_dir checkpoints/reverse_human_landmarks_3ep \
     "$@"

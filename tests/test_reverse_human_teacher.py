@@ -1,12 +1,15 @@
 import math
 
 import pytest
+from types import SimpleNamespace
 
+from multiagent.navigation_control import should_replan_stage2, should_stop_navigation
 from multiagent.cityreferobject import CityReferObject, ProcessedDescription
 from multiagent.dataset.episode import (
     Episode,
     ReverseTeacherEpisode,
     metric_direction_name,
+    reverse_waypoint_direction,
     reverse_flight_trajectory,
 )
 from multiagent.space import Point2D, Point3D, Pose4D
@@ -46,6 +49,42 @@ def test_reverse_positions_and_yaws_follow_reverse_motion():
     assert reversed_trajectory[0].yaw == pytest.approx(-math.pi / 2)
     assert abs(abs(reversed_trajectory[1].yaw) - math.pi) < 1e-6
     assert reversed_trajectory[2].yaw == pytest.approx(reversed_trajectory[1].yaw)
+
+
+def test_reverse_waypoint_direction_uses_local_motion_not_global_goal():
+    trajectory = reverse_flight_trajectory(make_episode().teacher_trajectory)
+
+    assert reverse_waypoint_direction(trajectory, step=0, stride=1) == pytest.approx(0.0)
+    assert reverse_waypoint_direction(trajectory, step=1, stride=1) == pytest.approx(0.0)
+
+
+def test_forward_and_reverse_progress_share_initial_distance_definition():
+    forward = make_episode()
+    reverse = ReverseTeacherEpisode(forward)
+
+    assert forward.initial_distance_to_target > 0
+    assert reverse.initial_distance_to_target > 0
+
+
+def test_stage2_replans_when_belief_goal_moves_far_from_anchor():
+    anchor = Point2D(0.0, 0.0)
+
+    assert not should_replan_stage2(True, anchor, Point2D(10.0, 0.0), 15.0)
+    assert should_replan_stage2(True, anchor, Point2D(20.0, 0.0), 15.0)
+    assert not should_replan_stage2(False, anchor, Point2D(20.0, 0.0), 15.0)
+
+
+def test_stop_requires_progress_distance_and_stable_goal():
+    args = SimpleNamespace(
+        progress_stop_threshold=0.95,
+        stop_goal_distance_m=10.0,
+        goal_stability_steps=2,
+    )
+
+    assert should_stop_navigation(True, 0.99, 5.0, 2, args)
+    assert not should_stop_navigation(True, 0.90, 5.0, 2, args)
+    assert not should_stop_navigation(True, 0.99, 15.0, 2, args)
+    assert not should_stop_navigation(True, 0.99, 5.0, 1, args)
 
 
 def test_reverse_metric_task_is_separate_from_landmark_semantics():

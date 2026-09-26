@@ -102,17 +102,22 @@ class MultiLandmarkBeliefHead(nn.Module):
         )
         self.previous_belief_gate = nn.Linear(d_model, 1)
         nn.init.zeros_(self.previous_belief_gate.weight)
-        nn.init.constant_(self.previous_belief_gate.bias, 1.5)
+        nn.init.zeros_(self.previous_belief_gate.bias)
 
     def _landmark_context(
         self,
         context: torch.Tensor,
         landmark_tokens: torch.Tensor,
         landmark_valid: torch.Tensor,
+        landmark_confidence: torch.Tensor | None = None,
     ) -> torch.Tensor:
         query = self.context_query(context).unsqueeze(1)
         keys = self.landmark_key(landmark_tokens)
         scores = (query * keys).sum(dim=-1) / math.sqrt(self.d_model)
+        if landmark_confidence is not None:
+            confidence = landmark_confidence.to(scores.dtype).clamp(0.0, 1.0)
+            scores = scores + torch.log(confidence.clamp_min(1e-6))
+            landmark_valid = landmark_valid & (confidence > 0)
         scores = scores.masked_fill(~landmark_valid, -1e4)
         weights = torch.softmax(scores, dim=-1) * landmark_valid.to(scores.dtype)
         weights = weights / weights.sum(dim=-1, keepdim=True).clamp_min(1e-6)
@@ -127,6 +132,7 @@ class MultiLandmarkBeliefHead(nn.Module):
         landmark_centers: torch.Tensor,
         landmark_name_features: torch.Tensor,
         landmark_valid: torch.Tensor,
+        landmark_confidence: torch.Tensor | None = None,
         previous_belief: torch.Tensor | None = None,
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         """Return ``belief_logits, offsets, pred_goal, fused_context``.
@@ -136,14 +142,17 @@ class MultiLandmarkBeliefHead(nn.Module):
           landmark_centers: ``[B, N, 2]``
           landmark_name_features: ``[B, N, D]``
           landmark_valid: ``[B, N]``
-          previous_belief: optional ``[B, G*G]``
+          landmark_confidence: optional fuzzy-match confidence ``[B, N]``
+          previous_belief: optional normalized log belief ``[B, G*G]``
         """
         landmark_valid = landmark_valid.bool()
         landmark_tokens = (
             self.landmark_coord(landmark_centers)
             + self.landmark_name(landmark_name_features)
         )
-        fused_context = self._landmark_context(context, landmark_tokens, landmark_valid)
+        fused_context = self._landmark_context(
+            context, landmark_tokens, landmark_valid, landmark_confidence
+        )
 
         batch_size, landmark_count, _ = landmark_centers.shape
         grid = self.grid_centers.to(dtype=context.dtype)
@@ -169,9 +178,13 @@ class MultiLandmarkBeliefHead(nn.Module):
         )
         pair_logits = self.relation_score(pair_hidden).squeeze(-1)
         valid_float = landmark_valid[:, None, :].to(pair_logits.dtype)
+        if landmark_confidence is not None:
+            confidence = landmark_confidence[:, None, :].to(pair_logits.dtype)
+            valid_float = valid_float * confidence.clamp(0.0, 1.0)
         relation_logits = (pair_logits * valid_float).sum(dim=-1)
         relation_logits = relation_logits / valid_float.sum(dim=-1).clamp_min(1.0)
         evidence_logits = evidence_logits + relation_logits
+        current_log_belief = torch.log_softmax(evidence_logits, dim=-1)
 
         if previous_belief is not None:
             if previous_belief.shape != evidence_logits.shape:
@@ -180,9 +193,13 @@ class MultiLandmarkBeliefHead(nn.Module):
                     f"{tuple(evidence_logits.shape)}, got {tuple(previous_belief.shape)}"
                 )
             gate = torch.sigmoid(self.previous_belief_gate(fused_context))
-            belief_logits = evidence_logits + gate * previous_belief
+            previous_log_belief = torch.log_softmax(previous_belief, dim=-1)
+            belief_logits = torch.logaddexp(
+                torch.log(gate.clamp_min(1e-6)) + previous_log_belief,
+                torch.log((1.0 - gate).clamp_min(1e-6)) + current_log_belief,
+            )
         else:
-            belief_logits = evidence_logits
+            belief_logits = current_log_belief
 
         relation_hidden = (pair_hidden * valid_float[..., None]).sum(dim=2)
         relation_hidden = relation_hidden / valid_float.sum(dim=-1).clamp_min(1.0)[..., None]

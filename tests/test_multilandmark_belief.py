@@ -1,4 +1,5 @@
 import inspect
+from types import SimpleNamespace
 
 import torch
 
@@ -8,6 +9,7 @@ from multiagent.models.multilandmark_belief import (
     target_cell_ids,
     target_region_mask,
 )
+from multiagent.maps.landmark_map import LandmarkMap
 
 
 def make_inputs(batch=2, landmarks=4, dim=32):
@@ -74,6 +76,41 @@ def test_previous_belief_is_accumulated():
     assert torch.all(with_history[:, 3] > without_history[:, 3])
 
 
+def test_belief_is_normalized_and_can_correct_an_old_peak():
+    model = MultiLandmarkBeliefHead(d_model=32, hidden_dim=16, grid_size=7).eval()
+    inputs = make_inputs()
+    previous = torch.full((2, 49), -8.0)
+    previous[:, 3] = 0.0
+    with torch.no_grad():
+        updated = previous
+        for _ in range(12):
+            updated = model(*inputs, previous_belief=updated)[0]
+    torch.testing.assert_close(
+        torch.logsumexp(updated, dim=-1), torch.zeros(2), atol=1e-5, rtol=1e-5
+    )
+    assert torch.isfinite(updated).all()
+
+
+def test_all_invalid_landmarks_use_context_fallback():
+    model = MultiLandmarkBeliefHead(d_model=32, hidden_dim=16, grid_size=7).eval()
+    context, centers, names, valid = make_inputs()
+    valid.zero_()
+    with torch.no_grad():
+        outputs = model(context, centers, names, valid)
+    assert all(torch.isfinite(output).all() for output in outputs)
+
+
+def test_zero_confidence_ignores_matched_landmark_geometry():
+    model = MultiLandmarkBeliefHead(d_model=32, hidden_dim=16, grid_size=7).eval()
+    context, centers, names, valid = make_inputs()
+    confidence = torch.zeros_like(valid, dtype=torch.float32)
+    changed_centers = centers + 1000
+    with torch.no_grad():
+        original = model(context, centers, names, valid, landmark_confidence=confidence)
+        changed = model(context, changed_centers, names, valid, landmark_confidence=confidence)
+    torch.testing.assert_close(original[0], changed[0], rtol=1e-5, atol=1e-6)
+
+
 def test_target_labels_use_metric_success_region():
     goals = torch.tensor([[0.5, 0.5], [0.99, 0.99]])
     grid = make_grid_centers(41)
@@ -89,3 +126,25 @@ def test_inference_head_cannot_receive_target_truth():
     parameters = inspect.signature(MultiLandmarkBeliefHead.forward).parameters
     forbidden = {'target', 'goal', 'gt_goal', 'target_position', 'normalized_goal'}
     assert forbidden.isdisjoint(parameters)
+
+
+def test_landmark_fuzzy_match_can_reject_unrelated_text():
+    old_cache = LandmarkMap._landmarks_cache
+    LandmarkMap._landmarks_cache = {
+        'map': {
+            1: SimpleNamespace(name='Central Library'),
+            2: SimpleNamespace(name='King Street'),
+        }
+    }
+    try:
+        exact = LandmarkMap._search_landmarks_by_name(
+            'map', ['central library'], min_similarity=0.7
+        )
+        rejected = LandmarkMap._search_landmarks_by_name(
+            'map', ['multi-colored apartment block beside a car park'],
+            min_similarity=0.7,
+        )
+    finally:
+        LandmarkMap._landmarks_cache = old_cache
+    assert exact[0][1].name == 'Central Library'
+    assert rejected == []
