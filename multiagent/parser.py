@@ -118,6 +118,25 @@ def parse_args():
     parser.add_argument('--target_loss_weight', type=float, default=0.1,
                         help='auxiliary grid loss from released code (not specified in paper)')
     parser.add_argument('--disable_task_interaction', action='store_true')
+    parser.add_argument(
+        '--training_stage', choices=['joint', 'target', 'action'], default='joint',
+        help=(
+            'joint keeps the released objective; target trains localisation only; '
+            'action freezes localisation and trains target-conditioned control only'
+        ),
+    )
+    parser.add_argument('--target_huber_delta_m', type=float, default=10.0)
+    parser.add_argument('--target_distance_loss_weight', type=float, default=0.2)
+    parser.add_argument('--target_bearing_loss_weight', type=float, default=0.2)
+    parser.add_argument('--target_consistency_loss_weight', type=float, default=0.05)
+    parser.add_argument(
+        '--action_gt_coordinate_start', type=float, default=1.0,
+        help='GT-coordinate probability at the start of action fine-tuning',
+    )
+    parser.add_argument(
+        '--action_gt_coordinate_end', type=float, default=0.1,
+        help='GT-coordinate probability at the end of action fine-tuning',
+    )
 
     # logger
     parser.add_argument('--log_every', type=int, default=1)
@@ -155,6 +174,10 @@ def parse_args():
     parser.add_argument('--iters', type=int, default=200000)
     parser.add_argument('--checkpoint', type=str, default=None)
     parser.add_argument("--resume_optimizer", action="store_true", default=False)
+    parser.add_argument(
+        '--reset_epoch_on_load', action='store_true',
+        help='load checkpoint weights but start a new stage at epoch zero',
+    )
     parser.add_argument('--save_every', type=int, default=1)
     parser.add_argument('--train_trajectory_type', type=str, choices=['sp', 'mturk', 'both'], default='mturk')
     parser.add_argument('--train_episode_sample_size', type=int, default=-1)
@@ -176,6 +199,14 @@ def parse_args():
     args = parser.parse_args()
     if args.grad_accum < 1 or args.batch_size < 1 or args.max_episodes < 0:
         parser.error('grad_accum/batch_size must be positive; max_episodes must be nonnegative')
+    if (args.target_huber_delta_m <= 0
+            or args.target_distance_loss_weight < 0
+            or args.target_bearing_loss_weight < 0
+            or args.target_consistency_loss_weight < 0):
+        parser.error('target loss deltas/weights must be positive or nonnegative')
+    if not (0 <= args.action_gt_coordinate_start <= 1
+            and 0 <= args.action_gt_coordinate_end <= 1):
+        parser.error('action GT-coordinate probabilities must be in [0, 1]')
     if args.checkpoint and not Path(args.checkpoint).is_absolute():
         args.checkpoint = str(PROJECT_ROOT / args.checkpoint)
     output_dir = Path(args.output_dir)

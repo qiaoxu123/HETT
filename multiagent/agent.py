@@ -29,6 +29,12 @@ from multiagent.observation import cropclient
 from multiagent.space import Pose4D, Point2D, Point3D
 from multiagent.teacher.algorithm.lookahead import lookahead_discrete_action
 from multiagent.teacher.trajectory import _moved_pose
+from multiagent.two_stage import (
+    coordinate_gt_probability,
+    configure_stage_parameters,
+    select_action_coordinates,
+    target_coordinate_losses,
+)
 from models.vln_model import CustomBERTModel
 from models.ET_haa import ET
 from transformers import AutoModel, BertTokenizerFast
@@ -151,25 +157,39 @@ class NavCMTAgent:
 
         # create the et model
         self.vln_model = ET(self.args).cuda()
+        configure_stage_parameters(
+            self.lang_model,
+            self.vision_model,
+            self.vln_model,
+            getattr(self.args, 'training_stage', 'joint'),
+        )
         # self.map_encoder = MapEncoder(240)
         # self.goal_predictpr = GoalPredictor(240, 7)
         self.progress_regression = nn.MSELoss(reduction='sum')
 
         # --------------- 1. 分布式训练包裹：DDP -----------------
         if self.args.world_size > 1 and allow_ngpus:
-            self.lang_model = DDP(self.lang_model, broadcast_buffers=False, find_unused_parameters=True,
-                                  device_ids=[self.args.local_rank], output_device=self.args.local_rank)
-            self.vision_model = DDP(self.vision_model, broadcast_buffers=False, find_unused_parameters=True,
-                                    device_ids=[self.args.local_rank], output_device=self.args.local_rank)
-            self.vln_model = DDP(self.vln_model, broadcast_buffers=False, find_unused_parameters=True,
-                                 device_ids=[self.args.local_rank], output_device=self.args.local_rank)
+            def wrap_trainable(model):
+                if not any(parameter.requires_grad for parameter in model.parameters()):
+                    return model
+                return DDP(
+                    model,
+                    broadcast_buffers=False,
+                    find_unused_parameters=True,
+                    device_ids=[self.args.local_rank],
+                    output_device=self.args.local_rank,
+                )
+
+            self.lang_model = wrap_trainable(self.lang_model)
+            self.vision_model = wrap_trainable(self.vision_model)
+            self.vln_model = wrap_trainable(self.vln_model)
 
             # self.lang_model = nn.DataParallel(self.lang_model).cuda()
             # self.vision_model = nn.DataParallel(self.vision_model).cuda()
             # self.vln_model = nn.DataParallel(self.vln_model).cuda()
-            self.lang_model_without_ddp = self.lang_model.module
-            self.vision_model_without_ddp = self.vision_model.module
-            self.vln_model_without_ddp = self.vln_model.module
+            self.lang_model_without_ddp = getattr(self.lang_model, 'module', self.lang_model)
+            self.vision_model_without_ddp = getattr(self.vision_model, 'module', self.vision_model)
+            self.vln_model_without_ddp = getattr(self.vln_model, 'module', self.vln_model)
 
         else:
             self.lang_model_without_ddp = self.lang_model
@@ -187,13 +207,24 @@ class NavCMTAgent:
         # - et_optimizer: 训练 ET 及其 Transformer + decoder heads
         assert args.optim in ("adam", "adamW")
         OptimizerClass = torch.optim.Adam if args.optim == "adam" else torch.optim.AdamW
-        self.et_optimizer = OptimizerClass(filter(lambda p: p.requires_grad, self.vln_model.parameters()),
-                                           lr=args.learning_rate, weight_decay=args.weight_decay)
-        self.lang_model_optimizer = OptimizerClass(filter(lambda p: p.requires_grad, self.lang_model.parameters()),
-                                                   lr=self.args.learning_rate, weight_decay=args.weight_decay)
-        self.vision_model_optimizer = OptimizerClass(filter(lambda p: p.requires_grad, self.vision_model.parameters()),
-                                                     lr=self.args.learning_rate, weight_decay=args.weight_decay)
-        self.optimizers = (self.et_optimizer, self.lang_model_optimizer, self.vision_model_optimizer)
+        def make_optimizer(model):
+            parameters = [parameter for parameter in model.parameters() if parameter.requires_grad]
+            if not parameters:
+                return None
+            return OptimizerClass(
+                parameters,
+                lr=args.learning_rate,
+                weight_decay=args.weight_decay,
+            )
+
+        self.et_optimizer = make_optimizer(self.vln_model)
+        self.lang_model_optimizer = make_optimizer(self.lang_model)
+        self.vision_model_optimizer = make_optimizer(self.vision_model)
+        self.optimizers = tuple(optimizer for optimizer in (
+            self.et_optimizer,
+            self.lang_model_optimizer,
+            self.vision_model_optimizer,
+        ) if optimizer is not None)
         # self.optimizers = (self.et_optimizer, self.lang_model_optimizer)
 
         #         # Optimizers
@@ -280,15 +311,30 @@ class NavCMTAgent:
                            prefix='Progress:', suffix='%s (%d/%d)' % (
                     timeSince(start, float(idx) / tot), idx, tot), bar_length=80)
 
+    def _set_training_modes(self):
+        stage = getattr(self.args, 'training_stage', 'joint')
+        if stage != 'action':
+            self.lang_model.train()
+            self.vln_model.train()
+            self.vision_model.train()
+            return
+
+        # Keep the frozen predictor deterministic while action-only modules use
+        # their normal training-time dropout.
+        self.lang_model.eval()
+        self.vision_model.eval()
+        self.vln_model.eval()
+        self.vln_model_without_ddp.target_conditioning.train()
+        self.vln_model_without_ddp.decoder_2_action_full.train()
+        self.vln_model_without_ddp.decoder_2_progress_full.train()
+
     def train(self, loader, n_epochs, feedback='student', nss_w_weighting=1, **kwargs):
         ''' Train for a given number of epochs '''
         # --------------- 0. 训练入口：控制三套模型同步更新 -----------------
         # 在本函数中，语言模型 / 视觉模型 / ET 策略模型都会被设为 train 模式，并且梯度会被统一回传。
         self.feedback = feedback
 
-        self.lang_model.train()
-        self.vln_model.train()
-        self.vision_model.train()
+        self._set_training_modes()
 
         self.losses = []
         # 单卡训练时的梯度累积步数（--grad_accum，默认 1 表示不累积）
@@ -322,7 +368,13 @@ class NavCMTAgent:
                 # - build map / candidates / direction input
                 # - self.vln_model(...) 触发 ET.forward
                 # - 计算方向、进度、目标、候选目标损失
-                if feedback == 'teacher':
+                training_stage = getattr(self.args, 'training_stage', 'joint')
+                if training_stage == 'target':
+                    # One teacher-prefix rollout is sufficient: actions only
+                    # advance along the human path and do not receive a loss.
+                    self.feedback = 'teacher'
+                    self.rollout(train_ml=1.0)
+                elif feedback == 'teacher':
                     self.feedback = 'teacher'
                     self.rollout(train_ml=self.args.teacher_weight)
                 elif feedback == 'student':  # agents in teacher and student separately
@@ -356,11 +408,16 @@ class NavCMTAgent:
                 # 对 ET 的参数做裁剪，避免爆炸梯度；随后三个优化器分别更新对应模块。
                 # 单卡模式：每 grad_accum 个 batch 更新一次（与原多卡代码的更新节奏保持一致）
                 if acc % grad_accum == 0 or acc == num_batches:
-                    grad_norm = torch.nn.utils.clip_grad_norm_(self.vln_model.parameters(), 40., error_if_nonfinite=True)
+                    trainable_vln_parameters = [
+                        parameter for parameter in self.vln_model.parameters()
+                        if parameter.requires_grad
+                    ]
+                    grad_norm = torch.nn.utils.clip_grad_norm_(
+                        trainable_vln_parameters, 40., error_if_nonfinite=True
+                    )
 
-                    self.lang_model_optimizer.step()
-                    self.vision_model_optimizer.step()
-                    self.et_optimizer.step()
+                    for optimizer in self.optimizers:
+                        optimizer.step()
                     if self.default_gpu and hasattr(self.args, 'output_dir') and (acc <= grad_accum or acc % 100 == 0 or acc == num_batches):
                         with open(os.path.join(self.args.output_dir, 'batch_metrics.jsonl'), 'a') as stream:
                             stream.write(json.dumps(dict(time=time.time(), batch=acc, batches=num_batches,
@@ -464,6 +521,15 @@ class NavCMTAgent:
         progress_loss = 0.
         goal_predict_loss = 0.
         target_predict_loss = 0.
+        target_distance_loss = torch.tensor(0.).cuda()
+        target_bearing_loss = torch.tensor(0.).cuda()
+        target_consistency_loss = torch.tensor(0.).cuda()
+        target_error_sum_m = 0.0
+        target_error_count = 0
+        target_hit5_count = 0
+        target_hit10_count = 0
+        target_hit20_count = 0
+        previous_pred_goals = None
 
         stage1_step = 0
         stage2_step = 0
@@ -527,6 +593,10 @@ class NavCMTAgent:
                 if not ended[i]:
                     input['lenths'][i] += 1
 
+            gt_goal = torch.from_numpy(
+                np.array([ob['normalized_goal'] for ob in obs], dtype=np.float32)
+            ).cuda()
+
             # --------------- 4. 调用 ET 模型：触发 ET.forward -----------------
             # 输出：
             # - pred_direction: [B, 2]
@@ -534,7 +604,7 @@ class NavCMTAgent:
             # - pred_goals: [B, 2]
             # - pred_logits: [B, N_cand, 1]
             # - grid_ft: [B, N_hist+1, 768]
-            pred_direction, pred_progress, pred_goals, pred_logits, grid_ft = self.vln_model(
+            model_inputs = dict(
                 directions=input['directions'],     # [B, 1, 4]
                 frames=input['frames'],             # [B, T_frame, 512, 49]
                 lenths=input['lenths'],             # [B]
@@ -546,6 +616,31 @@ class NavCMTAgent:
                 centroids=input['centroids'],       # [B, N_centroid, 2]
                 lang_cls=input['lang_cls'],          # [B, 49]
                 lang_mask=attention_mask,
+            )
+            training_stage = getattr(self.args, 'training_stage', 'joint')
+            action_coordinate_mask = None
+            if training_stage == 'action' and train_ml is not None:
+                gt_probability = coordinate_gt_probability(
+                    current_epoch=getattr(self, 'current_epoch', 1),
+                    total_epochs=self.args.epochs,
+                    start_probability=self.args.action_gt_coordinate_start,
+                    end_probability=self.args.action_gt_coordinate_end,
+                )
+                action_coordinate_mask = (
+                    torch.rand(batch_size, device=gt_goal.device) < gt_probability
+                )
+                model_inputs.update({
+                    'target_coordinates': gt_goal,
+                    'target_coordinate_mask': action_coordinate_mask,
+                })
+
+            pred_direction, pred_progress, pred_goals, pred_logits, grid_ft = self.vln_model(
+                **model_inputs
+            )
+            action_target_coordinates = select_action_coordinates(
+                predicted=pred_goals,
+                truth=gt_goal if training_stage == 'action' and train_ml is not None else None,
+                use_truth=action_coordinate_mask,
             )
 
             # --------------- 5. 更新历史网格记忆：grid_fts / grid_index -----------------
@@ -579,7 +674,7 @@ class NavCMTAgent:
             # for i in range(len(pred_progress_t)):
             #     pred_progress_t[i] = min(1., max(0., pred_progress_t[i]))
             gt_direction = np.array([ob['direction'] for ob in obs], dtype=np.float32)
-            gt_goal = torch.from_numpy(np.array([ob['normalized_goal'] for ob in obs], dtype=np.float32))
+            gt_goal_cpu = gt_goal.cpu()
             gt_progress = torch.from_numpy(np.array([ob['progress'] for ob in obs], dtype=np.float32))
             gt_target = torch.from_numpy(np.array([ob['grid_goal'] for ob in obs], dtype=np.int64))
             # there is no ground truth in unseen_test set
@@ -589,6 +684,7 @@ class NavCMTAgent:
 
                 # Compute loss
 
+                active_mask = torch.from_numpy(~ended).to(gt_goal.device)
                 for i in range(len(obs)):
                     true_direction = torch.tensor(gt_direction[i])
 
@@ -599,14 +695,12 @@ class NavCMTAgent:
                     # print(pred_direction[i].view(-1).shape, pred_progress[i].view(-1).shape, true_sin_cos.shape, gt_progress[i].view(-1).shape)
                     # cuda_gt_next_pos_ratio = torch.from_numpy(target[i][0]).cuda()
                     # print(pred_direction[i].view(-1), true_sin_cos)
-                    if not ended[i]:
+                    if not ended[i] and training_stage != 'target':
                         # if stage1_ended[i]:
                         direction_loss += self.progress_regression(pred_direction[i].view(-1), true_sin_cos)
 
                         progress_loss += self.progress_regression(pred_progress[i].view(-1),
                                                                   gt_progress[i].view(-1).cuda())
-                        goal_predict_loss += F.mse_loss(pred_goals[i].view(-1), gt_goal[i].view(-1).cuda())
-                        # print(pred_goals[i], gt_goal[i], goal_predict_loss)
 
                     # ml_loss += direction_loss
                     # ml_loss += progress_loss
@@ -616,8 +710,54 @@ class NavCMTAgent:
                         print('0', direction_loss)
                     if progress_loss != progress_loss:  # debug for nan loss
                         print('0', progress_loss)
-                # print(at_direction, gt_direction, ml_loss)
-                target_predict_loss += self.criterion(pred_logits, gt_target.unsqueeze(1).cuda())
+                if active_mask.any():
+                    active_predictions = pred_goals[active_mask]
+                    active_truth = gt_goal[active_mask]
+                    errors_m = torch.linalg.vector_norm(
+                        (active_predictions.detach() - active_truth) * self.args.map_meters,
+                        dim=-1,
+                    )
+                    target_error_sum_m += errors_m.sum().item()
+                    target_error_count += int(errors_m.numel())
+                    target_hit5_count += int((errors_m <= 5).sum().item())
+                    target_hit10_count += int((errors_m <= 10).sum().item())
+                    target_hit20_count += int((errors_m <= 20).sum().item())
+
+                    if training_stage == 'target':
+                        target_losses = target_coordinate_losses(
+                            predicted=active_predictions,
+                            truth=active_truth,
+                            current_positions=current_pos[active_mask],
+                            map_meters=self.args.map_meters,
+                            huber_delta_m=self.args.target_huber_delta_m,
+                        )
+                        goal_predict_loss += target_losses.coordinate
+                        target_distance_loss += target_losses.distance
+                        target_bearing_loss += target_losses.bearing
+                        if previous_pred_goals is not None:
+                            target_consistency_loss += F.huber_loss(
+                                active_predictions * self.args.map_meters,
+                                previous_pred_goals[active_mask] * self.args.map_meters,
+                                delta=self.args.target_huber_delta_m,
+                                reduction='sum',
+                            )
+                        target_predict_loss += F.cross_entropy(
+                            pred_logits.squeeze(-1)[active_mask],
+                            gt_target.to(pred_logits.device)[active_mask],
+                            reduction='sum',
+                        )
+                    elif training_stage == 'joint':
+                        goal_predict_loss += F.mse_loss(
+                            active_predictions,
+                            active_truth,
+                            reduction='sum',
+                        ) / active_predictions.shape[-1]
+                        target_predict_loss += F.cross_entropy(
+                            pred_logits.squeeze(-1)[active_mask],
+                            gt_target.to(pred_logits.device)[active_mask],
+                            reduction='sum',
+                        )
+                previous_pred_goals = pred_goals.detach()
                 # print(pred_logits.shape)
             # Log the trajectory
             # print(at_direction, gt_direction)
@@ -627,7 +767,7 @@ class NavCMTAgent:
                     if not 'test' in self.env_name:
                         traj[i]['gt_actions'].append(gt_direction[i])
                         traj[i]['gt_progress'].append(gt_progress[i].item())
-                        traj[i]['gt_goal'].append(gt_goal[i])
+                        traj[i]['gt_goal'].append(gt_goal_cpu[i])
                     traj[i]['progress'].append(pred_progress[i].item())
 
             if self.feedback == 'teacher':
@@ -637,7 +777,7 @@ class NavCMTAgent:
                 pred_progress_t = gt_progress
             elif self.feedback == 'student':  # student
                 a_t = at_direction
-                at_goal = pred_goals
+                at_goal = action_target_coordinates
 
                 # _, at_goal = pred_logits.max(1)
                 # at_goal = at_goal.squeeze(1)
@@ -752,21 +892,76 @@ class NavCMTAgent:
                                      traj[i]['pred_goal'])
         if train_ml is not None:
             # print(ml_loss)
-            # ml_loss = direction_loss + progress_loss
-            ml_loss = (self.args.direction_loss_weight * direction_loss
-                       + self.args.progress_loss_weight * progress_loss
-                       + self.args.goal_loss_weight * goal_predict_loss
-                       + self.args.target_loss_weight * target_predict_loss)
-            # ml_loss = progress_loss + goal_predict_loss
-            self.loss += ml_loss * train_ml / batch_size
+            training_stage = getattr(self.args, 'training_stage', 'joint')
+            if training_stage == 'target':
+                # Metre-space Huber terms are divided by map scale after being
+                # averaged per active sample-step.  This remains substantially
+                # stronger than normalized-coordinate MSE without producing
+                # gradients proportional to the full 410 m map width.
+                ml_loss = (
+                    self.args.goal_loss_weight * goal_predict_loss / self.args.map_meters
+                    + self.args.target_loss_weight * target_predict_loss
+                    + self.args.target_distance_loss_weight
+                    * target_distance_loss / self.args.map_meters
+                    + self.args.target_bearing_loss_weight * target_bearing_loss
+                    + self.args.target_consistency_loss_weight
+                    * target_consistency_loss / self.args.map_meters
+                )
+                loss_normalizer = max(target_error_count, 1)
+            elif training_stage == 'action':
+                ml_loss = (
+                    self.args.direction_loss_weight * direction_loss
+                    + self.args.progress_loss_weight * progress_loss
+                )
+                loss_normalizer = batch_size
+            else:
+                ml_loss = (
+                    self.args.direction_loss_weight * direction_loss
+                    + self.args.progress_loss_weight * progress_loss
+                    + self.args.goal_loss_weight * goal_predict_loss
+                    + self.args.target_loss_weight * target_predict_loss
+                )
+                loss_normalizer = batch_size
+            self.loss += ml_loss * train_ml / loss_normalizer
 
             # self.logs['ml_loss'].append((ml_loss * train_ml / batch_size).item())
+            def scalar(value):
+                if torch.is_tensor(value):
+                    return value.detach().item()
+                return float(value)
 
-            self.logs['direction_loss'].append((direction_loss * train_ml / batch_size).item())
-            self.logs['progress_loss'].append((progress_loss * train_ml / batch_size).item())
-            self.logs['goal_predict_loss'].append((goal_predict_loss * train_ml / batch_size).item())
-            self.logs['target_predict_loss'].append((target_predict_loss * train_ml / batch_size).item())
-            self.logs['IL_loss'].append((ml_loss * train_ml / batch_size).item())
+            self.logs['direction_loss'].append(
+                scalar(direction_loss * train_ml / loss_normalizer)
+            )
+            self.logs['progress_loss'].append(
+                scalar(progress_loss * train_ml / loss_normalizer)
+            )
+            self.logs['goal_predict_loss'].append(
+                scalar(goal_predict_loss * train_ml / loss_normalizer)
+            )
+            self.logs['target_predict_loss'].append(
+                scalar(target_predict_loss * train_ml / loss_normalizer)
+            )
+            self.logs['target_distance_loss'].append(
+                scalar(target_distance_loss * train_ml / loss_normalizer)
+            )
+            self.logs['target_bearing_loss'].append(
+                scalar(target_bearing_loss * train_ml / loss_normalizer)
+            )
+            self.logs['target_consistency_loss'].append(
+                scalar(target_consistency_loss * train_ml / loss_normalizer)
+            )
+            self.logs['IL_loss'].append(
+                scalar(ml_loss * train_ml / loss_normalizer)
+            )
+
+        if target_error_count:
+            self.logs['target_error_mean_m'].append(
+                target_error_sum_m / target_error_count
+            )
+            self.logs['target_hit5'].append(target_hit5_count / target_error_count)
+            self.logs['target_hit10'].append(target_hit10_count / target_error_count)
+            self.logs['target_hit20'].append(target_hit20_count / target_error_count)
 
         if type(self.loss) is int:  # For safety, it will be activated if no losses are added
             self.losses.append(0.)
@@ -806,7 +1001,7 @@ class NavCMTAgent:
             states[name] = {
                 'epoch': epoch + 1,
                 'state_dict': model.state_dict(),
-                'optimizer': optimizer.state_dict(),
+                'optimizer': optimizer.state_dict() if optimizer is not None else None,
             }
 
         all_tuple = [("lang_model", self.lang_model_without_ddp, self.lang_model_optimizer),
@@ -834,7 +1029,9 @@ class NavCMTAgent:
                 print("NOTICE: DIFFERENT KEYS IN THE ", name)
                 missing = sorted(model_keys - load_keys)
                 required_missing = [k for k in missing if not (
-                    self.args.disable_task_interaction and k.startswith('task_interaction.'))]
+                    (self.args.disable_task_interaction and k.startswith('task_interaction.'))
+                    or k.startswith('target_conditioning.')
+                )]
                 if required_missing and self.args.mode != 'train':
                     raise ValueError(f'{name}: checkpoint is missing parameters: {required_missing}')
                 if missing:
@@ -844,8 +1041,11 @@ class NavCMTAgent:
                 state_dict = {k: v for k, v in states[name]['state_dict'].items() if k in model_keys}
             state.update(state_dict)
             model.load_state_dict(state)
-            if self.args.resume_optimizer:
-                optimizer.load_state_dict(states[name]['optimizer'])
+            if self.args.resume_optimizer and optimizer is not None:
+                optimizer_state = states[name].get('optimizer')
+                if optimizer_state is None:
+                    raise ValueError(f'{name}: checkpoint has no optimizer for this stage')
+                optimizer.load_state_dict(optimizer_state)
 
             def count_parameters(mo):
                 return sum(p.numel() for p in mo.parameters() if p.requires_grad)

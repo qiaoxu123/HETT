@@ -119,7 +119,10 @@ def train(args, train_env, val_envs, rank=-1):
         record_file = os.path.join(GOAL_PREDICTOR_CHECKPOINT_DIR, 'train.txt')
         write_to_record_file(str(args) + '\n\n', record_file)
 
-    best_val = {'val_unseen': {"sr": 0., "state": ""}, 'val_unseen_full_traj': {"sr": 0., "state": ""}}
+    best_val = {
+        'val_unseen': {"sr": 0., "target_error_m": 1e30, "state": ""},
+        'val_unseen_full_traj': {"sr": 0., "target_error_m": 1e30, "state": ""},
+    }
     best_metrics_path = os.path.join(GOAL_PREDICTOR_CHECKPOINT_DIR, 'best_metrics.json')
     if args.checkpoint and os.path.exists(best_metrics_path):
         with open(best_metrics_path) as stream:
@@ -147,16 +150,30 @@ def train(args, train_env, val_envs, rank=-1):
                 # sampler = DistributedSampler(env, num_replicas=args.world_size, rank=rank)
                 loader = DataLoader(env, batch_size=1)
                 # Get validation distance from goal under test evaluation conditions
-                agent_eval.test(loader, feedback='student')
+                eval_feedback = 'teacher' if args.training_stage == 'target' else 'student'
+                agent_eval.test(loader, feedback=eval_feedback)
                 pred_results = agent_eval.get_results()
 
                 score_summary, result = env.eval_metrics(pred_results)
+                for metric_name in ('target_error_mean_m', 'target_hit5', 'target_hit10', 'target_hit20'):
+                    if agent_eval.logs[metric_name]:
+                        score_summary[metric_name] = float(np.mean(agent_eval.logs[metric_name]))
                 loss_str += ", %s \n" % env_name
                 for metric, val in score_summary.items():
                     loss_str += ', %s: %.2f' % (metric, val)
                 if env_name in best_val:
-                    if score_summary['sr'] >= best_val[env_name]['sr']:
+                    if args.training_stage == 'target':
+                        is_better = (
+                            score_summary.get('target_error_mean_m', 1e30)
+                            <= best_val[env_name].get('target_error_m', 1e30)
+                        )
+                    else:
+                        is_better = score_summary['sr'] >= best_val[env_name]['sr']
+                    if is_better:
                         best_val[env_name]['sr'] = score_summary['sr']
+                        best_val[env_name]['target_error_m'] = score_summary.get(
+                            'target_error_mean_m', 1e30
+                        )
                         best_val[env_name]['state'] = 'Epoch %d %s' % (start_epoch, loss_str)
                 del agent_eval
             write_to_record_file(loss_str, record_file)
@@ -168,10 +185,13 @@ def train(args, train_env, val_envs, rank=-1):
     # resume file
     start_epoch = 0
     if args.checkpoint is not None:
-        start_epoch = agent.load(os.path.join(args.checkpoint))
+        loaded_epoch = agent.load(os.path.join(args.checkpoint))
+        start_epoch = 0 if args.reset_epoch_on_load else loaded_epoch
         if default_gpu:
             write_to_record_file(
-                "\nLOAD the model from {}, epoch {}".format(args.checkpoint, start_epoch),
+                "\nLOAD the model from {}, checkpoint epoch {}, start epoch {}".format(
+                    args.checkpoint, loaded_epoch, start_epoch
+                ),
                 record_file
             )
 
@@ -212,6 +232,9 @@ def train(args, train_env, val_envs, rank=-1):
 
             progress_loss = sum(agent.logs['progress_loss']) / max(len(agent.logs['progress_loss']), 1)
             goal_predict_loss = sum(agent.logs['goal_predict_loss']) / max(len(agent.logs['goal_predict_loss']), 1)
+            target_distance_loss = sum(agent.logs['target_distance_loss']) / max(len(agent.logs['target_distance_loss']), 1)
+            target_bearing_loss = sum(agent.logs['target_bearing_loss']) / max(len(agent.logs['target_bearing_loss']), 1)
+            target_consistency_loss = sum(agent.logs['target_consistency_loss']) / max(len(agent.logs['target_consistency_loss']), 1)
             # target_predict_loss = sum(agent.logs['target_predict_loss']) / max(len(agent.logs['target_predict_loss']), 1)
             # writer.add_scalar("loss/IL_loss", IL_loss, iter)
 
@@ -219,6 +242,11 @@ def train(args, train_env, val_envs, rank=-1):
                 "\nIL_loss %.4f direction_loss %.4f progress_loss %.4f goal_predict_loss %.4f" % (
                     ml_loss, direction_loss, progress_loss, goal_predict_loss),
                 record_file
+            )
+            write_to_record_file(
+                "\ntarget_distance_loss %.4f target_bearing_loss %.4f target_consistency_loss %.4f" % (
+                    target_distance_loss, target_bearing_loss, target_consistency_loss),
+                record_file,
             )
             stage1_step = sum(agent.logs['stage1_step']) / max(len(agent.logs['stage1_step']), 1)
             stage2_step = sum(agent.logs['stage2_step']) / max(len(agent.logs['stage2_step']), 1)
@@ -240,6 +268,9 @@ def train(args, train_env, val_envs, rank=-1):
             epoch_metrics = dict(epoch=idx + 1, elapsed_seconds=time.time()-start,
                                  il_loss=ml_loss, direction_loss=direction_loss,
                                  progress_loss=progress_loss, goal_loss=goal_predict_loss,
+                                 target_distance_loss=target_distance_loss,
+                                 target_bearing_loss=target_bearing_loss,
+                                 target_consistency_loss=target_consistency_loss,
                                  validation={})
             # Reuse the trained modules: avoid a second BERT/Darknet/ET on one GPU.
             agent_eval = agent
@@ -248,10 +279,14 @@ def train(args, train_env, val_envs, rank=-1):
                 agent_eval.env = env
                 loader = DataLoader(env, batch_size=1)
                 # Get validation distance from goal under test evaluation conditions
-                agent_eval.test(loader, feedback='student')
+                eval_feedback = 'teacher' if args.training_stage == 'target' else 'student'
+                agent_eval.test(loader, feedback=eval_feedback)
                 pred_results = agent_eval.get_results()
 
                 score_summary, result = env.eval_metrics(pred_results)
+                for metric_name in ('target_error_mean_m', 'target_hit5', 'target_hit10', 'target_hit20'):
+                    if agent_eval.logs[metric_name]:
+                        score_summary[metric_name] = float(np.mean(agent_eval.logs[metric_name]))
                 epoch_metrics['validation'][env_name] = score_summary
                 stage1_step = sum(agent_eval.logs['stage1_step']) / max(len(agent_eval.logs['stage1_step']), 1)
                 stage2_step = sum(agent_eval.logs['stage2_step']) / max(len(agent_eval.logs['stage2_step']), 1)
@@ -267,8 +302,18 @@ def train(args, train_env, val_envs, rank=-1):
                     loss_str += ', %s: %.2f' % (metric, val)
                     # writer.add_scalar('%s/%s' % (metric, env_name), score_summary[metric], iter)
                 if env_name in best_val:
-                    if score_summary['sr'] >= best_val[env_name]['sr']:
+                    if args.training_stage == 'target':
+                        is_better = (
+                            score_summary.get('target_error_mean_m', 1e30)
+                            <= best_val[env_name].get('target_error_m', 1e30)
+                        )
+                    else:
+                        is_better = score_summary['sr'] >= best_val[env_name]['sr']
+                    if is_better:
                         best_val[env_name]['sr'] = score_summary['sr']
+                        best_val[env_name]['target_error_m'] = score_summary.get(
+                            'target_error_mean_m', 1e30
+                        )
                         best_val[env_name]['state'] = 'Epoch %d %s' % (idx, loss_str)
                         agent_eval.save(idx, os.path.join(GOAL_PREDICTOR_CHECKPOINT_DIR, "best_%s" % (env_name)))
 
@@ -310,10 +355,14 @@ def valid(args, val_envs, rank=-1):
             agent_eval.env = env
             loader = DataLoader(env, batch_size=1)
             # Get validation distance from goal under test evaluation conditions
-            agent_eval.test(loader, feedback='student')
+            eval_feedback = 'teacher' if args.training_stage == 'target' else 'student'
+            agent_eval.test(loader, feedback=eval_feedback)
             pred_results = agent_eval.get_results()
 
             score_summary, result = env.eval_metrics(pred_results)
+            for metric_name in ('target_error_mean_m', 'target_hit5', 'target_hit10', 'target_hit20'):
+                if agent_eval.logs[metric_name]:
+                    score_summary[metric_name] = float(np.mean(agent_eval.logs[metric_name]))
             with open(os.path.join(GOAL_PREDICTOR_CHECKPOINT_DIR, env_name + '_metrics.json'), 'w') as stream:
                 json.dump(score_summary, stream, indent=2)
             torch.save(pred_results, os.path.join(GOAL_PREDICTOR_CHECKPOINT_DIR, env_name + '_predictions.pt'))

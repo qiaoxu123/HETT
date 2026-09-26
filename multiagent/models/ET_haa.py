@@ -9,6 +9,7 @@ from torch.nn import functional as F
 import numpy as np
 
 from .goal_predictor import MapEncoder
+from multiagent.two_stage import TargetConditioning, select_action_coordinates
 
 
 class SoftDotAttention(nn.Module):
@@ -214,6 +215,10 @@ class ET(nn.Module):
             num_heads=self.args.encoder_heads,
             dropout=self.args.dropout_transformer_encoder,
         )
+        self.target_conditioning = TargetConditioning(
+            d_model=self.args.demb,
+            dropout=self.args.dropout_transformer_encoder,
+        )
 
     def forward(self, **inputs):
         """
@@ -321,17 +326,32 @@ class ET(nn.Module):
         # --------------- 8. target 与 action/progress 双向交互 -----------------
         target_tokens = torch.cat((encoder_out_map.unsqueeze(1), encoder_out_candidates), dim=1)  # [B, 1 + N_cand, d_model]
         motion_tokens = torch.stack((encoder_out_direction, encoder_out_visual), dim=1)           # [B, 2, d_model]
-        if not getattr(self.args, 'disable_task_interaction', False):
+        training_stage = getattr(self.args, 'training_stage', 'joint')
+        if (training_stage == 'joint'
+                and not getattr(self.args, 'disable_task_interaction', False)):
             target_tokens, motion_tokens = self.task_interaction(target_tokens, motion_tokens)
 
         # --------------- 9. 多头输出：direction / progress / goal / target -----------------
         goal_decoder_input = target_tokens[:, 0]               # [B, d_model]
         target_decoder_input = target_tokens[:, 1:]            # [B, N_cand, d_model]
+        pred_goals = self.decoder_2_goal_full(goal_decoder_input) # [B, 2] 归一化目标位置
+        if training_stage == 'action':
+            action_targets = select_action_coordinates(
+                predicted=pred_goals,
+                truth=inputs.get('target_coordinates'),
+                use_truth=inputs.get('target_coordinate_mask'),
+            )
+            current_positions = inputs['directions'][:, -1, 2:4]
+            motion_tokens = self.target_conditioning(
+                motion_tokens,
+                action_targets,
+                current_positions,
+            )
+
         action_decoder_input = motion_tokens[:, 0]             # [B, d_model]
         decoder_input = motion_tokens[:, 1]                    # [B, d_model]
 
         output = self.decoder_2_action_full(action_decoder_input) # [B, 2] 归一化方向向量
-        pred_goals = self.decoder_2_goal_full(goal_decoder_input) # [B, 2] 归一化目标位置
         norm = torch.norm(output, dim=1, keepdim=True) + 1e-6     # 避免除零
         direction = output / norm
 
