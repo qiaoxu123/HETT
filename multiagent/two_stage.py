@@ -25,8 +25,7 @@ ACTION_MODULE_NAMES = (
 )
 FINE_MODULE_NAMES = (
     "fine_navigation_adapter",
-    "decoder_2_local_waypoint_full",
-    "decoder_2_action_full",
+    "decoder_2_local_control_full",
     "decoder_2_stop_full",
 )
 
