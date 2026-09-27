@@ -37,6 +37,8 @@ SCORE_METRIC_NAMES = (
     'candidate_local_gate_mean',
     'fine_waypoint_error_mean_m',
     'fine_stop_positive_ratio',
+    'fine_predicted_stop_rate',
+    'fine_premature_stop_rate',
     'fine_start_distance_mean_m',
 ) + tuple(
     f'range_{bucket}_{suffix}'
