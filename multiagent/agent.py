@@ -339,6 +339,8 @@ class NavCMTAgent:
             self.vln_model_without_ddp.multi_target_conditioning.train()
         self.vln_model_without_ddp.decoder_2_action_full.train()
         self.vln_model_without_ddp.decoder_2_progress_full.train()
+        if hasattr(self.vln_model_without_ddp, 'decoder_2_stop_full'):
+            self.vln_model_without_ddp.decoder_2_stop_full.train()
 
     def train(self, loader, n_epochs, feedback='student', nss_w_weighting=1, **kwargs):
         ''' Train for a given number of epochs '''
@@ -707,9 +709,23 @@ class NavCMTAgent:
             # Predicted progress
             pred_progress_t = pred_progress.cpu().detach().numpy()
 
-            # Predicted waypoint
+            # Predicted waypoint or residual steering angle.
             nt_direct = torch.atan2(pred_direction[:, 0], pred_direction[:, 1])
             at_direction = nt_direct.cpu().detach().numpy()
+            geometric_direction = None
+            executed_direction = at_direction
+            if (training_stage == 'action'
+                    and getattr(self.args, 'action_controller', 'legacy') == 'residual'):
+                target_delta = action_target_coordinates - current_pos
+                target_bearing = torch.atan2(-target_delta[:, 1], target_delta[:, 0])
+                yaw = current_direct.squeeze(-1)
+                geometric_direction = torch.atan2(
+                    torch.sin(target_bearing - yaw),
+                    torch.cos(target_bearing - yaw),
+                )
+                combined = geometric_direction + nt_direct
+                combined = torch.atan2(torch.sin(combined), torch.cos(combined))
+                executed_direction = combined.detach().cpu().numpy()
             # for i in range(len(a_t_next_pos_ratio)):
             #     max_of_a_t_next_pos_i = max(abs(a_t_next_pos_ratio[i][0]), abs(a_t_next_pos_ratio[i][1]), 1)
             #     a_t_next_pos_ratio[i][0] /= max_of_a_t_next_pos_i
@@ -736,11 +752,20 @@ class NavCMTAgent:
 
                 active_mask = torch.from_numpy(~ended).to(gt_goal.device)
                 for i in range(len(obs)):
-                    true_direction = torch.tensor(gt_direction[i])
+                    true_direction = torch.tensor(
+                        gt_direction[i], device=gt_goal.device
+                    )
+                    if (training_stage == 'action'
+                            and getattr(self.args, 'action_controller', 'legacy') == 'residual'
+                            and geometric_direction is not None):
+                        true_direction = torch.atan2(
+                            torch.sin(true_direction - geometric_direction[i]),
+                            torch.cos(true_direction - geometric_direction[i]),
+                        )
 
                     true_sin = torch.sin(true_direction)
                     true_cos = torch.cos(true_direction)
-                    true_sin_cos = torch.stack([true_sin, true_cos], dim=-1).cuda()
+                    true_sin_cos = torch.stack([true_sin, true_cos], dim=-1)
                     # gt_progress = torch.tensor(obs[i]['progress']).cuda()
                     # print(pred_direction[i].view(-1).shape, pred_progress[i].view(-1).shape, true_sin_cos.shape, gt_progress[i].view(-1).shape)
                     # cuda_gt_next_pos_ratio = torch.from_numpy(target[i][0]).cuda()
@@ -749,8 +774,24 @@ class NavCMTAgent:
                         # if stage1_ended[i]:
                         direction_loss += self.progress_regression(pred_direction[i].view(-1), true_sin_cos)
 
-                        progress_loss += self.progress_regression(pred_progress[i].view(-1),
-                                                                  gt_progress[i].view(-1).cuda())
+                        if (training_stage == 'action'
+                                and getattr(self.args, 'use_stop_head', False)):
+                            gt_distance_m = torch.linalg.vector_norm(
+                                (gt_goal[i] - current_pos[i]) * self.args.map_meters
+                            )
+                            gt_stop = (
+                                gt_distance_m <= self.args.stop_distance_m
+                            ).float().view(-1)
+                            progress_loss += F.binary_cross_entropy(
+                                pred_progress[i].view(-1),
+                                gt_stop,
+                                reduction='sum',
+                            )
+                        else:
+                            progress_loss += self.progress_regression(
+                                pred_progress[i].view(-1),
+                                gt_progress[i].view(-1).cuda(),
+                            )
 
                     # ml_loss += direction_loss
                     # ml_loss += progress_loss
@@ -869,7 +910,7 @@ class NavCMTAgent:
             # print(at_direction, gt_direction)
             for i, ob in enumerate(obs):
                 if not ended[i]:
-                    traj[i]['actions'].append(at_direction[i])
+                    traj[i]['actions'].append(executed_direction[i])
                     if not 'test' in self.env_name:
                         traj[i]['gt_actions'].append(gt_direction[i])
                         traj[i]['gt_progress'].append(gt_progress[i].item())
@@ -882,7 +923,7 @@ class NavCMTAgent:
                 a_t = gt_direction
                 pred_progress_t = gt_progress
             elif self.feedback == 'student':  # student
-                a_t = at_direction
+                a_t = executed_direction
                 at_goal = action_target_coordinates
 
                 # _, at_goal = pred_logits.max(1)
@@ -911,8 +952,16 @@ class NavCMTAgent:
                 #     continue
 
 
-                elif pred_progress_t[i] > 0.95 and self.feedback == 'student' and stage1_ended[i]:
-                    # Updated 'ended' list and make environment action
+                elif (self.feedback == 'student'
+                      and pred_progress_t[i] > (
+                          self.args.stop_threshold
+                          if getattr(self.args, 'use_stop_head', False)
+                          else 0.95
+                      )
+                      and (
+                          stage1_ended[i]
+                          or getattr(self.args, 'action_controller', 'legacy') == 'residual'
+                      )):
                     ended[i] = True
                     continue
                 elif t == self.args.max_action_len:
@@ -929,6 +978,24 @@ class NavCMTAgent:
 
                 # if pred_progress_t[i] > 0.9 and not stage1_ended[i]:
                 #     stage1_ended[i] = True
+                if (self.feedback == 'student'
+                        and training_stage == 'action'
+                        and getattr(self.args, 'action_controller', 'legacy') == 'residual'):
+                    stage1_ended[i] = True
+                    if abs(a_t[i]) < np.pi / 12:
+                        stage2_step += 1
+                        poses[i] = _moved_pose(poses[i], *Action(5, 0, 0))
+                    else:
+                        stage2_rotate += 1
+                        poses[i] = _moved_pose(poses[i], *Action(0, a_t[i], 0))
+                    if len(traj[i]['stage2_trajectory']) == 0:
+                        traj[i]['stage2_trajectory'].append(
+                            traj[i]['stage1_trajectory'][-1]
+                        )
+                    if not ended[i]:
+                        traj[i]['stage2_trajectory'].append(poses[i])
+                    continue
+
                 if dst.dist_to(poses[i].xy) > 5 and not stage1_ended[i]:
                     stage1_step += 1
                     stage1_steps[i] += 1
@@ -1164,6 +1231,7 @@ class NavCMTAgent:
                     or k.startswith('quadtree_belief.')
                     or k.startswith('candidate_belief.')
                     or k.startswith('multi_target_conditioning.')
+                    or k.startswith('decoder_2_stop_full.')
                 )]
                 if required_missing and self.args.mode != 'train':
                     raise ValueError(f'{name}: checkpoint is missing parameters: {required_missing}')
