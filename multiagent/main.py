@@ -156,13 +156,27 @@ def train(args, train_env, val_envs, rank=-1):
                 pred_results = agent_eval.get_results()
 
                 score_summary, result = env.eval_metrics(pred_results)
-                for metric_name in (
+                metric_names = [
                     'target_error_mean_m', 'target_hit5', 'target_hit10', 'target_hit20',
                     'candidate_oracle_error_mean_m', 'candidate_recall5',
                     'candidate_recall10', 'candidate_recall20',
+                    'candidate_local_gate_mean',
+                ]
+                for bucket_name in (
+                    '0_50', '50_100', '100_150',
+                    '150_200', '200_250', '250_inf',
                 ):
+                    metric_names.extend([
+                        f'range_{bucket_name}_target_error_mean_m',
+                        f'range_{bucket_name}_hit20',
+                        f'range_{bucket_name}_oracle_error_mean_m',
+                        f'range_{bucket_name}_recall20',
+                    ])
+                for metric_name in metric_names:
                     if agent_eval.logs[metric_name]:
-                        score_summary[metric_name] = float(np.mean(agent_eval.logs[metric_name]))
+                        score_summary[metric_name] = float(
+                            np.mean(agent_eval.logs[metric_name])
+                        )
                 loss_str += ", %s \n" % env_name
                 for metric, val in score_summary.items():
                     loss_str += ', %s: %.2f' % (metric, val)
@@ -242,6 +256,7 @@ def train(args, train_env, val_envs, rank=-1):
             target_consistency_loss = sum(agent.logs['target_consistency_loss']) / max(len(agent.logs['target_consistency_loss']), 1)
             quadtree_loss = sum(agent.logs['quadtree_loss']) / max(len(agent.logs['quadtree_loss']), 1)
             candidate_ranking_loss = sum(agent.logs['candidate_ranking_loss']) / max(len(agent.logs['candidate_ranking_loss']), 1)
+            candidate_local_gate_mean = sum(agent.logs['candidate_local_gate_mean']) / max(len(agent.logs['candidate_local_gate_mean']), 1)
             target_predict_loss = sum(agent.logs['target_predict_loss']) / max(len(agent.logs['target_predict_loss']), 1)
             # writer.add_scalar("loss/IL_loss", IL_loss, iter)
 
@@ -251,8 +266,8 @@ def train(args, train_env, val_envs, rank=-1):
                 record_file
             )
             write_to_record_file(
-                "\ntarget_distance_loss %.4f target_bearing_loss %.4f target_consistency_loss %.4f quadtree_loss %.4f candidate_ranking_loss %.4f" % (
-                    target_distance_loss, target_bearing_loss, target_consistency_loss, quadtree_loss, candidate_ranking_loss),
+                "\ntarget_distance_loss %.4f target_bearing_loss %.4f target_consistency_loss %.4f quadtree_loss %.4f candidate_ranking_loss %.4f candidate_local_gate_mean %.4f" % (
+                    target_distance_loss, target_bearing_loss, target_consistency_loss, quadtree_loss, candidate_ranking_loss, candidate_local_gate_mean),
                 record_file,
             )
             stage1_step = sum(agent.logs['stage1_step']) / max(len(agent.logs['stage1_step']), 1)
@@ -280,6 +295,7 @@ def train(args, train_env, val_envs, rank=-1):
                                  target_consistency_loss=target_consistency_loss,
                                  quadtree_loss=quadtree_loss,
                                  candidate_ranking_loss=candidate_ranking_loss,
+                                 candidate_local_gate_mean=candidate_local_gate_mean,
                                  target_predict_loss=target_predict_loss,
                                  gt_coordinate_probability=(
                                      coordinate_gt_probability(
