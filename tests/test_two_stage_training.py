@@ -4,8 +4,12 @@ import torch
 from torch import nn
 
 from multiagent.two_stage import (
+    MultiHypothesisConditioning,
+    RelationalCandidateBeliefHead,
     SparseQuadtreeBeliefHead,
     TargetConditioning,
+    candidate_recall,
+    candidate_supervision,
     configure_stage_parameters,
     coordinate_gt_probability,
     select_action_coordinates,
@@ -190,3 +194,64 @@ def test_sparse_quadtree_teacher_path_reaches_expected_leaf_center():
 
     # At depth 3 each leaf spans 1/8 of the map and its center must contain truth.
     assert torch.all(torch.abs(center - truth) <= size.unsqueeze(-1) * 0.5)
+
+
+def test_relational_candidate_belief_returns_topk_without_averaging():
+    torch.manual_seed(0)
+    head = RelationalCandidateBeliefHead(
+        d_model=8,
+        num_heads=2,
+        hidden_dim=16,
+        topk=3,
+        max_offset=0.05,
+        dropout=0.0,
+    ).eval()
+    tokens = torch.randn(2, 6, 8)
+    candidates = torch.rand(2, 6, 2)
+    language = torch.randn(2, 5, 8)
+    current = torch.rand(2, 2)
+    mask = torch.ones(2, 5, dtype=torch.long)
+    output = head(tokens, candidates, language, current, mask)
+
+    assert output.coordinate.shape == (2, 2)
+    assert output.logits.shape == (2, 6)
+    assert output.refined_coordinates.shape == (2, 6, 2)
+    assert output.topk_coordinates.shape == (2, 3, 2)
+    assert output.topk_probs.shape == (2, 3)
+    assert torch.allclose(output.coordinate, output.topk_coordinates[:, 0])
+    assert torch.allclose(output.topk_probs.sum(dim=-1), torch.ones(2), atol=1e-6)
+    assert torch.all(output.refined_coordinates >= 0)
+    assert torch.all(output.refined_coordinates <= 1)
+
+
+def test_candidate_supervision_and_recall_are_finite():
+    logits = torch.tensor([[0.0, 2.0, -1.0]])
+    base = torch.tensor([[[0.1, 0.1], [0.5, 0.5], [0.9, 0.9]]])
+    refined = base.clone()
+    truth = torch.tensor([[0.52, 0.48]])
+    cls, offset, labels = candidate_supervision(
+        logits, refined, base, truth, 410.0, 10.0
+    )
+    assert labels.item() == 1
+    assert torch.isfinite(cls)
+    assert torch.isfinite(offset)
+    recall = candidate_recall(
+        refined[:, :2], truth, 410.0, radius_m=20.0
+    )
+    assert recall.item() == 1.0
+
+
+def test_multi_hypothesis_conditioning_uses_multiple_targets():
+    torch.manual_seed(0)
+    module = MultiHypothesisConditioning(
+        d_model=8, num_heads=2, dropout=0.0
+    ).eval()
+    motion = torch.randn(1, 2, 8)
+    current = torch.tensor([[0.2, 0.2]])
+    targets_a = torch.tensor([[[0.3, 0.3], [0.8, 0.8]]])
+    targets_b = torch.tensor([[[0.3, 0.3], [0.1, 0.9]]])
+    probs = torch.tensor([[0.6, 0.4]])
+    out_a = module(motion, targets_a, probs, current)
+    out_b = module(motion, targets_b, probs, current)
+    assert out_a.shape == motion.shape
+    assert not torch.allclose(out_a, out_b)
