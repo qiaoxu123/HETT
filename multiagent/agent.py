@@ -162,6 +162,9 @@ class NavCMTAgent:
             self.vision_model,
             self.vln_model,
             getattr(self.args, 'training_stage', 'joint'),
+            freeze_target_backbones=getattr(
+                self.args, 'freeze_target_backbones', False
+            ),
         )
         # self.map_encoder = MapEncoder(240)
         # self.goal_predictpr = GoalPredictor(240, 7)
@@ -314,9 +317,14 @@ class NavCMTAgent:
     def _set_training_modes(self):
         stage = getattr(self.args, 'training_stage', 'joint')
         if stage != 'action':
-            self.lang_model.train()
             self.vln_model.train()
-            self.vision_model.train()
+            if stage == 'target' and getattr(
+                    self.args, 'freeze_target_backbones', False):
+                self.lang_model.eval()
+                self.vision_model.eval()
+            else:
+                self.lang_model.train()
+                self.vision_model.train()
             return
 
         # Keep the frozen predictor deterministic while action-only modules use
@@ -524,6 +532,7 @@ class NavCMTAgent:
         target_distance_loss = torch.tensor(0.).cuda()
         target_bearing_loss = torch.tensor(0.).cuda()
         target_consistency_loss = torch.tensor(0.).cuda()
+        quadtree_loss = torch.tensor(0.).cuda()
         target_error_sum_m = 0.0
         target_error_count = 0
         target_hit5_count = 0
@@ -532,6 +541,7 @@ class NavCMTAgent:
         previous_pred_goals = None
 
         stage1_step = 0
+        stage1_steps = np.zeros(batch_size, dtype=np.int64)
         stage2_step = 0
         stage2_rotate = 0
 
@@ -619,6 +629,13 @@ class NavCMTAgent:
             )
             training_stage = getattr(self.args, 'training_stage', 'joint')
             action_coordinate_mask = None
+            if training_stage == 'target':
+                model_inputs.update({
+                    'target_coordinates': gt_goal,
+                    'target_active_mask': torch.from_numpy(~ended).to(
+                        gt_goal.device
+                    ),
+                })
             if training_stage == 'action' and train_ml is not None:
                 gt_probability = coordinate_gt_probability(
                     current_epoch=getattr(self, 'current_epoch', 1),
@@ -746,6 +763,16 @@ class NavCMTAgent:
                             gt_target.to(pred_logits.device)[active_mask],
                             reduction='sum',
                         )
+                        if getattr(
+                                self.args, 'target_representation', 'point'
+                        ) == 'quadtree':
+                            latest_quadtree_loss = getattr(
+                                self.vln_model_without_ddp,
+                                'last_quadtree_loss',
+                                None,
+                            )
+                            if latest_quadtree_loss is not None:
+                                quadtree_loss += latest_quadtree_loss
                     elif training_stage == 'joint':
                         goal_predict_loss += F.mse_loss(
                             active_predictions,
@@ -825,6 +852,7 @@ class NavCMTAgent:
                 #     stage1_ended[i] = True
                 if dst.dist_to(poses[i].xy) > 5 and not stage1_ended[i]:
                     stage1_step += 1
+                    stage1_steps[i] += 1
                     traj[i]['pred_goal'].append(dst)
                     # pred_goal_xys = [
                     #     unnormalize_position(global_position[goal_id] / args.grid_size, eps.map_name, args.map_meters)
@@ -832,8 +860,8 @@ class NavCMTAgent:
                     # dst = Point2D(obs[i]['centroid_goal'][0], obs[i]['centroid_goal'][1])
                     # dst = self.env.unnormalize_position(global_position[cpu_goal[i]], obs[i]['map_name'], self.args.map_meters)
                     if self.feedback == 'teacher':
-                        cur_step = stage1_step * self.args.move_iteration
-                        cur_step = cur_step if cur_step < len(obs[i]['trajectory']) else -1
+                        cur_step = int(stage1_steps[i] * self.args.move_iteration)
+                        cur_step = min(cur_step, len(obs[i]['trajectory']) - 1)
                         poses[i] = obs[i]['trajectory'][cur_step]
                     else:
                         poses[i] = self.move(poses[i], dst,
@@ -906,6 +934,7 @@ class NavCMTAgent:
                     + self.args.target_bearing_loss_weight * target_bearing_loss
                     + self.args.target_consistency_loss_weight
                     * target_consistency_loss / self.args.map_meters
+                    + self.args.quadtree_loss_weight * quadtree_loss
                 )
                 loss_normalizer = max(target_error_count, 1)
             elif training_stage == 'action':
@@ -950,6 +979,9 @@ class NavCMTAgent:
             )
             self.logs['target_consistency_loss'].append(
                 scalar(target_consistency_loss * train_ml / loss_normalizer)
+            )
+            self.logs['quadtree_loss'].append(
+                scalar(quadtree_loss * train_ml / loss_normalizer)
             )
             self.logs['IL_loss'].append(
                 scalar(ml_loss * train_ml / loss_normalizer)
