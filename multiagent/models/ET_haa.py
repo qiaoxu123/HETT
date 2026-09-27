@@ -353,10 +353,28 @@ class ET(nn.Module):
         self.last_quadtree_leaf_probs = None
         if (training_stage == 'target'
                 and getattr(self.args, 'target_representation', 'point') == 'quadtree'):
-            quadtree = self.quadtree_belief(
-                goal_decoder_input,
-                truth=inputs.get('target_coordinates'),
-            )
+            quadtree_truth = inputs.get('target_coordinates')
+            quadtree_context = goal_decoder_input
+            active_mask = inputs.get('target_active_mask')
+            if quadtree_truth is not None and active_mask is not None:
+                active_mask = active_mask.bool()
+                if active_mask.any():
+                    hierarchy_loss = self.quadtree_belief.hierarchy_loss(
+                        quadtree_context[active_mask],
+                        quadtree_truth[active_mask],
+                    )
+                else:
+                    hierarchy_loss = quadtree_context.new_zeros(())
+                quadtree = self.quadtree_belief(
+                    quadtree_context,
+                    truth=None,
+                )
+                quadtree.hierarchy_loss = hierarchy_loss
+            else:
+                quadtree = self.quadtree_belief(
+                    quadtree_context,
+                    truth=quadtree_truth,
+                )
             pred_goals = quadtree.coordinate
             self.last_quadtree_loss = quadtree.hierarchy_loss
             self.last_quadtree_leaf_centers = quadtree.leaf_centers
