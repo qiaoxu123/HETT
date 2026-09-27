@@ -412,6 +412,31 @@ def candidate_supervision(
     return classification, offset, labels
 
 
+def candidate_ranking_loss(
+    logits: torch.Tensor,
+    labels: torch.Tensor,
+    margin: float = 0.2,
+) -> torch.Tensor:
+    """Margin-rank the GT-associated candidate above the hardest negative.
+
+    The hardest negative is the highest-scoring non-GT candidate in each
+    sample. This directly optimizes the failure mode where a useful target is
+    present in Top-K but is not ranked at Top-1.
+    """
+
+    if logits.ndim != 2:
+        raise ValueError("candidate logits must have shape [B, N]")
+    if logits.shape[1] < 2:
+        return logits.new_zeros(())
+    positive = logits.gather(1, labels.view(-1, 1)).squeeze(1)
+    negative_mask = torch.ones_like(logits, dtype=torch.bool)
+    negative_mask.scatter_(1, labels.view(-1, 1), False)
+    hardest_negative = logits.masked_fill(
+        ~negative_mask, -torch.inf
+    ).max(dim=-1).values
+    return F.relu(margin - positive + hardest_negative).sum()
+
+
 def candidate_recall(
     topk_coordinates: torch.Tensor,
     truth: torch.Tensor,
