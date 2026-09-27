@@ -145,6 +145,7 @@ class CityNavBatch(torch.utils.data.IterableDataset):
         self.batch_size = batch_size
         self.rank = rank
         self.world_size = world_size
+        self.fine_rng = np.random.RandomState(seed + 7919 * (rank + 1))
 
     def size(self):
         return len(self.data)
@@ -181,6 +182,33 @@ class CityNavBatch(torch.utils.data.IterableDataset):
     def __iter__(self):
         return self.next_batch()
 
+    def _sample_fine_start_pose(self, episode):
+        """Sample a deployment-like near-goal state for fine-navigation training."""
+        goal = np.array(
+            self.normalize_position(
+                episode.target_position.xy, episode.map_name, self.args.map_meters
+            ),
+            dtype=np.float32,
+        )
+        radius_m = self.fine_rng.uniform(
+            self.args.fine_start_min_m, self.args.fine_start_max_m
+        )
+        angle = self.fine_rng.uniform(-np.pi, np.pi)
+        offset = (radius_m / self.args.map_meters) * np.array(
+            [np.cos(angle), np.sin(angle)], dtype=np.float32
+        )
+        start_norm = np.clip(goal + offset, 0.01, 0.99)
+        start_xy = self.unnormalize_position(
+            tuple(start_norm), episode.map_name, self.args.map_meters
+        )
+        if self.args.fine_random_yaw:
+            yaw = self.fine_rng.uniform(-np.pi, np.pi)
+        else:
+            delta = episode.target_position.xy
+            yaw = np.arctan2(delta.y - start_xy.y, delta.x - start_xy.x)
+        return Pose4D(
+            start_xy.x, start_xy.y, episode.start_pose.z, float(yaw)
+        )
     def normalize_position(self, pos: Point2D, map_name: str, map_meters: float):
         return (pos.x - MAP_BOUNDS[map_name].x_min) / map_meters, (MAP_BOUNDS[map_name].y_max - pos.y) / map_meters
 
@@ -303,7 +331,8 @@ class CityNavBatch(torch.utils.data.IterableDataset):
                 'landmark_centroids': np.array(normalized_centroids, dtype=np.float32).reshape(-1, 2),
                 'centroid_goal': pred_goal_xy,
                 'normalized_goal': normalized_goal_xys,
-                'grid_goal': normalized_goal_id
+                'grid_goal': normalized_goal_id,
+                'distance_to_goal_m': episode.target_position.xy.dist_to(poses[i].xy),
             })
 
             # TODO: what to use for a2c reward?
