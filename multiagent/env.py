@@ -1,3 +1,4 @@
+import zlib
 import json
 import os
 import numpy as np
@@ -145,6 +146,7 @@ class CityNavBatch(torch.utils.data.IterableDataset):
         self.batch_size = batch_size
         self.rank = rank
         self.world_size = world_size
+        self.base_seed = seed
         self.fine_rng = np.random.RandomState(seed + 7919 * (rank + 1))
 
     def size(self):
@@ -183,17 +185,26 @@ class CityNavBatch(torch.utils.data.IterableDataset):
         return self.next_batch()
 
     def _sample_fine_start_pose(self, episode):
-        """Sample a deployment-like near-goal state for fine-navigation training."""
+        """Sample a deployment-like near-goal state.
+
+        Training resamples across epochs; validation uses a stable per-episode
+        seed so checkpoint comparisons see the same starting states.
+        """
+        if self.split == 'train_seen':
+            rng = self.fine_rng
+        else:
+            stable_id = zlib.crc32(str(episode.id).encode('utf-8'))
+            rng = np.random.RandomState(self.base_seed + stable_id)
         goal = np.array(
             self.normalize_position(
                 episode.target_position.xy, episode.map_name, self.args.map_meters
             ),
             dtype=np.float32,
         )
-        radius_m = self.fine_rng.uniform(
+        radius_m = rng.uniform(
             self.args.fine_start_min_m, self.args.fine_start_max_m
         )
-        angle = self.fine_rng.uniform(-np.pi, np.pi)
+        angle = rng.uniform(-np.pi, np.pi)
         offset = (radius_m / self.args.map_meters) * np.array(
             [np.cos(angle), np.sin(angle)], dtype=np.float32
         )
@@ -202,7 +213,7 @@ class CityNavBatch(torch.utils.data.IterableDataset):
             tuple(start_norm), episode.map_name, self.args.map_meters
         )
         if self.args.fine_random_yaw:
-            yaw = self.fine_rng.uniform(-np.pi, np.pi)
+            yaw = rng.uniform(-np.pi, np.pi)
         else:
             delta = episode.target_position.xy
             yaw = np.arctan2(delta.y - start_xy.y, delta.x - start_xy.x)
@@ -225,7 +236,14 @@ class CityNavBatch(torch.utils.data.IterableDataset):
         obs = []
 
         if poses is None:
-            poses = [episode.start_pose for episode in self.batch]
+            if (getattr(self.args, 'training_stage', 'joint') == 'fine'
+                    and getattr(self.args, 'fine_random_start', False)):
+                poses = [
+                    self._sample_fine_start_pose(episode)
+                    for episode in self.batch
+                ]
+            else:
+                poses = [episode.start_pose for episode in self.batch]
             # poses = [episode.trajectory[max(0, len(episode.trajectory) - 20)] for episode in self.batch]
             self.nav_maps = [
                 LandmarkNavMap(
