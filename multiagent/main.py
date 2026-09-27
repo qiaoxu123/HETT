@@ -155,7 +155,11 @@ def train(args, train_env, val_envs, rank=-1):
                 pred_results = agent_eval.get_results()
 
                 score_summary, result = env.eval_metrics(pred_results)
-                for metric_name in ('target_error_mean_m', 'target_hit5', 'target_hit10', 'target_hit20'):
+                for metric_name in (
+                    'target_error_mean_m', 'target_hit5', 'target_hit10', 'target_hit20',
+                    'candidate_oracle_error_mean_m', 'candidate_recall5',
+                    'candidate_recall10', 'candidate_recall20',
+                ):
                     if agent_eval.logs[metric_name]:
                         score_summary[metric_name] = float(np.mean(agent_eval.logs[metric_name]))
                 loss_str += ", %s \n" % env_name
@@ -236,12 +240,12 @@ def train(args, train_env, val_envs, rank=-1):
             target_bearing_loss = sum(agent.logs['target_bearing_loss']) / max(len(agent.logs['target_bearing_loss']), 1)
             target_consistency_loss = sum(agent.logs['target_consistency_loss']) / max(len(agent.logs['target_consistency_loss']), 1)
             quadtree_loss = sum(agent.logs['quadtree_loss']) / max(len(agent.logs['quadtree_loss']), 1)
-            # target_predict_loss = sum(agent.logs['target_predict_loss']) / max(len(agent.logs['target_predict_loss']), 1)
+            target_predict_loss = sum(agent.logs['target_predict_loss']) / max(len(agent.logs['target_predict_loss']), 1)
             # writer.add_scalar("loss/IL_loss", IL_loss, iter)
 
             write_to_record_file(
-                "\nIL_loss %.4f direction_loss %.4f progress_loss %.4f goal_predict_loss %.4f" % (
-                    ml_loss, direction_loss, progress_loss, goal_predict_loss),
+                "\nIL_loss %.4f direction_loss %.4f progress_loss %.4f goal_predict_loss %.4f target_predict_loss %.4f" % (
+                    ml_loss, direction_loss, progress_loss, goal_predict_loss, target_predict_loss),
                 record_file
             )
             write_to_record_file(
@@ -273,6 +277,7 @@ def train(args, train_env, val_envs, rank=-1):
                                  target_bearing_loss=target_bearing_loss,
                                  target_consistency_loss=target_consistency_loss,
                                  quadtree_loss=quadtree_loss,
+                                 target_predict_loss=target_predict_loss,
                                  validation={})
             # Reuse the trained modules: avoid a second BERT/Darknet/ET on one GPU.
             agent_eval = agent
@@ -286,7 +291,11 @@ def train(args, train_env, val_envs, rank=-1):
                 pred_results = agent_eval.get_results()
 
                 score_summary, result = env.eval_metrics(pred_results)
-                for metric_name in ('target_error_mean_m', 'target_hit5', 'target_hit10', 'target_hit20'):
+                for metric_name in (
+                    'target_error_mean_m', 'target_hit5', 'target_hit10', 'target_hit20',
+                    'candidate_oracle_error_mean_m', 'candidate_recall5',
+                    'candidate_recall10', 'candidate_recall20',
+                ):
                     if agent_eval.logs[metric_name]:
                         score_summary[metric_name] = float(np.mean(agent_eval.logs[metric_name]))
                 epoch_metrics['validation'][env_name] = score_summary
@@ -362,7 +371,11 @@ def valid(args, val_envs, rank=-1):
             pred_results = agent_eval.get_results()
 
             score_summary, result = env.eval_metrics(pred_results)
-            for metric_name in ('target_error_mean_m', 'target_hit5', 'target_hit10', 'target_hit20'):
+            for metric_name in (
+                    'target_error_mean_m', 'target_hit5', 'target_hit10', 'target_hit20',
+                    'candidate_oracle_error_mean_m', 'candidate_recall5',
+                    'candidate_recall10', 'candidate_recall20',
+                ):
                 if agent_eval.logs[metric_name]:
                     score_summary[metric_name] = float(np.mean(agent_eval.logs[metric_name]))
             with open(os.path.join(GOAL_PREDICTOR_CHECKPOINT_DIR, env_name + '_metrics.json'), 'w') as stream:
