@@ -363,10 +363,13 @@ def configure_stage_parameters(
 
     action_modules = [getattr(navigation_model, name) for name in ACTION_MODULE_NAMES]
     if stage == "joint":
-        # The module is not on the released joint forward path. Excluding it
-        # also preserves old optimizer parameter groups for exact resumes.
+        # New two-stage-only modules are not on the released joint path.
+        # Freezing them preserves the released optimizer parameter groups.
         for parameter in navigation_model.target_conditioning.parameters():
             parameter.requires_grad = False
+        if hasattr(navigation_model, "quadtree_belief"):
+            for parameter in navigation_model.quadtree_belief.parameters():
+                parameter.requires_grad = False
     elif stage == "target":
         for module in action_modules:
             for parameter in module.parameters():
