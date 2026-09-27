@@ -143,6 +143,8 @@ def parse_args():
     parser.add_argument('--candidate_attention_heads', type=int, default=4)
     parser.add_argument('--candidate_classification_weight', type=float, default=1.0)
     parser.add_argument('--candidate_offset_weight', type=float, default=1.0)
+    parser.add_argument('--candidate_ranking_weight', type=float, default=0.5)
+    parser.add_argument('--candidate_ranking_margin', type=float, default=0.2)
     parser.add_argument(
         '--freeze_target_backbones', action='store_true',
         help='freeze language and vision backbones during target-stage fast experiments',
@@ -230,7 +232,9 @@ def parse_args():
             or args.target_consistency_loss_weight < 0
             or args.quadtree_loss_weight < 0
             or args.candidate_classification_weight < 0
-            or args.candidate_offset_weight < 0):
+            or args.candidate_offset_weight < 0
+            or args.candidate_ranking_weight < 0
+            or args.candidate_ranking_margin < 0):
         parser.error('target loss deltas/weights must be positive or nonnegative')
     if args.quadtree_depth < 1 or args.quadtree_topk < 1 or args.quadtree_hidden_dim < 1:
         parser.error('quadtree depth/topk/hidden_dim must be positive')
