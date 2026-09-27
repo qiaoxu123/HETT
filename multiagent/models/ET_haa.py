@@ -188,12 +188,11 @@ class ET(nn.Module):
             nn.Dropout(0.1),
             nn.Linear(128, 1),
         )
-        self.decoder_2_local_waypoint_full = nn.Sequential(
+        self.decoder_2_local_control_full = nn.Sequential(
             nn.Linear(self.args.demb, 256),
             nn.GELU(),
             nn.Dropout(0.1),
-            nn.Linear(256, 2),
-            nn.Tanh(),
+            nn.Linear(256, 3),
         )
 
         # target logits head: 给每个候选位置打分，输出 [B, N, 1]
@@ -287,6 +286,10 @@ class ET(nn.Module):
         self.last_candidate_local_gate = None
         self.last_local_waypoint = None
         self.last_local_waypoint_offset = None
+        self.last_fine_heading_vector = None
+        self.last_fine_relative_heading = None
+        self.last_fine_step_distance_m = None
+        self.last_stop_logit = None
 
     def forward(self, **inputs):
         """
@@ -528,33 +531,58 @@ class ET(nn.Module):
         decoder_input = motion_tokens[:, 1]                    # [B, d_model]
 
         if training_stage == 'fine':
-            waypoint_offset = self.decoder_2_local_waypoint_full(decoder_input)
-            waypoint_norm = torch.linalg.vector_norm(
-                waypoint_offset, dim=-1, keepdim=True
-            ).clamp_min(1.0)
-            waypoint_offset = waypoint_offset / waypoint_norm
-            waypoint_scale = (
-                getattr(self.args, 'fine_waypoint_m', 20.0)
-                / self.args.map_meters
+            local_control = self.decoder_2_local_control_full(decoder_input)
+            heading_vector = local_control[:, :2]
+            heading_norm = torch.linalg.vector_norm(
+                heading_vector, dim=-1, keepdim=True
+            ).clamp_min(1e-6)
+            heading_vector = heading_vector / heading_norm
+            relative_heading = torch.atan2(
+                heading_vector[:, 0], heading_vector[:, 1]
             )
-            waypoint_offset = waypoint_offset * waypoint_scale
+            step_distance_m = torch.sigmoid(local_control[:, 2]) * getattr(
+                self.args, 'fine_waypoint_m', 20.0
+            )
+            self.last_fine_heading_vector = heading_vector
+            self.last_fine_relative_heading = relative_heading
+            self.last_fine_step_distance_m = step_distance_m
+
+            yaw = inputs['directions'][:, -1, 0].atan2(
+                inputs['directions'][:, -1, 1]
+            )
+            world_bearing = yaw + relative_heading
+            dx = torch.cos(world_bearing) * step_distance_m / self.args.map_meters
+            dy = -torch.sin(world_bearing) * step_distance_m / self.args.map_meters
+            waypoint_offset = torch.stack((dx, dy), dim=-1)
             self.last_local_waypoint_offset = waypoint_offset
             self.last_local_waypoint = (
                 current_positions + waypoint_offset
             ).clamp(0.0, 1.0)
+
+            direction = heading_vector
+            if getattr(self.args, 'use_stop_head', False):
+                stop_logit = self.decoder_2_stop_full(decoder_input)
+                self.last_stop_logit = stop_logit
+                progress = stop_logit
+            else:
+                self.last_stop_logit = None
+                progress = self.decoder_2_progress_full(decoder_input)
         else:
             self.last_local_waypoint_offset = None
             self.last_local_waypoint = None
+            self.last_fine_heading_vector = None
+            self.last_fine_relative_heading = None
+            self.last_fine_step_distance_m = None
+            self.last_stop_logit = None
 
-        output = self.decoder_2_action_full(action_decoder_input) # [B, 2] 归一化方向向量
-        norm = torch.norm(output, dim=1, keepdim=True) + 1e-6     # 避免除零
-        direction = output / norm
+            output = self.decoder_2_action_full(action_decoder_input) # [B, 2]
+            norm = torch.norm(output, dim=1, keepdim=True) + 1e-6
+            direction = output / norm
 
-        # progress or stop probability: [B, 1]
-        if training_stage in ('action', 'fine') and getattr(self.args, 'use_stop_head', False):
-            progress = torch.sigmoid(self.decoder_2_stop_full(decoder_input))
-        else:
-            progress = self.decoder_2_progress_full(decoder_input)
+            if training_stage == 'action' and getattr(self.args, 'use_stop_head', False):
+                progress = torch.sigmoid(self.decoder_2_stop_full(decoder_input))
+            else:
+                progress = self.decoder_2_progress_full(decoder_input)
 
         # target_logits: [B, N_cand, 1]
         target_logits = self.decoder_2_logits_full(target_decoder_input)
