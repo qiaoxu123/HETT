@@ -119,10 +119,11 @@ def parse_args():
                         help='auxiliary grid loss from released code (not specified in paper)')
     parser.add_argument('--disable_task_interaction', action='store_true')
     parser.add_argument(
-        '--training_stage', choices=['joint', 'target', 'action'], default='joint',
+        '--training_stage', choices=['joint', 'target', 'action', 'fine'], default='joint',
         help=(
             'joint keeps the released objective; target trains localisation only; '
-            'action freezes localisation and trains target-conditioned control only'
+            'action freezes localisation and trains target-conditioned control only; '
+            'fine trains near-goal RGB-language waypoint/action/stop heads'
         ),
     )
     parser.add_argument('--target_huber_delta_m', type=float, default=10.0)
@@ -162,12 +163,18 @@ def parse_args():
         help='GT-coordinate probability at the end of action fine-tuning',
     )
     parser.add_argument(
-        '--action_controller', choices=['legacy', 'residual'], default='legacy',
+        '--action_controller', choices=['legacy', 'residual', 'fine_waypoint'], default='legacy',
         help='legacy keeps HETT coarse planner; residual learns a correction to geometric steering',
     )
     parser.add_argument('--use_stop_head', action='store_true')
     parser.add_argument('--stop_distance_m', type=float, default=15.0)
     parser.add_argument('--stop_threshold', type=float, default=0.8)
+    parser.add_argument('--fine_random_start', action='store_true')
+    parser.add_argument('--fine_start_min_m', type=float, default=20.0)
+    parser.add_argument('--fine_start_max_m', type=float, default=80.0)
+    parser.add_argument('--fine_random_yaw', action='store_true')
+    parser.add_argument('--fine_waypoint_m', type=float, default=20.0)
+    parser.add_argument('--fine_waypoint_loss_weight', type=float, default=1.0)
 
     # logger
     parser.add_argument('--log_every', type=int, default=1)
@@ -230,6 +237,11 @@ def parse_args():
     args = parser.parse_args()
     if args.grad_accum < 1 or args.batch_size < 1 or args.max_episodes < 0:
         parser.error('grad_accum/batch_size must be positive; max_episodes must be nonnegative')
+    if (args.fine_start_min_m < 0
+            or args.fine_start_min_m >= args.fine_start_max_m
+            or args.fine_waypoint_m <= 0
+            or args.fine_waypoint_loss_weight < 0):
+        parser.error('fine-navigation distance/loss parameters are invalid')
     if (args.target_huber_delta_m <= 0
             or args.target_distance_loss_weight < 0
             or args.target_bearing_loss_weight < 0
