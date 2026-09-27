@@ -320,7 +320,7 @@ class NavCMTAgent:
 
     def _set_training_modes(self):
         stage = getattr(self.args, 'training_stage', 'joint')
-        if stage != 'action':
+        if stage not in ('action', 'fine'):
             self.vln_model.train()
             if stage == 'target' and getattr(
                     self.args, 'freeze_target_backbones', False):
@@ -331,16 +331,20 @@ class NavCMTAgent:
                 self.vision_model.train()
             return
 
-        # Keep the frozen predictor deterministic while action-only modules use
-        # their normal training-time dropout.
+        # Keep the frozen coarse predictor deterministic while stage-specific
+        # control modules use their normal training-time dropout.
         self.lang_model.eval()
         self.vision_model.eval()
         self.vln_model.eval()
-        self.vln_model_without_ddp.target_conditioning.train()
-        if hasattr(self.vln_model_without_ddp, 'multi_target_conditioning'):
-            self.vln_model_without_ddp.multi_target_conditioning.train()
+        if stage == 'action':
+            self.vln_model_without_ddp.target_conditioning.train()
+            if hasattr(self.vln_model_without_ddp, 'multi_target_conditioning'):
+                self.vln_model_without_ddp.multi_target_conditioning.train()
+            self.vln_model_without_ddp.decoder_2_progress_full.train()
+        else:
+            self.vln_model_without_ddp.fine_navigation_adapter.train()
+            self.vln_model_without_ddp.decoder_2_local_waypoint_full.train()
         self.vln_model_without_ddp.decoder_2_action_full.train()
-        self.vln_model_without_ddp.decoder_2_progress_full.train()
         if hasattr(self.vln_model_without_ddp, 'decoder_2_stop_full'):
             self.vln_model_without_ddp.decoder_2_stop_full.train()
 
