@@ -15,12 +15,18 @@ import torch.nn.functional as F
 from torch import nn
 
 
-TRAINING_STAGES = ("joint", "target", "action")
+TRAINING_STAGES = ("joint", "target", "action", "fine")
 ACTION_MODULE_NAMES = (
     "target_conditioning",
     "multi_target_conditioning",
     "decoder_2_action_full",
     "decoder_2_progress_full",
+    "decoder_2_stop_full",
+)
+FINE_MODULE_NAMES = (
+    "fine_navigation_adapter",
+    "decoder_2_local_waypoint_full",
+    "decoder_2_action_full",
     "decoder_2_stop_full",
 )
 
@@ -528,6 +534,47 @@ def candidate_recall(
     return (errors.min(dim=-1).values <= radius_m).float()
 
 
+class FineNavigationAdapter(nn.Module):
+    """Language-ground current motion/visual tokens for near-goal control."""
+
+    def __init__(self, d_model: int, num_heads: int = 4, dropout: float = 0.1) -> None:
+        super().__init__()
+        self.language_attention = nn.MultiheadAttention(
+            d_model, num_heads=num_heads, dropout=dropout, batch_first=True
+        )
+        self.attn_norm = nn.LayerNorm(d_model)
+        self.ffn = nn.Sequential(
+            nn.Linear(d_model, d_model),
+            nn.GELU(),
+            nn.Dropout(dropout),
+            nn.Linear(d_model, d_model),
+        )
+        self.ffn_norm = nn.LayerNorm(d_model)
+
+    def forward(self, motion_tokens: torch.Tensor, language_tokens: torch.Tensor,
+                language_mask: Optional[torch.Tensor] = None) -> torch.Tensor:
+        key_padding_mask = None
+        if language_mask is not None:
+            key_padding_mask = ~language_mask.bool()
+        delta, _ = self.language_attention(
+            query=motion_tokens, key=language_tokens, value=language_tokens,
+            key_padding_mask=key_padding_mask, need_weights=False,
+        )
+        motion_tokens = self.attn_norm(motion_tokens + delta)
+        return self.ffn_norm(motion_tokens + self.ffn(motion_tokens))
+
+
+def local_waypoint_target(current_positions: torch.Tensor,
+                          target_positions: torch.Tensor,
+                          map_meters: float, waypoint_meters: float) -> torch.Tensor:
+    """Return a clipped straight-line oracle waypoint in normalized coordinates."""
+    delta = target_positions - current_positions
+    distance_norm = torch.linalg.vector_norm(delta, dim=-1, keepdim=True)
+    distance_m = distance_norm * map_meters
+    step_m = torch.clamp(distance_m, max=waypoint_meters)
+    unit = delta / distance_norm.clamp_min(1e-6)
+    return (current_positions + unit * (step_m / map_meters)).clamp(0.0, 1.0)
+
 class TargetConditioning(nn.Module):
     """Inject a global target coordinate into motion tokens.
 
@@ -713,3 +760,11 @@ def configure_stage_parameters(
         for module in action_modules:
             for parameter in module.parameters():
                 parameter.requires_grad = True
+    elif stage == "fine":
+        for model in (language_model, vision_model, navigation_model):
+            for parameter in model.parameters():
+                parameter.requires_grad = False
+        for name in FINE_MODULE_NAMES:
+            if hasattr(navigation_model, name):
+                for parameter in getattr(navigation_model, name).parameters():
+                    parameter.requires_grad = True
