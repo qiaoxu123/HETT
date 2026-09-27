@@ -21,6 +21,7 @@ ACTION_MODULE_NAMES = (
     "multi_target_conditioning",
     "decoder_2_action_full",
     "decoder_2_progress_full",
+    "decoder_2_stop_full",
 )
 
 
@@ -592,6 +593,9 @@ def configure_stage_parameters(
                 parameter.requires_grad = False
         if hasattr(navigation_model, "multi_target_conditioning"):
             for parameter in navigation_model.multi_target_conditioning.parameters():
+                parameter.requires_grad = False
+        if hasattr(navigation_model, "decoder_2_stop_full"):
+            for parameter in navigation_model.decoder_2_stop_full.parameters():
                 parameter.requires_grad = False
     elif stage == "target":
         for module in action_modules:
