@@ -26,6 +26,22 @@ from torch.utils.data.distributed import DistributedSampler
 from torch.utils.data.dataloader import DataLoader
 
 
+# Metrics the agent records into `logs` that should be copied into the score
+# summary. The distance-bucketed entries are named <range>_<suffix> and are
+# skipped automatically when a bucket saw no samples.
+RANGE_BUCKET_NAMES = ('0_50', '50_100', '100_150', '150_200', '200_250', '250_inf')
+SCORE_METRIC_NAMES = (
+    'target_error_mean_m', 'target_hit5', 'target_hit10', 'target_hit20',
+    'candidate_oracle_error_mean_m', 'candidate_recall5',
+    'candidate_recall10', 'candidate_recall20',
+    'candidate_local_gate_mean',
+) + tuple(
+    f'range_{bucket}_{suffix}'
+    for bucket in RANGE_BUCKET_NAMES
+    for suffix in ('target_error_mean_m', 'hit20', 'oracle_error_mean_m', 'recall20')
+)
+
+
 def get_tokenizer(args):
     from transformers import AutoTokenizer
     tokenizer = AutoTokenizer.from_pretrained('bert-base-uncased')
@@ -156,23 +172,7 @@ def train(args, train_env, val_envs, rank=-1):
                 pred_results = agent_eval.get_results()
 
                 score_summary, result = env.eval_metrics(pred_results)
-                metric_names = [
-                    'target_error_mean_m', 'target_hit5', 'target_hit10', 'target_hit20',
-                    'candidate_oracle_error_mean_m', 'candidate_recall5',
-                    'candidate_recall10', 'candidate_recall20',
-                    'candidate_local_gate_mean',
-                ]
-                for bucket_name in (
-                    '0_50', '50_100', '100_150',
-                    '150_200', '200_250', '250_inf',
-                ):
-                    metric_names.extend([
-                        f'range_{bucket_name}_target_error_mean_m',
-                        f'range_{bucket_name}_hit20',
-                        f'range_{bucket_name}_oracle_error_mean_m',
-                        f'range_{bucket_name}_recall20',
-                    ])
-                for metric_name in metric_names:
+                for metric_name in SCORE_METRIC_NAMES:
                     if agent_eval.logs[metric_name]:
                         score_summary[metric_name] = float(
                             np.mean(agent_eval.logs[metric_name])
@@ -324,11 +324,7 @@ def train(args, train_env, val_envs, rank=-1):
                 pred_results = agent_eval.get_results()
 
                 score_summary, result = env.eval_metrics(pred_results)
-                for metric_name in (
-                    'target_error_mean_m', 'target_hit5', 'target_hit10', 'target_hit20',
-                    'candidate_oracle_error_mean_m', 'candidate_recall5',
-                    'candidate_recall10', 'candidate_recall20',
-                ):
+                for metric_name in SCORE_METRIC_NAMES:
                     if agent_eval.logs[metric_name]:
                         score_summary[metric_name] = float(np.mean(agent_eval.logs[metric_name]))
                 epoch_metrics['validation'][env_name] = score_summary
@@ -404,11 +400,7 @@ def valid(args, val_envs, rank=-1):
             pred_results = agent_eval.get_results()
 
             score_summary, result = env.eval_metrics(pred_results)
-            for metric_name in (
-                    'target_error_mean_m', 'target_hit5', 'target_hit10', 'target_hit20',
-                    'candidate_oracle_error_mean_m', 'candidate_recall5',
-                    'candidate_recall10', 'candidate_recall20',
-                ):
+            for metric_name in SCORE_METRIC_NAMES:
                 if agent_eval.logs[metric_name]:
                     score_summary[metric_name] = float(np.mean(agent_eval.logs[metric_name]))
             with open(os.path.join(GOAL_PREDICTOR_CHECKPOINT_DIR, env_name + '_metrics.json'), 'w') as stream:
