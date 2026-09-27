@@ -4,6 +4,7 @@ import torch
 from torch import nn
 
 from multiagent.two_stage import (
+    SparseQuadtreeBeliefHead,
     TargetConditioning,
     configure_stage_parameters,
     coordinate_gt_probability,
@@ -141,3 +142,51 @@ def test_action_optimizer_cannot_mutate_frozen_predictor():
     assert not torch.equal(
         navigation.decoder_2_action_full.weight.detach(), trainable_before
     )
+
+
+def test_sparse_quadtree_belief_shapes_and_bounds():
+    torch.manual_seed(0)
+    head = SparseQuadtreeBeliefHead(
+        d_model=8,
+        depth=4,
+        topk=3,
+        hidden_dim=16,
+    )
+    context = torch.randn(2, 8)
+    truth = torch.tensor([[0.1, 0.9], [0.8, 0.2]])
+    output = head(context, truth=truth)
+
+    assert output.coordinate.shape == (2, 2)
+    assert output.leaf_centers.shape == (2, 3, 2)
+    assert output.leaf_probs.shape == (2, 3)
+    assert output.hierarchy_loss is not None
+    assert torch.isfinite(output.hierarchy_loss)
+    assert torch.all(output.coordinate >= 0)
+    assert torch.all(output.coordinate <= 1)
+    assert torch.allclose(
+        output.leaf_probs.sum(dim=-1),
+        torch.ones(2),
+        atol=1e-6,
+    )
+
+
+def test_sparse_quadtree_teacher_path_reaches_expected_leaf_center():
+    head = SparseQuadtreeBeliefHead(
+        d_model=4,
+        depth=3,
+        topk=1,
+        hidden_dim=8,
+    )
+    truth = torch.tensor([[0.90, 0.10]])
+    center = torch.full((1, 2), 0.5)
+    size = torch.ones(1)
+    for _ in range(head.depth):
+        children, child_sizes = head._children(center, size)
+        label = head._truth_child(truth, center)
+        center = children.gather(
+            1, label.view(1, 1, 1).expand(-1, -1, 2)
+        ).squeeze(1)
+        size = child_sizes.gather(1, label.view(1, 1)).squeeze(1)
+
+    # At depth 3 each leaf spans 1/8 of the map and its center must contain truth.
+    assert torch.all(torch.abs(center - truth) <= size.unsqueeze(-1) * 0.5)
