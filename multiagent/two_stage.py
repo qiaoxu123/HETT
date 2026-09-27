@@ -225,15 +225,20 @@ class CandidateBelief:
     topk_coordinates: torch.Tensor
     topk_probs: torch.Tensor
     topk_indices: torch.Tensor
+    global_logits: torch.Tensor
+    local_logits: torch.Tensor
+    local_gate: torch.Tensor
 
 
 class RelationalCandidateBeliefHead(nn.Module):
-    """Score sparse spatial candidates with token-level language grounding.
+    """Distance-aware global/local sparse target grounding.
 
-    The head keeps a small candidate set (typically 64 positions), lets every
-    candidate attend to all instruction tokens, predicts a local coordinate
-    offset, and returns the top-K refined hypotheses. The primary coordinate is
-    the refined top-1 candidate; hypotheses are intentionally not averaged.
+    The global branch only uses deployment-stable candidate geometry and full
+    instruction tokens.  The local branch consumes the multimodal candidate
+    tokens produced by ET (current RGB, pose, semantic map and history).
+    A deterministic distance gate gives far-away candidates more global weight
+    and nearby candidates more local evidence.  Top-K hypotheses are preserved
+    without averaging them into a single belief point.
     """
 
     def __init__(
@@ -243,23 +248,44 @@ class RelationalCandidateBeliefHead(nn.Module):
         hidden_dim: int = 256,
         topk: int = 4,
         max_offset: float = 0.0625,
+        map_meters: float = 410.0,
+        local_gate_center_m: float = 100.0,
+        local_gate_temperature_m: float = 30.0,
         dropout: float = 0.1,
     ) -> None:
         super().__init__()
         if topk < 1:
             raise ValueError("candidate topk must be positive")
+        if map_meters <= 0 or local_gate_temperature_m <= 0:
+            raise ValueError("map scale and local gate temperature must be positive")
         self.topk = topk
         self.max_offset = max_offset
-        self.geometry_proj = nn.Sequential(
+        self.map_meters = map_meters
+        self.local_gate_center_m = local_gate_center_m
+        self.local_gate_temperature_m = local_gate_temperature_m
+
+        self.global_geometry_proj = nn.Sequential(
             nn.Linear(7, d_model),
             nn.LayerNorm(d_model),
             nn.GELU(),
         )
-        self.language_attention = nn.MultiheadAttention(
+        self.local_geometry_proj = nn.Sequential(
+            nn.Linear(7, d_model),
+            nn.LayerNorm(d_model),
+            nn.GELU(),
+        )
+        self.global_language_attention = nn.MultiheadAttention(
             d_model, num_heads=num_heads, dropout=dropout, batch_first=True
         )
-        self.language_norm = nn.LayerNorm(d_model)
-        self.scorer = nn.Sequential(
+        self.global_norm = nn.LayerNorm(d_model)
+        self.local_norm = nn.LayerNorm(d_model)
+        self.global_scorer = nn.Sequential(
+            nn.Linear(d_model, hidden_dim),
+            nn.GELU(),
+            nn.Dropout(dropout),
+            nn.Linear(hidden_dim, 1),
+        )
+        self.local_scorer = nn.Sequential(
             nn.Linear(d_model, hidden_dim),
             nn.GELU(),
             nn.Dropout(dropout),
@@ -282,6 +308,21 @@ class RelationalCandidateBeliefHead(nn.Module):
         unit_delta = delta / distance.clamp_min(1e-6)
         return torch.cat((candidates, delta, distance, unit_delta), dim=-1)
 
+    def distance_local_gate(
+        self,
+        candidates: torch.Tensor,
+        current_positions: torch.Tensor,
+    ) -> torch.Tensor:
+        """Return local-evidence weight in [0, 1] for every candidate."""
+
+        distance_m = torch.linalg.vector_norm(
+            candidates - current_positions.unsqueeze(1), dim=-1
+        ) * self.map_meters
+        return torch.sigmoid(
+            (self.local_gate_center_m - distance_m)
+            / self.local_gate_temperature_m
+        )
+
     def forward(
         self,
         candidate_tokens: torch.Tensor,
@@ -289,23 +330,44 @@ class RelationalCandidateBeliefHead(nn.Module):
         language_tokens: torch.Tensor,
         current_positions: torch.Tensor,
         language_mask: Optional[torch.Tensor] = None,
+        global_candidate_tokens: Optional[torch.Tensor] = None,
     ) -> CandidateBelief:
-        candidate_tokens = candidate_tokens + self.geometry_proj(
-            self.geometry(candidates, current_positions)
+        geometry = self.geometry(candidates, current_positions)
+        if global_candidate_tokens is None:
+            global_candidate_tokens = candidate_tokens
+
+        global_tokens = (
+            global_candidate_tokens + self.global_geometry_proj(geometry)
         )
         key_padding_mask = None
         if language_mask is not None:
             key_padding_mask = ~language_mask.bool()
-        language_delta, _ = self.language_attention(
-            query=candidate_tokens,
+        language_delta, _ = self.global_language_attention(
+            query=global_tokens,
             key=language_tokens,
             value=language_tokens,
             key_padding_mask=key_padding_mask,
             need_weights=False,
         )
-        grounded = self.language_norm(candidate_tokens + language_delta)
-        logits = self.scorer(grounded).squeeze(-1)
-        offsets = self.offset_head(grounded) * self.max_offset
+        global_grounded = self.global_norm(global_tokens + language_delta)
+
+        local_grounded = self.local_norm(
+            candidate_tokens + self.local_geometry_proj(geometry)
+        )
+
+        global_logits = self.global_scorer(global_grounded).squeeze(-1)
+        local_logits = self.local_scorer(local_grounded).squeeze(-1)
+        local_gate = self.distance_local_gate(candidates, current_positions)
+        logits = (
+            (1.0 - local_gate) * global_logits
+            + local_gate * local_logits
+        )
+
+        fused_tokens = (
+            (1.0 - local_gate.unsqueeze(-1)) * global_grounded
+            + local_gate.unsqueeze(-1) * local_grounded
+        )
+        offsets = self.offset_head(fused_tokens) * self.max_offset
         refined = (candidates + offsets).clamp(0.0, 1.0)
 
         keep = min(self.topk, logits.shape[1])
@@ -322,6 +384,9 @@ class RelationalCandidateBeliefHead(nn.Module):
             topk_coordinates=topk_coordinates,
             topk_probs=topk_probs,
             topk_indices=topk_indices,
+            global_logits=global_logits,
+            local_logits=local_logits,
+            local_gate=local_gate,
         )
 
 
@@ -392,6 +457,7 @@ def candidate_supervision(
     truth: torch.Tensor,
     map_meters: float,
     huber_delta_m: float,
+    sample_weights: Optional[torch.Tensor] = None,
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     """Return candidate CE, GT-candidate offset loss and nearest candidate id."""
 
@@ -399,16 +465,22 @@ def candidate_supervision(
         base_candidates - truth.unsqueeze(1), dim=-1
     )
     labels = distances.argmin(dim=-1)
-    classification = F.cross_entropy(logits, labels, reduction="sum")
+    classification_per_sample = F.cross_entropy(
+        logits, labels, reduction="none"
+    )
     selected = refined_coordinates.gather(
         1, labels.view(-1, 1, 1).expand(-1, 1, 2)
     ).squeeze(1)
-    offset = F.huber_loss(
+    offset_per_sample = F.huber_loss(
         selected * map_meters,
         truth * map_meters,
         delta=huber_delta_m,
-        reduction="sum",
-    )
+        reduction="none",
+    ).sum(dim=-1)
+    if sample_weights is None:
+        sample_weights = torch.ones_like(classification_per_sample)
+    classification = (classification_per_sample * sample_weights).sum()
+    offset = (offset_per_sample * sample_weights).sum()
     return classification, offset, labels
 
 
@@ -416,6 +488,7 @@ def candidate_ranking_loss(
     logits: torch.Tensor,
     labels: torch.Tensor,
     margin: float = 0.2,
+    sample_weights: Optional[torch.Tensor] = None,
 ) -> torch.Tensor:
     """Margin-rank the GT-associated candidate above the hardest negative.
 
@@ -434,7 +507,10 @@ def candidate_ranking_loss(
     hardest_negative = logits.masked_fill(
         ~negative_mask, -torch.inf
     ).max(dim=-1).values
-    return F.relu(margin - positive + hardest_negative).sum()
+    per_sample = F.relu(margin - positive + hardest_negative)
+    if sample_weights is not None:
+        per_sample = per_sample * sample_weights
+    return per_sample.sum()
 
 
 def candidate_recall(
