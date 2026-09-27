@@ -8,6 +8,7 @@ from multiagent.two_stage import (
     RelationalCandidateBeliefHead,
     SparseQuadtreeBeliefHead,
     TargetConditioning,
+    candidate_ranking_loss,
     candidate_recall,
     candidate_supervision,
     configure_stage_parameters,
@@ -49,6 +50,9 @@ def test_target_losses_are_zero_at_truth_and_use_metre_scale():
 def test_action_coordinate_curriculum_reaches_configured_endpoints():
     assert coordinate_gt_probability(1, 10, 1.0, 0.1) == 1.0
     assert abs(coordinate_gt_probability(10, 10, 1.0, 0.1) - 0.1) < 1e-8
+    assert coordinate_gt_probability(1, 3, 1.0, 0.1) == 1.0
+    assert abs(coordinate_gt_probability(2, 3, 1.0, 0.1) - 0.55) < 1e-8
+    assert abs(coordinate_gt_probability(3, 3, 1.0, 0.1) - 0.1) < 1e-8
 
 
 def test_selected_prediction_is_detached_and_mask_selects_truth():
@@ -255,3 +259,21 @@ def test_multi_hypothesis_conditioning_uses_multiple_targets():
     out_b = module(motion, targets_b, probs, current)
     assert out_a.shape == motion.shape
     assert not torch.allclose(out_a, out_b)
+
+
+def test_candidate_ranking_loss_uses_hardest_negative():
+    labels = torch.tensor([0, 2])
+    good_logits = torch.tensor([
+        [2.0, 0.4, 0.3],
+        [0.1, 0.5, 1.8],
+    ])
+    bad_logits = torch.tensor([
+        [0.6, 0.9, 0.1],
+        [0.2, 1.1, 0.7],
+    ])
+
+    good = candidate_ranking_loss(good_logits, labels, margin=0.2)
+    bad = candidate_ranking_loss(bad_logits, labels, margin=0.2)
+
+    assert good.item() == 0.0
+    assert bad.item() > 0.0
