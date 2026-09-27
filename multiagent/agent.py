@@ -503,20 +503,35 @@ class NavCMTAgent:
 
         if getattr(self.args, 'target_representation', 'point') == 'candidates':
             candidate_grid = self.args.candidate_grid_size
-            global_position = np.stack([
+            base_candidates = np.stack([
                 np.array([(i + 0.5) / candidate_grid, (j + 0.5) / candidate_grid],
                          dtype=np.float32)
                 for i in range(candidate_grid)
                 for j in range(candidate_grid)
             ])
+            candidate_batches = []
+            for ob in obs:
+                candidates_i = base_candidates.copy()
+                landmark_centroids = ob.get('landmark_centroids', np.zeros((0, 2), dtype=np.float32))
+                # Preserve global coverage while snapping the nearest coarse cell
+                # to each semantic landmark centroid.
+                for centroid in landmark_centroids:
+                    if not np.isfinite(centroid).all():
+                        continue
+                    centroid = np.clip(centroid.astype(np.float32), 0.0, 1.0)
+                    nearest = np.linalg.norm(candidates_i - centroid[None, :], axis=1).argmin()
+                    candidates_i[nearest] = centroid
+                candidate_batches.append(candidates_i)
+            global_positions = torch.from_numpy(
+                np.stack(candidate_batches).astype(np.float32)
+            ).cuda()
         else:
             global_position = np.stack([np.array([i, j], dtype=np.float32)
                                         for i in range(self.args.grid_size)
                                         for j in range(self.args.grid_size)]) / self.args.grid_size
-
-        global_positions = torch.from_numpy(np.stack([global_position
-                                                      for _ in range(batch_size)
-                                                      ])).cuda()
+            global_positions = torch.from_numpy(np.stack([global_position
+                                                          for _ in range(batch_size)
+                                                          ])).cuda()
 
         for i, ob in enumerate(obs):
             traj[i]['goal'] = ob['goal']
