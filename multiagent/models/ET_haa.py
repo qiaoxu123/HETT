@@ -10,6 +10,7 @@ import numpy as np
 
 from .goal_predictor import MapEncoder
 from multiagent.two_stage import (
+    FineNavigationAdapter,
     MultiHypothesisConditioning,
     RelationalCandidateBeliefHead,
     SparseQuadtreeBeliefHead,
@@ -187,6 +188,13 @@ class ET(nn.Module):
             nn.Dropout(0.1),
             nn.Linear(128, 1),
         )
+        self.decoder_2_local_waypoint_full = nn.Sequential(
+            nn.Linear(self.args.demb, 256),
+            nn.GELU(),
+            nn.Dropout(0.1),
+            nn.Linear(256, 2),
+            nn.Tanh(),
+        )
 
         # target logits head: 给每个候选位置打分，输出 [B, N, 1]
         self.decoder_2_logits_full = nn.Sequential(
@@ -255,6 +263,11 @@ class ET(nn.Module):
             num_heads=candidate_heads,
             dropout=self.args.dropout_transformer_encoder,
         )
+        self.fine_navigation_adapter = FineNavigationAdapter(
+            d_model=self.args.demb,
+            num_heads=candidate_heads,
+            dropout=self.args.dropout_transformer_encoder,
+        )
         self.quadtree_belief = SparseQuadtreeBeliefHead(
             d_model=self.args.demb,
             depth=getattr(self.args, 'quadtree_depth', 5),
@@ -272,6 +285,8 @@ class ET(nn.Module):
         self.last_candidate_global_logits = None
         self.last_candidate_local_logits = None
         self.last_candidate_local_gate = None
+        self.last_local_waypoint = None
+        self.last_local_waypoint_offset = None
 
     def forward(self, **inputs):
         """
@@ -463,7 +478,7 @@ class ET(nn.Module):
             self.last_quadtree_loss = quadtree.hierarchy_loss
             self.last_quadtree_leaf_centers = quadtree.leaf_centers
             self.last_quadtree_leaf_probs = quadtree.leaf_probs
-        if training_stage == 'action':
+        if training_stage in ('action', 'fine'):
             current_positions = inputs['directions'][:, -1, 2:4]
             if (getattr(self.args, 'target_representation', 'point') == 'candidates'
                     and self.last_topk_coordinates is not None):
@@ -471,7 +486,9 @@ class ET(nn.Module):
                 target_probs = self.last_topk_probs.detach()
                 truth = inputs.get('target_coordinates')
                 use_truth = inputs.get('target_coordinate_mask')
-                if truth is not None and use_truth is not None and use_truth.any():
+                if (training_stage == 'action'
+                        and truth is not None and use_truth is not None
+                        and use_truth.any()):
                     mask = use_truth.bool()
                     target_coordinates = target_coordinates.clone()
                     target_probs = target_probs.clone()
@@ -500,15 +517,34 @@ class ET(nn.Module):
                     current_positions,
                 )
 
+        if training_stage == 'fine':
+            motion_tokens = self.fine_navigation_adapter(
+                motion_tokens,
+                emb_lang,
+                language_mask=inputs.get('lang_mask'),
+            )
+
         action_decoder_input = motion_tokens[:, 0]             # [B, d_model]
         decoder_input = motion_tokens[:, 1]                    # [B, d_model]
+
+        if training_stage == 'fine':
+            waypoint_offset = self.decoder_2_local_waypoint_full(decoder_input)
+            waypoint_scale = getattr(self.args, 'fine_waypoint_m', 20.0) / self.args.map_meters
+            waypoint_offset = waypoint_offset * waypoint_scale
+            self.last_local_waypoint_offset = waypoint_offset
+            self.last_local_waypoint = (
+                current_positions + waypoint_offset
+            ).clamp(0.0, 1.0)
+        else:
+            self.last_local_waypoint_offset = None
+            self.last_local_waypoint = None
 
         output = self.decoder_2_action_full(action_decoder_input) # [B, 2] 归一化方向向量
         norm = torch.norm(output, dim=1, keepdim=True) + 1e-6     # 避免除零
         direction = output / norm
 
         # progress or stop probability: [B, 1]
-        if training_stage == 'action' and getattr(self.args, 'use_stop_head', False):
+        if training_stage in ('action', 'fine') and getattr(self.args, 'use_stop_head', False):
             progress = torch.sigmoid(self.decoder_2_stop_full(decoder_input))
         else:
             progress = self.decoder_2_progress_full(decoder_input)
