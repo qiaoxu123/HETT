@@ -277,3 +277,60 @@ def test_candidate_ranking_loss_uses_hardest_negative():
 
     assert good.item() == 0.0
     assert bad.item() > 0.0
+
+
+def test_distance_aware_candidate_gate_prefers_global_when_far():
+    head = RelationalCandidateBeliefHead(
+        d_model=8,
+        num_heads=2,
+        hidden_dim=16,
+        topk=2,
+        map_meters=410.0,
+        local_gate_center_m=100.0,
+        local_gate_temperature_m=30.0,
+        dropout=0.0,
+    )
+    current = torch.tensor([[0.5, 0.5]])
+    candidates = torch.tensor([[
+        [0.52, 0.50],  # about 8 m away
+        [0.95, 0.95],  # about 261 m away
+    ]])
+    gate = head.distance_local_gate(candidates, current)
+    assert gate.shape == (1, 2)
+    assert gate[0, 0] > gate[0, 1]
+    assert gate[0, 0] > 0.8
+    assert gate[0, 1] < 0.1
+
+
+def test_far_range_sample_weight_scales_candidate_losses():
+    logits = torch.tensor([
+        [1.0, 0.0],
+        [1.0, 0.0],
+    ])
+    base = torch.tensor([
+        [[0.1, 0.1], [0.9, 0.9]],
+        [[0.1, 0.1], [0.9, 0.9]],
+    ])
+    refined = base.clone()
+    truth = torch.tensor([
+        [0.12, 0.10],
+        [0.12, 0.10],
+    ])
+    unweighted_cls, unweighted_offset, labels = candidate_supervision(
+        logits, refined, base, truth, 410.0, 10.0
+    )
+    weights = torch.tensor([1.0, 2.0])
+    weighted_cls, weighted_offset, _ = candidate_supervision(
+        logits, refined, base, truth, 410.0, 10.0,
+        sample_weights=weights,
+    )
+    unweighted_rank = candidate_ranking_loss(
+        logits, labels, margin=2.0
+    )
+    weighted_rank = candidate_ranking_loss(
+        logits, labels, margin=2.0,
+        sample_weights=weights,
+    )
+    assert weighted_cls > unweighted_cls
+    assert weighted_offset > unweighted_offset
+    assert weighted_rank > unweighted_rank
