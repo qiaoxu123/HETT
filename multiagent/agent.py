@@ -343,8 +343,9 @@ class NavCMTAgent:
             self.vln_model_without_ddp.decoder_2_progress_full.train()
         else:
             self.vln_model_without_ddp.fine_navigation_adapter.train()
-            self.vln_model_without_ddp.decoder_2_local_waypoint_full.train()
-        self.vln_model_without_ddp.decoder_2_action_full.train()
+            self.vln_model_without_ddp.decoder_2_local_control_full.train()
+        if stage == 'action':
+            self.vln_model_without_ddp.decoder_2_action_full.train()
         if hasattr(self.vln_model_without_ddp, 'decoder_2_stop_full'):
             self.vln_model_without_ddp.decoder_2_stop_full.train()
 
