@@ -4,6 +4,7 @@ import torch
 from torch import nn
 
 from multiagent.two_stage import (
+    FineNavigationAdapter,
     MultiHypothesisConditioning,
     RelationalCandidateBeliefHead,
     SparseQuadtreeBeliefHead,
@@ -13,6 +14,7 @@ from multiagent.two_stage import (
     candidate_supervision,
     configure_stage_parameters,
     coordinate_gt_probability,
+    local_waypoint_target,
     select_action_coordinates,
     target_coordinate_losses,
 )
@@ -334,3 +336,97 @@ def test_far_range_sample_weight_scales_candidate_losses():
     assert weighted_cls > unweighted_cls
     assert weighted_offset > unweighted_offset
     assert weighted_rank > unweighted_rank
+
+
+def test_local_waypoint_targets_success_region_not_goal_center():
+    current = torch.tensor([[0.0, 0.0]])
+    goal = torch.tensor([[100.0 / 410.0, 0.0]])
+    waypoint = local_waypoint_target(
+        current,
+        goal,
+        map_meters=410.0,
+        waypoint_meters=20.0,
+        success_radius_m=20.0,
+    )
+    # From 100 m away, take exactly a 20 m receding-horizon step.
+    assert torch.allclose(
+        waypoint,
+        torch.tensor([[20.0 / 410.0, 0.0]]),
+        atol=1e-6,
+    )
+
+    near = torch.tensor([[15.0 / 410.0, 0.0]])
+    near_waypoint = local_waypoint_target(
+        near,
+        goal=torch.tensor([[0.0, 0.0]]) if False else current,
+        map_meters=410.0,
+        waypoint_meters=20.0,
+        success_radius_m=20.0,
+    )
+
+
+def test_local_waypoint_stays_put_inside_success_region():
+    current = torch.tensor([[0.5, 0.5]])
+    goal = current + torch.tensor([[10.0 / 410.0, 0.0]])
+    waypoint = local_waypoint_target(
+        current,
+        goal,
+        map_meters=410.0,
+        waypoint_meters=20.0,
+        success_radius_m=20.0,
+    )
+    assert torch.allclose(waypoint, current, atol=1e-6)
+
+
+def test_fine_navigation_adapter_is_language_sensitive():
+    torch.manual_seed(0)
+    adapter = FineNavigationAdapter(
+        d_model=8, num_heads=2, dropout=0.0
+    ).eval()
+    motion = torch.randn(1, 2, 8)
+    lang_a = torch.randn(1, 5, 8)
+    lang_b = lang_a.clone()
+    lang_b[:, 2] += 3.0
+    mask = torch.ones(1, 5, dtype=torch.long)
+    out_a = adapter(motion, lang_a, mask)
+    out_b = adapter(motion, lang_b, mask)
+    assert out_a.shape == motion.shape
+    assert not torch.allclose(out_a, out_b)
+
+
+def test_fine_stage_owns_only_fine_control_modules():
+    class TinyFineModel(nn.Module):
+        def __init__(self):
+            super().__init__()
+            self.backbone = nn.Linear(4, 4)
+            self.candidate_belief = nn.Linear(4, 4)
+            self.multi_target_conditioning = nn.Linear(4, 4)
+            self.fine_navigation_adapter = nn.Linear(4, 4)
+            self.decoder_2_local_waypoint_full = nn.Linear(4, 2)
+            self.decoder_2_action_full = nn.Linear(4, 2)
+            self.decoder_2_stop_full = nn.Linear(4, 1)
+
+    language = nn.Linear(4, 4)
+    vision = nn.Linear(4, 4)
+    navigation = TinyFineModel()
+    configure_stage_parameters(language, vision, navigation, 'fine')
+
+    assert not any(p.requires_grad for p in language.parameters())
+    assert not any(p.requires_grad for p in vision.parameters())
+    assert not any(p.requires_grad for p in navigation.backbone.parameters())
+    assert not any(p.requires_grad for p in navigation.candidate_belief.parameters())
+    assert not any(
+        p.requires_grad for p in navigation.multi_target_conditioning.parameters()
+    )
+    assert all(
+        p.requires_grad for p in navigation.fine_navigation_adapter.parameters()
+    )
+    assert all(
+        p.requires_grad for p in navigation.decoder_2_local_waypoint_full.parameters()
+    )
+    assert all(
+        p.requires_grad for p in navigation.decoder_2_action_full.parameters()
+    )
+    assert all(
+        p.requires_grad for p in navigation.decoder_2_stop_full.parameters()
+    )
