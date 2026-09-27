@@ -587,6 +587,12 @@ def configure_stage_parameters(
         if hasattr(navigation_model, "quadtree_belief"):
             for parameter in navigation_model.quadtree_belief.parameters():
                 parameter.requires_grad = False
+        if hasattr(navigation_model, "candidate_belief"):
+            for parameter in navigation_model.candidate_belief.parameters():
+                parameter.requires_grad = False
+        if hasattr(navigation_model, "multi_target_conditioning"):
+            for parameter in navigation_model.multi_target_conditioning.parameters():
+                parameter.requires_grad = False
     elif stage == "target":
         for module in action_modules:
             for parameter in module.parameters():
