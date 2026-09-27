@@ -1063,6 +1063,7 @@ class NavCMTAgent:
                 required_missing = [k for k in missing if not (
                     (self.args.disable_task_interaction and k.startswith('task_interaction.'))
                     or k.startswith('target_conditioning.')
+                    or k.startswith('quadtree_belief.')
                 )]
                 if required_missing and self.args.mode != 'train':
                     raise ValueError(f'{name}: checkpoint is missing parameters: {required_missing}')
