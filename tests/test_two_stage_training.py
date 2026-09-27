@@ -393,7 +393,7 @@ def test_fine_stage_owns_only_fine_control_modules():
             self.candidate_belief = nn.Linear(4, 4)
             self.multi_target_conditioning = nn.Linear(4, 4)
             self.fine_navigation_adapter = nn.Linear(4, 4)
-            self.decoder_2_local_waypoint_full = nn.Linear(4, 2)
+            self.decoder_2_local_control_full = nn.Linear(4, 3)
             self.decoder_2_action_full = nn.Linear(4, 2)
             self.decoder_2_stop_full = nn.Linear(4, 1)
 
@@ -413,11 +413,31 @@ def test_fine_stage_owns_only_fine_control_modules():
         p.requires_grad for p in navigation.fine_navigation_adapter.parameters()
     )
     assert all(
-        p.requires_grad for p in navigation.decoder_2_local_waypoint_full.parameters()
+        p.requires_grad for p in navigation.decoder_2_local_control_full.parameters()
     )
-    assert all(
+    assert not any(
         p.requires_grad for p in navigation.decoder_2_action_full.parameters()
     )
     assert all(
         p.requires_grad for p in navigation.decoder_2_stop_full.parameters()
     )
+
+
+def test_weighted_stop_loss_penalizes_positive_miss_more():
+    logit = torch.tensor([-2.0])
+    positive = torch.tensor([1.0])
+    negative = torch.tensor([0.0])
+    pos_loss = F.binary_cross_entropy_with_logits(
+        logit, positive, pos_weight=torch.tensor([15.0])
+    )
+    neg_loss = F.binary_cross_entropy_with_logits(logit, negative)
+    assert pos_loss > neg_loss * 10.0
+
+
+def test_ego_heading_vector_matches_relative_angle_convention():
+    # Fine control uses [sin(theta), cos(theta)] so atan2(first, second)
+    # recovers the relative heading used by the simulator.
+    theta = torch.tensor([0.0, 0.5, -1.0])
+    vector = torch.stack((torch.sin(theta), torch.cos(theta)), dim=-1)
+    recovered = torch.atan2(vector[:, 0], vector[:, 1])
+    assert torch.allclose(recovered, theta, atol=1e-6)
