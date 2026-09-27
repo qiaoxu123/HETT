@@ -20,7 +20,7 @@ cd "$(dirname "$0")"
     --action_controller residual \
     --use_stop_head \
     --stop_distance_m 15 \
-    --stop_threshold 0.5 \
+    --stop_threshold 0.8 \
     --progress_loss_weight 1.0 \
     --checkpoint "$target_checkpoint" \
     --reset_epoch_on_load \
