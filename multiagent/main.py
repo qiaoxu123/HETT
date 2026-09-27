@@ -20,6 +20,7 @@ from utils.distributed import all_gather, merge_dist_results
 from agent import NavCMTAgent
 from env import CityNavBatch
 from parser import parse_args
+from multiagent.two_stage import coordinate_gt_probability
 
 from torch.utils.data.distributed import DistributedSampler
 from torch.utils.data.dataloader import DataLoader
@@ -280,7 +281,21 @@ def train(args, train_env, val_envs, rank=-1):
                                  quadtree_loss=quadtree_loss,
                                  candidate_ranking_loss=candidate_ranking_loss,
                                  target_predict_loss=target_predict_loss,
+                                 gt_coordinate_probability=(
+                                     coordinate_gt_probability(
+                                         idx + 1, args.epochs,
+                                         args.action_gt_coordinate_start,
+                                         args.action_gt_coordinate_end,
+                                     )
+                                     if args.training_stage == 'action' else None
+                                 ),
                                  validation={})
+            if args.training_stage == 'action':
+                write_to_record_file(
+                    "\ngt_coordinate_probability %.4f (epoch %d/%d)" % (
+                        epoch_metrics['gt_coordinate_probability'], idx + 1, args.epochs),
+                    record_file,
+                )
             # Reuse the trained modules: avoid a second BERT/Darknet/ET on one GPU.
             agent_eval = agent
             for env_name, env in val_envs.items():
