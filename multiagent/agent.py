@@ -335,6 +335,8 @@ class NavCMTAgent:
         self.vision_model.eval()
         self.vln_model.eval()
         self.vln_model_without_ddp.target_conditioning.train()
+        if hasattr(self.vln_model_without_ddp, 'multi_target_conditioning'):
+            self.vln_model_without_ddp.multi_target_conditioning.train()
         self.vln_model_without_ddp.decoder_2_action_full.train()
         self.vln_model_without_ddp.decoder_2_progress_full.train()
 
