@@ -574,6 +574,7 @@ class NavCMTAgent:
         quadtree_loss = torch.tensor(0.).cuda()
         candidate_rank_loss = torch.tensor(0.).cuda()
         fine_waypoint_loss = torch.tensor(0.).cuda()
+        fine_distance_loss = torch.tensor(0.).cuda()
         fine_waypoint_error_sum_m = 0.0
         fine_waypoint_count = 0
         fine_stop_positive_count = 0
@@ -735,8 +736,11 @@ class NavCMTAgent:
                 pred_local_waypoint = getattr(
                     self.vln_model_without_ddp, 'last_local_waypoint', None
                 )
-                if pred_local_waypoint is None:
-                    raise RuntimeError('fine stage requires last_local_waypoint')
+                pred_step_distance_m = getattr(
+                    self.vln_model_without_ddp, 'last_fine_step_distance_m', None
+                )
+                if pred_local_waypoint is None or pred_step_distance_m is None:
+                    raise RuntimeError('fine stage requires local control outputs')
                 expert_local_waypoint = local_waypoint_target(
                     current_pos,
                     gt_goal,
@@ -746,13 +750,16 @@ class NavCMTAgent:
                 )
                 active_fine = torch.from_numpy(~ended).to(gt_goal.device)
                 if active_fine.any():
-                    per_coord = F.huber_loss(
-                        pred_local_waypoint[active_fine] * self.args.map_meters,
-                        expert_local_waypoint[active_fine] * self.args.map_meters,
-                        delta=5.0,
+                    expert_step_distance_m = torch.linalg.vector_norm(
+                        (expert_local_waypoint[active_fine]
+                         - current_pos[active_fine]) * self.args.map_meters,
+                        dim=-1,
+                    )
+                    fine_distance_loss += F.smooth_l1_loss(
+                        pred_step_distance_m[active_fine],
+                        expert_step_distance_m,
                         reduction='sum',
                     )
-                    fine_waypoint_loss += per_coord
                     wp_errors = torch.linalg.vector_norm(
                         (pred_local_waypoint[active_fine].detach()
                          - expert_local_waypoint[active_fine])
@@ -774,17 +781,22 @@ class NavCMTAgent:
             # pred_direction = output
             # pred_progress = progress
 
-            # Predicted progress
-            pred_progress_t = pred_progress.cpu().detach().numpy()
+            # Predicted progress / stop probability. Fine stage returns a raw
+            # stop logit so BCEWithLogitsLoss stays numerically stable.
+            if training_stage == 'fine' and getattr(self.args, 'use_stop_head', False):
+                pred_progress_t = torch.sigmoid(
+                    pred_progress
+                ).cpu().detach().numpy()
+            else:
+                pred_progress_t = pred_progress.cpu().detach().numpy()
 
             # Predicted waypoint or residual steering angle.
             nt_direct = torch.atan2(pred_direction[:, 0], pred_direction[:, 1])
             at_direction = nt_direct.cpu().detach().numpy()
             geometric_direction = None
             executed_direction = at_direction
-            if (training_stage in ('action', 'fine')
-                    and getattr(self.args, 'action_controller', 'legacy')
-                    in ('residual', 'fine_waypoint')):
+            if (training_stage == 'action'
+                    and getattr(self.args, 'action_controller', 'legacy') == 'residual'):
                 target_delta = action_target_coordinates - current_pos
                 target_bearing = torch.atan2(-target_delta[:, 1], target_delta[:, 0])
                 yaw = current_direct.squeeze(-1)
@@ -824,9 +836,8 @@ class NavCMTAgent:
                     true_direction = torch.tensor(
                         gt_direction[i], device=gt_goal.device
                     )
-                    if (training_stage in ('action', 'fine')
-                            and getattr(self.args, 'action_controller', 'legacy')
-                            in ('residual', 'fine_waypoint')
+                    if (training_stage == 'action'
+                            and getattr(self.args, 'action_controller', 'legacy') == 'residual'
                             and geometric_direction is not None):
                         true_direction = torch.atan2(
                             torch.sin(true_direction - geometric_direction[i]),
@@ -852,14 +863,24 @@ class NavCMTAgent:
                             gt_stop = (
                                 gt_distance_m <= self.args.stop_distance_m
                             ).float().view(-1)
-                            progress_loss += F.binary_cross_entropy(
-                                pred_progress[i].view(-1),
-                                gt_stop,
-                                reduction='sum',
-                            )
                             if training_stage == 'fine':
+                                pos_weight = pred_progress.new_tensor(
+                                    [self.args.fine_stop_pos_weight]
+                                )
+                                progress_loss += F.binary_cross_entropy_with_logits(
+                                    pred_progress[i].view(-1),
+                                    gt_stop,
+                                    pos_weight=pos_weight,
+                                    reduction='sum',
+                                )
                                 fine_stop_positive_count += int(gt_stop.item() > 0.5)
                                 fine_stop_label_count += 1
+                            else:
+                                progress_loss += F.binary_cross_entropy(
+                                    pred_progress[i].view(-1),
+                                    gt_stop,
+                                    reduction='sum',
+                                )
                         else:
                             progress_loss += self.progress_regression(
                                 pred_progress[i].view(-1),
@@ -1133,7 +1154,24 @@ class NavCMTAgent:
                     stage1_ended[i] = True
                     if abs(a_t[i]) < np.pi / 12:
                         stage2_step += 1
-                        poses[i] = _moved_pose(poses[i], *Action(5, 0, 0))
+                        forward_m = 5.0
+                        if training_stage == 'fine':
+                            predicted_step = getattr(
+                                self.vln_model_without_ddp,
+                                'last_fine_step_distance_m',
+                                None,
+                            )
+                            if predicted_step is not None:
+                                forward_m = float(
+                                    torch.clamp(
+                                        predicted_step[i].detach(),
+                                        min=1.0,
+                                        max=5.0,
+                                    ).item()
+                                )
+                        poses[i] = _moved_pose(
+                            poses[i], *Action(forward_m, 0, 0)
+                        )
                     else:
                         stage2_rotate += 1
                         poses[i] = _moved_pose(poses[i], *Action(0, a_t[i], 0))
@@ -1252,9 +1290,8 @@ class NavCMTAgent:
             elif training_stage == 'fine':
                 ml_loss = (
                     self.args.direction_loss_weight * direction_loss
+                    + self.args.fine_distance_loss_weight * fine_distance_loss
                     + self.args.progress_loss_weight * progress_loss
-                    + self.args.fine_waypoint_loss_weight * fine_waypoint_loss
-                    / self.args.map_meters
                 )
                 loss_normalizer = max(fine_waypoint_count, 1)
             else:
@@ -1302,6 +1339,9 @@ class NavCMTAgent:
             )
             self.logs['fine_waypoint_loss'].append(
                 scalar(fine_waypoint_loss * train_ml / loss_normalizer)
+            )
+            self.logs['fine_distance_loss'].append(
+                scalar(fine_distance_loss * train_ml / loss_normalizer)
             )
             self.logs['IL_loss'].append(
                 scalar(ml_loss * train_ml / loss_normalizer)
@@ -1442,6 +1482,7 @@ class NavCMTAgent:
                     or k.startswith('decoder_2_stop_full.')
                     or k.startswith('fine_navigation_adapter.')
                     or k.startswith('decoder_2_local_waypoint_full.')
+                    or k.startswith('decoder_2_local_control_full.')
                 )]
                 if required_missing and self.args.mode != 'train':
                     raise ValueError(f'{name}: checkpoint is missing parameters: {required_missing}')
