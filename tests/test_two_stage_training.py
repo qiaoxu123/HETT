@@ -355,15 +355,6 @@ def test_local_waypoint_targets_success_region_not_goal_center():
         atol=1e-6,
     )
 
-    near = torch.tensor([[15.0 / 410.0, 0.0]])
-    near_waypoint = local_waypoint_target(
-        near,
-        goal=torch.tensor([[0.0, 0.0]]) if False else current,
-        map_meters=410.0,
-        waypoint_meters=20.0,
-        success_radius_m=20.0,
-    )
-
 
 def test_local_waypoint_stays_put_inside_success_region():
     current = torch.tensor([[0.5, 0.5]])
