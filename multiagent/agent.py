@@ -30,6 +30,8 @@ from multiagent.space import Pose4D, Point2D, Point3D
 from multiagent.teacher.algorithm.lookahead import lookahead_discrete_action
 from multiagent.teacher.trajectory import _moved_pose
 from multiagent.two_stage import (
+    candidate_recall,
+    candidate_supervision,
     coordinate_gt_probability,
     configure_stage_parameters,
     select_action_coordinates,
@@ -497,9 +499,18 @@ class NavCMTAgent:
         position_t = torch.from_numpy(np.array(current_positions, dtype=np.float32))
         traj = [defaultdict(list) for ob in obs]
 
-        global_position = np.stack([np.array([i, j], dtype=np.float32)
-                                    for i in range(self.args.grid_size)
-                                    for j in range(self.args.grid_size)]) / self.args.grid_size
+        if getattr(self.args, 'target_representation', 'point') == 'candidates':
+            candidate_grid = self.args.candidate_grid_size
+            global_position = np.stack([
+                np.array([(i + 0.5) / candidate_grid, (j + 0.5) / candidate_grid],
+                         dtype=np.float32)
+                for i in range(candidate_grid)
+                for j in range(candidate_grid)
+            ])
+        else:
+            global_position = np.stack([np.array([i, j], dtype=np.float32)
+                                        for i in range(self.args.grid_size)
+                                        for j in range(self.args.grid_size)]) / self.args.grid_size
 
         global_positions = torch.from_numpy(np.stack([global_position
                                                       for _ in range(batch_size)
@@ -535,6 +546,11 @@ class NavCMTAgent:
         quadtree_loss = torch.tensor(0.).cuda()
         target_error_sum_m = 0.0
         target_error_count = 0
+        candidate_oracle_error_sum_m = 0.0
+        candidate_oracle_count = 0
+        candidate_recall5_count = 0.0
+        candidate_recall10_count = 0.0
+        candidate_recall20_count = 0.0
         target_hit5_count = 0
         target_hit10_count = 0
         target_hit20_count = 0
@@ -741,38 +757,84 @@ class NavCMTAgent:
                     target_hit20_count += int((errors_m <= 20).sum().item())
 
                     if training_stage == 'target':
-                        target_losses = target_coordinate_losses(
-                            predicted=active_predictions,
-                            truth=active_truth,
-                            current_positions=current_pos[active_mask],
-                            map_meters=self.args.map_meters,
-                            huber_delta_m=self.args.target_huber_delta_m,
+                        target_representation = getattr(
+                            self.args, 'target_representation', 'point'
                         )
-                        goal_predict_loss += target_losses.coordinate
-                        target_distance_loss += target_losses.distance
-                        target_bearing_loss += target_losses.bearing
-                        if previous_pred_goals is not None:
-                            target_consistency_loss += F.huber_loss(
-                                active_predictions * self.args.map_meters,
-                                previous_pred_goals[active_mask] * self.args.map_meters,
-                                delta=self.args.target_huber_delta_m,
+                        if target_representation == 'candidates':
+                            candidate_logits = getattr(
+                                self.vln_model_without_ddp,
+                                'last_candidate_logits',
+                            )[active_mask]
+                            refined_candidates = getattr(
+                                self.vln_model_without_ddp,
+                                'last_refined_candidates',
+                            )[active_mask]
+                            base_candidates = input['candidates'][active_mask]
+                            cls_loss, offset_loss, _ = candidate_supervision(
+                                candidate_logits,
+                                refined_candidates,
+                                base_candidates,
+                                active_truth,
+                                self.args.map_meters,
+                                self.args.target_huber_delta_m,
+                            )
+                            target_predict_loss += cls_loss
+                            goal_predict_loss += offset_loss
+
+                            topk_coordinates = getattr(
+                                self.vln_model_without_ddp,
+                                'last_topk_coordinates',
+                            )[active_mask]
+                            oracle_errors = torch.linalg.vector_norm(
+                                (topk_coordinates - active_truth.unsqueeze(1))
+                                * self.args.map_meters,
+                                dim=-1,
+                            ).min(dim=-1).values
+                            candidate_oracle_error_sum_m += oracle_errors.sum().item()
+                            candidate_oracle_count += int(oracle_errors.numel())
+                            candidate_recall5_count += candidate_recall(
+                                topk_coordinates, active_truth,
+                                self.args.map_meters, 5.0,
+                            ).sum().item()
+                            candidate_recall10_count += candidate_recall(
+                                topk_coordinates, active_truth,
+                                self.args.map_meters, 10.0,
+                            ).sum().item()
+                            candidate_recall20_count += candidate_recall(
+                                topk_coordinates, active_truth,
+                                self.args.map_meters, 20.0,
+                            ).sum().item()
+                        else:
+                            target_losses = target_coordinate_losses(
+                                predicted=active_predictions,
+                                truth=active_truth,
+                                current_positions=current_pos[active_mask],
+                                map_meters=self.args.map_meters,
+                                huber_delta_m=self.args.target_huber_delta_m,
+                            )
+                            goal_predict_loss += target_losses.coordinate
+                            target_distance_loss += target_losses.distance
+                            target_bearing_loss += target_losses.bearing
+                            if previous_pred_goals is not None:
+                                target_consistency_loss += F.huber_loss(
+                                    active_predictions * self.args.map_meters,
+                                    previous_pred_goals[active_mask] * self.args.map_meters,
+                                    delta=self.args.target_huber_delta_m,
+                                    reduction='sum',
+                                )
+                            target_predict_loss += F.cross_entropy(
+                                pred_logits.squeeze(-1)[active_mask],
+                                gt_target.to(pred_logits.device)[active_mask],
                                 reduction='sum',
                             )
-                        target_predict_loss += F.cross_entropy(
-                            pred_logits.squeeze(-1)[active_mask],
-                            gt_target.to(pred_logits.device)[active_mask],
-                            reduction='sum',
-                        )
-                        if getattr(
-                                self.args, 'target_representation', 'point'
-                        ) == 'quadtree':
-                            latest_quadtree_loss = getattr(
-                                self.vln_model_without_ddp,
-                                'last_quadtree_loss',
-                                None,
-                            )
-                            if latest_quadtree_loss is not None:
-                                quadtree_loss += latest_quadtree_loss
+                            if target_representation == 'quadtree':
+                                latest_quadtree_loss = getattr(
+                                    self.vln_model_without_ddp,
+                                    'last_quadtree_loss',
+                                    None,
+                                )
+                                if latest_quadtree_loss is not None:
+                                    quadtree_loss += latest_quadtree_loss
                     elif training_stage == 'joint':
                         goal_predict_loss += F.mse_loss(
                             active_predictions,
@@ -922,20 +984,26 @@ class NavCMTAgent:
             # print(ml_loss)
             training_stage = getattr(self.args, 'training_stage', 'joint')
             if training_stage == 'target':
-                # Metre-space Huber terms are divided by map scale after being
-                # averaged per active sample-step.  This remains substantially
-                # stronger than normalized-coordinate MSE without producing
-                # gradients proportional to the full 410 m map width.
-                ml_loss = (
-                    self.args.goal_loss_weight * goal_predict_loss / self.args.map_meters
-                    + self.args.target_loss_weight * target_predict_loss
-                    + self.args.target_distance_loss_weight
-                    * target_distance_loss / self.args.map_meters
-                    + self.args.target_bearing_loss_weight * target_bearing_loss
-                    + self.args.target_consistency_loss_weight
-                    * target_consistency_loss / self.args.map_meters
-                    + self.args.quadtree_loss_weight * quadtree_loss
-                )
+                if getattr(self.args, 'target_representation', 'point') == 'candidates':
+                    ml_loss = (
+                        self.args.candidate_offset_weight
+                        * goal_predict_loss / self.args.map_meters
+                        + self.args.candidate_classification_weight
+                        * target_predict_loss
+                    )
+                else:
+                    # Metre-space Huber terms are divided by map scale after being
+                    # averaged per active sample-step.
+                    ml_loss = (
+                        self.args.goal_loss_weight * goal_predict_loss / self.args.map_meters
+                        + self.args.target_loss_weight * target_predict_loss
+                        + self.args.target_distance_loss_weight
+                        * target_distance_loss / self.args.map_meters
+                        + self.args.target_bearing_loss_weight * target_bearing_loss
+                        + self.args.target_consistency_loss_weight
+                        * target_consistency_loss / self.args.map_meters
+                        + self.args.quadtree_loss_weight * quadtree_loss
+                    )
                 loss_normalizer = max(target_error_count, 1)
             elif training_stage == 'action':
                 ml_loss = (
@@ -994,6 +1062,19 @@ class NavCMTAgent:
             self.logs['target_hit5'].append(target_hit5_count / target_error_count)
             self.logs['target_hit10'].append(target_hit10_count / target_error_count)
             self.logs['target_hit20'].append(target_hit20_count / target_error_count)
+        if candidate_oracle_count:
+            self.logs['candidate_oracle_error_mean_m'].append(
+                candidate_oracle_error_sum_m / candidate_oracle_count
+            )
+            self.logs['candidate_recall5'].append(
+                candidate_recall5_count / candidate_oracle_count
+            )
+            self.logs['candidate_recall10'].append(
+                candidate_recall10_count / candidate_oracle_count
+            )
+            self.logs['candidate_recall20'].append(
+                candidate_recall20_count / candidate_oracle_count
+            )
 
         if type(self.loss) is int:  # For safety, it will be activated if no losses are added
             self.losses.append(0.)
@@ -1064,6 +1145,8 @@ class NavCMTAgent:
                     (self.args.disable_task_interaction and k.startswith('task_interaction.'))
                     or k.startswith('target_conditioning.')
                     or k.startswith('quadtree_belief.')
+                    or k.startswith('candidate_belief.')
+                    or k.startswith('multi_target_conditioning.')
                 )]
                 if required_missing and self.args.mode != 'train':
                     raise ValueError(f'{name}: checkpoint is missing parameters: {required_missing}')
