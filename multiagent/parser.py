@@ -130,6 +130,18 @@ def parse_args():
     parser.add_argument('--target_bearing_loss_weight', type=float, default=0.2)
     parser.add_argument('--target_consistency_loss_weight', type=float, default=0.05)
     parser.add_argument(
+        '--target_representation', choices=['point', 'quadtree'], default='point',
+        help='target-stage output representation; point preserves the current baseline',
+    )
+    parser.add_argument('--quadtree_depth', type=int, default=5)
+    parser.add_argument('--quadtree_topk', type=int, default=4)
+    parser.add_argument('--quadtree_hidden_dim', type=int, default=256)
+    parser.add_argument('--quadtree_loss_weight', type=float, default=1.0)
+    parser.add_argument(
+        '--freeze_target_backbones', action='store_true',
+        help='freeze language and vision backbones during target-stage fast experiments',
+    )
+    parser.add_argument(
         '--action_gt_coordinate_start', type=float, default=1.0,
         help='GT-coordinate probability at the start of action fine-tuning',
     )
@@ -202,8 +214,11 @@ def parse_args():
     if (args.target_huber_delta_m <= 0
             or args.target_distance_loss_weight < 0
             or args.target_bearing_loss_weight < 0
-            or args.target_consistency_loss_weight < 0):
+            or args.target_consistency_loss_weight < 0
+            or args.quadtree_loss_weight < 0):
         parser.error('target loss deltas/weights must be positive or nonnegative')
+    if args.quadtree_depth < 1 or args.quadtree_topk < 1 or args.quadtree_hidden_dim < 1:
+        parser.error('quadtree depth/topk/hidden_dim must be positive')
     if not (0 <= args.action_gt_coordinate_start <= 1
             and 0 <= args.action_gt_coordinate_end <= 1):
         parser.error('action GT-coordinate probabilities must be in [0, 1]')
