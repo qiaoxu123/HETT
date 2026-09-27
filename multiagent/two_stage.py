@@ -566,12 +566,14 @@ class FineNavigationAdapter(nn.Module):
 
 def local_waypoint_target(current_positions: torch.Tensor,
                           target_positions: torch.Tensor,
-                          map_meters: float, waypoint_meters: float) -> torch.Tensor:
-    """Return a clipped straight-line oracle waypoint in normalized coordinates."""
+                          map_meters: float, waypoint_meters: float,
+                          success_radius_m: float = 0.0) -> torch.Tensor:
+    """Return the next oracle waypoint toward the success region, not its center."""
     delta = target_positions - current_positions
     distance_norm = torch.linalg.vector_norm(delta, dim=-1, keepdim=True)
     distance_m = distance_norm * map_meters
-    step_m = torch.clamp(distance_m, max=waypoint_meters)
+    remaining_m = (distance_m - success_radius_m).clamp_min(0.0)
+    step_m = torch.clamp(remaining_m, max=waypoint_meters)
     unit = delta / distance_norm.clamp_min(1e-6)
     return (current_positions + unit * (step_m / map_meters)).clamp(0.0, 1.0)
 
