@@ -572,6 +572,20 @@ class NavCMTAgent:
         candidate_recall5_count = 0.0
         candidate_recall10_count = 0.0
         candidate_recall20_count = 0.0
+        candidate_local_gate_sum = 0.0
+        candidate_local_gate_count = 0
+        range_bucket_edges = (0.0, 50.0, 100.0, 150.0, 200.0, 250.0, float('inf'))
+        range_bucket_names = ('0_50', '50_100', '100_150', '150_200', '200_250', '250_inf')
+        range_bucket_stats = {
+            name: {
+                'count': 0,
+                'target_error_sum': 0.0,
+                'hit20': 0.0,
+                'oracle_error_sum': 0.0,
+                'recall20': 0.0,
+            }
+            for name in range_bucket_names
+        }
         target_hit5_count = 0
         target_hit10_count = 0
         target_hit20_count = 0
@@ -810,6 +824,11 @@ class NavCMTAgent:
                         (active_predictions.detach() - active_truth) * self.args.map_meters,
                         dim=-1,
                     )
+                    gt_ranges_m = torch.linalg.vector_norm(
+                        (active_truth - current_pos[active_mask])
+                        * self.args.map_meters,
+                        dim=-1,
+                    )
                     target_error_sum_m += errors_m.sum().item()
                     target_error_count += int(errors_m.numel())
                     target_hit5_count += int((errors_m <= 5).sum().item())
@@ -830,6 +849,12 @@ class NavCMTAgent:
                                 'last_refined_candidates',
                             )[active_mask]
                             base_candidates = input['candidates'][active_mask]
+                            far_weights = torch.ones_like(gt_ranges_m)
+                            far_weights = torch.where(
+                                gt_ranges_m >= self.args.candidate_far_distance_m,
+                                far_weights * self.args.candidate_far_loss_weight,
+                                far_weights,
+                            )
                             cls_loss, offset_loss, candidate_labels = candidate_supervision(
                                 candidate_logits,
                                 refined_candidates,
@@ -837,6 +862,7 @@ class NavCMTAgent:
                                 active_truth,
                                 self.args.map_meters,
                                 self.args.target_huber_delta_m,
+                                sample_weights=far_weights,
                             )
                             target_predict_loss += cls_loss
                             goal_predict_loss += offset_loss
@@ -844,6 +870,7 @@ class NavCMTAgent:
                                 candidate_logits,
                                 candidate_labels,
                                 margin=self.args.candidate_ranking_margin,
+                                sample_weights=far_weights,
                             )
 
                             topk_coordinates = getattr(
@@ -855,6 +882,28 @@ class NavCMTAgent:
                                 * self.args.map_meters,
                                 dim=-1,
                             ).min(dim=-1).values
+                            local_gate = getattr(
+                                self.vln_model_without_ddp,
+                                'last_candidate_local_gate',
+                                None,
+                            )
+                            if local_gate is not None:
+                                active_gate = local_gate[active_mask]
+                                candidate_local_gate_sum += active_gate.sum().item()
+                                candidate_local_gate_count += int(active_gate.numel())
+
+                            for bucket_idx, bucket_name in enumerate(range_bucket_names):
+                                low = range_bucket_edges[bucket_idx]
+                                high = range_bucket_edges[bucket_idx + 1]
+                                in_bucket = (gt_ranges_m >= low) & (gt_ranges_m < high)
+                                if not in_bucket.any():
+                                    continue
+                                stats = range_bucket_stats[bucket_name]
+                                stats['count'] += int(in_bucket.sum().item())
+                                stats['target_error_sum'] += errors_m[in_bucket].sum().item()
+                                stats['hit20'] += (errors_m[in_bucket] <= 20.0).sum().item()
+                                stats['oracle_error_sum'] += oracle_errors[in_bucket].sum().item()
+                                stats['recall20'] += (oracle_errors[in_bucket] <= 20.0).sum().item()
                             candidate_oracle_error_sum_m += oracle_errors.sum().item()
                             candidate_oracle_count += int(oracle_errors.numel())
                             candidate_recall5_count += candidate_recall(
@@ -1170,6 +1219,26 @@ class NavCMTAgent:
             )
             self.logs['candidate_recall20'].append(
                 candidate_recall20_count / candidate_oracle_count
+            )
+        if candidate_local_gate_count:
+            self.logs['candidate_local_gate_mean'].append(
+                candidate_local_gate_sum / candidate_local_gate_count
+            )
+        for bucket_name, stats in range_bucket_stats.items():
+            if stats['count'] == 0:
+                continue
+            count = stats['count']
+            self.logs[f'range_{bucket_name}_target_error_mean_m'].append(
+                stats['target_error_sum'] / count
+            )
+            self.logs[f'range_{bucket_name}_hit20'].append(
+                stats['hit20'] / count
+            )
+            self.logs[f'range_{bucket_name}_oracle_error_mean_m'].append(
+                stats['oracle_error_sum'] / count
+            )
+            self.logs[f'range_{bucket_name}_recall20'].append(
+                stats['recall20'] / count
             )
 
         if type(self.loss) is int:  # For safety, it will be activated if no losses are added
