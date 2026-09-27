@@ -1064,7 +1064,11 @@ class NavCMTAgent:
                         traj[i]['gt_actions'].append(gt_direction[i])
                         traj[i]['gt_progress'].append(gt_progress[i].item())
                         traj[i]['gt_goal'].append(gt_goal_cpu[i])
-                    traj[i]['progress'].append(pred_progress[i].item())
+                    traj[i]['progress'].append(
+                        float(pred_progress_t[i])
+                        if training_stage == 'fine'
+                        else pred_progress[i].item()
+                    )
 
             if self.feedback == 'teacher':
                 at_goal = gt_goal
