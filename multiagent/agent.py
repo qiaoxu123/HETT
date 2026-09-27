@@ -468,7 +468,10 @@ class NavCMTAgent:
         # 5. 计算损失并输出动作/目标/进度更新环境状态
         # rollout_start_time = time.time()
 
-        obs = self.env._get_obs(random_direction=(self.feedback == 'teacher'))
+        fine_stage = getattr(self.args, 'training_stage', 'joint') == 'fine'
+        obs = self.env._get_obs(
+            random_direction=(self.feedback == 'teacher' and not fine_stage)
+        )
         batch_size = len(obs)
 
         # --------------- 1. 语言输入：instruction -> token ids -> BERT embedding -----------------
@@ -732,6 +735,7 @@ class NavCMTAgent:
                     gt_goal,
                     self.args.map_meters,
                     self.args.fine_waypoint_m,
+                    success_radius_m=self.args.stop_distance_m,
                 )
                 active_fine = torch.from_numpy(~ended).to(gt_goal.device)
                 if active_fine.any():
@@ -1161,7 +1165,10 @@ class NavCMTAgent:
                 if not ended[i]:
                     traj[i]['trajectory'].append(poses[i])
                     # Update the status
-            obs = self.env._get_obs(poses, random_direction=(self.feedback == 'teacher'))  # get gt_obs
+            obs = self.env._get_obs(
+                poses,
+                random_direction=(self.feedback == 'teacher' and training_stage != 'fine'),
+            )  # get gt_obs
             # current_view_corners = [np.array(ob['gt_path_corners'][0]) for ob in obs]
 
             # Early exit if all ended
