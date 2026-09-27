@@ -16,6 +16,10 @@ cd "$(dirname "$0")"
     --candidate_offset_weight 1.0 \
     --candidate_ranking_weight 0.5 \
     --candidate_ranking_margin 0.2 \
+    --candidate_local_gate_center_m 100 \
+    --candidate_local_gate_temperature_m 30 \
+    --candidate_far_distance_m 150 \
+    --candidate_far_loss_weight 2.0 \
     --target_consistency_loss_weight 0 \
     --target_distance_loss_weight 0 \
     --target_bearing_loss_weight 0 \
