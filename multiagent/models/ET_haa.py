@@ -10,6 +10,8 @@ import numpy as np
 
 from .goal_predictor import MapEncoder
 from multiagent.two_stage import (
+    MultiHypothesisConditioning,
+    RelationalCandidateBeliefHead,
     SparseQuadtreeBeliefHead,
     TargetConditioning,
     select_action_coordinates,
@@ -223,6 +225,25 @@ class ET(nn.Module):
             d_model=self.args.demb,
             dropout=self.args.dropout_transformer_encoder,
         )
+        candidate_heads = min(
+            getattr(self.args, 'candidate_attention_heads', 4),
+            self.args.encoder_heads,
+        )
+        while self.args.demb % candidate_heads != 0 and candidate_heads > 1:
+            candidate_heads -= 1
+        self.candidate_belief = RelationalCandidateBeliefHead(
+            d_model=self.args.demb,
+            num_heads=candidate_heads,
+            hidden_dim=getattr(self.args, 'candidate_hidden_dim', 256),
+            topk=getattr(self.args, 'candidate_topk', 4),
+            max_offset=0.5 / max(getattr(self.args, 'candidate_grid_size', 8), 1),
+            dropout=self.args.dropout_transformer_encoder,
+        )
+        self.multi_target_conditioning = MultiHypothesisConditioning(
+            d_model=self.args.demb,
+            num_heads=candidate_heads,
+            dropout=self.args.dropout_transformer_encoder,
+        )
         self.quadtree_belief = SparseQuadtreeBeliefHead(
             d_model=self.args.demb,
             depth=getattr(self.args, 'quadtree_depth', 5),
@@ -232,6 +253,11 @@ class ET(nn.Module):
         self.last_quadtree_loss = None
         self.last_quadtree_leaf_centers = None
         self.last_quadtree_leaf_probs = None
+        self.last_candidate_logits = None
+        self.last_refined_candidates = None
+        self.last_topk_coordinates = None
+        self.last_topk_probs = None
+        self.last_topk_indices = None
 
     def forward(self, **inputs):
         """
@@ -307,8 +333,15 @@ class ET(nn.Module):
         # grid_masks = torch.tensor(grid_masks).cuda()
         grid_map_embeds = torch.zeros(batch_size, max_cell_num, 768).to(grid_fts[0].device) # [B, max_cell_num, 768]
 
-        # 将历史空间记忆叠加进候选特征中，形成历史感知的目标候选表示
-        emb_candidates = emb_candidates + grid_map_input        # [B, N_cand, d_model]
+        # 将历史空间记忆对齐到任意候选集。候选可以是 5x5 旧网格，也可以是
+        # 8x8 sparse candidate grid；每个候选读取其所在 historical cell 的记忆。
+        candidate_xy = inputs['candidates'].clamp(0.0, 1.0 - 1e-6)
+        hist_xy = torch.floor(candidate_xy * self.args.grid_size).long()
+        hist_ids = hist_xy[..., 0] * self.args.grid_size + hist_xy[..., 1]
+        candidate_history = grid_map_input.gather(
+            1, hist_ids.unsqueeze(-1).expand(-1, -1, grid_map_input.shape[-1])
+        )
+        emb_candidates = emb_candidates + candidate_history
 
         # --------------- 6. Transformer 融合：把所有模态拼接后做跨模态 self-attention -----------------
         encoder_out, _ = self.encoder_vl.forward_with_map(
@@ -351,6 +384,27 @@ class ET(nn.Module):
         self.last_quadtree_loss = None
         self.last_quadtree_leaf_centers = None
         self.last_quadtree_leaf_probs = None
+        self.last_candidate_logits = None
+        self.last_refined_candidates = None
+        self.last_topk_coordinates = None
+        self.last_topk_probs = None
+        self.last_topk_indices = None
+
+        if getattr(self.args, 'target_representation', 'point') == 'candidates':
+            current_positions = inputs['directions'][:, -1, 2:4]
+            candidate_belief = self.candidate_belief(
+                target_decoder_input,
+                inputs['candidates'],
+                emb_lang,
+                current_positions,
+                language_mask=inputs.get('lang_mask'),
+            )
+            pred_goals = candidate_belief.coordinate
+            self.last_candidate_logits = candidate_belief.logits
+            self.last_refined_candidates = candidate_belief.refined_coordinates
+            self.last_topk_coordinates = candidate_belief.topk_coordinates
+            self.last_topk_probs = candidate_belief.topk_probs
+            self.last_topk_indices = candidate_belief.topk_indices
         if (training_stage == 'target'
                 and getattr(self.args, 'target_representation', 'point') == 'quadtree'):
             quadtree_truth = inputs.get('target_coordinates')
@@ -380,17 +434,41 @@ class ET(nn.Module):
             self.last_quadtree_leaf_centers = quadtree.leaf_centers
             self.last_quadtree_leaf_probs = quadtree.leaf_probs
         if training_stage == 'action':
-            action_targets = select_action_coordinates(
-                predicted=pred_goals,
-                truth=inputs.get('target_coordinates'),
-                use_truth=inputs.get('target_coordinate_mask'),
-            )
             current_positions = inputs['directions'][:, -1, 2:4]
-            motion_tokens = self.target_conditioning(
-                motion_tokens,
-                action_targets,
-                current_positions,
-            )
+            if (getattr(self.args, 'target_representation', 'point') == 'candidates'
+                    and self.last_topk_coordinates is not None):
+                target_coordinates = self.last_topk_coordinates.detach()
+                target_probs = self.last_topk_probs.detach()
+                truth = inputs.get('target_coordinates')
+                use_truth = inputs.get('target_coordinate_mask')
+                if truth is not None and use_truth is not None and use_truth.any():
+                    mask = use_truth.bool()
+                    target_coordinates = target_coordinates.clone()
+                    target_probs = target_probs.clone()
+                    target_coordinates[mask, 0] = truth.detach()[mask]
+                    if target_probs.shape[1] == 1:
+                        target_probs[mask, 0] = 1.0
+                    else:
+                        remaining = 0.3 / (target_probs.shape[1] - 1)
+                        target_probs[mask] = remaining
+                        target_probs[mask, 0] = 0.7
+                motion_tokens = self.multi_target_conditioning(
+                    motion_tokens,
+                    target_coordinates,
+                    target_probs,
+                    current_positions,
+                )
+            else:
+                action_targets = select_action_coordinates(
+                    predicted=pred_goals,
+                    truth=inputs.get('target_coordinates'),
+                    use_truth=inputs.get('target_coordinate_mask'),
+                )
+                motion_tokens = self.target_conditioning(
+                    motion_tokens,
+                    action_targets,
+                    current_positions,
+                )
 
         action_decoder_input = motion_tokens[:, 0]             # [B, d_model]
         decoder_input = motion_tokens[:, 1]                    # [B, d_model]
