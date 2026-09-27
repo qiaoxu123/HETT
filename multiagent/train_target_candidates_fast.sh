@@ -14,6 +14,8 @@ cd "$(dirname "$0")"
     --candidate_attention_heads 4 \
     --candidate_classification_weight 1.0 \
     --candidate_offset_weight 1.0 \
+    --candidate_ranking_weight 0.5 \
+    --candidate_ranking_margin 0.2 \
     --target_consistency_loss_weight 0 \
     --target_distance_loss_weight 0 \
     --target_bearing_loss_weight 0 \
