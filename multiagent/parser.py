@@ -161,7 +161,7 @@ def parse_args():
     )
     parser.add_argument('--use_stop_head', action='store_true')
     parser.add_argument('--stop_distance_m', type=float, default=15.0)
-    parser.add_argument('--stop_threshold', type=float, default=0.5)
+    parser.add_argument('--stop_threshold', type=float, default=0.8)
 
     # logger
     parser.add_argument('--log_every', type=int, default=1)
