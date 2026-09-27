@@ -241,6 +241,13 @@ class ET(nn.Module):
             hidden_dim=getattr(self.args, 'candidate_hidden_dim', 256),
             topk=getattr(self.args, 'candidate_topk', 4),
             max_offset=0.5 / max(getattr(self.args, 'candidate_grid_size', 8), 1),
+            map_meters=getattr(self.args, 'map_meters', 410.0),
+            local_gate_center_m=getattr(
+                self.args, 'candidate_local_gate_center_m', 100.0
+            ),
+            local_gate_temperature_m=getattr(
+                self.args, 'candidate_local_gate_temperature_m', 30.0
+            ),
             dropout=self.args.dropout_transformer_encoder,
         )
         self.multi_target_conditioning = MultiHypothesisConditioning(
@@ -262,6 +269,9 @@ class ET(nn.Module):
         self.last_topk_coordinates = None
         self.last_topk_probs = None
         self.last_topk_indices = None
+        self.last_candidate_global_logits = None
+        self.last_candidate_local_logits = None
+        self.last_candidate_local_gate = None
 
     def forward(self, **inputs):
         """
@@ -277,8 +287,15 @@ class ET(nn.Module):
         emb_lang = inputs["lang"]  # [B, L_lang, d_model]
         map_feat = self.map_encoder(inputs['maps']) # [B, C, H', W']
 
-        # 这里用语言特征做调制，意思是：候选目标的重要性受指令影响
-        emb_candidates = self.candidate_encoder(inputs['candidates']) * emb_lang[:, :1, :] # [B, N_cand, d_model]
+        # Global branch starts from coordinate-only candidates. It is kept
+        # separate from the multimodal/local branch so far-away grounding can
+        # rely on language + global geometry instead of noisy current RGB.
+        global_candidate_tokens = self.candidate_encoder(
+            inputs['candidates']
+        )
+        # Legacy/local branch keeps the released language modulation and later
+        # receives history/map/vision information through EncoderVL.
+        emb_candidates = global_candidate_tokens * emb_lang[:, :1, :]
         # print(torch.isnan(map_feat).any(), torch.isinf(map_feat).any())
 
         # --------------- 3. 视觉帧注意力：语言关注每一帧 -----------------
@@ -402,6 +419,7 @@ class ET(nn.Module):
                 emb_lang,
                 current_positions,
                 language_mask=inputs.get('lang_mask'),
+                global_candidate_tokens=global_candidate_tokens,
             )
             pred_goals = candidate_belief.coordinate
             self.last_candidate_logits = candidate_belief.logits
@@ -409,6 +427,9 @@ class ET(nn.Module):
             self.last_topk_coordinates = candidate_belief.topk_coordinates
             self.last_topk_probs = candidate_belief.topk_probs
             self.last_topk_indices = candidate_belief.topk_indices
+            self.last_candidate_global_logits = candidate_belief.global_logits
+            self.last_candidate_local_logits = candidate_belief.local_logits
+            self.last_candidate_local_gate = candidate_belief.local_gate
         if (training_stage == 'target'
                 and getattr(self.args, 'target_representation', 'point') == 'quadtree'):
             quadtree_truth = inputs.get('target_coordinates')
