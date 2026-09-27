@@ -155,6 +155,13 @@ def parse_args():
         '--action_gt_coordinate_end', type=float, default=0.1,
         help='GT-coordinate probability at the end of action fine-tuning',
     )
+    parser.add_argument(
+        '--action_controller', choices=['legacy', 'residual'], default='legacy',
+        help='legacy keeps HETT coarse planner; residual learns a correction to geometric steering',
+    )
+    parser.add_argument('--use_stop_head', action='store_true')
+    parser.add_argument('--stop_distance_m', type=float, default=15.0)
+    parser.add_argument('--stop_threshold', type=float, default=0.5)
 
     # logger
     parser.add_argument('--log_every', type=int, default=1)
@@ -233,6 +240,8 @@ def parse_args():
     if not (0 <= args.action_gt_coordinate_start <= 1
             and 0 <= args.action_gt_coordinate_end <= 1):
         parser.error('action GT-coordinate probabilities must be in [0, 1]')
+    if args.stop_distance_m <= 0 or not (0 < args.stop_threshold < 1):
+        parser.error('stop distance must be positive and stop threshold in (0, 1)')
     if args.checkpoint and not Path(args.checkpoint).is_absolute():
         args.checkpoint = str(PROJECT_ROOT / args.checkpoint)
     output_dir = Path(args.output_dir)
