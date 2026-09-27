@@ -174,14 +174,18 @@ class ET(nn.Module):
         # progress head: 输出单值进度 score，表示任务推进程度
         self.decoder_2_progress_full = nn.Sequential(
             nn.Linear(self.args.demb, 256),
-            # nn.BatchNorm1d(64, eps=1e-12),
             nn.ReLU(),
             nn.Dropout(0.2),
             nn.Linear(256, 32),
-            # nn.BatchNorm1d(64, eps=1e-12),
             nn.ReLU(),
             nn.Dropout(0.2),
             nn.Linear(32, 1),
+        )
+        self.decoder_2_stop_full = nn.Sequential(
+            nn.Linear(self.args.demb, 128),
+            nn.GELU(),
+            nn.Dropout(0.1),
+            nn.Linear(128, 1),
         )
 
         # target logits head: 给每个候选位置打分，输出 [B, N, 1]
@@ -477,8 +481,11 @@ class ET(nn.Module):
         norm = torch.norm(output, dim=1, keepdim=True) + 1e-6     # 避免除零
         direction = output / norm
 
-        # progress: [B, 1]
-        progress = self.decoder_2_progress_full(decoder_input)
+        # progress or stop probability: [B, 1]
+        if training_stage == 'action' and getattr(self.args, 'use_stop_head', False):
+            progress = torch.sigmoid(self.decoder_2_stop_full(decoder_input))
+        else:
+            progress = self.decoder_2_progress_full(decoder_input)
 
         # target_logits: [B, N_cand, 1]
         target_logits = self.decoder_2_logits_full(target_decoder_input)
