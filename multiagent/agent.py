@@ -30,6 +30,7 @@ from multiagent.space import Pose4D, Point2D, Point3D
 from multiagent.teacher.algorithm.lookahead import lookahead_discrete_action
 from multiagent.teacher.trajectory import _moved_pose
 from multiagent.two_stage import (
+    candidate_ranking_loss,
     candidate_recall,
     candidate_supervision,
     coordinate_gt_probability,
@@ -563,6 +564,7 @@ class NavCMTAgent:
         target_bearing_loss = torch.tensor(0.).cuda()
         target_consistency_loss = torch.tensor(0.).cuda()
         quadtree_loss = torch.tensor(0.).cuda()
+        candidate_rank_loss = torch.tensor(0.).cuda()
         target_error_sum_m = 0.0
         target_error_count = 0
         candidate_oracle_error_sum_m = 0.0
@@ -828,7 +830,7 @@ class NavCMTAgent:
                                 'last_refined_candidates',
                             )[active_mask]
                             base_candidates = input['candidates'][active_mask]
-                            cls_loss, offset_loss, _ = candidate_supervision(
+                            cls_loss, offset_loss, candidate_labels = candidate_supervision(
                                 candidate_logits,
                                 refined_candidates,
                                 base_candidates,
@@ -838,6 +840,11 @@ class NavCMTAgent:
                             )
                             target_predict_loss += cls_loss
                             goal_predict_loss += offset_loss
+                            candidate_rank_loss += candidate_ranking_loss(
+                                candidate_logits,
+                                candidate_labels,
+                                margin=self.args.candidate_ranking_margin,
+                            )
 
                             topk_coordinates = getattr(
                                 self.vln_model_without_ddp,
@@ -964,7 +971,7 @@ class NavCMTAgent:
                       )):
                     ended[i] = True
                     continue
-                elif t == self.args.max_action_len:
+                elif t == self.args.max_action_len - 1:
                     ended[i] = True
                     continue
 
@@ -1074,6 +1081,8 @@ class NavCMTAgent:
                         * goal_predict_loss / self.args.map_meters
                         + self.args.candidate_classification_weight
                         * target_predict_loss
+                        + self.args.candidate_ranking_weight
+                        * candidate_rank_loss
                     )
                 else:
                     # Metre-space Huber terms are divided by map scale after being
@@ -1134,6 +1143,9 @@ class NavCMTAgent:
             )
             self.logs['quadtree_loss'].append(
                 scalar(quadtree_loss * train_ml / loss_normalizer)
+            )
+            self.logs['candidate_ranking_loss'].append(
+                scalar(candidate_rank_loss * train_ml / loss_normalizer)
             )
             self.logs['IL_loss'].append(
                 scalar(ml_loss * train_ml / loss_normalizer)
