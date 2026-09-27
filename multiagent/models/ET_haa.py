@@ -309,6 +309,11 @@ class ET(nn.Module):
 
         # --------------- 4. 地图特征与方向特征编码 -----------------
         emb_maps = self.fc_map(map_feat).view(im_feature.shape[0], -1, 768) # [B, N_map, d_model]
+        # Global grounding gets semantic-map context, but no current RGB or
+        # history. This keeps far-range target scoring globally anchored.
+        global_candidate_tokens = (
+            global_candidate_tokens + emb_maps.mean(dim=1, keepdim=True)
+        )
 
         emb_directions = self.direction_embedding(  # [B, T_dir, d_model]
             inputs["directions"].view(-1, 4)).view( # [B, T_dir, 4], [sin(yaw), cos(yaw), x, y]
