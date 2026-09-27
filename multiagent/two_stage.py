@@ -18,6 +18,7 @@ from torch import nn
 TRAINING_STAGES = ("joint", "target", "action")
 ACTION_MODULE_NAMES = (
     "target_conditioning",
+    "multi_target_conditioning",
     "decoder_2_action_full",
     "decoder_2_progress_full",
 )
@@ -213,6 +214,218 @@ class SparseQuadtreeBeliefHead(nn.Module):
         )
 
 
+@dataclass
+class CandidateBelief:
+    """Sparse multi-hypothesis target belief over a fixed candidate set."""
+
+    coordinate: torch.Tensor
+    logits: torch.Tensor
+    refined_coordinates: torch.Tensor
+    topk_coordinates: torch.Tensor
+    topk_probs: torch.Tensor
+    topk_indices: torch.Tensor
+
+
+class RelationalCandidateBeliefHead(nn.Module):
+    """Score sparse spatial candidates with token-level language grounding.
+
+    The head keeps a small candidate set (typically 64 positions), lets every
+    candidate attend to all instruction tokens, predicts a local coordinate
+    offset, and returns the top-K refined hypotheses. The primary coordinate is
+    the refined top-1 candidate; hypotheses are intentionally not averaged.
+    """
+
+    def __init__(
+        self,
+        d_model: int,
+        num_heads: int = 4,
+        hidden_dim: int = 256,
+        topk: int = 4,
+        max_offset: float = 0.0625,
+        dropout: float = 0.1,
+    ) -> None:
+        super().__init__()
+        if topk < 1:
+            raise ValueError("candidate topk must be positive")
+        self.topk = topk
+        self.max_offset = max_offset
+        self.geometry_proj = nn.Sequential(
+            nn.Linear(7, d_model),
+            nn.LayerNorm(d_model),
+            nn.GELU(),
+        )
+        self.language_attention = nn.MultiheadAttention(
+            d_model, num_heads=num_heads, dropout=dropout, batch_first=True
+        )
+        self.language_norm = nn.LayerNorm(d_model)
+        self.scorer = nn.Sequential(
+            nn.Linear(d_model, hidden_dim),
+            nn.GELU(),
+            nn.Dropout(dropout),
+            nn.Linear(hidden_dim, 1),
+        )
+        self.offset_head = nn.Sequential(
+            nn.Linear(d_model, hidden_dim),
+            nn.GELU(),
+            nn.Linear(hidden_dim, 2),
+            nn.Tanh(),
+        )
+
+    @staticmethod
+    def geometry(
+        candidates: torch.Tensor,
+        current_positions: torch.Tensor,
+    ) -> torch.Tensor:
+        delta = candidates - current_positions.unsqueeze(1)
+        distance = torch.linalg.vector_norm(delta, dim=-1, keepdim=True)
+        unit_delta = delta / distance.clamp_min(1e-6)
+        return torch.cat((candidates, delta, distance, unit_delta), dim=-1)
+
+    def forward(
+        self,
+        candidate_tokens: torch.Tensor,
+        candidates: torch.Tensor,
+        language_tokens: torch.Tensor,
+        current_positions: torch.Tensor,
+        language_mask: Optional[torch.Tensor] = None,
+    ) -> CandidateBelief:
+        candidate_tokens = candidate_tokens + self.geometry_proj(
+            self.geometry(candidates, current_positions)
+        )
+        key_padding_mask = None
+        if language_mask is not None:
+            key_padding_mask = ~language_mask.bool()
+        language_delta, _ = self.language_attention(
+            query=candidate_tokens,
+            key=language_tokens,
+            value=language_tokens,
+            key_padding_mask=key_padding_mask,
+            need_weights=False,
+        )
+        grounded = self.language_norm(candidate_tokens + language_delta)
+        logits = self.scorer(grounded).squeeze(-1)
+        offsets = self.offset_head(grounded) * self.max_offset
+        refined = (candidates + offsets).clamp(0.0, 1.0)
+
+        keep = min(self.topk, logits.shape[1])
+        topk_logits, topk_indices = torch.topk(logits, k=keep, dim=-1)
+        topk_coordinates = refined.gather(
+            1, topk_indices.unsqueeze(-1).expand(-1, -1, 2)
+        )
+        topk_probs = torch.softmax(topk_logits, dim=-1)
+        coordinate = topk_coordinates[:, 0]
+        return CandidateBelief(
+            coordinate=coordinate,
+            logits=logits,
+            refined_coordinates=refined,
+            topk_coordinates=topk_coordinates,
+            topk_probs=topk_probs,
+            topk_indices=topk_indices,
+        )
+
+
+class MultiHypothesisConditioning(nn.Module):
+    """Condition motion tokens on multiple target hypotheses via real attention."""
+
+    def __init__(
+        self,
+        d_model: int,
+        num_heads: int = 4,
+        dropout: float = 0.1,
+    ) -> None:
+        super().__init__()
+        self.target_projection = nn.Sequential(
+            nn.Linear(8, d_model),
+            nn.LayerNorm(d_model),
+            nn.GELU(),
+            nn.Dropout(dropout),
+            nn.Linear(d_model, d_model),
+        )
+        self.attention = nn.MultiheadAttention(
+            d_model, num_heads=num_heads, dropout=dropout, batch_first=True
+        )
+        self.norm = nn.LayerNorm(d_model)
+        self.ffn = nn.Sequential(
+            nn.Linear(d_model, d_model),
+            nn.GELU(),
+            nn.Dropout(dropout),
+            nn.Linear(d_model, d_model),
+        )
+        self.ffn_norm = nn.LayerNorm(d_model)
+
+    def forward(
+        self,
+        motion_tokens: torch.Tensor,
+        target_coordinates: torch.Tensor,
+        target_probs: torch.Tensor,
+        current_positions: torch.Tensor,
+    ) -> torch.Tensor:
+        delta = target_coordinates - current_positions.unsqueeze(1)
+        distance = torch.linalg.vector_norm(delta, dim=-1, keepdim=True)
+        unit_delta = delta / distance.clamp_min(1e-6)
+        features = torch.cat(
+            (
+                target_coordinates,
+                delta,
+                distance,
+                unit_delta,
+                target_probs.unsqueeze(-1),
+            ),
+            dim=-1,
+        )
+        target_tokens = self.target_projection(features)
+        attended, _ = self.attention(
+            query=motion_tokens,
+            key=target_tokens,
+            value=target_tokens,
+            need_weights=False,
+        )
+        motion_tokens = self.norm(motion_tokens + attended)
+        return self.ffn_norm(motion_tokens + self.ffn(motion_tokens))
+
+
+def candidate_supervision(
+    logits: torch.Tensor,
+    refined_coordinates: torch.Tensor,
+    base_candidates: torch.Tensor,
+    truth: torch.Tensor,
+    map_meters: float,
+    huber_delta_m: float,
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    """Return candidate CE, GT-candidate offset loss and nearest candidate id."""
+
+    distances = torch.linalg.vector_norm(
+        base_candidates - truth.unsqueeze(1), dim=-1
+    )
+    labels = distances.argmin(dim=-1)
+    classification = F.cross_entropy(logits, labels, reduction="sum")
+    selected = refined_coordinates.gather(
+        1, labels.view(-1, 1, 1).expand(-1, 1, 2)
+    ).squeeze(1)
+    offset = F.huber_loss(
+        selected * map_meters,
+        truth * map_meters,
+        delta=huber_delta_m,
+        reduction="sum",
+    )
+    return classification, offset, labels
+
+
+def candidate_recall(
+    topk_coordinates: torch.Tensor,
+    truth: torch.Tensor,
+    map_meters: float,
+    radius_m: float,
+) -> torch.Tensor:
+    """Per-sample Recall@K indicator for target candidates."""
+
+    errors = torch.linalg.vector_norm(
+        (topk_coordinates - truth.unsqueeze(1)) * map_meters,
+        dim=-1,
+    )
+    return (errors.min(dim=-1).values <= radius_m).float()
+
+
 class TargetConditioning(nn.Module):
     """Inject a global target coordinate into motion tokens.
 
@@ -361,7 +574,11 @@ def configure_stage_parameters(
         for parameter in model.parameters():
             parameter.requires_grad = True
 
-    action_modules = [getattr(navigation_model, name) for name in ACTION_MODULE_NAMES]
+    action_modules = [
+        getattr(navigation_model, name)
+        for name in ACTION_MODULE_NAMES
+        if hasattr(navigation_model, name)
+    ]
     if stage == "joint":
         # New two-stage-only modules are not on the released joint path.
         # Freezing them preserves the released optimizer parameter groups.
