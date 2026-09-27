@@ -578,6 +578,9 @@ class NavCMTAgent:
         fine_waypoint_count = 0
         fine_stop_positive_count = 0
         fine_stop_label_count = 0
+        fine_predicted_stop_count = 0
+        fine_premature_stop_count = 0
+        fine_stop_decision_count = 0
         fine_start_distance_sum_m = sum(
             float(ob.get('distance_to_goal_m', 0.0)) for ob in obs
         )
@@ -1016,6 +1019,20 @@ class NavCMTAgent:
                         )
                 previous_pred_goals = pred_goals.detach()
                 # print(pred_logits.shape)
+            if training_stage == 'fine':
+                active_stop = ~ended
+                for i in range(len(obs)):
+                    if not active_stop[i]:
+                        continue
+                    fine_stop_decision_count += 1
+                    predicted_stop = bool(
+                        pred_progress_t[i] > self.args.stop_threshold
+                    )
+                    if predicted_stop:
+                        fine_predicted_stop_count += 1
+                        if obs[i].get('distance_to_goal_m', float('inf')) > self.args.stop_distance_m:
+                            fine_premature_stop_count += 1
+
             # Log the trajectory
             # print(at_direction, gt_direction)
             for i, ob in enumerate(obs):
@@ -1297,6 +1314,13 @@ class NavCMTAgent:
         if fine_stop_label_count:
             self.logs['fine_stop_positive_ratio'].append(
                 fine_stop_positive_count / fine_stop_label_count
+            )
+        if fine_stop_decision_count:
+            self.logs['fine_predicted_stop_rate'].append(
+                fine_predicted_stop_count / fine_stop_decision_count
+            )
+            self.logs['fine_premature_stop_rate'].append(
+                fine_premature_stop_count / fine_stop_decision_count
             )
         if batch_size:
             self.logs['fine_start_distance_mean_m'].append(
