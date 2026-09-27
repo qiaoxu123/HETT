@@ -300,6 +300,7 @@ class CityNavBatch(torch.utils.data.IterableDataset):
                 'trajectory': episode.trajectory,
                 'progress': progress,
                 'centroids': np.mean(normalized_centroids, axis=0) if normalized_centroids else np.array([0, 0]),
+                'landmark_centroids': np.array(normalized_centroids, dtype=np.float32).reshape(-1, 2),
                 'centroid_goal': pred_goal_xy,
                 'normalized_goal': normalized_goal_xys,
                 'grid_goal': normalized_goal_id
