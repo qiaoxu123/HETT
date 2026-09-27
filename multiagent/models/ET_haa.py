@@ -9,7 +9,11 @@ from torch.nn import functional as F
 import numpy as np
 
 from .goal_predictor import MapEncoder
-from multiagent.two_stage import TargetConditioning, select_action_coordinates
+from multiagent.two_stage import (
+    SparseQuadtreeBeliefHead,
+    TargetConditioning,
+    select_action_coordinates,
+)
 
 
 class SoftDotAttention(nn.Module):
@@ -219,6 +223,15 @@ class ET(nn.Module):
             d_model=self.args.demb,
             dropout=self.args.dropout_transformer_encoder,
         )
+        self.quadtree_belief = SparseQuadtreeBeliefHead(
+            d_model=self.args.demb,
+            depth=getattr(self.args, 'quadtree_depth', 5),
+            topk=getattr(self.args, 'quadtree_topk', 4),
+            hidden_dim=getattr(self.args, 'quadtree_hidden_dim', 256),
+        )
+        self.last_quadtree_loss = None
+        self.last_quadtree_leaf_centers = None
+        self.last_quadtree_leaf_probs = None
 
     def forward(self, **inputs):
         """
@@ -335,6 +348,19 @@ class ET(nn.Module):
         goal_decoder_input = target_tokens[:, 0]               # [B, d_model]
         target_decoder_input = target_tokens[:, 1:]            # [B, N_cand, d_model]
         pred_goals = self.decoder_2_goal_full(goal_decoder_input) # [B, 2] 归一化目标位置
+        self.last_quadtree_loss = None
+        self.last_quadtree_leaf_centers = None
+        self.last_quadtree_leaf_probs = None
+        if (training_stage == 'target'
+                and getattr(self.args, 'target_representation', 'point') == 'quadtree'):
+            quadtree = self.quadtree_belief(
+                goal_decoder_input,
+                truth=inputs.get('target_coordinates'),
+            )
+            pred_goals = quadtree.coordinate
+            self.last_quadtree_loss = quadtree.hierarchy_loss
+            self.last_quadtree_leaf_centers = quadtree.leaf_centers
+            self.last_quadtree_leaf_probs = quadtree.leaf_probs
         if training_stage == 'action':
             action_targets = select_action_coordinates(
                 predicted=pred_goals,
