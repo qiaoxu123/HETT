@@ -1,0 +1,12 @@
+{
+  "val_unseen": {
+    "sr": 93.75,
+    "target_error_m": 159.81176986694337,
+    "state": "Epoch 0 \nepoch 0\nval_seen , lengths: 195.18, stage1_length: 183.78, stage2_length: 11.41, sr: 87.50, sr1: 87.50, sr2: 87.50, oracle_sr: 87.50, oracle_sr1: 87.50, oracle_sr2: 87.50, spl: 79.61, ne: 9.93, oracle_ne: 9.44, stage1_ne: 9.87, stage1_oracle_ne: 9.71, stage2_ne: 9.93, stage2_oracle_ne: 9.60, gt_length: 178.47, target_error_mean_m: 79.98, target_hit5: 0.00, target_hit10: 0.00, target_hit20: 0.09\nval_unseen , lengths: 193.74, stage1_length: 187.17, stage2_length: 6.56, sr: 93.75, sr1: 93.75, sr2: 93.75, oracle_sr: 93.75, oracle_sr1: 93.75, oracle_sr2: 93.75, spl: 84.56, ne: 9.85, oracle_ne: 9.75, stage1_ne: 10.08, stage1_oracle_ne: 10.08, stage2_ne: 9.85, stage2_oracle_ne: 9.75, gt_length: 181.03, target_error_mean_m: 159.81, target_hit5: 0.00, target_hit10: 0.00, target_hit20: 0.00"
+  },
+  "val_unseen_full_traj": {
+    "sr": 0.0,
+    "target_error_m": 1e+30,
+    "state": ""
+  }
+}

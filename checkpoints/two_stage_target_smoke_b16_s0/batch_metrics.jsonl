@@ -1,0 +1,2 @@
+{"time": 1790470827.9968534, "batch": 1, "batches": 2, "epoch": 1, "recent_il_loss": 6.635708808898926, "grad_norm": 8.885703086853027, "peak_gpu_gib": 39.22820854187012}
+{"time": 1790470832.2910743, "batch": 2, "batches": 2, "epoch": 1, "recent_il_loss": 8.320118427276611, "grad_norm": 31.92254638671875, "peak_gpu_gib": 40.42429876327515}

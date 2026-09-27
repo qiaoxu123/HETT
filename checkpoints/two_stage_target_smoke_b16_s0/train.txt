@@ -1,0 +1,26 @@
+Namespace(seed=0, mode='train', local_rank=-1, world_size=1, ignore_id=-100, grid_size=5, demb=768, encoder_heads=12, encoder_layers=2, dropout_transformer_encoder=0.1, num_input_actions=1, dropout_emb=0, num_l_layers=9, num_h_layers=0, num_x_layers=4, num_replacement=False, ml_weight=0.2, entropy_loss_weight=0.01, teacher_weight=1.0, darknet_model_file='/home/rental/20260922_1/Workspace/hett-experiments/53-hett-two-stage-target-action/weights/yolo_v3.cfg', darknet_weight_file='/home/rental/20260922_1/Workspace/hett-experiments/53-hett-two-stage-target-action/weights/best.pt', output_dir='/home/rental/20260922_1/Workspace/hett-experiments/53-hett-two-stage-target-action/checkpoints/two_stage_target_smoke_b16_s0', direction_loss_weight=1.5, goal_loss_weight=2.0, progress_loss_weight=0.1, target_loss_weight=0.1, disable_task_interaction=False, training_stage='target', target_huber_delta_m=10.0, target_distance_loss_weight=0.2, target_bearing_loss_weight=0.2, target_consistency_loss_weight=0.05, action_gt_coordinate_start=1.0, action_gt_coordinate_end=0.1, log_every=1, log_dir='log', map_size=240, map_meters=410.0, map_update_interval=5, max_depth=200.0, altitude=50.0, ablate='', alt_env='', optim='adamW', weight_decay=0.01, grad_accum=1, max_episodes=32, feedback='teacher', nss_w=1, nss_r=0, epsilon=0.1, learning_rate=0.0001, batch_size=16, epochs=1, iters=200000, checkpoint=None, resume_optimizer=False, reset_epoch_on_load=False, save_every=1, train_trajectory_type='mturk', train_episode_sample_size=-1, ignoreid=-100, eval_every=1, eval_first=False, max_action_len=20, eval_client='crop', success_dist=20.0, move_iteration=10, gps_noise_scale=0.0, map_shape=(240, 240), map_pixels_per_meter=0.5853658536585366)
+
+
+
+Listener training starts, start epoch: 0
+
+IL_loss 8.3201 direction_loss 0.0000 progress_loss 0.0000 goal_predict_loss 1499.4453
+
+target_distance_loss 1022.9238 target_bearing_loss 1.0360 target_consistency_loss 4.1739
+
+stage 13.5938 2.3750 4.0312
+
+stage 14.1562 2.2812 3.5625
+
+stage 16.5000 1.3125 2.1875
+
+0m 20s (- 0m 0s) (1 100%) 
+epoch 0
+val_seen , lengths: 195.18, stage1_length: 183.78, stage2_length: 11.41, sr: 87.50, sr1: 87.50, sr2: 87.50, oracle_sr: 87.50, oracle_sr1: 87.50, oracle_sr2: 87.50, spl: 79.61, ne: 9.93, oracle_ne: 9.44, stage1_ne: 9.87, stage1_oracle_ne: 9.71, stage2_ne: 9.93, stage2_oracle_ne: 9.60, gt_length: 178.47, target_error_mean_m: 79.98, target_hit5: 0.00, target_hit10: 0.00, target_hit20: 0.09
+val_unseen , lengths: 193.74, stage1_length: 187.17, stage2_length: 6.56, sr: 93.75, sr1: 93.75, sr2: 93.75, oracle_sr: 93.75, oracle_sr1: 93.75, oracle_sr2: 93.75, spl: 84.56, ne: 9.85, oracle_ne: 9.75, stage1_ne: 10.08, stage1_oracle_ne: 10.08, stage2_ne: 9.85, stage2_oracle_ne: 9.75, gt_length: 181.03, target_error_mean_m: 159.81, target_hit5: 0.00, target_hit10: 0.00, target_hit20: 0.00
+BEST RESULT TILL NOW
+val_unseen | Epoch 0 
+epoch 0
+val_seen , lengths: 195.18, stage1_length: 183.78, stage2_length: 11.41, sr: 87.50, sr1: 87.50, sr2: 87.50, oracle_sr: 87.50, oracle_sr1: 87.50, oracle_sr2: 87.50, spl: 79.61, ne: 9.93, oracle_ne: 9.44, stage1_ne: 9.87, stage1_oracle_ne: 9.71, stage2_ne: 9.93, stage2_oracle_ne: 9.60, gt_length: 178.47, target_error_mean_m: 79.98, target_hit5: 0.00, target_hit10: 0.00, target_hit20: 0.09
+val_unseen , lengths: 193.74, stage1_length: 187.17, stage2_length: 6.56, sr: 93.75, sr1: 93.75, sr2: 93.75, oracle_sr: 93.75, oracle_sr1: 93.75, oracle_sr2: 93.75, spl: 84.56, ne: 9.85, oracle_ne: 9.75, stage1_ne: 10.08, stage1_oracle_ne: 10.08, stage2_ne: 9.85, stage2_oracle_ne: 9.75, gt_length: 181.03, target_error_mean_m: 159.81, target_hit5: 0.00, target_hit10: 0.00, target_hit20: 0.00
+val_unseen_full_traj | 

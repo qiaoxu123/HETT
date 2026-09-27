@@ -1,0 +1,12 @@
+{
+  "val_unseen": {
+    "sr": 90.7304412309974,
+    "target_error_m": 15.241832573597245,
+    "state": "Epoch 2 \nepoch 2\nval_seen , lengths: 225.86, stage1_length: 212.14, stage2_length: 13.73, sr: 90.85, sr1: 90.85, sr2: 90.85, oracle_sr: 91.09, oracle_sr1: 91.09, oracle_sr2: 90.85, spl: 78.75, ne: 8.14, oracle_ne: 7.62, stage1_ne: 8.32, stage1_oracle_ne: 8.26, stage2_ne: 8.14, stage2_oracle_ne: 7.68, gt_length: 196.98, target_error_mean_m: 13.42, target_hit5: 0.20, target_hit10: 0.53, target_hit20: 0.84\nval_unseen , lengths: 230.50, stage1_length: 217.88, stage2_length: 12.62, sr: 90.73, sr1: 90.73, sr2: 90.73, oracle_sr: 91.14, oracle_sr1: 91.14, oracle_sr2: 90.73, spl: 80.69, ne: 8.47, oracle_ne: 7.99, stage1_ne: 8.64, stage1_oracle_ne: 8.59, stage2_ne: 8.47, stage2_oracle_ne: 8.05, gt_length: 207.71, target_error_mean_m: 15.24, target_hit5: 0.18, target_hit10: 0.48, target_hit20: 0.81"
+  },
+  "val_unseen_full_traj": {
+    "sr": 0.0,
+    "target_error_m": 1e+30,
+    "state": ""
+  }
+}

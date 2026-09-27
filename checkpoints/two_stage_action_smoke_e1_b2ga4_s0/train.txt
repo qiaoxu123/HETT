@@ -1,0 +1,28 @@
+Namespace(seed=0, mode='train', local_rank=-1, world_size=1, ignore_id=-100, grid_size=5, demb=768, encoder_heads=12, encoder_layers=2, dropout_transformer_encoder=0.1, num_input_actions=1, dropout_emb=0, num_l_layers=9, num_h_layers=0, num_x_layers=4, num_replacement=False, ml_weight=0.2, entropy_loss_weight=0.01, teacher_weight=1.0, darknet_model_file='/home/rental/20260922_1/Workspace/hett-experiments/53-hett-two-stage-target-action/weights/yolo_v3.cfg', darknet_weight_file='/home/rental/20260922_1/Workspace/hett-experiments/53-hett-two-stage-target-action/weights/best.pt', output_dir='/home/rental/20260922_1/Workspace/hett-experiments/53-hett-two-stage-target-action/checkpoints/two_stage_action_smoke_e1_b2ga4_s0', direction_loss_weight=1.5, goal_loss_weight=2.0, progress_loss_weight=0.1, target_loss_weight=0.1, disable_task_interaction=False, training_stage='action', target_huber_delta_m=10.0, target_distance_loss_weight=0.2, target_bearing_loss_weight=0.2, target_consistency_loss_weight=0.05, action_gt_coordinate_start=1.0, action_gt_coordinate_end=0.1, log_every=1, log_dir='log', map_size=240, map_meters=410.0, map_update_interval=5, max_depth=200.0, altitude=50.0, ablate='', alt_env='', optim='adamW', weight_decay=0.01, grad_accum=4, max_episodes=32, feedback='student', nss_w=1, nss_r=0, epsilon=0.1, learning_rate=0.0001, batch_size=2, epochs=1, iters=200000, checkpoint='/home/rental/20260922_1/Workspace/hett-experiments/53-hett-two-stage-target-action/checkpoints/two_stage_target_e3_b16_s0/best_val_unseen', resume_optimizer=False, reset_epoch_on_load=True, save_every=1, train_trajectory_type='mturk', train_episode_sample_size=-1, ignoreid=-100, eval_every=1, eval_first=False, max_action_len=20, eval_client='crop', success_dist=20.0, move_iteration=10, gps_noise_scale=0.0, map_shape=(240, 240), map_pixels_per_meter=0.5853658536585366)
+
+
+
+LOAD the model from /home/rental/20260922_1/Workspace/hett-experiments/53-hett-two-stage-target-action/checkpoints/two_stage_target_e3_b16_s0/best_val_unseen, checkpoint epoch 3, start epoch 0
+
+Listener training starts, start epoch: 0
+
+IL_loss 10.3727 direction_loss 6.8558 progress_loss 0.8909 goal_predict_loss 0.0000
+
+target_distance_loss 0.0000 target_bearing_loss 0.0000 target_consistency_loss 0.0000
+
+stage 12.2031 1.3594 6.4375
+
+stage 7.1875 2.9375 9.8750
+
+stage 8.9375 0.6562 10.4062
+
+0m 31s (- 0m 0s) (1 100%) 
+epoch 0
+val_seen , lengths: 130.14, stage1_length: 115.45, stage2_length: 14.69, sr: 6.25, sr1: 6.25, sr2: 6.25, oracle_sr: 12.50, oracle_sr1: 6.25, oracle_sr2: 12.50, spl: 5.83, ne: 96.33, oracle_ne: 84.10, stage1_ne: 102.08, stage1_oracle_ne: 91.41, stage2_ne: 96.33, stage2_oracle_ne: 93.71, gt_length: 178.47, target_error_mean_m: 97.93, target_hit5: 0.01, target_hit10: 0.03, target_hit20: 0.05
+val_unseen , lengths: 155.18, stage1_length: 151.90, stage2_length: 3.28, sr: 0.00, sr1: 0.00, sr2: 0.00, oracle_sr: 6.25, oracle_sr1: 6.25, oracle_sr2: 0.00, spl: 0.00, ne: 110.57, oracle_ne: 90.62, stage1_ne: 108.38, stage1_oracle_ne: 90.62, stage2_ne: 110.57, stage2_oracle_ne: 108.38, gt_length: 181.03, target_error_mean_m: 107.33, target_hit5: 0.00, target_hit10: 0.00, target_hit20: 0.00
+BEST RESULT TILL NOW
+val_unseen | Epoch 0 
+epoch 0
+val_seen , lengths: 130.14, stage1_length: 115.45, stage2_length: 14.69, sr: 6.25, sr1: 6.25, sr2: 6.25, oracle_sr: 12.50, oracle_sr1: 6.25, oracle_sr2: 12.50, spl: 5.83, ne: 96.33, oracle_ne: 84.10, stage1_ne: 102.08, stage1_oracle_ne: 91.41, stage2_ne: 96.33, stage2_oracle_ne: 93.71, gt_length: 178.47, target_error_mean_m: 97.93, target_hit5: 0.01, target_hit10: 0.03, target_hit20: 0.05
+val_unseen , lengths: 155.18, stage1_length: 151.90, stage2_length: 3.28, sr: 0.00, sr1: 0.00, sr2: 0.00, oracle_sr: 6.25, oracle_sr1: 6.25, oracle_sr2: 0.00, spl: 0.00, ne: 110.57, oracle_ne: 90.62, stage1_ne: 108.38, stage1_oracle_ne: 90.62, stage2_ne: 110.57, stage2_oracle_ne: 108.38, gt_length: 181.03, target_error_mean_m: 107.33, target_hit5: 0.00, target_hit10: 0.00, target_hit20: 0.00
+val_unseen_full_traj | 
