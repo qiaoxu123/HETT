@@ -529,7 +529,14 @@ class ET(nn.Module):
 
         if training_stage == 'fine':
             waypoint_offset = self.decoder_2_local_waypoint_full(decoder_input)
-            waypoint_scale = getattr(self.args, 'fine_waypoint_m', 20.0) / self.args.map_meters
+            waypoint_norm = torch.linalg.vector_norm(
+                waypoint_offset, dim=-1, keepdim=True
+            ).clamp_min(1.0)
+            waypoint_offset = waypoint_offset / waypoint_norm
+            waypoint_scale = (
+                getattr(self.args, 'fine_waypoint_m', 20.0)
+                / self.args.map_meters
+            )
             waypoint_offset = waypoint_offset * waypoint_scale
             self.last_local_waypoint_offset = waypoint_offset
             self.last_local_waypoint = (
