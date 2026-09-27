@@ -8,6 +8,7 @@ only updates a small action-specific adapter plus the direction/progress heads.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Optional
 
 import torch
 import torch.nn.functional as F
@@ -28,6 +29,188 @@ class TargetLosses:
     distance: torch.Tensor
     bearing: torch.Tensor
     error_m: torch.Tensor
+
+
+@dataclass
+class QuadtreeBelief:
+    """Sparse hierarchical target belief decoded from a quadtree beam."""
+
+    coordinate: torch.Tensor
+    leaf_centers: torch.Tensor
+    leaf_probs: torch.Tensor
+    hierarchy_loss: Optional[torch.Tensor]
+
+
+class SparseQuadtreeBeliefHead(nn.Module):
+    """Hierarchical sparse target localizer for normalized 2-D maps.
+
+    Training uses teacher-forced 4-way decisions along the ground-truth path,
+    so the classification cost is O(4 * depth). Inference keeps only the
+    highest-scoring top-k nodes at every level, giving O(4 * top-k * depth)
+    spatial hypotheses instead of scoring a dense HxW field.
+
+    The final coordinate is the probability-weighted mean of the retained
+    leaves. The leaf centers/probabilities are also returned so a later
+    controller can consume multiple target hypotheses without early collapse.
+    """
+
+    _OFFSETS = (
+        (-1.0, -1.0),
+        (-1.0, 1.0),
+        (1.0, -1.0),
+        (1.0, 1.0),
+    )
+
+    def __init__(
+        self,
+        d_model: int,
+        depth: int = 5,
+        topk: int = 4,
+        hidden_dim: int = 256,
+    ) -> None:
+        super().__init__()
+        if depth < 1:
+            raise ValueError("quadtree depth must be positive")
+        if topk < 1:
+            raise ValueError("quadtree topk must be positive")
+        self.depth = depth
+        self.topk = topk
+        self.context_proj = nn.Linear(d_model, hidden_dim)
+        self.box_proj = nn.Sequential(
+            nn.Linear(3, hidden_dim),
+            nn.LayerNorm(hidden_dim),
+            nn.GELU(),
+        )
+        self.fusion = nn.Sequential(
+            nn.LayerNorm(hidden_dim),
+            nn.GELU(),
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.GELU(),
+            nn.Linear(hidden_dim, 1),
+        )
+
+    @staticmethod
+    def _children(
+        centers: torch.Tensor,
+        sizes: torch.Tensor,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        """Expand square nodes into four children."""
+
+        offsets = centers.new_tensor(SparseQuadtreeBeliefHead._OFFSETS)
+        child_sizes = sizes.unsqueeze(-1).expand(*sizes.shape, 4) * 0.5
+        child_centers = (
+            centers.unsqueeze(-2)
+            + offsets * (sizes.unsqueeze(-1).unsqueeze(-1) * 0.25)
+        )
+        return child_centers.clamp(0.0, 1.0), child_sizes
+
+    def _score_children(
+        self,
+        context: torch.Tensor,
+        child_centers: torch.Tensor,
+        child_sizes: torch.Tensor,
+    ) -> torch.Tensor:
+        context_h = self.context_proj(context)
+        while context_h.ndim < child_centers.ndim:
+            context_h = context_h.unsqueeze(-2)
+        geometry = torch.cat(
+            (child_centers, child_sizes.unsqueeze(-1)), dim=-1
+        )
+        hidden = context_h + self.box_proj(geometry)
+        return self.fusion(hidden).squeeze(-1)
+
+    @staticmethod
+    def _truth_child(
+        truth: torch.Tensor,
+        parent_centers: torch.Tensor,
+    ) -> torch.Tensor:
+        x_right = (truth[:, 0] >= parent_centers[:, 0]).long()
+        y_bottom = (truth[:, 1] >= parent_centers[:, 1]).long()
+        return x_right * 2 + y_bottom
+
+    def hierarchy_loss(
+        self,
+        context: torch.Tensor,
+        truth: torch.Tensor,
+    ) -> torch.Tensor:
+        """Teacher-forced hierarchical CE along the ground-truth path."""
+
+        batch = context.shape[0]
+        parent_centers = context.new_full((batch, 2), 0.5)
+        parent_sizes = context.new_ones(batch)
+        loss = context.new_zeros(())
+        for _ in range(self.depth):
+            child_centers, child_sizes = self._children(
+                parent_centers, parent_sizes
+            )
+            logits = self._score_children(context, child_centers, child_sizes)
+            labels = self._truth_child(truth, parent_centers)
+            loss = loss + F.cross_entropy(logits, labels, reduction="sum")
+            gather_index = labels.view(batch, 1, 1).expand(-1, 1, 2)
+            parent_centers = child_centers.gather(
+                1, gather_index
+            ).squeeze(1)
+            parent_sizes = child_sizes.gather(
+                1, labels.view(batch, 1)
+            ).squeeze(1)
+        return loss
+
+    def decode(
+        self,
+        context: torch.Tensor,
+        topk: Optional[int] = None,
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        """Beam-decode a sparse set of quadtree leaves."""
+
+        batch = context.shape[0]
+        keep = self.topk if topk is None else topk
+        centers = context.new_full((batch, 1, 2), 0.5)
+        sizes = context.new_ones(batch, 1)
+        log_scores = context.new_zeros(batch, 1)
+
+        for _ in range(self.depth):
+            child_centers, child_sizes = self._children(centers, sizes)
+            bsz, beam, _, _ = child_centers.shape
+            flat_centers = child_centers.reshape(bsz, beam * 4, 2)
+            flat_sizes = child_sizes.reshape(bsz, beam * 4)
+
+            logits = self._score_children(
+                context.unsqueeze(1).expand(-1, beam, -1),
+                child_centers,
+                child_sizes,
+            )
+            child_log_probs = F.log_softmax(logits, dim=-1)
+            flat_scores = (
+                log_scores.unsqueeze(-1) + child_log_probs
+            ).reshape(bsz, beam * 4)
+
+            next_keep = min(keep, flat_scores.shape[1])
+            log_scores, indices = torch.topk(
+                flat_scores, k=next_keep, dim=-1
+            )
+            centers = flat_centers.gather(
+                1, indices.unsqueeze(-1).expand(-1, -1, 2)
+            )
+            sizes = flat_sizes.gather(1, indices)
+
+        probs = torch.softmax(log_scores, dim=-1)
+        coordinate = (centers * probs.unsqueeze(-1)).sum(dim=1)
+        return coordinate, centers, probs
+
+    def forward(
+        self,
+        context: torch.Tensor,
+        truth: Optional[torch.Tensor] = None,
+        topk: Optional[int] = None,
+    ) -> QuadtreeBelief:
+        coordinate, centers, probs = self.decode(context, topk=topk)
+        loss = None if truth is None else self.hierarchy_loss(context, truth)
+        return QuadtreeBelief(
+            coordinate=coordinate,
+            leaf_centers=centers,
+            leaf_probs=probs,
+            hierarchy_loss=loss,
+        )
 
 
 class TargetConditioning(nn.Module):
@@ -167,6 +350,7 @@ def configure_stage_parameters(
     vision_model: nn.Module,
     navigation_model: nn.Module,
     stage: str,
+    freeze_target_backbones: bool = False,
 ) -> None:
     """Configure strict parameter ownership for a training stage."""
 
@@ -187,6 +371,10 @@ def configure_stage_parameters(
         for module in action_modules:
             for parameter in module.parameters():
                 parameter.requires_grad = False
+        if freeze_target_backbones:
+            for model in (language_model, vision_model):
+                for parameter in model.parameters():
+                    parameter.requires_grad = False
     elif stage == "action":
         for model in (language_model, vision_model, navigation_model):
             for parameter in model.parameters():
