@@ -37,7 +37,15 @@ def get_rgbd(map_name: str, pose: Pose4D, rgb_size: Tuple[int, int], depth_size:
 
 
 def crop_image(map_name: str, pose: Pose4D, shape: Tuple[int, int], type: Literal['rgb', 'depth']) -> np.ndarray:
-    image = (_rgb_cache if type == 'rgb' else _height_cache)[map_name]
+    global _height_cache
+    if type == 'depth':
+        if _height_cache is None:
+            _height_cache = {}
+        if map_name not in _height_cache:
+            _height_cache[map_name] = _raster_cache[map_name].read(1)
+        image = _height_cache[map_name]
+    else:
+        image = _rgb_cache[map_name]
 
     view_area_corners_rowcol = _compute_view_area_corners_rowcol(map_name, pose)
     view_area_corners_colrow = np.flip(view_area_corners_rowcol, axis=-1)
@@ -87,12 +95,8 @@ def load_image_cache(image_dir=ORTHO_IMAGE_DIR, alt_env: Literal['', 'flood', 'g
         }
 
     if _height_cache is None:
-        _height_cache = {
-            map_name: raster.read(1)
-            for map_name, raster in tqdm(
-                _raster_cache.items(), desc="reading height data from disk", leave=False
-            )
-        }
+        # Depth/height rasters are loaded lazily per map by crop_image().
+        _height_cache = {}
 
 
 def clear_image_cache():
