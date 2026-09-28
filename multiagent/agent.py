@@ -478,7 +478,9 @@ class NavCMTAgent:
         # 5. 计算损失并输出动作/目标/进度更新环境状态
         # rollout_start_time = time.time()
 
-        fine_stage = getattr(self.args, 'training_stage', 'joint') == 'fine'
+        stage_name = getattr(self.args, 'training_stage', 'joint')
+        fine_stage = stage_name == 'fine'
+        arrival_stage = stage_name == 'arrival'
         fine_one_state_train = (
             fine_stage
             and train_ml is not None
@@ -487,10 +489,7 @@ class NavCMTAgent:
         obs = self.env._get_obs(
             random_direction=(self.feedback == 'teacher' and not fine_stage)
         )
-        arrival_one_state_train = (
-            getattr(self.args, 'training_stage', 'joint') == 'arrival'
-            and train_ml is not None
-        )
+        arrival_one_state_train = arrival_stage and train_ml is not None
         batch_size = len(obs)
 
         # --------------- 1. 语言输入：instruction -> token ids -> BERT embedding -----------------
@@ -1133,7 +1132,7 @@ class NavCMTAgent:
                 # One-state supervision deliberately avoids teacher-induced
                 # sequences of near-zero heading labels. Each training sample
                 # contributes exactly one randomized near-goal state.
-                if fine_one_state_train or arrival_one_state_train:
+                if fine_one_state_train or arrival_stage:
                     break
                 # print(pred_logits.shape)
             if training_stage == 'fine':
