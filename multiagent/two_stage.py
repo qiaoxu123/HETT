@@ -28,6 +28,9 @@ FINE_MODULE_NAMES = (
     "decoder_2_local_control_full",
     "decoder_2_stop_full",
 )
+ARRIVAL_MODULE_NAMES = (
+    "landmark_arrival_head",
+)
 
 
 @dataclass
@@ -805,6 +808,14 @@ def configure_stage_parameters(
             for parameter in model.parameters():
                 parameter.requires_grad = False
         for name in FINE_MODULE_NAMES:
+            if hasattr(navigation_model, name):
+                for parameter in getattr(navigation_model, name).parameters():
+                    parameter.requires_grad = True
+    elif stage == "arrival":
+        for model in (language_model, vision_model, navigation_model):
+            for parameter in model.parameters():
+                parameter.requires_grad = False
+        for name in ARRIVAL_MODULE_NAMES:
             if hasattr(navigation_model, name):
                 for parameter in getattr(navigation_model, name).parameters():
                     parameter.requires_grad = True
