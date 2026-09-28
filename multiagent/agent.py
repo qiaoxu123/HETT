@@ -474,6 +474,11 @@ class NavCMTAgent:
         # rollout_start_time = time.time()
 
         fine_stage = getattr(self.args, 'training_stage', 'joint') == 'fine'
+        fine_one_state_train = (
+            fine_stage
+            and train_ml is not None
+            and getattr(self.args, 'fine_one_state_supervision', False)
+        )
         obs = self.env._get_obs(
             random_direction=(self.feedback == 'teacher' and not fine_stage)
         )
@@ -853,9 +858,6 @@ class NavCMTAgent:
                     # cuda_gt_next_pos_ratio = torch.from_numpy(target[i][0]).cuda()
                     # print(pred_direction[i].view(-1), true_sin_cos)
                     if not ended[i] and training_stage != 'target':
-                        # if stage1_ended[i]:
-                        direction_loss += self.progress_regression(pred_direction[i].view(-1), true_sin_cos)
-
                         if (training_stage in ('action', 'fine')
                                 and getattr(self.args, 'use_stop_head', False)):
                             gt_distance_m = torch.linalg.vector_norm(
@@ -864,6 +866,14 @@ class NavCMTAgent:
                             gt_stop = (
                                 gt_distance_m <= self.args.stop_distance_m
                             ).float().view(-1)
+
+                            # For one-state fine supervision, heading is undefined
+                            # once the sample is already inside the success region.
+                            if not (training_stage == 'fine' and gt_stop.item() > 0.5):
+                                direction_loss += self.progress_regression(
+                                    pred_direction[i].view(-1), true_sin_cos
+                                )
+
                             if training_stage == 'fine':
                                 pos_weight = pred_progress.new_tensor(
                                     [self.args.fine_stop_pos_weight]
@@ -883,6 +893,9 @@ class NavCMTAgent:
                                     reduction='sum',
                                 )
                         else:
+                            direction_loss += self.progress_regression(
+                                pred_direction[i].view(-1), true_sin_cos
+                            )
                             progress_loss += self.progress_regression(
                                 pred_progress[i].view(-1),
                                 gt_progress[i].view(-1).cuda(),
@@ -1040,6 +1053,11 @@ class NavCMTAgent:
                             reduction='sum',
                         )
                 previous_pred_goals = pred_goals.detach()
+                # One-state supervision deliberately avoids teacher-induced
+                # sequences of near-zero heading labels. Each training sample
+                # contributes exactly one randomized near-goal state.
+                if fine_one_state_train:
+                    break
                 # print(pred_logits.shape)
             if training_stage == 'fine':
                 active_stop = ~ended
