@@ -86,11 +86,13 @@ def load_image_cache(image_dir=ORTHO_IMAGE_DIR, alt_env: Literal['', 'flood', 'g
             for rgb_path in tqdm(image_dir.glob("*.png"), desc="reading rgb data from disk", leave=False)
         }
 
-    # if _height_cache is None:
-    #     _height_cache = {
-    #         map_name: raster.read(1)  # read first channel (1-based index)
-    #         for map_name, raster in tqdm(_raster_cache.items(), desc="reading depth data from disk", leave=False)
-    #     }
+    if _height_cache is None:
+        _height_cache = {
+            map_name: raster.read(1)
+            for map_name, raster in tqdm(
+                _raster_cache.items(), desc="reading height data from disk", leave=False
+            )
+        }
 
 
 def clear_image_cache():
