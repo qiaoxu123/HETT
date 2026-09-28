@@ -175,7 +175,13 @@ def parse_args():
     parser.add_argument('--fine_random_yaw', action='store_true')
     parser.add_argument('--fine_waypoint_m', type=float, default=20.0)
     parser.add_argument('--fine_distance_loss_weight', type=float, default=1.0)
-    parser.add_argument('--fine_stop_pos_weight', type=float, default=15.0)
+    parser.add_argument('--fine_stop_pos_weight', type=float, default=1.0)
+    parser.add_argument(
+        '--fine_one_state_supervision', action='store_true',
+        help='train fine navigation from independent randomized near-goal states instead of teacher rollouts',
+    )
+    parser.add_argument('--fine_stop_positive_fraction', type=float, default=0.30)
+    parser.add_argument('--fine_positive_min_m', type=float, default=5.0)
 
     # logger
     parser.add_argument('--log_every', type=int, default=1)
@@ -242,7 +248,10 @@ def parse_args():
             or args.fine_start_min_m >= args.fine_start_max_m
             or args.fine_waypoint_m <= 0
             or args.fine_distance_loss_weight < 0
-            or args.fine_stop_pos_weight <= 0):
+            or args.fine_stop_pos_weight <= 0
+            or args.fine_positive_min_m < 0
+            or args.fine_positive_min_m >= args.stop_distance_m
+            or not (0 < args.fine_stop_positive_fraction < 1)):
         parser.error('fine-navigation distance/loss parameters are invalid')
     if (args.target_huber_delta_m <= 0
             or args.target_distance_loss_weight < 0
