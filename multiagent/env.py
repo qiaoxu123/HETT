@@ -126,6 +126,7 @@ class CityNavBatch(torch.utils.data.IterableDataset):
         #             self.data.append(item)
         cropclient.load_image_cache()
         objects = get_city_refer_objects()
+        self.objects = objects
         mturk_trajs = load_mturk_trajectories(split, 'all', args.altitude)
         # 冒烟测试用：--max_episodes N 时只取前 N 条轨迹（默认 0 = 全部）
         max_eps = getattr(args, 'max_episodes', 0)
@@ -244,6 +245,84 @@ class CityNavBatch(torch.utils.data.IterableDataset):
         return Pose4D(
             start_xy.x, start_xy.y, episode.start_pose.z, float(yaw)
         )
+    def _arrival_rng(self, episode):
+        if self.split == 'train_seen':
+            return self.fine_rng
+        stable_id = zlib.crc32(('arrival-' + str(episode.id)).encode('utf-8'))
+        return np.random.RandomState(self.base_seed + stable_id)
+
+    def _sample_pose_around(self, center_xy, episode, rng, min_m, max_m):
+        for _ in range(64):
+            radius_m = rng.uniform(min_m, max_m)
+            angle = rng.uniform(-np.pi, np.pi)
+            candidate = Point2D(
+                center_xy.x + radius_m * np.cos(angle),
+                center_xy.y + radius_m * np.sin(angle),
+            )
+            norm = self.normalize_position(candidate, episode.map_name, self.args.map_meters)
+            if 0.01 <= norm[0] <= 0.99 and 0.01 <= norm[1] <= 0.99:
+                yaw = rng.uniform(-np.pi, np.pi)
+                return Pose4D(candidate.x, candidate.y, episode.start_pose.z, float(yaw))
+        yaw = rng.uniform(-np.pi, np.pi)
+        return Pose4D(center_xy.x, center_xy.y, episode.start_pose.z, float(yaw))
+
+    def _sample_arrival_pose(self, episode):
+        """Sample positive, far-correct, or near-wrong landmark arrival evidence."""
+        rng = self._arrival_rng(episode)
+        u = rng.rand()
+        if u < self.args.arrival_positive_fraction:
+            pose = self._sample_pose_around(
+                episode.target_position.xy, episode, rng,
+                self.args.arrival_positive_min_m, self.args.arrival_near_m,
+            )
+            meta = dict(state_type='positive', match_label=1.0, near_label=1.0, arrival_label=1.0)
+            return pose, meta
+
+        if u < self.args.arrival_positive_fraction + self.args.arrival_far_fraction:
+            pose = self._sample_pose_around(
+                episode.target_position.xy, episode, rng,
+                self.args.arrival_far_min_m, self.args.arrival_far_max_m,
+            )
+            meta = dict(state_type='far_correct', match_label=1.0, near_label=0.0, arrival_label=0.0)
+            return pose, meta
+
+        wrong = [
+            obj for obj in self.objects[episode.map_name].values()
+            if obj.id != episode.target_object.id
+            and obj.name
+            and obj.position.xy.dist_to(episode.target_position.xy) >= self.args.arrival_far_min_m
+        ]
+        if wrong:
+            landmark = wrong[int(rng.randint(0, len(wrong)))]
+            pose = self._sample_pose_around(
+                landmark.position.xy, episode, rng,
+                self.args.arrival_positive_min_m, self.args.arrival_near_m,
+            )
+            meta = dict(
+                state_type='near_wrong', match_label=0.0, near_label=0.0,
+                arrival_label=0.0, wrong_landmark_id=int(landmark.id),
+            )
+            return pose, meta
+
+        pose = self._sample_pose_around(
+            episode.target_position.xy, episode, rng,
+            self.args.arrival_far_min_m, self.args.arrival_far_max_m,
+        )
+        meta = dict(state_type='far_correct_fallback', match_label=1.0, near_label=0.0, arrival_label=0.0)
+        return pose, meta
+
+    @staticmethod
+    def _depth_statistics(depth):
+        values = np.asarray(depth, dtype=np.float32).reshape(-1)
+        values = values[np.isfinite(values)]
+        if values.size == 0:
+            return np.zeros(4, dtype=np.float32)
+        return np.array([
+            np.median(values),
+            np.percentile(values, 10),
+            np.percentile(values, 25),
+            np.mean(values),
+        ], dtype=np.float32)
     def normalize_position(self, pos: Point2D, map_name: str, map_meters: float):
         return (pos.x - MAP_BOUNDS[map_name].x_min) / map_meters, (MAP_BOUNDS[map_name].y_max - pos.y) / map_meters
 
@@ -260,7 +339,16 @@ class CityNavBatch(torch.utils.data.IterableDataset):
         obs = []
 
         if poses is None:
-            if (getattr(self.args, 'training_stage', 'joint') == 'fine'
+            stage = getattr(self.args, 'training_stage', 'joint')
+            self._arrival_meta = None
+            if stage == 'arrival':
+                sampled = [
+                    self._sample_arrival_pose(episode)
+                    for episode in self.batch
+                ]
+                poses = [item[0] for item in sampled]
+                self._arrival_meta = [item[1] for item in sampled]
+            elif (stage == 'fine'
                     and getattr(self.args, 'fine_random_start', False)):
                 poses = [
                     self._sample_fine_start_pose(episode)
@@ -352,6 +440,14 @@ class CityNavBatch(torch.utils.data.IterableDataset):
             pred_goal_xy = np.mean(centroids, axis=0) if centroids else np.array([0, 0])
 
             rgb = cropclient.crop_image(episode.map_name, poses[i], (224, 224), 'rgb')
+            depth_stats = np.zeros(4, dtype=np.float32)
+            if getattr(self.args, 'training_stage', 'joint') == 'arrival':
+                depth = cropclient.crop_image(
+                    episode.map_name, poses[i],
+                    (self.args.arrival_depth_size, self.args.arrival_depth_size),
+                    'depth',
+                )
+                depth_stats = self._depth_statistics(depth)
             progress = np.clip(
                 1 - episode.target_position.xy.dist_to(poses[i].xy) / 100,
                 0, 1)
@@ -375,6 +471,23 @@ class CityNavBatch(torch.utils.data.IterableDataset):
                 'normalized_goal': normalized_goal_xys,
                 'grid_goal': normalized_goal_id,
                 'distance_to_goal_m': episode.target_position.xy.dist_to(poses[i].xy),
+                'depth_stats': depth_stats,
+                'arrival_state_type': (
+                    self._arrival_meta[i]['state_type']
+                    if getattr(self, '_arrival_meta', None) is not None else None
+                ),
+                'arrival_match_label': (
+                    self._arrival_meta[i]['match_label']
+                    if getattr(self, '_arrival_meta', None) is not None else 0.0
+                ),
+                'arrival_near_label': (
+                    self._arrival_meta[i]['near_label']
+                    if getattr(self, '_arrival_meta', None) is not None else 0.0
+                ),
+                'arrival_label': (
+                    self._arrival_meta[i]['arrival_label']
+                    if getattr(self, '_arrival_meta', None) is not None else 0.0
+                ),
             })
 
             # TODO: what to use for a2c reward?
