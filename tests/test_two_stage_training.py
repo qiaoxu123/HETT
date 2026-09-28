@@ -424,15 +424,15 @@ def test_fine_stage_owns_only_fine_control_modules():
     )
 
 
-def test_weighted_stop_loss_penalizes_positive_miss_more():
-    logit = torch.tensor([-2.0])
+def test_balanced_stop_loss_has_no_class_bias_at_zero_logit():
+    logit = torch.tensor([0.0])
     positive = torch.tensor([1.0])
     negative = torch.tensor([0.0])
     pos_loss = F.binary_cross_entropy_with_logits(
-        logit, positive, pos_weight=torch.tensor([15.0])
+        logit, positive, pos_weight=torch.tensor([1.0])
     )
     neg_loss = F.binary_cross_entropy_with_logits(logit, negative)
-    assert pos_loss > neg_loss * 10.0
+    assert torch.allclose(pos_loss, neg_loss)
 
 
 def test_ego_heading_vector_matches_relative_angle_convention():
