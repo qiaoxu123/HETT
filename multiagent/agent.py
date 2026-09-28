@@ -722,7 +722,7 @@ class NavCMTAgent:
             if training_stage == 'arrival':
                 model_inputs['depth_stats'] = torch.from_numpy(
                     np.stack([ob['depth_stats'] for ob in obs]).astype(np.float32)
-                ).cuda()
+                ).cuda().div(self.args.max_depth).clamp(0.0, 1.0)
             action_coordinate_mask = None
             if training_stage == 'target':
                 model_inputs.update({
