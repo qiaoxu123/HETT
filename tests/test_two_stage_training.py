@@ -6,6 +6,7 @@ from torch import nn
 
 from multiagent.two_stage import (
     FineNavigationAdapter,
+    LandmarkArrivalHead,
     MultiHypothesisConditioning,
     RelationalCandidateBeliefHead,
     SparseQuadtreeBeliefHead,
@@ -442,3 +443,44 @@ def test_ego_heading_vector_matches_relative_angle_convention():
     vector = torch.stack((torch.sin(theta), torch.cos(theta)), dim=-1)
     recovered = torch.atan2(vector[:, 0], vector[:, 1])
     assert torch.allclose(recovered, theta, atol=1e-6)
+
+
+def test_landmark_arrival_head_outputs_three_logits():
+    torch.manual_seed(0)
+    head = LandmarkArrivalHead(d_model=8, depth_dim=4, geom_dim=6, dropout=0.0)
+    visual = torch.randn(3, 8)
+    language = torch.randn(3, 8)
+    depth = torch.randn(3, 4)
+    geometry = torch.randn(3, 4, 6)
+    match, near, arrived = head(visual, language, depth, geometry)
+    assert match.shape == (3, 1)
+    assert near.shape == (3, 1)
+    assert arrived.shape == (3, 1)
+
+
+def test_arrival_stage_owns_only_arrival_head():
+    class TinyArrivalModel(nn.Module):
+        def __init__(self):
+            super().__init__()
+            self.backbone = nn.Linear(4, 4)
+            self.target_conditioning = nn.Linear(4, 4)
+            self.multi_target_conditioning = nn.Linear(4, 4)
+            self.landmark_arrival_head = nn.Linear(4, 3)
+
+    language = nn.Linear(4, 4)
+    vision = nn.Linear(4, 4)
+    navigation = TinyArrivalModel()
+    configure_stage_parameters(language, vision, navigation, 'arrival')
+
+    assert not any(p.requires_grad for p in language.parameters())
+    assert not any(p.requires_grad for p in vision.parameters())
+    assert not any(p.requires_grad for p in navigation.backbone.parameters())
+    assert not any(
+        p.requires_grad for p in navigation.target_conditioning.parameters()
+    )
+    assert not any(
+        p.requires_grad for p in navigation.multi_target_conditioning.parameters()
+    )
+    assert all(
+        p.requires_grad for p in navigation.landmark_arrival_head.parameters()
+    )
