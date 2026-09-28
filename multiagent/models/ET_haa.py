@@ -11,6 +11,7 @@ import numpy as np
 from .goal_predictor import MapEncoder
 from multiagent.two_stage import (
     FineNavigationAdapter,
+    LandmarkArrivalHead,
     MultiHypothesisConditioning,
     RelationalCandidateBeliefHead,
     SparseQuadtreeBeliefHead,
@@ -267,6 +268,12 @@ class ET(nn.Module):
             num_heads=candidate_heads,
             dropout=self.args.dropout_transformer_encoder,
         )
+        self.landmark_arrival_head = LandmarkArrivalHead(
+            d_model=self.args.demb,
+            depth_dim=4,
+            geom_dim=6,
+            dropout=self.args.dropout_transformer_encoder,
+        )
         self.quadtree_belief = SparseQuadtreeBeliefHead(
             d_model=self.args.demb,
             depth=getattr(self.args, 'quadtree_depth', 5),
@@ -284,6 +291,9 @@ class ET(nn.Module):
         self.last_candidate_global_logits = None
         self.last_candidate_local_logits = None
         self.last_candidate_local_gate = None
+        self.last_arrival_match_logit = None
+        self.last_arrival_near_logit = None
+        self.last_arrival_logit = None
         self.last_local_waypoint = None
         self.last_local_waypoint_offset = None
         self.last_fine_heading_vector = None
@@ -403,6 +413,7 @@ class ET(nn.Module):
         direction_end = frame_end + emb_directions.shape[1]
         map_end = direction_end + emb_maps.shape[1]
 
+        encoder_out_language = encoder_out[:, :lang_end]
         encoder_out_frames = encoder_out[:, lang_end:frame_end]
         encoder_out_directions = encoder_out[:, frame_end:direction_end]
         encoder_out_maps = encoder_out[:, direction_end:map_end]
@@ -519,6 +530,51 @@ class ET(nn.Module):
                     action_targets,
                     current_positions,
                 )
+
+        if training_stage == 'arrival':
+            if self.last_topk_coordinates is None or self.last_topk_probs is None:
+                raise RuntimeError('arrival stage requires candidate Top-K hypotheses')
+            current_positions = inputs['directions'][:, -1, 2:4]
+            topk = self.last_topk_coordinates.detach()
+            probs = self.last_topk_probs.detach()
+            delta = topk - current_positions.unsqueeze(1)
+            distance = torch.linalg.vector_norm(delta, dim=-1, keepdim=True)
+            bearing = torch.atan2(-delta[..., 1], delta[..., 0])
+            geom = torch.cat(
+                (
+                    delta,
+                    distance,
+                    torch.sin(bearing).unsqueeze(-1),
+                    torch.cos(bearing).unsqueeze(-1),
+                    probs.unsqueeze(-1),
+                ),
+                dim=-1,
+            )
+            lang_mask = inputs.get('lang_mask')
+            if lang_mask is None:
+                language_token = encoder_out_language.mean(dim=1)
+            else:
+                weights = lang_mask.to(encoder_out_language.dtype).unsqueeze(-1)
+                language_token = (
+                    encoder_out_language * weights
+                ).sum(dim=1) / weights.sum(dim=1).clamp_min(1.0)
+            depth_stats = inputs.get('depth_stats')
+            if depth_stats is None:
+                raise RuntimeError('arrival stage requires depth_stats')
+            (
+                self.last_arrival_match_logit,
+                self.last_arrival_near_logit,
+                self.last_arrival_logit,
+            ) = self.landmark_arrival_head(
+                encoder_out_visual,
+                language_token,
+                depth_stats,
+                geom,
+            )
+        else:
+            self.last_arrival_match_logit = None
+            self.last_arrival_near_logit = None
+            self.last_arrival_logit = None
 
         if training_stage == 'fine':
             motion_tokens = self.fine_navigation_adapter(
