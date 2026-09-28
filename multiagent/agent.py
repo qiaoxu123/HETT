@@ -588,6 +588,8 @@ class NavCMTAgent:
         fine_predicted_stop_count = 0
         fine_premature_stop_count = 0
         fine_stop_decision_count = 0
+        fine_heading_target_abs_sum_deg = 0.0
+        fine_heading_target_count = 0
         fine_start_distance_sum_m = sum(
             float(ob.get('distance_to_goal_m', 0.0)) for ob in obs
         )
@@ -873,6 +875,11 @@ class NavCMTAgent:
                                 direction_loss += self.progress_regression(
                                     pred_direction[i].view(-1), true_sin_cos
                                 )
+                                if training_stage == 'fine':
+                                    fine_heading_target_abs_sum_deg += abs(
+                                        float(true_direction.detach().item())
+                                    ) * 180.0 / np.pi
+                                    fine_heading_target_count += 1
 
                             if training_stage == 'fine':
                                 pos_weight = pred_progress.new_tensor(
@@ -1373,6 +1380,10 @@ class NavCMTAgent:
         if fine_waypoint_count:
             self.logs['fine_waypoint_error_mean_m'].append(
                 fine_waypoint_error_sum_m / fine_waypoint_count
+            )
+        if fine_heading_target_count:
+            self.logs['fine_heading_target_abs_mean_deg'].append(
+                fine_heading_target_abs_sum_deg / fine_heading_target_count
             )
         if fine_stop_label_count:
             self.logs['fine_stop_positive_ratio'].append(
