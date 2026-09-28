@@ -203,9 +203,26 @@ class CityNavBatch(torch.utils.data.IterableDataset):
         )
         start_norm = None
         for _ in range(32):
-            radius_m = rng.uniform(
-                self.args.fine_start_min_m, self.args.fine_start_max_m
-            )
+            if (self.split == 'train_seen'
+                    and getattr(self.args, 'fine_one_state_supervision', False)):
+                if rng.rand() < self.args.fine_stop_positive_fraction:
+                    radius_m = rng.uniform(
+                        self.args.fine_positive_min_m,
+                        self.args.stop_distance_m,
+                    )
+                else:
+                    negative_min_m = max(
+                        self.args.fine_start_min_m,
+                        self.args.stop_distance_m + 1e-3,
+                    )
+                    radius_m = rng.uniform(
+                        negative_min_m,
+                        self.args.fine_start_max_m,
+                    )
+            else:
+                radius_m = rng.uniform(
+                    self.args.fine_start_min_m, self.args.fine_start_max_m
+                )
             angle = rng.uniform(-np.pi, np.pi)
             offset = (radius_m / self.args.map_meters) * np.array(
                 [np.cos(angle), np.sin(angle)], dtype=np.float32
