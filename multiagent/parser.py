@@ -119,11 +119,12 @@ def parse_args():
                         help='auxiliary grid loss from released code (not specified in paper)')
     parser.add_argument('--disable_task_interaction', action='store_true')
     parser.add_argument(
-        '--training_stage', choices=['joint', 'target', 'action', 'fine'], default='joint',
+        '--training_stage', choices=['joint', 'target', 'action', 'fine', 'arrival'], default='joint',
         help=(
             'joint keeps the released objective; target trains localisation only; '
             'action freezes localisation and trains target-conditioned control only; '
-            'fine trains near-goal RGB-language waypoint/action/stop heads'
+            'fine trains near-goal RGB-language waypoint/action/stop heads; '
+            'arrival trains landmark-arrival verification only'
         ),
     )
     parser.add_argument('--target_huber_delta_m', type=float, default=10.0)
@@ -182,6 +183,16 @@ def parse_args():
     )
     parser.add_argument('--fine_stop_positive_fraction', type=float, default=0.30)
     parser.add_argument('--fine_positive_min_m', type=float, default=5.0)
+    parser.add_argument('--arrival_near_m', type=float, default=20.0)
+    parser.add_argument('--arrival_positive_min_m', type=float, default=5.0)
+    parser.add_argument('--arrival_far_min_m', type=float, default=40.0)
+    parser.add_argument('--arrival_far_max_m', type=float, default=100.0)
+    parser.add_argument('--arrival_positive_fraction', type=float, default=0.34)
+    parser.add_argument('--arrival_far_fraction', type=float, default=0.33)
+    parser.add_argument('--arrival_match_loss_weight', type=float, default=1.0)
+    parser.add_argument('--arrival_near_loss_weight', type=float, default=1.0)
+    parser.add_argument('--arrival_loss_weight', type=float, default=1.0)
+    parser.add_argument('--arrival_depth_size', type=int, default=64)
 
     # logger
     parser.add_argument('--log_every', type=int, default=1)
@@ -278,6 +289,18 @@ def parse_args():
         parser.error('action GT-coordinate probabilities must be in [0, 1]')
     if args.stop_distance_m <= 0 or not (0 < args.stop_threshold < 1):
         parser.error('stop distance must be positive and stop threshold in (0, 1)')
+    if (args.arrival_positive_min_m < 0
+            or args.arrival_positive_min_m >= args.arrival_near_m
+            or args.arrival_far_min_m <= args.arrival_near_m
+            or args.arrival_far_min_m >= args.arrival_far_max_m
+            or not (0 < args.arrival_positive_fraction < 1)
+            or not (0 < args.arrival_far_fraction < 1)
+            or args.arrival_positive_fraction + args.arrival_far_fraction >= 1
+            or args.arrival_match_loss_weight < 0
+            or args.arrival_near_loss_weight < 0
+            or args.arrival_loss_weight < 0
+            or args.arrival_depth_size < 8):
+        parser.error('arrival sampling/loss parameters are invalid')
     if args.checkpoint and not Path(args.checkpoint).is_absolute():
         args.checkpoint = str(PROJECT_ROOT / args.checkpoint)
     output_dir = Path(args.output_dir)
