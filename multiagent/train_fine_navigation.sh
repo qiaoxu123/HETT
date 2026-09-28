@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Near-goal fine navigation: ego-centric heading/distance + balanced stopping.
+# Near-goal fine navigation: balanced one-state RGB-language supervision.
 set -euo pipefail
 
 if [[ $# -lt 1 ]]; then
@@ -27,7 +27,10 @@ cd "$(dirname "$0")"
     --fine_random_yaw \
     --fine_waypoint_m 20 \
     --fine_distance_loss_weight 1.0 \
-    --fine_stop_pos_weight 15.0 \
+    --fine_stop_pos_weight 1.0 \
+    --fine_one_state_supervision \
+    --fine_stop_positive_fraction 0.30 \
+    --fine_positive_min_m 5 \
     --direction_loss_weight 1.0 \
     --progress_loss_weight 1.0 \
     --checkpoint "$coarse_checkpoint" \
