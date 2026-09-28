@@ -275,7 +275,10 @@ class CityNavBatch(torch.utils.data.IterableDataset):
                 episode.target_position.xy, episode, rng,
                 self.args.arrival_positive_min_m, self.args.arrival_near_m,
             )
-            meta = dict(state_type='positive', match_label=1.0, near_label=1.0, arrival_label=1.0)
+            meta = dict(
+                state_type='positive', match_label=1.0, match_valid=1.0,
+                near_label=1.0, arrival_label=1.0,
+            )
             return pose, meta
 
         if u < self.args.arrival_positive_fraction + self.args.arrival_far_fraction:
@@ -283,7 +286,10 @@ class CityNavBatch(torch.utils.data.IterableDataset):
                 episode.target_position.xy, episode, rng,
                 self.args.arrival_far_min_m, self.args.arrival_far_max_m,
             )
-            meta = dict(state_type='far_correct', match_label=1.0, near_label=0.0, arrival_label=0.0)
+            meta = dict(
+                state_type='far_correct', match_label=0.0, match_valid=0.0,
+                near_label=0.0, arrival_label=0.0,
+            )
             return pose, meta
 
         wrong = [
@@ -299,8 +305,9 @@ class CityNavBatch(torch.utils.data.IterableDataset):
                 self.args.arrival_positive_min_m, self.args.arrival_near_m,
             )
             meta = dict(
-                state_type='near_wrong', match_label=0.0, near_label=0.0,
-                arrival_label=0.0, wrong_landmark_id=int(landmark.id),
+                state_type='near_wrong', match_label=0.0, match_valid=1.0,
+                near_label=0.0, arrival_label=0.0,
+                wrong_landmark_id=int(landmark.id),
             )
             return pose, meta
 
@@ -308,7 +315,10 @@ class CityNavBatch(torch.utils.data.IterableDataset):
             episode.target_position.xy, episode, rng,
             self.args.arrival_far_min_m, self.args.arrival_far_max_m,
         )
-        meta = dict(state_type='far_correct_fallback', match_label=1.0, near_label=0.0, arrival_label=0.0)
+        meta = dict(
+            state_type='far_correct_fallback', match_label=0.0, match_valid=0.0,
+            near_label=0.0, arrival_label=0.0,
+        )
         return pose, meta
 
     @staticmethod
@@ -478,6 +488,10 @@ class CityNavBatch(torch.utils.data.IterableDataset):
                 ),
                 'arrival_match_label': (
                     self._arrival_meta[i]['match_label']
+                    if getattr(self, '_arrival_meta', None) is not None else 0.0
+                ),
+                'arrival_match_valid': (
+                    self._arrival_meta[i].get('match_valid', 1.0)
                     if getattr(self, '_arrival_meta', None) is not None else 0.0
                 ),
                 'arrival_near_label': (
