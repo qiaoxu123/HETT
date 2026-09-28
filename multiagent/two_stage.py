@@ -536,7 +536,7 @@ def candidate_recall(
 class LandmarkArrivalHead(nn.Module):
     """Multi-evidence verifier for understanding arrival at the described landmark."""
 
-    def __init__(self, d_model: int, depth_dim: int = 4, geom_dim: int = 5, dropout: float = 0.1) -> None:
+    def __init__(self, d_model: int, depth_dim: int = 4, geom_dim: int = 6, dropout: float = 0.1) -> None:
         super().__init__()
         self.depth_proj = nn.Sequential(
             nn.Linear(depth_dim, d_model // 4),
