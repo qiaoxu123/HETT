@@ -706,6 +706,7 @@ class NavCMTAgent:
             # - pred_goals: [B, 2]
             # - pred_logits: [B, N_cand, 1]
             # - grid_ft: [B, N_hist+1, 768]
+            training_stage = getattr(self.args, 'training_stage', 'joint')
             model_inputs = dict(
                 directions=input['directions'],     # [B, 1, 4]
                 frames=input['frames'],             # [B, T_frame, 512, 49]
@@ -723,7 +724,6 @@ class NavCMTAgent:
                 model_inputs['depth_stats'] = torch.from_numpy(
                     np.stack([ob['depth_stats'] for ob in obs]).astype(np.float32)
                 ).cuda()
-            training_stage = getattr(self.args, 'training_stage', 'joint')
             action_coordinate_mask = None
             if training_stage == 'target':
                 model_inputs.update({
