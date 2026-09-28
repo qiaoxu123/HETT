@@ -15,7 +15,7 @@ import torch.nn.functional as F
 from torch import nn
 
 
-TRAINING_STAGES = ("joint", "target", "action", "fine")
+TRAINING_STAGES = ("joint", "target", "action", "fine", "arrival")
 ACTION_MODULE_NAMES = (
     "target_conditioning",
     "multi_target_conditioning",
@@ -532,6 +532,45 @@ def candidate_recall(
     )
     return (errors.min(dim=-1).values <= radius_m).float()
 
+
+class LandmarkArrivalHead(nn.Module):
+    """Multi-evidence verifier for understanding arrival at the described landmark."""
+
+    def __init__(self, d_model: int, depth_dim: int = 4, geom_dim: int = 5, dropout: float = 0.1) -> None:
+        super().__init__()
+        self.depth_proj = nn.Sequential(
+            nn.Linear(depth_dim, d_model // 4),
+            nn.LayerNorm(d_model // 4),
+            nn.GELU(),
+        )
+        self.geom_proj = nn.Sequential(
+            nn.Linear(geom_dim, d_model // 2),
+            nn.LayerNorm(d_model // 2),
+            nn.GELU(),
+        )
+        fusion_dim = d_model * 2 + d_model // 4 + d_model // 2
+        self.fusion = nn.Sequential(
+            nn.Linear(fusion_dim, d_model),
+            nn.LayerNorm(d_model),
+            nn.GELU(),
+            nn.Dropout(dropout),
+        )
+        self.match_head = nn.Linear(d_model, 1)
+        self.near_head = nn.Linear(d_model, 1)
+        self.arrival_head = nn.Linear(d_model, 1)
+
+    def forward(self, visual_token: torch.Tensor, language_token: torch.Tensor,
+                depth_stats: torch.Tensor, topk_geometry: torch.Tensor):
+        # Geometry is pooled conservatively across hypotheses; the model gets
+        # min/mean proximity, directional spread and coarse confidence through
+        # per-hypothesis features before pooling.
+        geom = self.geom_proj(topk_geometry).mean(dim=1)
+        depth = self.depth_proj(depth_stats)
+        fused = self.fusion(torch.cat((visual_token, language_token, depth, geom), dim=-1))
+        match_logit = self.match_head(fused)
+        near_logit = self.near_head(fused)
+        arrival_logit = self.arrival_head(fused)
+        return match_logit, near_logit, arrival_logit
 
 class FineNavigationAdapter(nn.Module):
     """Language-ground current motion/visual tokens for near-goal control."""
