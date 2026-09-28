@@ -765,6 +765,10 @@ class NavCMTAgent:
                     [ob['arrival_match_label'] for ob in obs],
                     device=gt_goal.device, dtype=torch.float32,
                 ).unsqueeze(-1)
+                match_valid = torch.tensor(
+                    [ob.get('arrival_match_valid', 1.0) for ob in obs],
+                    device=gt_goal.device, dtype=torch.float32,
+                ).unsqueeze(-1)
                 near_target = torch.tensor(
                     [ob['arrival_near_label'] for ob in obs],
                     device=gt_goal.device, dtype=torch.float32,
@@ -773,9 +777,10 @@ class NavCMTAgent:
                     [ob['arrival_label'] for ob in obs],
                     device=gt_goal.device, dtype=torch.float32,
                 ).unsqueeze(-1)
-                arrival_match_loss += F.binary_cross_entropy_with_logits(
-                    match_logit, match_target, reduction='sum'
+                match_per_sample = F.binary_cross_entropy_with_logits(
+                    match_logit, match_target, reduction='none'
                 )
+                arrival_match_loss += (match_per_sample * match_valid).sum()
                 arrival_near_loss += F.binary_cross_entropy_with_logits(
                     near_logit, near_target, reduction='sum'
                 )
@@ -794,6 +799,7 @@ class NavCMTAgent:
                 )
                 self.logs['arrival_label'].extend(arrival_target.view(-1).cpu().tolist())
                 self.logs['arrival_match_label'].extend(match_target.view(-1).cpu().tolist())
+                self.logs['arrival_match_valid'].extend(match_valid.view(-1).cpu().tolist())
                 self.logs['arrival_near_label'].extend(near_target.view(-1).cpu().tolist())
                 self.logs['arrival_distance_m'].extend(
                     [float(ob['distance_to_goal_m']) for ob in obs]
