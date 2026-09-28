@@ -320,7 +320,7 @@ class NavCMTAgent:
 
     def _set_training_modes(self):
         stage = getattr(self.args, 'training_stage', 'joint')
-        if stage not in ('action', 'fine'):
+        if stage not in ('action', 'fine', 'arrival'):
             self.vln_model.train()
             if stage == 'target' and getattr(
                     self.args, 'freeze_target_backbones', False):
@@ -341,9 +341,11 @@ class NavCMTAgent:
             if hasattr(self.vln_model_without_ddp, 'multi_target_conditioning'):
                 self.vln_model_without_ddp.multi_target_conditioning.train()
             self.vln_model_without_ddp.decoder_2_progress_full.train()
-        else:
+        elif stage == 'fine':
             self.vln_model_without_ddp.fine_navigation_adapter.train()
             self.vln_model_without_ddp.decoder_2_local_control_full.train()
+        else:
+            self.vln_model_without_ddp.landmark_arrival_head.train()
         if stage == 'action':
             self.vln_model_without_ddp.decoder_2_action_full.train()
         if hasattr(self.vln_model_without_ddp, 'decoder_2_stop_full'):
@@ -393,6 +395,9 @@ class NavCMTAgent:
                 if training_stage == 'target':
                     # One teacher-prefix rollout is sufficient: actions only
                     # advance along the human path and do not receive a loss.
+                    self.feedback = 'teacher'
+                    self.rollout(train_ml=1.0)
+                elif training_stage == 'arrival':
                     self.feedback = 'teacher'
                     self.rollout(train_ml=1.0)
                 elif feedback == 'teacher':
@@ -481,6 +486,10 @@ class NavCMTAgent:
         )
         obs = self.env._get_obs(
             random_direction=(self.feedback == 'teacher' and not fine_stage)
+        )
+        arrival_one_state_train = (
+            getattr(self.args, 'training_stage', 'joint') == 'arrival'
+            and train_ml is not None
         )
         batch_size = len(obs)
 
@@ -581,6 +590,10 @@ class NavCMTAgent:
         candidate_rank_loss = torch.tensor(0.).cuda()
         fine_waypoint_loss = torch.tensor(0.).cuda()
         fine_distance_loss = torch.tensor(0.).cuda()
+        arrival_match_loss = torch.tensor(0.).cuda()
+        arrival_near_loss = torch.tensor(0.).cuda()
+        arrival_loss = torch.tensor(0.).cuda()
+        arrival_sample_count = 0
         fine_waypoint_error_sum_m = 0.0
         fine_waypoint_count = 0
         fine_stop_positive_count = 0
@@ -706,6 +719,10 @@ class NavCMTAgent:
                 lang_cls=input['lang_cls'],          # [B, 49]
                 lang_mask=attention_mask,
             )
+            if training_stage == 'arrival':
+                model_inputs['depth_stats'] = torch.from_numpy(
+                    np.stack([ob['depth_stats'] for ob in obs]).astype(np.float32)
+                ).cuda()
             training_stage = getattr(self.args, 'training_stage', 'joint')
             action_coordinate_mask = None
             if training_stage == 'target':
@@ -733,6 +750,59 @@ class NavCMTAgent:
             pred_direction, pred_progress, pred_goals, pred_logits, grid_ft = self.vln_model(
                 **model_inputs
             )
+            if training_stage == 'arrival':
+                match_logit = getattr(
+                    self.vln_model_without_ddp, 'last_arrival_match_logit', None
+                )
+                near_logit = getattr(
+                    self.vln_model_without_ddp, 'last_arrival_near_logit', None
+                )
+                arrived_logit = getattr(
+                    self.vln_model_without_ddp, 'last_arrival_logit', None
+                )
+                if match_logit is None or near_logit is None or arrived_logit is None:
+                    raise RuntimeError('arrival stage requires arrival verifier logits')
+                match_target = torch.tensor(
+                    [ob['arrival_match_label'] for ob in obs],
+                    device=gt_goal.device, dtype=torch.float32,
+                ).unsqueeze(-1)
+                near_target = torch.tensor(
+                    [ob['arrival_near_label'] for ob in obs],
+                    device=gt_goal.device, dtype=torch.float32,
+                ).unsqueeze(-1)
+                arrival_target = torch.tensor(
+                    [ob['arrival_label'] for ob in obs],
+                    device=gt_goal.device, dtype=torch.float32,
+                ).unsqueeze(-1)
+                arrival_match_loss += F.binary_cross_entropy_with_logits(
+                    match_logit, match_target, reduction='sum'
+                )
+                arrival_near_loss += F.binary_cross_entropy_with_logits(
+                    near_logit, near_target, reduction='sum'
+                )
+                arrival_loss += F.binary_cross_entropy_with_logits(
+                    arrived_logit, arrival_target, reduction='sum'
+                )
+                arrival_sample_count += batch_size
+                self.logs['arrival_match_prob'].extend(
+                    torch.sigmoid(match_logit).detach().view(-1).cpu().tolist()
+                )
+                self.logs['arrival_near_prob'].extend(
+                    torch.sigmoid(near_logit).detach().view(-1).cpu().tolist()
+                )
+                self.logs['arrival_prob'].extend(
+                    torch.sigmoid(arrived_logit).detach().view(-1).cpu().tolist()
+                )
+                self.logs['arrival_label'].extend(arrival_target.view(-1).cpu().tolist())
+                self.logs['arrival_match_label'].extend(match_target.view(-1).cpu().tolist())
+                self.logs['arrival_near_label'].extend(near_target.view(-1).cpu().tolist())
+                self.logs['arrival_distance_m'].extend(
+                    [float(ob['distance_to_goal_m']) for ob in obs]
+                )
+                self.logs['arrival_state_type'].extend(
+                    [ob['arrival_state_type'] for ob in obs]
+                )
+
             action_target_coordinates = select_action_coordinates(
                 predicted=pred_goals,
                 truth=gt_goal if training_stage == 'action' and train_ml is not None else None,
@@ -1063,7 +1133,7 @@ class NavCMTAgent:
                 # One-state supervision deliberately avoids teacher-induced
                 # sequences of near-zero heading labels. Each training sample
                 # contributes exactly one randomized near-goal state.
-                if fine_one_state_train:
+                if fine_one_state_train or arrival_one_state_train:
                     break
                 # print(pred_logits.shape)
             if training_stage == 'fine':
@@ -1324,6 +1394,13 @@ class NavCMTAgent:
                     + self.args.progress_loss_weight * progress_loss
                 )
                 loss_normalizer = max(fine_waypoint_count, 1)
+            elif training_stage == 'arrival':
+                ml_loss = (
+                    self.args.arrival_match_loss_weight * arrival_match_loss
+                    + self.args.arrival_near_loss_weight * arrival_near_loss
+                    + self.args.arrival_loss_weight * arrival_loss
+                )
+                loss_normalizer = max(arrival_sample_count, 1)
             else:
                 ml_loss = (
                     self.args.direction_loss_weight * direction_loss
@@ -1372,6 +1449,15 @@ class NavCMTAgent:
             )
             self.logs['fine_distance_loss'].append(
                 scalar(fine_distance_loss * train_ml / loss_normalizer)
+            )
+            self.logs['arrival_match_loss'].append(
+                scalar(arrival_match_loss * train_ml / loss_normalizer)
+            )
+            self.logs['arrival_near_loss'].append(
+                scalar(arrival_near_loss * train_ml / loss_normalizer)
+            )
+            self.logs['arrival_loss'].append(
+                scalar(arrival_loss * train_ml / loss_normalizer)
             )
             self.logs['IL_loss'].append(
                 scalar(ml_loss * train_ml / loss_normalizer)
@@ -1517,6 +1603,7 @@ class NavCMTAgent:
                     or k.startswith('fine_navigation_adapter.')
                     or k.startswith('decoder_2_local_waypoint_full.')
                     or k.startswith('decoder_2_local_control_full.')
+                    or k.startswith('landmark_arrival_head.')
                 )]
                 if required_missing and self.args.mode != 'train':
                     raise ValueError(f'{name}: checkpoint is missing parameters: {required_missing}')
