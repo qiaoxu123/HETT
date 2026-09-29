@@ -92,6 +92,10 @@ def parse_args():
 
     # model
     parser.add_argument('--grid_size', type=int, default=7)
+    parser.add_argument('--heatmap_sigma', type=float, default=0.8,
+                        help='Gaussian sigma (in grid cells) for Stage-1 heatmap supervision')
+    parser.add_argument('--heatmap_loss_weight', type=float, default=0.1,
+                        help='Weight of the Stage-1 heatmap loss')
     parser.add_argument('--demb', type=int, default=768)
     parser.add_argument('--encoder_heads', type=int, default=12)
     parser.add_argument('--encoder_layers', type=int, default=2)

@@ -113,6 +113,23 @@ def get_direction(start, end):
     return _angle
 
 
+def build_gaussian_heatmap(target_ids, grid_size, sigma, device):
+    """Build a normalized Gaussian target distribution over the global grid."""
+    target_ids = target_ids.to(device=device, dtype=torch.long)
+    target_rows = torch.div(target_ids, grid_size, rounding_mode='floor').float()
+    target_cols = (target_ids % grid_size).float()
+
+    coords = torch.arange(grid_size, device=device, dtype=torch.float32)
+    grid_rows, grid_cols = torch.meshgrid(coords, coords, indexing='ij')
+    dist_sq = (
+        (grid_rows.unsqueeze(0) - target_rows[:, None, None]) ** 2
+        + (grid_cols.unsqueeze(0) - target_cols[:, None, None]) ** 2
+    )
+    heatmap = torch.exp(-dist_sq / (2 * sigma ** 2))
+    heatmap = heatmap / heatmap.sum(dim=(1, 2), keepdim=True).clamp_min(1e-8)
+    return heatmap.view(-1, grid_size ** 2)
+
+
 class NavCMTAgent:
     def __init__(self, args, allow_ngpus=True, rank=0):
         self.results = {}
@@ -402,7 +419,7 @@ class NavCMTAgent:
         direction_loss = torch.tensor(0.).cuda()
         progress_loss = 0.
         goal_predict_loss = 0.
-        target_predict_loss = 0.
+        heatmap_loss = torch.tensor(0.).cuda()
 
         stage1_step = 0
         stage2_step = 0
@@ -487,6 +504,21 @@ class NavCMTAgent:
                 lang_cls=input['lang_cls']
             )
 
+            # Stage-1 spatial belief: convert 49 grid logits into a 7x7 heatmap.
+            heatmap_probs = torch.softmax(pred_logits, dim=1)
+            heatmap_goal_ids = heatmap_probs.argmax(dim=1)
+            heatmap_goal_rows = torch.div(
+                heatmap_goal_ids, self.args.grid_size, rounding_mode='floor'
+            ).float()
+            heatmap_goal_cols = (heatmap_goal_ids % self.args.grid_size).float()
+            heatmap_goals = torch.stack(
+                (
+                    (heatmap_goal_rows + 0.5) / self.args.grid_size,
+                    (heatmap_goal_cols + 0.5) / self.args.grid_size,
+                ),
+                dim=1,
+            )
+
             input['grid_fts'] = torch.cat((input['grid_fts'], grid_ft), dim=1)
             grid_index = torch.tensor(np.array([ob['cur_grid'] for ob in obs])).unsqueeze(1).cuda()
             # print(input['grid_index'], grid_index)
@@ -554,7 +586,17 @@ class NavCMTAgent:
                     if progress_loss != progress_loss:  # debug for nan loss
                         print('0', progress_loss)
                 # print(at_direction, gt_direction, ml_loss)
-                target_predict_loss += self.criterion(pred_logits, gt_target.unsqueeze(1).cuda())
+                gt_heatmap = build_gaussian_heatmap(
+                    gt_target,
+                    self.args.grid_size,
+                    self.args.heatmap_sigma,
+                    pred_logits.device,
+                )
+                per_sample_heatmap_loss = -(
+                    gt_heatmap * F.log_softmax(pred_logits, dim=1)
+                ).sum(dim=1)
+                active_mask = torch.from_numpy((~ended).astype(np.float32)).to(pred_logits.device)
+                heatmap_loss += (per_sample_heatmap_loss * active_mask).sum()
                 # print(pred_logits.shape)
             # Log the trajectory
             # print(at_direction, gt_direction)
@@ -566,6 +608,10 @@ class NavCMTAgent:
                         traj[i]['gt_progress'].append(gt_progress[i].item())
                         traj[i]['gt_goal'].append(gt_goal[i])
                     traj[i]['progress'].append(pred_progress[i].item())
+                    traj[i]['heatmap_goal_id'].append(int(heatmap_goal_ids[i].item()))
+                    traj[i]['heatmap_confidence'].append(
+                        float(heatmap_probs[i, heatmap_goal_ids[i]].item())
+                    )
 
             if self.feedback == 'teacher':
                 at_goal = gt_goal
@@ -574,7 +620,8 @@ class NavCMTAgent:
                 pred_progress_t = gt_progress
             elif self.feedback == 'student':  # student
                 a_t = at_direction
-                at_goal = pred_goals
+                # Use the highest-probability heatmap cell as the coarse Stage-1 goal.
+                at_goal = heatmap_goals
 
                 # _, at_goal = pred_logits.max(1)
                 # at_goal = at_goal.squeeze(1)
@@ -692,7 +739,7 @@ class NavCMTAgent:
         if train_ml is not None:
             # print(ml_loss)
             # ml_loss = direction_loss + progress_loss
-            ml_loss = 1 * direction_loss + 0.1 * progress_loss + 2 * goal_predict_loss + 0.1 * target_predict_loss
+            ml_loss = 1 * direction_loss + 0.1 * progress_loss + 2 * goal_predict_loss + self.args.heatmap_loss_weight * heatmap_loss
             # ml_loss = progress_loss + goal_predict_loss
             self.loss += ml_loss * train_ml / batch_size
 
@@ -701,7 +748,7 @@ class NavCMTAgent:
             self.logs['direction_loss'].append((direction_loss * train_ml / batch_size).item())
             self.logs['progress_loss'].append((progress_loss * train_ml / batch_size).item())
             self.logs['goal_predict_loss'].append((goal_predict_loss * train_ml / batch_size).item())
-            self.logs['target_predict_loss'].append((target_predict_loss * train_ml / batch_size).item())
+            self.logs['heatmap_loss'].append((heatmap_loss * train_ml / batch_size).item())
             self.logs['IL_loss'].append((ml_loss * train_ml / batch_size).item())
 
         if type(self.loss) is int:  # For safety, it will be activated if no losses are added

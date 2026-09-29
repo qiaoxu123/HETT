@@ -236,7 +236,8 @@ class ET(nn.Module):
 
         progress = self.decoder_2_progress_full(decoder_input)
 
-        target_logits = self.decoder_2_logits_full(target_decoder_input)
+        # One logit per global grid cell; reshaped to a 2D heatmap in the agent.
+        target_logits = self.decoder_2_logits_full(target_decoder_input).squeeze(-1)
         # print(encoder_out_candidates.shape)
 
         # print(direction, progress, goal_logits)
