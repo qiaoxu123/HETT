@@ -667,7 +667,9 @@ class NavCMTAgent:
 
                 # if pred_progress_t[i] > 0.9 and not stage1_ended[i]:
                 #     stage1_ended[i] = True
-                if dst.dist_to(poses[i].xy) > 5 and not stage1_ended[i]:
+                # Stage 1 only needs to enter the coarse target neighborhood;
+                # fine localization is delegated to Stage 2.
+                if dst.dist_to(poses[i].xy) > self.args.stage1_switch_dist and not stage1_ended[i]:
                     stage1_step += 1
                     traj[i]['pred_goal'].append(dst)
                     # pred_goal_xys = [
