@@ -707,9 +707,13 @@ class NavCMTAgent:
                 if not ended[i]:
                     traj[i]['trajectory'].append(poses[i])
                     # Update the status
+            # Refresh the environment first, then use the resulting pose/state
+            # as the spatial input for the next navigation step.
+            obs = self.env._get_obs(poses, random_direction=(self.feedback == 'teacher'))
+            current_directions = [np.array(ob['pose'].yaw, dtype=np.float32) for ob in obs]
+            current_positions = [np.array(ob['position'], dtype=np.float32) for ob in obs]
             direction_t = torch.from_numpy(np.array(current_directions, dtype=np.float32))
             position_t = torch.from_numpy(np.array(current_positions, dtype=np.float32))
-            obs = self.env._get_obs(poses, random_direction=(self.feedback == 'teacher'))  # get gt_obs
             # current_view_corners = [np.array(ob['gt_path_corners'][0]) for ob in obs]
 
             # Early exit if all ended
