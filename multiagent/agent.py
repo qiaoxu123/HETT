@@ -302,7 +302,7 @@ class NavCMTAgent:
 
         # Models
 
-        self.tokenizer = BertTokenizerFast.from_pretrained('/cver/xcding/code/tokenizer_files/bert-base-uncase')
+        self.tokenizer = BertTokenizerFast.from_pretrained('bert-base-uncased')
         self.lang_model = CustomBERTModel().cuda()
         self.lang_model.set_bert_trainable(self.args.finetune_bert)
 

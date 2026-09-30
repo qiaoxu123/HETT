@@ -9,7 +9,7 @@ import torch.distributed as dist
 from tensorboardX import SummaryWriter
 import sys, os
 
-from direction.defaultpaths import GOAL_PREDICTOR_CHECKPOINT_DIR
+from multiagent.defaultpaths import GOAL_PREDICTOR_CHECKPOINT_DIR
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # 先加入绝对路径，否则会报错，注意__file__表示的是当前执行文件的路径
 from utils.misc import set_random_seed
