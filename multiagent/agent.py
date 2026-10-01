@@ -432,6 +432,7 @@ class NavCMTAgent:
             'frames': torch.zeros(batch_size, 0, 512, 49).cuda(),
             'lenths': [0 for _ in range(batch_size)],
             'lang': lang_features,
+            'lang_mask': attention_mask.bool(),
             'candidates': global_positions,
             'centroids': torch.zeros((batch_size, 0, 2)).cuda(),
             'lang_cls': linear_cls,
@@ -499,6 +500,7 @@ class NavCMTAgent:
                 grid_index=input['grid_index'],
                 maps=input['maps'],
                 lang=input['lang'],
+                lang_mask=input['lang_mask'],
                 candidates=input['candidates'],
                 centroids=input['centroids'],
                 lang_cls=input['lang_cls']

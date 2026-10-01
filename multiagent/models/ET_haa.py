@@ -1,3 +1,4 @@
+import math
 import torch
 from .enc_visual import FeatureFlat
 from .enc_vl import EncoderVL
@@ -114,6 +115,13 @@ class ET(nn.Module):
             nn.Dropout(0.2),
             nn.Linear(32, 1),
         )
+        # Minimal SBF-style language conditioning for the heatmap only.
+        # The zero-initialized scalar gate makes the initial forward path
+        # identical to the existing heatmap branch.
+        self.heatmap_candidate_norm = nn.LayerNorm(self.args.demb)
+        self.heatmap_language_norm = nn.LayerNorm(self.args.demb)
+        self.heatmap_lang_gate = nn.Parameter(torch.tensor(0.0))
+
         self.decoder_2_logits_full = nn.Sequential(
             nn.Linear(self.args.demb, self.args.demb // 2),
             nn.ReLU(),
@@ -236,8 +244,32 @@ class ET(nn.Module):
 
         progress = self.decoder_2_progress_full(decoder_input)
 
+        # Explicit language-conditioned spatial belief:
+        # each grid cell queries the instruction tokens before heatmap decoding.
+        heatmap_query = self.heatmap_candidate_norm(target_decoder_input)
+        heatmap_language = self.heatmap_language_norm(emb_lang)
+        heatmap_attn_logits = torch.matmul(
+            heatmap_query,
+            heatmap_language.transpose(1, 2),
+        ) / math.sqrt(self.args.demb)
+
+        lang_mask = inputs.get("lang_mask")
+        if lang_mask is not None:
+            heatmap_attn_logits = heatmap_attn_logits.masked_fill(
+                ~lang_mask[:, None, :].bool(),
+                -torch.inf,
+            )
+
+        heatmap_attn = torch.softmax(heatmap_attn_logits, dim=-1)
+        heatmap_lang_context = torch.matmul(heatmap_attn, heatmap_language)
+
+        conditioned_target = (
+            target_decoder_input
+            + torch.tanh(self.heatmap_lang_gate) * heatmap_lang_context
+        )
+
         # One logit per global grid cell; reshaped to a 2D heatmap in the agent.
-        target_logits = self.decoder_2_logits_full(target_decoder_input).squeeze(-1)
+        target_logits = self.decoder_2_logits_full(conditioned_target).squeeze(-1)
         # print(encoder_out_candidates.shape)
 
         # print(direction, progress, goal_logits)
