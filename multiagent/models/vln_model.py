@@ -136,6 +136,8 @@ class CustomBERTModel(nn.Module):
         #         for param in child.parameters():
         #             param.requires_grad = False
         
+        self.bert_frozen = False
+
         ### New layers:
         self.linears = nn.Sequential(nn.Linear(768, 64),
             # nn.BatchNorm1d(64, eps=1e-12),
@@ -145,8 +147,26 @@ class CustomBERTModel(nn.Module):
             # nn.BatchNorm1d(768, eps=1e-12),
             nn.ReLU())
 
+    def set_bert_trainable(self, trainable: bool):
+        """Freeze only the pretrained BERT backbone, never the HETT task head."""
+        self.bert_frozen = not trainable
+        for param in self.bert.parameters():
+            param.requires_grad = trainable
+        if self.bert_frozen:
+            self.bert.eval()
+
+    def train(self, mode: bool = True):
+        super().train(mode)
+        if self.bert_frozen:
+            self.bert.eval()
+        return self
+
     def forward(self, ids,  mask ):
-        bert_output= self.bert(ids, attention_mask=mask)
+        if self.bert_frozen:
+            with torch.no_grad():
+                bert_output = self.bert(ids, attention_mask=mask)
+        else:
+            bert_output = self.bert(ids, attention_mask=mask)
         cls_hidden = bert_output['pooler_output']
         sequence_output = bert_output['last_hidden_state']# sequence_output[0]: batch_size*seq_lenth*768
         # print(cls_hidden)

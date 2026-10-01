@@ -137,3 +137,18 @@ There is no Stage-1/Stage-2 distance switch or recovery state machine.
 The immediate test should verify whether the finer field improves SR/SPL/NE,
 candidate coverage, and the oracle-to-final-success gap without destabilizing
 trajectory learning.
+
+
+## Frozen pretrained backbones
+
+The default trajectory-belief configuration freezes the pretrained BERT
+backbone and DarkNet visual backbone. The HETT-specific BERT task head
+(`768 -> 64 -> 49`) remains trainable, together with the HETT cross-modal
+Transformer, map/history modules, dense decoder, and trajectory-belief head.
+
+Frozen backbones are kept in evaluation mode and their forward passes avoid
+gradient construction. This isolates gains from the new navigation
+representation and substantially reduces training cost.
+
+Use `--finetune_bert` or `--finetune_darknet` for backbone fine-tuning
+ablations.

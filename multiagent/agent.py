@@ -304,6 +304,7 @@ class NavCMTAgent:
 
         self.tokenizer = BertTokenizerFast.from_pretrained('/cver/xcding/code/tokenizer_files/bert-base-uncase')
         self.lang_model = CustomBERTModel().cuda()
+        self.lang_model.set_bert_trainable(self.args.finetune_bert)
 
         # self.img_tensor = transforms.ToTensor()
 
@@ -316,7 +317,10 @@ class NavCMTAgent:
         state.update(state_dict)
         self.vision_model.load_state_dict(state)
 
-
+        if not self.args.finetune_darknet:
+            for param in self.vision_model.parameters():
+                param.requires_grad = False
+            self.vision_model.eval()
 
         # create the et model
         self.vln_model = ET(self.args).cuda()
@@ -327,19 +331,21 @@ class NavCMTAgent:
         if self.args.world_size > 1 and allow_ngpus:
             self.lang_model = DDP(self.lang_model, broadcast_buffers=False, find_unused_parameters=True,
                                   device_ids=[self.args.local_rank], output_device=self.args.local_rank)
-            self.vision_model = DDP(self.vision_model, broadcast_buffers=False, find_unused_parameters=True,
-                                    device_ids=[self.args.local_rank], output_device=self.args.local_rank)
+            # A fully frozen DarkNet has no gradients to synchronize and should
+            # not be wrapped by DDP.
+            if self.args.finetune_darknet:
+                self.vision_model = DDP(self.vision_model, broadcast_buffers=False, find_unused_parameters=True,
+                                        device_ids=[self.args.local_rank], output_device=self.args.local_rank)
             self.vln_model = DDP(self.vln_model, broadcast_buffers=False, find_unused_parameters=True,
                                  device_ids=[self.args.local_rank], output_device=self.args.local_rank)
 
-            # self.lang_model = nn.DataParallel(self.lang_model).cuda()
-            # self.vision_model = nn.DataParallel(self.vision_model).cuda()
-            # self.vln_model = nn.DataParallel(self.vln_model).cuda()
             self.lang_model_without_ddp = self.lang_model.module
-            self.vision_model_without_ddp = self.vision_model.module
+            self.vision_model_without_ddp = (
+                self.vision_model.module
+                if isinstance(self.vision_model, DDP)
+                else self.vision_model
+            )
             self.vln_model_without_ddp = self.vln_model.module
-
-
         else:
             self.lang_model_without_ddp = self.lang_model
             self.vision_model_without_ddp = self.vision_model
@@ -354,11 +360,26 @@ class NavCMTAgent:
         OptimizerClass = torch.optim.Adam if args.optim == "adam" else torch.optim.AdamW
         self.et_optimizer = OptimizerClass(filter(lambda p: p.requires_grad, self.vln_model.parameters()),
                                            lr=args.learning_rate)
-        self.lang_model_optimizer = OptimizerClass(filter(lambda p: p.requires_grad, self.lang_model.parameters()),
-                                                   lr=self.args.learning_rate)
-        self.vision_model_optimizer = OptimizerClass(filter(lambda p: p.requires_grad, self.vision_model.parameters()),
-                                                     lr=self.args.learning_rate)
-        self.optimizers = (self.et_optimizer, self.lang_model_optimizer, self.vision_model_optimizer)
+        self.lang_model_optimizer = OptimizerClass(
+            filter(lambda p: p.requires_grad, self.lang_model.parameters()),
+            lr=self.args.learning_rate,
+        )
+        self.vision_model_optimizer = (
+            OptimizerClass(
+                filter(lambda p: p.requires_grad, self.vision_model.parameters()),
+                lr=self.args.learning_rate,
+            )
+            if self.args.finetune_darknet
+            else None
+        )
+        self.optimizers = tuple(
+            optimizer for optimizer in (
+                self.et_optimizer,
+                self.lang_model_optimizer,
+                self.vision_model_optimizer,
+            )
+            if optimizer is not None
+        )
         # self.optimizers = (self.et_optimizer, self.lang_model_optimizer)
 
         #         # Optimizers
@@ -450,7 +471,10 @@ class NavCMTAgent:
 
         self.lang_model.train()
         self.vln_model.train()
-        self.vision_model.train()
+        if self.args.finetune_darknet:
+            self.vision_model.train()
+        else:
+            self.vision_model.eval()
 
         self.losses = []
         for epoch in range(1, n_epochs + 1):
@@ -463,7 +487,8 @@ class NavCMTAgent:
                 #     break
                 # train_loop_start_time = time.time()
                 self.lang_model_optimizer.zero_grad()
-                self.vision_model_optimizer.zero_grad()
+                if self.vision_model_optimizer is not None:
+                    self.vision_model_optimizer.zero_grad()
                 self.et_optimizer.zero_grad()
                 self.loss = 0
 
@@ -491,7 +516,8 @@ class NavCMTAgent:
                 torch.nn.utils.clip_grad_norm_(self.vln_model.parameters(), 40.)
 
                 self.lang_model_optimizer.step()
-                self.vision_model_optimizer.step()
+                if self.vision_model_optimizer is not None:
+                    self.vision_model_optimizer.step()
                 self.et_optimizer.step()
                 # print("---------- One iter takes %s seconds ---" % (time.time() - train_loop_start_time))
 
@@ -603,7 +629,12 @@ class NavCMTAgent:
             images = np.ascontiguousarray(images, dtype=np.float32)
             images -= self.rgb_mean
             images /= self.rgb_std
-            im_feature = self.vision_model(torch.from_numpy(images).cuda())
+            image_tensor = torch.from_numpy(images).cuda()
+            if self.args.finetune_darknet:
+                im_feature = self.vision_model(image_tensor)
+            else:
+                with torch.no_grad():
+                    im_feature = self.vision_model(image_tensor)
             im_feature = im_feature.view(im_feature.size(0), im_feature.size(1), -1)
 
 
@@ -993,7 +1024,7 @@ class NavCMTAgent:
             states[name] = {
                 'epoch': epoch + 1,
                 'state_dict': model.state_dict(),
-                'optimizer': optimizer.state_dict(),
+                'optimizer': optimizer.state_dict() if optimizer is not None else None,
             }
 
         all_tuple = [("lang_model", self.lang_model_without_ddp, self.lang_model_optimizer),
@@ -1022,7 +1053,11 @@ class NavCMTAgent:
                 state_dict = {k: v for k, v in states[name]['state_dict'].items() if k in model_keys}
             state.update(state_dict)
             model.load_state_dict(state)
-            if self.args.resume_optimizer:
+            if (
+                self.args.resume_optimizer
+                and optimizer is not None
+                and states[name].get('optimizer') is not None
+            ):
                 optimizer.load_state_dict(states[name]['optimizer'])
 
             def count_parameters(mo):

@@ -127,6 +127,10 @@ def parse_args():
 
     parser.add_argument('--darknet_model_file', type=str, default='../weights/yolo_v3.cfg')
     parser.add_argument('--darknet_weight_file', type=str, default='../weights/best.pt')
+    parser.add_argument('--finetune_bert', action='store_true', default=False,
+                        help='Fine-tune the pretrained BERT backbone; by default only the HETT language task head is trained')
+    parser.add_argument('--finetune_darknet', action='store_true', default=False,
+                        help='Fine-tune DarkNet visual backbone; frozen by default for trajectory-belief training')
 
     # logger
     parser.add_argument('--log_every', type=int, default=5)
