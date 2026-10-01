@@ -440,6 +440,8 @@ class NavCMTAgent:
         }
 
         stage1_ended = np.array([False] * batch_size)
+        stage2_recover_count = np.zeros(batch_size, dtype=np.int32)
+        stage2_recoveries = 0
 
         for t in range(self.args.max_action_len):
 
@@ -646,46 +648,46 @@ class NavCMTAgent:
                 # dst = Point2D(obs[i]['centroid_goal'][0], obs[i]['centroid_goal'][1])
                 if ended[i]:
                     continue
-                # if dst.dist_to(poses[i].xy) < 10:
-                #     ended[i] = True
-                #     continue
 
+                coarse_goal_dist = dst.dist_to(poses[i].xy)
 
-                elif pred_progress_t[i] > 0.95 and self.feedback == 'student' and stage1_ended[i]:
-                    # Updated 'ended' list and make environment action
+                # Stage-2 recovery is student-only: if newly predicted coarse
+                # goals stay far away, return to Stage 1 instead of remaining
+                # permanently locked in fine navigation. Hysteresis
+                # (25 m enter / 40 m recover by default) avoids boundary chatter.
+                if self.feedback == 'student' and stage1_ended[i]:
+                    if coarse_goal_dist > self.args.stage2_recover_dist:
+                        stage2_recover_count[i] += 1
+                    else:
+                        stage2_recover_count[i] = 0
+
+                    if stage2_recover_count[i] >= self.args.stage2_recover_patience:
+                        stage1_ended[i] = False
+                        stage2_recover_count[i] = 0
+                        stage2_recoveries += 1
+
+                if pred_progress_t[i] > 0.95 and self.feedback == 'student' and stage1_ended[i]:
                     ended[i] = True
                     continue
                 elif t == self.args.max_action_len:
                     ended[i] = True
                     continue
 
-                # print(cpu_goal[i], global_position[cpu_goal[i]])
-                # dst = self.env.unnormalize_position(global_position[cpu_goal[i]], obs[i]['map_name'],
-                #                                     self.args.map_meters)
-                # dst = Point2D(obs[i]['centroid_goal'][0], obs[i]['centroid_goal'][1])
-
-                # if pred_progress_t[i] < 0.75 and dst.dist_to(poses[i].xy) > 20 and not stage1_ended[i]:
-                # if pred_progress_t[i] < 0.75 and dst.dist_to(poses[i].xy) > 10 and not stage1_ended[i]:
-
-                # if pred_progress_t[i] > 0.9 and not stage1_ended[i]:
-                #     stage1_ended[i] = True
                 # Stage 1 only needs to enter the coarse target neighborhood;
                 # fine localization is delegated to Stage 2.
-                if dst.dist_to(poses[i].xy) > self.args.stage1_switch_dist and not stage1_ended[i]:
+                if coarse_goal_dist > self.args.stage1_switch_dist and not stage1_ended[i]:
                     stage1_step += 1
                     traj[i]['pred_goal'].append(dst)
-                    # pred_goal_xys = [
-                    #     unnormalize_position(global_position[goal_id] / args.grid_size, eps.map_name, args.map_meters)
-                    #     for eps, goal_id in zip(episodes_batch, goal_ids)]
-                    # dst = Point2D(obs[i]['centroid_goal'][0], obs[i]['centroid_goal'][1])
-                    # dst = self.env.unnormalize_position(global_position[cpu_goal[i]], obs[i]['map_name'], self.args.map_meters)
                     if self.feedback == 'teacher':
                         cur_step = stage1_step * self.args.move_iteration
                         cur_step = cur_step if cur_step < len(obs[i]['trajectory']) else -1
                         poses[i] = obs[i]['trajectory'][cur_step]
                     else:
-                        poses[i] = self.move(poses[i], dst,
-                                         self.args.move_iteration)
+                        poses[i] = self.move(
+                            poses[i],
+                            dst,
+                            self.args.move_iteration,
+                        )
                     if not ended[i]:
                         traj[i]['stage1_trajectory'].append(poses[i])
 
@@ -769,6 +771,7 @@ class NavCMTAgent:
         self.logs['stage1_step'].append(float(stage1_step) / batch_size)
         self.logs['stage2_step'].append(float(stage2_step) / batch_size)
         self.logs['stage2_rotate'].append(float(stage2_rotate) / batch_size)
+        self.logs['stage2_recoveries'].append(float(stage2_recoveries) / batch_size)
 
         # print('[3]')
         # debug_memory()

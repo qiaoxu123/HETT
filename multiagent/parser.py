@@ -98,6 +98,10 @@ def parse_args():
                         help='Weight of the Stage-1 heatmap loss')
     parser.add_argument('--stage1_switch_dist', type=float, default=25.0,
                         help='Distance in meters for switching from coarse Stage 1 to fine Stage 2')
+    parser.add_argument('--stage2_recover_dist', type=float, default=40.0,
+                        help='Distance in meters for returning from Stage 2 to coarse Stage 1')
+    parser.add_argument('--stage2_recover_patience', type=int, default=2,
+                        help='Consecutive far-away Stage-2 steps required before coarse recovery')
     parser.add_argument('--demb', type=int, default=768)
     parser.add_argument('--encoder_heads', type=int, default=12)
     parser.add_argument('--encoder_layers', type=int, default=2)
