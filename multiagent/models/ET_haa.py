@@ -129,14 +129,17 @@ class ET(nn.Module):
             nn.Conv2d(self.belief_feature_dim, self.belief_feature_dim, 3, padding=1),
             nn.ReLU(),
         )
-        self.belief_logits_head = nn.Conv2d(self.belief_feature_dim, 1, 1)
-        self.trajectory_residual_head = nn.Conv2d(
+        # One joint head represents a trajectory belief at every dense spatial
+        # location: [mode score | trajectory residual waypoints].
+        self.trajectory_belief_head = nn.Conv2d(
             self.belief_feature_dim,
-            self.args.trajectory_steps * 2,
+            1 + self.args.trajectory_steps * 2,
             1,
         )
-        nn.init.zeros_(self.trajectory_residual_head.weight)
-        nn.init.zeros_(self.trajectory_residual_head.bias)
+        # Keep the belief-score channel normally initialized, while starting
+        # trajectory geometry from stable straight-line anchors.
+        nn.init.zeros_(self.trajectory_belief_head.weight[1:])
+        nn.init.zeros_(self.trajectory_belief_head.bias[1:])
 
         self.decoder_2_goal_full = nn.Sequential(
             nn.Linear(self.args.demb, 512),
@@ -266,13 +269,12 @@ class ET(nn.Module):
         )
         dense_belief_features = self.belief_decoder(candidate_map)
 
-        target_logits = self.belief_logits_head(
-            dense_belief_features
-        ).flatten(1)
-
-        trajectory_residual = self.trajectory_residual_head(
+        trajectory_belief = self.trajectory_belief_head(
             dense_belief_features
         )
+        target_logits = trajectory_belief[:, :1].flatten(1)
+
+        trajectory_residual = trajectory_belief[:, 1:]
         trajectory_residual = trajectory_residual.permute(0, 2, 3, 1).reshape(
             batch_size,
             self.args.belief_grid_size ** 2,

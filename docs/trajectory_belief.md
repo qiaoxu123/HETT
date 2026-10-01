@@ -24,7 +24,10 @@ Language + RGB + History/Map
           |
      dense belief decoder
           |
-     28x28 spatial belief
+     28x28 latent field
+          |
+ Trajectory Belief Head
+ [score | trajectory residual]
           |
        NMS Top-K
           |
@@ -62,10 +65,22 @@ Default proposal settings:
 - local endpoint refinement: 3x3 soft-argmax
 - future waypoints per trajectory: 5
 
-## Trajectory representation
+## Joint trajectory-belief representation
 
-The network predicts a dense residual field. For each selected endpoint g_k, a
-straight anchor trajectory is constructed from the current UAV position x_t:
+The dense decoder is followed by a **single joint head**, not two independent
+task heads. At every spatial location u it outputs:
+
+```
+B_u = [s_u | Delta tau_u]
+```
+
+where `s_u` is the trajectory-mode score and `Delta tau_u` contains the
+future waypoint residuals. The score and geometry therefore describe one
+trajectory hypothesis and are trained with separate belief/trajectory losses
+only because their supervision differs.
+
+For each selected endpoint g_k, a straight anchor trajectory is constructed
+from the current UAV position x_t:
 
 ```
 A_k = Interpolate(x_t, g_k)
