@@ -17,6 +17,8 @@ flag="--world_size ${ngpus}
       --bf16
       --freeze_lang_model
       --freeze_vision_model
+      --heatmap_top_k 5
+      --heatmap_nms_kernel 3
       --log_dir log
       --move_iteration 10
       --max_action_len 20

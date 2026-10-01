@@ -96,6 +96,10 @@ def parse_args():
                         help='Gaussian sigma (in grid cells) for Stage-1 heatmap supervision')
     parser.add_argument('--heatmap_loss_weight', type=float, default=0.1,
                         help='Weight of the Stage-1 heatmap loss')
+    parser.add_argument('--heatmap_top_k', type=int, default=5,
+                        help='Number of spatially separated Stage-1 heatmap modes')
+    parser.add_argument('--heatmap_nms_kernel', type=int, default=3,
+                        help='Odd greedy-NMS kernel size for Stage-1 heatmap modes')
     parser.add_argument('--stage1_switch_dist', type=float, default=25.0,
                         help='Distance in meters for switching from coarse Stage 1 to fine Stage 2')
     parser.add_argument('--demb', type=int, default=768)

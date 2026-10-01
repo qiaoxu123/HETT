@@ -131,6 +131,34 @@ def build_gaussian_heatmap(target_ids, grid_size, sigma, device):
     return heatmap.view(-1, grid_size ** 2)
 
 
+def greedy_nms_heatmap_candidates(probabilities, grid_size, top_k, kernel_size):
+    """Return spatially separated high-probability heatmap cells."""
+    if kernel_size < 1 or kernel_size % 2 == 0:
+        raise ValueError("heatmap_nms_kernel must be a positive odd integer")
+    candidate_count = min(int(top_k), grid_size ** 2)
+    scores = probabilities.view(-1, grid_size, grid_size).clone()
+    radius = kernel_size // 2
+    candidates = []
+
+    for _ in range(candidate_count):
+        flat = scores.view(scores.shape[0], -1)
+        best_ids = flat.argmax(dim=1)
+        candidates.append(best_ids)
+
+        rows = torch.div(best_ids, grid_size, rounding_mode='floor')
+        cols = best_ids % grid_size
+        for batch_index in range(scores.shape[0]):
+            row = int(rows[batch_index].item())
+            col = int(cols[batch_index].item())
+            scores[
+                batch_index,
+                max(0, row - radius):min(grid_size, row + radius + 1),
+                max(0, col - radius):min(grid_size, col + radius + 1),
+            ] = -torch.inf
+
+    return torch.stack(candidates, dim=1)
+
+
 class NavCMTAgent:
     def __init__(self, args, allow_ngpus=True, rank=0):
         self.results = {}
@@ -559,20 +587,37 @@ class NavCMTAgent:
                     lang_cls=input['lang_cls']
                 )
 
-            # Stage-1 spatial belief: convert 49 grid logits into a 7x7 heatmap.
+            # Stage-1 spatial belief: keep several separated modes instead of
+            # collapsing uncertainty to a single argmax cell.
             heatmap_probs = torch.softmax(pred_logits.float(), dim=1)
-            heatmap_goal_ids = heatmap_probs.argmax(dim=1)
-            heatmap_goal_rows = torch.div(
-                heatmap_goal_ids, self.args.grid_size, rounding_mode='floor'
-            ).float()
-            heatmap_goal_cols = (heatmap_goal_ids % self.args.grid_size).float()
-            heatmap_goals = torch.stack(
-                (
-                    (heatmap_goal_rows + 0.5) / self.args.grid_size,
-                    (heatmap_goal_cols + 0.5) / self.args.grid_size,
-                ),
-                dim=1,
+            heatmap_candidate_ids = greedy_nms_heatmap_candidates(
+                heatmap_probs,
+                self.args.grid_size,
+                self.args.heatmap_top_k,
+                self.args.heatmap_nms_kernel,
             )
+            candidate_rows = torch.div(
+                heatmap_candidate_ids, self.args.grid_size, rounding_mode='floor'
+            ).float()
+            candidate_cols = (heatmap_candidate_ids % self.args.grid_size).float()
+            heatmap_candidates = torch.stack(
+                (
+                    (candidate_rows + 0.5) / self.args.grid_size,
+                    (candidate_cols + 0.5) / self.args.grid_size,
+                ),
+                dim=-1,
+            )
+
+            # Reuse the existing continuous goal head as a lightweight,
+            # independent selector over the NMS modes; no new model is added.
+            selector_distance = torch.sum(
+                (heatmap_candidates - pred_goals.detach().float().unsqueeze(1)) ** 2,
+                dim=-1,
+            )
+            heatmap_selected_rank = selector_distance.argmin(dim=1)
+            batch_ids = torch.arange(batch_size, device=pred_logits.device)
+            heatmap_goal_ids = heatmap_candidate_ids[batch_ids, heatmap_selected_rank]
+            heatmap_goals = heatmap_candidates[batch_ids, heatmap_selected_rank]
 
             input['grid_fts'] = torch.cat((input['grid_fts'], grid_ft), dim=1)
             grid_index = torch.tensor(np.array([ob['cur_grid'] for ob in obs])).unsqueeze(1).cuda()
@@ -664,6 +709,12 @@ class NavCMTAgent:
                         traj[i]['gt_goal'].append(gt_goal[i])
                     traj[i]['progress'].append(pred_progress[i].item())
                     traj[i]['heatmap_goal_id'].append(int(heatmap_goal_ids[i].item()))
+                    traj[i]['heatmap_candidate_ids'].append(
+                        [int(x) for x in heatmap_candidate_ids[i].detach().cpu().tolist()]
+                    )
+                    traj[i]['heatmap_selected_rank'].append(
+                        int(heatmap_selected_rank[i].item())
+                    )
                     traj[i]['heatmap_confidence'].append(
                         float(heatmap_probs[i, heatmap_goal_ids[i]].item())
                     )
