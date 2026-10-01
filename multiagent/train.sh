@@ -15,8 +15,8 @@ flag="--world_size ${ngpus}
       --epochs 50
       --save_every 3
       --bf16
-      --freeze_lang_model
-      --freeze_vision_model
+      --siglip_name google/siglip-base-patch16-224
+      --siglip_local_files_only
       --heatmap_top_k 5
       --heatmap_nms_kernel 3
       --log_dir log

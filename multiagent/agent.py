@@ -22,17 +22,15 @@ from torchvision import transforms
 # from r2r.agent_cmt import Seq2SeqCMTAgent
 from multiagent.actions import Action
 from multiagent.defaultpaths import GOAL_PREDICTOR_CHECKPOINT_DIR
-from multiagent.models.dark_net import Darknet
 from multiagent.models.CLIP import CLIP
+from multiagent.models.siglip_backbone import FrozenSiglipBackbone
 # from direction.models.ddppo.resenet_encoders import TorchVisionResNet50
 from multiagent.models.goal_predictor import GoalPredictor, MapEncoder
 from multiagent.observation import cropclient
 from multiagent.space import Pose4D, Point2D, Point3D
 from multiagent.teacher.algorithm.lookahead import lookahead_discrete_action
 from multiagent.teacher.trajectory import _moved_pose
-from models.vln_model import CustomBERTModel
 from models.ET_haa import ET
-from transformers import AutoModel, BertTokenizerFast
 # import clip
 import cv2
 import shapely
@@ -168,93 +166,44 @@ class NavCMTAgent:
         self.env_name = ''
         random.seed(1)
 
-        # RGB normalization values
-        self.rgb_mean = np.array([60.134, 49.697, 40.746], dtype=np.float32).reshape((3, 1, 1))
-        self.rgb_std = np.array([29.99, 24.498, 22.046], dtype=np.float32).reshape((3, 1, 1))
-
         self.default_gpu = is_default_gpu(self.args)
         self.rank = rank
 
-        # Models
-
-        self.tokenizer = BertTokenizerFast.from_pretrained('/cver/xcding/code/tokenizer_files/bert-base-uncase')
-        self.lang_model = CustomBERTModel().cuda()
-
-        # self.img_tensor = transforms.ToTensor()
-
-        self.vision_model = Darknet(self.args.darknet_model_file, 224).cuda()
-
-        new_state = torch.load(self.args.darknet_weight_file)
-        state = self.vision_model.state_dict()
-        model_keys = set(state.keys())
-        state_dict = {k: v for k, v in new_state['model'].items() if k in model_keys}
-        state.update(state_dict)
-        self.vision_model.load_state_dict(state)
-
-
-
-        # create the et model
-        self.vln_model = ET(self.args).cuda()
-
-        # SBF-inspired efficient training path: keep expensive feature extractors
-        # fixed while training the navigation head.
-        if self.args.freeze_lang_model:
-            self.lang_model.requires_grad_(False)
-            self.lang_model.eval()
-        if self.args.freeze_vision_model:
-            self.vision_model.requires_grad_(False)
-            self.vision_model.eval()
+        # Models: one shared frozen SigLIP backbone replaces BERT + DarkNet.
+        self.siglip = FrozenSiglipBackbone(
+            self.args.siglip_name,
+            local_files_only=self.args.siglip_local_files_only,
+        ).cuda()
+        if self.siglip.text_dim != self.args.demb or self.siglip.vision_dim != self.args.demb:
+            raise ValueError(
+                "SigLIP hidden dimensions must match HETT demb "
+                f"({self.siglip.text_dim}/{self.siglip.vision_dim} vs {self.args.demb})"
+            )
+        self.siglip.eval()
         self._language_feature_cache = None
 
-        # self.map_encoder = MapEncoder(240)
-        # self.goal_predictpr = GoalPredictor(240, 7)
+        # HETT remains fully trainable; its language-attention adapter is inside ET.
+        self.vln_model = ET(self.args).cuda()
         self.progress_regression = nn.MSELoss(reduction='sum')
 
         if self.args.world_size > 1 and allow_ngpus:
-            if not self.args.freeze_lang_model:
-                self.lang_model = DDP(
-                    self.lang_model, broadcast_buffers=False, find_unused_parameters=True,
-                    device_ids=[self.args.local_rank], output_device=self.args.local_rank
-                )
-            if not self.args.freeze_vision_model:
-                self.vision_model = DDP(
-                    self.vision_model, broadcast_buffers=False, find_unused_parameters=True,
-                    device_ids=[self.args.local_rank], output_device=self.args.local_rank
-                )
             self.vln_model = DDP(
-                self.vln_model, broadcast_buffers=False, find_unused_parameters=True,
-                device_ids=[self.args.local_rank], output_device=self.args.local_rank
+                self.vln_model,
+                broadcast_buffers=False,
+                find_unused_parameters=True,
+                device_ids=[self.args.local_rank],
+                output_device=self.args.local_rank,
             )
 
-        self.lang_model_without_ddp = getattr(self.lang_model, 'module', self.lang_model)
-        self.vision_model_without_ddp = getattr(self.vision_model, 'module', self.vision_model)
         self.vln_model_without_ddp = getattr(self.vln_model, 'module', self.vln_model)
 
-        # self.vln_model = ViT_LSTM(
-        #     self.args, 
-        #     self.vision_model).cuda()
-
-        # optimizer        
         assert args.optim in ("adam", "adamW")
         OptimizerClass = torch.optim.Adam if args.optim == "adam" else torch.optim.AdamW
         self.et_optimizer = OptimizerClass(
             filter(lambda p: p.requires_grad, self.vln_model.parameters()),
-            lr=args.learning_rate
+            lr=args.learning_rate,
         )
-        self.lang_model_optimizer = None if self.args.freeze_lang_model else OptimizerClass(
-            filter(lambda p: p.requires_grad, self.lang_model.parameters()),
-            lr=self.args.learning_rate
-        )
-        self.vision_model_optimizer = None if self.args.freeze_vision_model else OptimizerClass(
-            filter(lambda p: p.requires_grad, self.vision_model.parameters()),
-            lr=self.args.learning_rate
-        )
-        self.optimizers = tuple(
-            optimizer for optimizer in (
-                self.et_optimizer, self.lang_model_optimizer, self.vision_model_optimizer
-            ) if optimizer is not None
-        )
-        # self.optimizers = (self.et_optimizer, self.lang_model_optimizer)
+        self.optimizers = (self.et_optimizer,)
 
         #         # Optimizers
         # if self.args.optim == 'rms':
@@ -294,8 +243,7 @@ class NavCMTAgent:
         self.env_name = env_name
 
         self.vln_model.eval()
-        self.lang_model.eval()
-        self.vision_model.eval()
+        self.siglip.eval()
 
         self.losses = []
         self.results = {}
@@ -320,8 +268,7 @@ class NavCMTAgent:
         self.env_name = env_name
 
         self.vln_model.eval()
-        self.lang_model.eval()
-        self.vision_model.eval()
+        self.siglip.eval()
 
         self.losses = []
         self.results = {}
@@ -343,9 +290,8 @@ class NavCMTAgent:
         ''' Train for a given number of epochs '''
         self.feedback = feedback
 
-        self.lang_model.eval() if self.args.freeze_lang_model else self.lang_model.train()
+        self.siglip.eval()
         self.vln_model.train()
-        self.vision_model.eval() if self.args.freeze_vision_model else self.vision_model.train()
 
         self.losses = []
         for epoch in range(1, n_epochs + 1):
@@ -357,10 +303,6 @@ class NavCMTAgent:
                 # if idx >= 100:
                 #     break
                 # train_loop_start_time = time.time()
-                if self.lang_model_optimizer is not None:
-                    self.lang_model_optimizer.zero_grad(set_to_none=True)
-                if self.vision_model_optimizer is not None:
-                    self.vision_model_optimizer.zero_grad(set_to_none=True)
                 self.et_optimizer.zero_grad(set_to_none=True)
                 self._language_feature_cache = None
                 self.loss = 0
@@ -388,10 +330,6 @@ class NavCMTAgent:
 
                 torch.nn.utils.clip_grad_norm_(self.vln_model.parameters(), 40.)
 
-                if self.lang_model_optimizer is not None:
-                    self.lang_model_optimizer.step()
-                if self.vision_model_optimizer is not None:
-                    self.vision_model_optimizer.step()
                 self.et_optimizer.step()
                 # print("---------- One iter takes %s seconds ---" % (time.time() - train_loop_start_time))
 
@@ -416,41 +354,26 @@ class NavCMTAgent:
         obs = self.env._get_obs(random_direction=(self.feedback == 'teacher'))
         batch_size = len(obs)
 
-        # Language input
-        lang_inputs = []
-        for i, ob in enumerate(obs):
-            # if self.args.vision_only:
-            #     lang_inputs.append('')
-            # else:
-            lang_inputs.append(ob['instruction'])
+        # Language input: frozen SigLIP text tower, cached across teacher/student rollout.
+        lang_inputs = [ob['instruction'] for ob in obs]
         cache_key = tuple(lang_inputs)
         cached = self._language_feature_cache
-        if self.args.freeze_lang_model and cached is not None and cached[0] == cache_key:
-            lang_features, linear_cls, cls_hidden = cached[1]
+        if cached is not None and cached[0] == cache_key:
+            lang_features, pooled_language = cached[1]
         else:
-            encoding = self.tokenizer(lang_inputs, padding=True, return_tensors="pt")
-            input_ids = encoding['input_ids'].cuda()
-            attention_mask = encoding['attention_mask'].cuda()
-            grad_context = torch.no_grad() if self.args.freeze_lang_model else nullcontext()
-            with grad_context:
-                with torch.autocast(
-                    "cuda", dtype=torch.bfloat16,
-                    enabled=self.args.bf16 and torch.cuda.is_bf16_supported()
-                ):
-                    lang_features, linear_cls, cls_hidden = self.lang_model(
-                        input_ids, attention_mask
-                    )
-            if self.args.freeze_lang_model:
-                self._language_feature_cache = (
-                    cache_key,
-                    (lang_features.detach(), linear_cls.detach(), cls_hidden.detach()),
+            with torch.autocast(
+                "cuda",
+                dtype=torch.bfloat16,
+                enabled=self.args.bf16 and torch.cuda.is_bf16_supported(),
+            ):
+                lang_features, pooled_language = self.siglip.encode_text(
+                    lang_inputs,
+                    torch.device("cuda", torch.cuda.current_device()),
                 )
-
-        # lang_features --> 768
-        # linear_cls --> 49 (used to attend to img features)
-        # c_0 = cls_hidden
-
-        # print(lang_features.size()) # batch_size*sequence_length*768
+            self._language_feature_cache = (
+                cache_key,
+                (lang_features.detach(), pooled_language.detach()),
+            )
 
         # Record starting points of the current batch
         current_directions = [np.array(ob['pose'].yaw, dtype=np.float32) for ob in obs]
@@ -501,13 +424,13 @@ class NavCMTAgent:
             'directions': torch.zeros((batch_size, 0, 4)).cuda(),
             'grid_fts': torch.zeros(batch_size, 0, 768).cuda(),
             'grid_index': torch.zeros(batch_size, 0).cuda(),
-            'frames': torch.zeros(batch_size, 0, 512, 49).cuda(),
+            'frames': torch.zeros(batch_size, 0, self.args.demb, 49).cuda(),
             'lenths': [0 for _ in range(batch_size)],
             'lang': lang_features,
+            'lang_pooled': pooled_language,
             'candidates': global_positions,
             'centroids': torch.zeros((batch_size, 0, 2)).cuda(),
-            'lang_cls': linear_cls,
-            'map_fts': torch.zeros(batch_size, 0, 512, 49).cuda(),
+            'map_fts': torch.zeros(batch_size, 0, self.args.demb, 49).cuda(),
         }
 
         stage1_ended = np.array([False] * batch_size)
@@ -516,22 +439,18 @@ class NavCMTAgent:
 
             # print("- action rollingout takes %s seconds ---" % (time.time() - rollingout_action_start_time))
             # rollingout_action_start_time = time.time()
-            images = []
-            for i in range(len(obs)):
-                images.append(obs[i]['rgb'].copy())
-            images = np.stack(images)[:, :, :, ::-1].transpose(0, 3, 1, 2)  # W x H x C to C x W x H
-            images = np.ascontiguousarray(images, dtype=np.float32)
-            images -= self.rgb_mean
-            images /= self.rgb_std
-            image_tensor = torch.from_numpy(images).cuda()
-            vision_context = torch.no_grad() if self.args.freeze_vision_model else nullcontext()
-            with vision_context:
-                with torch.autocast(
-                    "cuda", dtype=torch.bfloat16,
-                    enabled=self.args.bf16 and torch.cuda.is_bf16_supported()
-                ):
-                    im_feature = self.vision_model(image_tensor)
-            im_feature = im_feature.view(im_feature.size(0), im_feature.size(1), -1)
+            # cropclient already returns RGB; keep channel order for SigLIP.
+            images = np.stack([ob['rgb'].copy() for ob in obs])
+            with torch.autocast(
+                "cuda",
+                dtype=torch.bfloat16,
+                enabled=self.args.bf16 and torch.cuda.is_bf16_supported(),
+            ):
+                im_feature = self.siglip.encode_images(
+                    images,
+                    torch.device("cuda", torch.cuda.current_device()),
+                    output_grid=7,
+                )
 
 
 
@@ -551,7 +470,7 @@ class NavCMTAgent:
             #     input['frames'] = torch.hstack((input['frames'], torch.zeros_like(im_feature.view(-1, 1, 512, 49))))
             # else:
             # print(input['frames'].shape, im_feature.shape)
-            input['frames'] = im_feature.view(-1, 1, 512, 49)
+            input['frames'] = im_feature.view(-1, 1, self.args.demb, 49)
             input['maps'] = torch.from_numpy(np.array([ob['maps'] for ob in obs], dtype=np.float32)).cuda()
 
 
@@ -582,9 +501,9 @@ class NavCMTAgent:
                     grid_index=input['grid_index'],
                     maps=input['maps'],
                     lang=input['lang'],
+                    lang_pooled=input['lang_pooled'],
                     candidates=input['candidates'],
-                    centroids=input['centroids'],
-                    lang_cls=input['lang_cls']
+                    centroids=input['centroids']
                 )
 
             # Stage-1 spatial belief: keep several separated modes instead of
@@ -892,60 +811,33 @@ class NavCMTAgent:
         return pose
 
     def save(self, epoch, path):
-        ''' Snapshot models '''
+        """Snapshot only trainable HETT weights; frozen SigLIP is loaded by name."""
         the_dir, _ = os.path.split(path)
         os.makedirs(the_dir, exist_ok=True)
-        states = {}
-
-        def create_state(name, model, optimizer):
-            states[name] = {
+        states = {
+            'vln_model': {
                 'epoch': epoch + 1,
-                'state_dict': model.state_dict(),
-                'optimizer': None if optimizer is None else optimizer.state_dict(),
+                'state_dict': self.vln_model_without_ddp.state_dict(),
+                'optimizer': self.et_optimizer.state_dict(),
             }
-
-        all_tuple = [("lang_model", self.lang_model_without_ddp, self.lang_model_optimizer),
-                     ("vision_model", self.vision_model_without_ddp, self.vision_model_optimizer),
-                     ("vln_model", self.vln_model_without_ddp, self.et_optimizer),
-                     ]
-        for param in all_tuple:
-            create_state(*param)
+        }
         torch.save(states, path)
 
     def load(self, path):
-        ''' Loads parameters (but not training state) '''
+        """Load HETT weights while keeping the shared frozen SigLIP external."""
         states = torch.load(path)
-
-        def recover_state(name, model, optimizer):
-            state = model.state_dict()
-            model_keys = set(state.keys())
-            load_keys = set(states[name]['state_dict'].keys())
-            if model_keys == load_keys:
-                print("NOTICE: LOADing ALL KEYS IN THE ", name)
-                state_dict = states[name]['state_dict']
-            else:
-                print("NOTICE: DIFFERENT KEYS IN THE ", name)
-                # if not list(model_keys)[0].startswith('module.') and list(load_keys)[0].startswith('module.'):
-                #     state_dict = {k.replace('module.', ''): v for k, v in state_dict.items()}
-                state_dict = {k: v for k, v in states[name]['state_dict'].items() if k in model_keys}
-            state.update(state_dict)
-            model.load_state_dict(state)
-            if (
-                self.args.resume_optimizer
-                and optimizer is not None
-                and states[name].get('optimizer') is not None
-            ):
-                optimizer.load_state_dict(states[name]['optimizer'])
-
-            def count_parameters(mo):
-                return sum(p.numel() for p in mo.parameters() if p.requires_grad)
-
-            print('Model parameters: ', count_parameters(model))
-
-        all_tuple = [("lang_model", self.lang_model_without_ddp, self.lang_model_optimizer),
-                     ("vision_model", self.vision_model_without_ddp, self.vision_model_optimizer),
-                     ("vln_model", self.vln_model_without_ddp, self.et_optimizer),
-                     ]
-        for param in all_tuple:
-            recover_state(*param)
+        saved = states['vln_model']['state_dict']
+        state = self.vln_model_without_ddp.state_dict()
+        matching = {
+            key: value for key, value in saved.items()
+            if key in state and state[key].shape == value.shape
+        }
+        state.update(matching)
+        self.vln_model_without_ddp.load_state_dict(state)
+        print(
+            "NOTICE: loaded %d/%d HETT tensors" %
+            (len(matching), len(self.vln_model_without_ddp.state_dict()))
+        )
+        if self.args.resume_optimizer and states['vln_model'].get('optimizer') is not None:
+            self.et_optimizer.load_state_dict(states['vln_model']['optimizer'])
         return states['vln_model']['epoch'] - 1

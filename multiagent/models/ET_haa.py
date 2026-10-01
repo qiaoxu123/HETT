@@ -103,6 +103,14 @@ class ET(nn.Module):
             nn.Tanh()
         )
         self.attention_layer_vision = SoftDotAttention(49)
+        # Trainable HETT-specific adapter; the SigLIP backbone itself stays frozen.
+        self.lang_cls_head = nn.Sequential(
+            nn.Linear(self.args.demb, 64),
+            nn.ReLU(),
+            nn.Dropout(0.2),
+            nn.Linear(64, 49),
+            nn.ReLU(),
+        )
         self.decoder_2_progress_full = nn.Sequential(
             nn.Linear(self.args.demb, 256),
             # nn.BatchNorm1d(64, eps=1e-12),
@@ -143,6 +151,7 @@ class ET(nn.Module):
         # embed language
         output = {}
         emb_lang = inputs["lang"]
+        lang_cls = self.lang_cls_head(inputs["lang_pooled"].float())
 
         map_feat = self.map_encoder(inputs['maps'])
 
@@ -160,7 +169,7 @@ class ET(nn.Module):
         im_feature = inputs["frames"]
         att_frame_feature = torch.zeros((im_feature.shape[0], 0, 49)).cuda()
         for i in range(im_feature.shape[1]):
-            att_single_frame_feature, beta = self.attention_layer_vision(inputs["lang_cls"], im_feature[:, i, :, :])
+            att_single_frame_feature, beta = self.attention_layer_vision(lang_cls, im_feature[:, i, :, :])
             att_frame_feature = torch.concat((att_frame_feature, att_single_frame_feature.unsqueeze(1)), axis=1)
 
         emb_frames = self.fc2(att_frame_feature.view(-1, 49)).view(*im_feature.shape[:2], -1)

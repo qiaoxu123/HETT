@@ -117,6 +117,12 @@ def parse_args():
     parser.add_argument('--entropy_loss_weight', type=float, default=0.01)
     parser.add_argument("--teacher_weight", type=float, default=1.)
 
+    # Shared SBF-style vision-language backbone.
+    parser.add_argument('--siglip_name', type=str, default='google/siglip-base-patch16-224')
+    parser.add_argument('--siglip_local_files_only', action='store_true', default=False,
+                        help='Load SigLIP only from the local Hugging Face cache')
+
+    # Legacy arguments kept for command-line compatibility; no longer used.
     parser.add_argument('--darknet_model_file', type=str, default='../weights/yolo_v3.cfg')
     parser.add_argument('--darknet_weight_file', type=str, default='../weights/best.pt')
 
@@ -152,9 +158,9 @@ def parse_args():
     parser.add_argument('--bf16', action='store_true', default=False,
                         help='Use bfloat16 autocast for backbone and navigation forward passes')
     parser.add_argument('--freeze_lang_model', action='store_true', default=False,
-                        help='Freeze BERT and reuse instruction features across teacher/student rollout')
+                        help=argparse.SUPPRESS)
     parser.add_argument('--freeze_vision_model', action='store_true', default=False,
-                        help='Freeze the visual backbone and run it without gradient tracking')
+                        help=argparse.SUPPRESS)
     parser.add_argument('--epochs', type=int, default=20)
     parser.add_argument('--iters', type=int, default=200000)
     parser.add_argument('--checkpoint', type=str, default=None)
