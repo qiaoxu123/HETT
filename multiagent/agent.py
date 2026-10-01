@@ -131,7 +131,7 @@ class NavCMTAgent:
 
         # Models
 
-        self.tokenizer = BertTokenizerFast.from_pretrained('/cver/xcding/code/tokenizer_files/bert-base-uncase')
+        self.tokenizer = BertTokenizerFast.from_pretrained('bert-base-uncased')
         self.lang_model = CustomBERTModel().cuda()
 
         # self.img_tensor = transforms.ToTensor()
@@ -288,6 +288,8 @@ class NavCMTAgent:
             # print('?')
             for _, l in enumerate(loader):
                 idx += 1
+                if self.args.benchmark_batches and idx > self.args.benchmark_batches:
+                    break
                 # if idx >= 100:
                 #     break
                 # train_loop_start_time = time.time()
@@ -330,6 +332,13 @@ class NavCMTAgent:
                     print_progress(idx, tot,
                                    prefix='Progress:', suffix='%s (%d/%d)' % (
                             timeSince(start, float(idx) / tot), idx, tot), bar_length=80)
+            if self.args.benchmark_batches:
+                elapsed = time.time() - start
+                print('\nBENCHMARK batches=%d seconds=%.3f seconds_per_batch=%.6f' % (
+                    min(idx, self.args.benchmark_batches), elapsed,
+                    elapsed / max(min(idx, self.args.benchmark_batches), 1)
+                ), flush=True)
+                break
 
     def zero_grad(self):
         self.loss = 0.

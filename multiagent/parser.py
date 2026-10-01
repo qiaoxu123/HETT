@@ -139,6 +139,8 @@ def parse_args():
     parser.add_argument('--epsilon', type=float, default=0.1, help='')
     parser.add_argument('--learning_rate', type=float, default=1.0e-03)
     parser.add_argument('--batch_size', type=int, default=8)
+    parser.add_argument('--benchmark_batches', type=int, default=0,
+                        help='Stop after this many training batches and skip validation; 0 disables')
     parser.add_argument('--epochs', type=int, default=20)
     parser.add_argument('--iters', type=int, default=200000)
     parser.add_argument('--checkpoint', type=str, default=None)

@@ -128,7 +128,7 @@ class SoftDotAttention(nn.Module):
 class CustomBERTModel(nn.Module):
     def __init__(self):
         super(CustomBERTModel, self).__init__()
-        self.bert = AutoModel.from_pretrained('/cver/xcding/code/tokenizer_files/bert-base-uncase')
+        self.bert = AutoModel.from_pretrained('bert-base-uncased')
         # freeze_network(self.bert)
         # for child in self.bert.children():
         #     # ct += 1
@@ -410,4 +410,3 @@ class ViT_LSTM_lang_only(nn.Module):
         output = self.decoder_2_action_full(lang_embeds)
 
         return h_1, c_1, output 
-
