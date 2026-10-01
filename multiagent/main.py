@@ -199,7 +199,24 @@ def train(args, train_env, val_envs, rank=-1):
                     nss_w_weighting=1)  # nss_w_weighting = max(0, (args.iters/2 - idx)/ (args.iters/2)))
 
         if args.benchmark_batches:
-            return
+            if default_gpu:
+                agent.save(idx, os.path.join(GOAL_PREDICTOR_CHECKPOINT_DIR, "latest"))
+                ml_loss = sum(agent.logs['IL_loss']) / max(len(agent.logs['IL_loss']), 1)
+                direction_loss = sum(agent.logs['direction_loss']) / max(len(agent.logs['direction_loss']), 1)
+                progress_loss = sum(agent.logs['progress_loss']) / max(len(agent.logs['progress_loss']), 1)
+                goal_predict_loss = sum(agent.logs['goal_predict_loss']) / max(
+                    len(agent.logs['goal_predict_loss']), 1
+                )
+                print(
+                    "BENCHMARK_EPOCH epoch=%d IL_loss=%.6f direction_loss=%.6f "
+                    "progress_loss=%.6f goal_predict_loss=%.6f" % (
+                        idx, ml_loss, direction_loss, progress_loss,
+                        goal_predict_loss,
+                    ),
+                    flush=True,
+                )
+            torch.cuda.empty_cache()
+            continue
 
         if default_gpu:
             ml_loss = sum(agent.logs['IL_loss']) / max(len(agent.logs['IL_loss']), 1)
