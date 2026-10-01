@@ -11,9 +11,12 @@ flag="--world_size ${ngpus}
       --batch_size 2
       --train_trajectory_type mturk
       --log_every 1
-      --eval_every 1
+      --eval_every 3
       --epochs 50
-      --save_every 1
+      --save_every 3
+      --bf16
+      --freeze_lang_model
+      --freeze_vision_model
       --log_dir log
       --move_iteration 10
       --max_action_len 20

@@ -145,6 +145,12 @@ def parse_args():
     parser.add_argument('--epsilon', type=float, default=0.1, help='')
     parser.add_argument('--learning_rate', type=float, default=1.0e-03)
     parser.add_argument('--batch_size', type=int, default=8)
+    parser.add_argument('--bf16', action='store_true', default=False,
+                        help='Use bfloat16 autocast for backbone and navigation forward passes')
+    parser.add_argument('--freeze_lang_model', action='store_true', default=False,
+                        help='Freeze BERT and reuse instruction features across teacher/student rollout')
+    parser.add_argument('--freeze_vision_model', action='store_true', default=False,
+                        help='Freeze the visual backbone and run it without gradient tracking')
     parser.add_argument('--epochs', type=int, default=20)
     parser.add_argument('--iters', type=int, default=200000)
     parser.add_argument('--checkpoint', type=str, default=None)

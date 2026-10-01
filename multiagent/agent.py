@@ -5,6 +5,7 @@ import numpy as np
 import random
 import math
 import time
+from contextlib import nullcontext
 from collections import defaultdict
 from tqdm import tqdm
 
@@ -166,30 +167,40 @@ class NavCMTAgent:
 
         # create the et model
         self.vln_model = ET(self.args).cuda()
+
+        # SBF-inspired efficient training path: keep expensive feature extractors
+        # fixed while training the navigation head.
+        if self.args.freeze_lang_model:
+            self.lang_model.requires_grad_(False)
+            self.lang_model.eval()
+        if self.args.freeze_vision_model:
+            self.vision_model.requires_grad_(False)
+            self.vision_model.eval()
+        self._language_feature_cache = None
+
         # self.map_encoder = MapEncoder(240)
         # self.goal_predictpr = GoalPredictor(240, 7)
         self.progress_regression = nn.MSELoss(reduction='sum')
 
         if self.args.world_size > 1 and allow_ngpus:
-            self.lang_model = DDP(self.lang_model, broadcast_buffers=False, find_unused_parameters=True,
-                                  device_ids=[self.args.local_rank], output_device=self.args.local_rank)
-            self.vision_model = DDP(self.vision_model, broadcast_buffers=False, find_unused_parameters=True,
-                                    device_ids=[self.args.local_rank], output_device=self.args.local_rank)
-            self.vln_model = DDP(self.vln_model, broadcast_buffers=False, find_unused_parameters=True,
-                                 device_ids=[self.args.local_rank], output_device=self.args.local_rank)
+            if not self.args.freeze_lang_model:
+                self.lang_model = DDP(
+                    self.lang_model, broadcast_buffers=False, find_unused_parameters=True,
+                    device_ids=[self.args.local_rank], output_device=self.args.local_rank
+                )
+            if not self.args.freeze_vision_model:
+                self.vision_model = DDP(
+                    self.vision_model, broadcast_buffers=False, find_unused_parameters=True,
+                    device_ids=[self.args.local_rank], output_device=self.args.local_rank
+                )
+            self.vln_model = DDP(
+                self.vln_model, broadcast_buffers=False, find_unused_parameters=True,
+                device_ids=[self.args.local_rank], output_device=self.args.local_rank
+            )
 
-            # self.lang_model = nn.DataParallel(self.lang_model).cuda()
-            # self.vision_model = nn.DataParallel(self.vision_model).cuda()
-            # self.vln_model = nn.DataParallel(self.vln_model).cuda()
-            self.lang_model_without_ddp = self.lang_model.module
-            self.vision_model_without_ddp = self.vision_model.module
-            self.vln_model_without_ddp = self.vln_model.module
-
-
-        else:
-            self.lang_model_without_ddp = self.lang_model
-            self.vision_model_without_ddp = self.vision_model
-            self.vln_model_without_ddp = self.vln_model
+        self.lang_model_without_ddp = getattr(self.lang_model, 'module', self.lang_model)
+        self.vision_model_without_ddp = getattr(self.vision_model, 'module', self.vision_model)
+        self.vln_model_without_ddp = getattr(self.vln_model, 'module', self.vln_model)
 
         # self.vln_model = ViT_LSTM(
         #     self.args, 
@@ -198,13 +209,23 @@ class NavCMTAgent:
         # optimizer        
         assert args.optim in ("adam", "adamW")
         OptimizerClass = torch.optim.Adam if args.optim == "adam" else torch.optim.AdamW
-        self.et_optimizer = OptimizerClass(filter(lambda p: p.requires_grad, self.vln_model.parameters()),
-                                           lr=args.learning_rate)
-        self.lang_model_optimizer = OptimizerClass(filter(lambda p: p.requires_grad, self.lang_model.parameters()),
-                                                   lr=self.args.learning_rate)
-        self.vision_model_optimizer = OptimizerClass(filter(lambda p: p.requires_grad, self.vision_model.parameters()),
-                                                     lr=self.args.learning_rate)
-        self.optimizers = (self.et_optimizer, self.lang_model_optimizer, self.vision_model_optimizer)
+        self.et_optimizer = OptimizerClass(
+            filter(lambda p: p.requires_grad, self.vln_model.parameters()),
+            lr=args.learning_rate
+        )
+        self.lang_model_optimizer = None if self.args.freeze_lang_model else OptimizerClass(
+            filter(lambda p: p.requires_grad, self.lang_model.parameters()),
+            lr=self.args.learning_rate
+        )
+        self.vision_model_optimizer = None if self.args.freeze_vision_model else OptimizerClass(
+            filter(lambda p: p.requires_grad, self.vision_model.parameters()),
+            lr=self.args.learning_rate
+        )
+        self.optimizers = tuple(
+            optimizer for optimizer in (
+                self.et_optimizer, self.lang_model_optimizer, self.vision_model_optimizer
+            ) if optimizer is not None
+        )
         # self.optimizers = (self.et_optimizer, self.lang_model_optimizer)
 
         #         # Optimizers
@@ -294,9 +315,9 @@ class NavCMTAgent:
         ''' Train for a given number of epochs '''
         self.feedback = feedback
 
-        self.lang_model.train()
+        self.lang_model.eval() if self.args.freeze_lang_model else self.lang_model.train()
         self.vln_model.train()
-        self.vision_model.train()
+        self.vision_model.eval() if self.args.freeze_vision_model else self.vision_model.train()
 
         self.losses = []
         for epoch in range(1, n_epochs + 1):
@@ -308,9 +329,12 @@ class NavCMTAgent:
                 # if idx >= 100:
                 #     break
                 # train_loop_start_time = time.time()
-                self.lang_model_optimizer.zero_grad()
-                self.vision_model_optimizer.zero_grad()
-                self.et_optimizer.zero_grad()
+                if self.lang_model_optimizer is not None:
+                    self.lang_model_optimizer.zero_grad(set_to_none=True)
+                if self.vision_model_optimizer is not None:
+                    self.vision_model_optimizer.zero_grad(set_to_none=True)
+                self.et_optimizer.zero_grad(set_to_none=True)
+                self._language_feature_cache = None
                 self.loss = 0
 
                 if feedback == 'teacher':
@@ -336,8 +360,10 @@ class NavCMTAgent:
 
                 torch.nn.utils.clip_grad_norm_(self.vln_model.parameters(), 40.)
 
-                self.lang_model_optimizer.step()
-                self.vision_model_optimizer.step()
+                if self.lang_model_optimizer is not None:
+                    self.lang_model_optimizer.step()
+                if self.vision_model_optimizer is not None:
+                    self.vision_model_optimizer.step()
                 self.et_optimizer.step()
                 # print("---------- One iter takes %s seconds ---" % (time.time() - train_loop_start_time))
 
@@ -369,10 +395,28 @@ class NavCMTAgent:
             #     lang_inputs.append('')
             # else:
             lang_inputs.append(ob['instruction'])
-        encoding = self.tokenizer(lang_inputs, padding=True, return_tensors="pt")
-        input_ids = encoding['input_ids'].cuda()
-        attention_mask = encoding['attention_mask'].cuda()
-        lang_features, linear_cls, cls_hidden = self.lang_model(input_ids, attention_mask)
+        cache_key = tuple(lang_inputs)
+        cached = self._language_feature_cache
+        if self.args.freeze_lang_model and cached is not None and cached[0] == cache_key:
+            lang_features, linear_cls, cls_hidden = cached[1]
+        else:
+            encoding = self.tokenizer(lang_inputs, padding=True, return_tensors="pt")
+            input_ids = encoding['input_ids'].cuda()
+            attention_mask = encoding['attention_mask'].cuda()
+            grad_context = torch.no_grad() if self.args.freeze_lang_model else nullcontext()
+            with grad_context:
+                with torch.autocast(
+                    "cuda", dtype=torch.bfloat16,
+                    enabled=self.args.bf16 and torch.cuda.is_bf16_supported()
+                ):
+                    lang_features, linear_cls, cls_hidden = self.lang_model(
+                        input_ids, attention_mask
+                    )
+            if self.args.freeze_lang_model:
+                self._language_feature_cache = (
+                    cache_key,
+                    (lang_features.detach(), linear_cls.detach(), cls_hidden.detach()),
+                )
 
         # lang_features --> 768
         # linear_cls --> 49 (used to attend to img features)
@@ -451,7 +495,14 @@ class NavCMTAgent:
             images = np.ascontiguousarray(images, dtype=np.float32)
             images -= self.rgb_mean
             images /= self.rgb_std
-            im_feature = self.vision_model(torch.from_numpy(images).cuda())
+            image_tensor = torch.from_numpy(images).cuda()
+            vision_context = torch.no_grad() if self.args.freeze_vision_model else nullcontext()
+            with vision_context:
+                with torch.autocast(
+                    "cuda", dtype=torch.bfloat16,
+                    enabled=self.args.bf16 and torch.cuda.is_bf16_supported()
+                ):
+                    im_feature = self.vision_model(image_tensor)
             im_feature = im_feature.view(im_feature.size(0), im_feature.size(1), -1)
 
 
@@ -491,21 +542,25 @@ class NavCMTAgent:
 
 
 
-            pred_direction, pred_progress, pred_goals, pred_logits, grid_ft = self.vln_model(
-                directions=input['directions'],
-                frames=input['frames'],
-                lenths=input['lenths'],
-                grid_fts=input['grid_fts'],
-                grid_index=input['grid_index'],
-                maps=input['maps'],
-                lang=input['lang'],
-                candidates=input['candidates'],
-                centroids=input['centroids'],
-                lang_cls=input['lang_cls']
-            )
+            with torch.autocast(
+                "cuda", dtype=torch.bfloat16,
+                enabled=self.args.bf16 and torch.cuda.is_bf16_supported()
+            ):
+                pred_direction, pred_progress, pred_goals, pred_logits, grid_ft = self.vln_model(
+                    directions=input['directions'],
+                    frames=input['frames'],
+                    lenths=input['lenths'],
+                    grid_fts=input['grid_fts'],
+                    grid_index=input['grid_index'],
+                    maps=input['maps'],
+                    lang=input['lang'],
+                    candidates=input['candidates'],
+                    centroids=input['centroids'],
+                    lang_cls=input['lang_cls']
+                )
 
             # Stage-1 spatial belief: convert 49 grid logits into a 7x7 heatmap.
-            heatmap_probs = torch.softmax(pred_logits, dim=1)
+            heatmap_probs = torch.softmax(pred_logits.float(), dim=1)
             heatmap_goal_ids = heatmap_probs.argmax(dim=1)
             heatmap_goal_rows = torch.div(
                 heatmap_goal_ids, self.args.grid_size, rounding_mode='floor'
@@ -593,7 +648,7 @@ class NavCMTAgent:
                     pred_logits.device,
                 )
                 per_sample_heatmap_loss = -(
-                    gt_heatmap * F.log_softmax(pred_logits, dim=1)
+                    gt_heatmap * F.log_softmax(pred_logits.float(), dim=1)
                 ).sum(dim=1)
                 active_mask = torch.from_numpy((~ended).astype(np.float32)).to(pred_logits.device)
                 heatmap_loss += (per_sample_heatmap_loss * active_mask).sum()
@@ -795,7 +850,7 @@ class NavCMTAgent:
             states[name] = {
                 'epoch': epoch + 1,
                 'state_dict': model.state_dict(),
-                'optimizer': optimizer.state_dict(),
+                'optimizer': None if optimizer is None else optimizer.state_dict(),
             }
 
         all_tuple = [("lang_model", self.lang_model_without_ddp, self.lang_model_optimizer),
@@ -824,7 +879,11 @@ class NavCMTAgent:
                 state_dict = {k: v for k, v in states[name]['state_dict'].items() if k in model_keys}
             state.update(state_dict)
             model.load_state_dict(state)
-            if self.args.resume_optimizer:
+            if (
+                self.args.resume_optimizer
+                and optimizer is not None
+                and states[name].get('optimizer') is not None
+            ):
                 optimizer.load_state_dict(states[name]['optimizer'])
 
             def count_parameters(mo):

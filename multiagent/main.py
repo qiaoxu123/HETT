@@ -223,42 +223,48 @@ def train(args, train_env, val_envs, rank=-1):
                 record_file
             )
 
-            # Run validation
+            # Full validation is expensive and does not affect gradient updates.
+            # Respect eval_every/save_every so training can run uninterrupted.
             loss_str = "\nepoch {}".format(idx)
+            should_validate = ((idx + 1) % max(args.eval_every, 1) == 0) or (idx + 1 == args.epochs)
+            should_save = ((idx + 1) % max(args.save_every, 1) == 0) or should_validate
 
-            agent.save(idx, os.path.join(GOAL_PREDICTOR_CHECKPOINT_DIR, "latest"))
-            agent_class_eval = NavCMTAgent
-            agent_eval = agent_class_eval(args, rank=rank, allow_ngpus=False)
-            print("Loaded the listener model at epoch %d from %s" % \
-                  (agent_eval.load(os.path.join(GOAL_PREDICTOR_CHECKPOINT_DIR, "latest")),
-                   os.path.join(GOAL_PREDICTOR_CHECKPOINT_DIR, "latest")))
-            for env_name, env in val_envs.items():
-                agent_eval.logs = defaultdict(list)
-                agent_eval.env = env
-                loader = DataLoader(env, batch_size=1)
-                # Get validation distance from goal under test evaluation conditions
-                agent_eval.test(loader, feedback='student')
-                pred_results = agent_eval.get_results()
+            if should_save:
+                agent.save(idx, os.path.join(GOAL_PREDICTOR_CHECKPOINT_DIR, "latest"))
 
-                score_summary, result = env.eval_metrics(pred_results)
-                stage1_step = sum(agent_eval.logs['stage1_step']) / max(len(agent_eval.logs['stage1_step']), 1)
-                stage2_step = sum(agent_eval.logs['stage2_step']) / max(len(agent_eval.logs['stage2_step']), 1)
-                stage2_rotate = sum(agent_eval.logs['stage2_rotate']) / max(len(agent_eval.logs['stage2_rotate']), 1)
+            if should_validate:
+                agent_class_eval = NavCMTAgent
+                agent_eval = agent_class_eval(args, rank=rank, allow_ngpus=False)
+                print("Loaded the listener model at epoch %d from %s" % \
+                      (agent_eval.load(os.path.join(GOAL_PREDICTOR_CHECKPOINT_DIR, "latest")),
+                       os.path.join(GOAL_PREDICTOR_CHECKPOINT_DIR, "latest")))
+                for env_name, env in val_envs.items():
+                    agent_eval.logs = defaultdict(list)
+                    agent_eval.env = env
+                    loader = DataLoader(env, batch_size=1)
+                    # Get validation distance from goal under test evaluation conditions
+                    agent_eval.test(loader, feedback='student')
+                    pred_results = agent_eval.get_results()
 
-                write_to_record_file(
-                    "\nstage %.4f %.4f %.4f" % (
-                        stage1_step, stage2_step, stage2_rotate),
-                    record_file
-                )
-                loss_str += "\n%s " % env_name
-                for metric, val in score_summary.items():
-                    loss_str += ', %s: %.2f' % (metric, val)
-                    # writer.add_scalar('%s/%s' % (metric, env_name), score_summary[metric], iter)
-                if env_name in best_val:
-                    if score_summary['sr'] >= best_val[env_name]['sr']:
-                        best_val[env_name]['sr'] = score_summary['sr']
-                        best_val[env_name]['state'] = 'Epoch %d %s' % (idx, loss_str)
-                        agent_eval.save(idx, os.path.join(GOAL_PREDICTOR_CHECKPOINT_DIR, "best_%s" % (env_name)))
+                    score_summary, result = env.eval_metrics(pred_results)
+                    stage1_step = sum(agent_eval.logs['stage1_step']) / max(len(agent_eval.logs['stage1_step']), 1)
+                    stage2_step = sum(agent_eval.logs['stage2_step']) / max(len(agent_eval.logs['stage2_step']), 1)
+                    stage2_rotate = sum(agent_eval.logs['stage2_rotate']) / max(len(agent_eval.logs['stage2_rotate']), 1)
+
+                    write_to_record_file(
+                        "\nstage %.4f %.4f %.4f" % (
+                            stage1_step, stage2_step, stage2_rotate),
+                        record_file
+                    )
+                    loss_str += "\n%s " % env_name
+                    for metric, val in score_summary.items():
+                        loss_str += ', %s: %.2f' % (metric, val)
+                        # writer.add_scalar('%s/%s' % (metric, env_name), score_summary[metric], iter)
+                    if env_name in best_val:
+                        if score_summary['sr'] >= best_val[env_name]['sr']:
+                            best_val[env_name]['sr'] = score_summary['sr']
+                            best_val[env_name]['state'] = 'Epoch %d %s' % (idx, loss_str)
+                            agent_eval.save(idx, os.path.join(GOAL_PREDICTOR_CHECKPOINT_DIR, "best_%s" % (env_name)))
 
             write_to_record_file(
                 ('\n%s (%d %d%%) %s' % (
