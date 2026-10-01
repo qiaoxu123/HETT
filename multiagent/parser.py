@@ -97,7 +97,13 @@ def parse_args():
     parser.add_argument('--heatmap_loss_weight', type=float, default=0.1,
                         help='Weight of the Stage-1 heatmap loss')
     parser.add_argument('--stage1_switch_dist', type=float, default=25.0,
-                        help='Distance in meters for switching from coarse Stage 1 to fine Stage 2')
+                        help='Legacy hard-switch threshold; unused by trajectory-belief execution')
+    parser.add_argument('--trajectory_steps', type=int, default=5,
+                        help='Number of future 2D waypoints predicted for each heatmap mode')
+    parser.add_argument('--trajectory_loss_weight', type=float, default=1.0,
+                        help='Weight of heatmap-weighted future trajectory supervision')
+    parser.add_argument('--trajectory_residual_scale', type=float, default=0.10,
+                        help='Maximum normalized residual around each linear trajectory anchor')
     parser.add_argument('--demb', type=int, default=768)
     parser.add_argument('--encoder_heads', type=int, default=12)
     parser.add_argument('--encoder_layers', type=int, default=2)

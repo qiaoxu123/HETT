@@ -130,6 +130,60 @@ def build_gaussian_heatmap(target_ids, grid_size, sigma, device):
     return heatmap.view(-1, grid_size ** 2)
 
 
+def build_future_trajectory_target(env, ob, current_pose, num_waypoints, map_meters):
+    """Sample future GT waypoints along the remaining teacher path.
+
+    The current pose is projected to the nearest point on the teacher trajectory.
+    Waypoints are then sampled uniformly in arc length over the remaining path
+    and normalized to the same map coordinates used by the heatmap.
+    """
+    path_xy = np.array([[p.x, p.y] for p in ob['trajectory']], dtype=np.float32)
+    goal_xy = np.array(ob['goal'], dtype=np.float32)
+
+    if path_xy.shape[0] == 0:
+        path_xy = goal_xy[None, :]
+    elif np.linalg.norm(path_xy[-1] - goal_xy) > 1e-4:
+        path_xy = np.concatenate([path_xy, goal_xy[None, :]], axis=0)
+
+    current_xy = np.array([current_pose.x, current_pose.y], dtype=np.float32)
+    nearest_idx = int(np.linalg.norm(path_xy - current_xy[None, :], axis=1).argmin())
+    remaining = path_xy[nearest_idx:]
+    remaining = np.concatenate([current_xy[None, :], remaining], axis=0)
+
+    segment_lengths = np.linalg.norm(remaining[1:] - remaining[:-1], axis=1)
+    cumulative = np.concatenate(
+        [np.zeros(1, dtype=np.float32), np.cumsum(segment_lengths, dtype=np.float32)]
+    )
+    total_length = float(cumulative[-1])
+
+    if total_length < 1e-6:
+        sampled_xy = np.repeat(goal_xy[None, :], num_waypoints, axis=0)
+    else:
+        sample_distances = np.linspace(
+            total_length / num_waypoints,
+            total_length,
+            num_waypoints,
+            dtype=np.float32,
+        )
+        sampled_xy = []
+        for distance in sample_distances:
+            upper = int(np.searchsorted(cumulative, distance, side='right'))
+            upper = min(max(upper, 1), len(cumulative) - 1)
+            lower = upper - 1
+            denom = max(float(cumulative[upper] - cumulative[lower]), 1e-6)
+            ratio = float((distance - cumulative[lower]) / denom)
+            sampled_xy.append(
+                remaining[lower] + ratio * (remaining[upper] - remaining[lower])
+            )
+        sampled_xy = np.asarray(sampled_xy, dtype=np.float32)
+
+    normalized = [
+        env.normalize_position(Point2D(float(x), float(y)), ob['map_name'], map_meters)
+        for x, y in sampled_xy
+    ]
+    return np.asarray(normalized, dtype=np.float32)
+
+
 class NavCMTAgent:
     def __init__(self, args, allow_ngpus=True, rank=0):
         self.results = {}
@@ -420,10 +474,9 @@ class NavCMTAgent:
         progress_loss = 0.
         goal_predict_loss = 0.
         heatmap_loss = torch.tensor(0.).cuda()
+        trajectory_loss = torch.tensor(0.).cuda()
 
-        stage1_step = 0
-        stage2_step = 0
-        stage2_rotate = 0
+        trajectory_step = 0
 
         input = {
             'directions': torch.zeros((batch_size, 0, 4)).cuda(),
@@ -438,8 +491,6 @@ class NavCMTAgent:
             'lang_cls': linear_cls,
             'map_fts': torch.zeros(batch_size, 0, 512, 49).cuda(),
         }
-
-        stage1_ended = np.array([False] * batch_size)
 
         for t in range(self.args.max_action_len):
 
@@ -492,7 +543,7 @@ class NavCMTAgent:
 
 
 
-            pred_direction, pred_progress, pred_goals, pred_logits, grid_ft = self.vln_model(
+            pred_direction, pred_progress, pred_goals, pred_logits, pred_trajectories, grid_ft = self.vln_model(
                 directions=input['directions'],
                 frames=input['frames'],
                 lenths=input['lenths'],
@@ -520,6 +571,9 @@ class NavCMTAgent:
                 ),
                 dim=1,
             )
+            batch_indices = torch.arange(batch_size, device=pred_logits.device)
+            selected_trajectories = pred_trajectories[batch_indices, heatmap_goal_ids]
+            selected_first_waypoint = selected_trajectories[:, 0, :]
 
             input['grid_fts'] = torch.cat((input['grid_fts'], grid_ft), dim=1)
             grid_index = torch.tensor(np.array([ob['cur_grid'] for ob in obs])).unsqueeze(1).cuda()
@@ -599,6 +653,34 @@ class NavCMTAgent:
                 ).sum(dim=1)
                 active_mask = torch.from_numpy((~ended).astype(np.float32)).to(pred_logits.device)
                 heatmap_loss += (per_sample_heatmap_loss * active_mask).sum()
+
+                gt_future_waypoints = torch.from_numpy(
+                    np.stack([
+                        build_future_trajectory_target(
+                            self.env,
+                            ob,
+                            poses[i],
+                            self.args.trajectory_steps,
+                            self.args.map_meters,
+                        )
+                        for i, ob in enumerate(obs)
+                    ])
+                ).to(device=pred_trajectories.device, dtype=pred_trajectories.dtype)
+
+                trajectory_targets = gt_future_waypoints[:, None, :, :].expand_as(
+                    pred_trajectories
+                )
+                per_candidate_trajectory_loss = F.smooth_l1_loss(
+                    pred_trajectories,
+                    trajectory_targets,
+                    reduction='none',
+                ).mean(dim=(2, 3))
+                per_sample_trajectory_loss = (
+                    per_candidate_trajectory_loss * gt_heatmap
+                ).sum(dim=1)
+                trajectory_loss += (
+                    per_sample_trajectory_loss * active_mask
+                ).sum()
                 # print(pred_logits.shape)
             # Log the trajectory
             # print(at_direction, gt_direction)
@@ -614,21 +696,18 @@ class NavCMTAgent:
                     traj[i]['heatmap_confidence'].append(
                         float(heatmap_probs[i, heatmap_goal_ids[i]].item())
                     )
+                    traj[i]['predicted_trajectory'].append(
+                        selected_trajectories[i].detach().cpu().tolist()
+                    )
 
             if self.feedback == 'teacher':
-                at_goal = gt_goal
-                # print('teacher', at_goal.shape)
-                a_t = gt_direction
+                # Teacher follows the first waypoint of the remaining GT path.
+                at_goal = gt_future_waypoints[:, 0, :]
                 pred_progress_t = gt_progress
-            elif self.feedback == 'student':  # student
-                a_t = at_direction
-                # Use the highest-probability heatmap cell as the coarse Stage-1 goal.
-                at_goal = heatmap_goals
-
-                # _, at_goal = pred_logits.max(1)
-                # at_goal = at_goal.squeeze(1)
-                # at_goal = gt_goal
-                # print('student', at_goal.shape)
+            elif self.feedback == 'student':
+                # HOME/MultiPath-style receding horizon: select one trajectory
+                # hypothesis from the heatmap and execute only its first waypoint.
+                at_goal = selected_first_waypoint
             else:
                 sys.exit('Invalid feedback option')
 
@@ -641,70 +720,28 @@ class NavCMTAgent:
                 dst = self.env.unnormalize_position(cpu_goal[i], obs[i]['map_name'],
                                                     self.args.map_meters)
 
-                # gt_center = self.env.unnormalize_position(global_position[gt_goal.cpu().detach().numpy()[i]], obs[i]['map_name'],
-                #                                     self.args.map_meters)
-                # dst = Point2D(obs[i]['centroid_goal'][0], obs[i]['centroid_goal'][1])
                 if ended[i]:
                     continue
-                # if dst.dist_to(poses[i].xy) < 10:
-                #     ended[i] = True
-                #     continue
 
-
-                elif pred_progress_t[i] > 0.95 and self.feedback == 'student' and stage1_ended[i]:
-                    # Updated 'ended' list and make environment action
+                if pred_progress_t[i] > 0.95 and self.feedback == 'student':
                     ended[i] = True
                     continue
                 elif t == self.args.max_action_len:
                     ended[i] = True
                     continue
 
-                # print(cpu_goal[i], global_position[cpu_goal[i]])
-                # dst = self.env.unnormalize_position(global_position[cpu_goal[i]], obs[i]['map_name'],
-                #                                     self.args.map_meters)
-                # dst = Point2D(obs[i]['centroid_goal'][0], obs[i]['centroid_goal'][1])
-
-                # if pred_progress_t[i] < 0.75 and dst.dist_to(poses[i].xy) > 20 and not stage1_ended[i]:
-                # if pred_progress_t[i] < 0.75 and dst.dist_to(poses[i].xy) > 10 and not stage1_ended[i]:
-
-                # if pred_progress_t[i] > 0.9 and not stage1_ended[i]:
-                #     stage1_ended[i] = True
-                # Stage 1 only needs to enter the coarse target neighborhood;
-                # fine localization is delegated to Stage 2.
-                if dst.dist_to(poses[i].xy) > self.args.stage1_switch_dist and not stage1_ended[i]:
-                    stage1_step += 1
-                    traj[i]['pred_goal'].append(dst)
-                    # pred_goal_xys = [
-                    #     unnormalize_position(global_position[goal_id] / args.grid_size, eps.map_name, args.map_meters)
-                    #     for eps, goal_id in zip(episodes_batch, goal_ids)]
-                    # dst = Point2D(obs[i]['centroid_goal'][0], obs[i]['centroid_goal'][1])
-                    # dst = self.env.unnormalize_position(global_position[cpu_goal[i]], obs[i]['map_name'], self.args.map_meters)
-                    if self.feedback == 'teacher':
-                        cur_step = stage1_step * self.args.move_iteration
-                        cur_step = cur_step if cur_step < len(obs[i]['trajectory']) else -1
-                        poses[i] = obs[i]['trajectory'][cur_step]
-                    else:
-                        poses[i] = self.move(poses[i], dst,
-                                         self.args.move_iteration)
-                    if not ended[i]:
-                        traj[i]['stage1_trajectory'].append(poses[i])
-
-                elif abs(a_t[i]) < np.pi / 12:
-                    stage1_ended[i] = True
-                    stage2_step += 1
-                    poses[i] = _moved_pose(poses[i], *Action(5, 0, 0))
-                    if len(traj[i]['stage2_trajectory']) == 0:
-                        traj[i]['stage2_trajectory'].append(traj[i]['stage1_trajectory'][-1])
-                    if not ended[i]:
-                        traj[i]['stage2_trajectory'].append(poses[i])
-                else:
-                    stage1_ended[i] = True
-                    stage2_rotate += 1
-                    poses[i] = _moved_pose(poses[i], *Action(0, a_t[i], 0))
-                    if len(traj[i]['stage2_trajectory']) == 0:
-                        traj[i]['stage2_trajectory'].append(traj[i]['stage1_trajectory'][-1])
-                    if not ended[i]:
-                        traj[i]['stage2_trajectory'].append(poses[i])
+                # There is no hard coarse/fine switch. The heatmap chooses a
+                # trajectory mode, and only the first waypoint is executed.
+                # The next outer step observes again and predicts a new field.
+                trajectory_step += 1
+                traj[i]['pred_goal'].append(dst)
+                poses[i] = self.move(
+                    poses[i],
+                    dst,
+                    self.args.move_iteration,
+                )
+                if not ended[i]:
+                    traj[i]['stage1_trajectory'].append(poses[i])
 
             # Save trajectory output
             for i, ob in enumerate(obs):
@@ -747,7 +784,13 @@ class NavCMTAgent:
         if train_ml is not None:
             # print(ml_loss)
             # ml_loss = direction_loss + progress_loss
-            ml_loss = 1 * direction_loss + 0.1 * progress_loss + 2 * goal_predict_loss + self.args.heatmap_loss_weight * heatmap_loss
+            ml_loss = (
+                1 * direction_loss
+                + 0.1 * progress_loss
+                + 2 * goal_predict_loss
+                + self.args.heatmap_loss_weight * heatmap_loss
+                + self.args.trajectory_loss_weight * trajectory_loss
+            )
             # ml_loss = progress_loss + goal_predict_loss
             self.loss += ml_loss * train_ml / batch_size
 
@@ -757,6 +800,7 @@ class NavCMTAgent:
             self.logs['progress_loss'].append((progress_loss * train_ml / batch_size).item())
             self.logs['goal_predict_loss'].append((goal_predict_loss * train_ml / batch_size).item())
             self.logs['heatmap_loss'].append((heatmap_loss * train_ml / batch_size).item())
+            self.logs['trajectory_loss'].append((trajectory_loss * train_ml / batch_size).item())
             self.logs['IL_loss'].append((ml_loss * train_ml / batch_size).item())
 
         if type(self.loss) is int:  # For safety, it will be activated if no losses are added
@@ -766,9 +810,7 @@ class NavCMTAgent:
 
         # if t==0:
         #     self.logs
-        self.logs['stage1_step'].append(float(stage1_step) / batch_size)
-        self.logs['stage2_step'].append(float(stage2_step) / batch_size)
-        self.logs['stage2_rotate'].append(float(stage2_rotate) / batch_size)
+        self.logs['trajectory_step'].append(float(trajectory_step) / batch_size)
 
         # print('[3]')
         # debug_memory()

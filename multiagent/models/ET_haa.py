@@ -127,6 +127,14 @@ class ET(nn.Module):
             nn.ReLU(),
             nn.Linear(self.args.demb // 2, 1),
         )
+        self.trajectory_residual_head = nn.Sequential(
+            nn.Linear(self.args.demb, self.args.demb // 2),
+            nn.ReLU(),
+            nn.Linear(self.args.demb // 2, self.args.trajectory_steps * 2),
+        )
+        nn.init.zeros_(self.trajectory_residual_head[-1].weight)
+        nn.init.zeros_(self.trajectory_residual_head[-1].bias)
+
         self.decoder_2_goal_full = nn.Sequential(
             nn.Linear(self.args.demb, 512),
             nn.ReLU(),
@@ -268,10 +276,48 @@ class ET(nn.Module):
             + torch.tanh(self.heatmap_lang_gate) * heatmap_lang_context
         )
 
-        # One logit per global grid cell; reshaped to a 2D heatmap in the agent.
+        # Each spatial mode jointly predicts a heatmap score and a future
+        # trajectory. The trajectory is a zero-initialized residual around a
+        # straight-line anchor from the current UAV position to the cell center.
         target_logits = self.decoder_2_logits_full(conditioned_target).squeeze(-1)
-        # print(encoder_out_candidates.shape)
+
+        trajectory_residual = self.trajectory_residual_head(conditioned_target)
+        trajectory_residual = trajectory_residual.view(
+            batch_size,
+            max_cell_num,
+            self.args.trajectory_steps,
+            2,
+        )
+        trajectory_residual = (
+            torch.tanh(trajectory_residual) * self.args.trajectory_residual_scale
+        )
+
+        current_xy = inputs["directions"][:, -1, 2:4].view(batch_size, 1, 1, 2)
+        candidate_centers = (
+            inputs["candidates"] + 0.5 / self.args.grid_size
+        ).clamp(0.0, 1.0).unsqueeze(2)
+        fractions = torch.linspace(
+            1.0 / self.args.trajectory_steps,
+            1.0,
+            self.args.trajectory_steps,
+            device=conditioned_target.device,
+            dtype=conditioned_target.dtype,
+        ).view(1, 1, self.args.trajectory_steps, 1)
+        anchor_trajectories = (
+            current_xy
+            + fractions * (candidate_centers - current_xy)
+        )
+        trajectory_waypoints = (
+            anchor_trajectories + trajectory_residual
+        ).clamp(0.0, 1.0)
 
         # print(direction, progress, goal_logits)
 
-        return direction, progress, pred_goals, target_logits, emb_frames + emb_directions
+        return (
+            direction,
+            progress,
+            pred_goals,
+            target_logits,
+            trajectory_waypoints,
+            emb_frames + emb_directions,
+        )
