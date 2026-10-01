@@ -98,10 +98,16 @@ def parse_args():
                         help='Weight of the Stage-1 heatmap loss')
     parser.add_argument('--stage1_switch_dist', type=float, default=25.0,
                         help='Legacy hard-switch threshold; unused by trajectory-belief execution')
+    parser.add_argument('--belief_grid_size', type=int, default=28,
+                        help='Dense spatial-belief resolution; independent of the 7x7 HETT history grid')
+    parser.add_argument('--trajectory_top_k', type=int, default=8,
+                        help='Number of NMS trajectory proposals retained from the dense belief field')
+    parser.add_argument('--trajectory_nms_kernel', type=int, default=5,
+                        help='Odd NMS kernel size used to diversify dense spatial proposals')
     parser.add_argument('--trajectory_steps', type=int, default=5,
-                        help='Number of future 2D waypoints predicted for each heatmap mode')
+                        help='Number of future 2D waypoints predicted for each trajectory mode')
     parser.add_argument('--trajectory_loss_weight', type=float, default=1.0,
-                        help='Weight of heatmap-weighted future trajectory supervision')
+                        help='Weight of dense heatmap-weighted future trajectory supervision')
     parser.add_argument('--trajectory_residual_scale', type=float, default=0.10,
                         help='Maximum normalized residual around each linear trajectory anchor')
     parser.add_argument('--demb', type=int, default=768)

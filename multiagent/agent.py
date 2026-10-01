@@ -113,13 +113,17 @@ def get_direction(start, end):
     return _angle
 
 
-def build_gaussian_heatmap(target_ids, grid_size, sigma, device):
-    """Build a normalized Gaussian target distribution over the global grid."""
-    target_ids = target_ids.to(device=device, dtype=torch.long)
-    target_rows = torch.div(target_ids, grid_size, rounding_mode='floor').float()
-    target_cols = (target_ids % grid_size).float()
+def build_gaussian_heatmap(target_xy, grid_size, sigma, device):
+    """Build a Gaussian spatial target around continuous normalized goal xy."""
+    target_xy = target_xy.to(device=device, dtype=torch.float32).clamp(0.0, 1.0)
+    target_rows = target_xy[:, 0] * grid_size
+    target_cols = target_xy[:, 1] * grid_size
 
-    coords = torch.arange(grid_size, device=device, dtype=torch.float32)
+    coords = torch.arange(
+        grid_size,
+        device=device,
+        dtype=torch.float32,
+    ) + 0.5
     grid_rows, grid_cols = torch.meshgrid(coords, coords, indexing='ij')
     dist_sq = (
         (grid_rows.unsqueeze(0) - target_rows[:, None, None]) ** 2
@@ -128,6 +132,102 @@ def build_gaussian_heatmap(target_ids, grid_size, sigma, device):
     heatmap = torch.exp(-dist_sq / (2 * sigma ** 2))
     heatmap = heatmap / heatmap.sum(dim=(1, 2), keepdim=True).clamp_min(1e-8)
     return heatmap.view(-1, grid_size ** 2)
+
+
+def build_dense_anchor_trajectories(current_xy, grid_size, num_waypoints):
+    """Build straight trajectory anchors from current xy to every dense cell."""
+    device = current_xy.device
+    dtype = current_xy.dtype
+
+    coords = (
+        torch.arange(grid_size, device=device, dtype=dtype) + 0.5
+    ) / grid_size
+    rows, cols = torch.meshgrid(coords, coords, indexing='ij')
+    endpoints = torch.stack((rows, cols), dim=-1).reshape(1, -1, 1, 2)
+
+    fractions = torch.linspace(
+        1.0 / num_waypoints,
+        1.0,
+        num_waypoints,
+        device=device,
+        dtype=dtype,
+    ).view(1, 1, num_waypoints, 1)
+
+    current_xy = current_xy.view(-1, 1, 1, 2)
+    return current_xy + fractions * (endpoints - current_xy)
+
+
+def select_dense_proposals(
+    heatmap_probs,
+    grid_size,
+    top_k,
+    nms_kernel,
+):
+    """Greedy NMS Top-K with local soft-argmax endpoint refinement."""
+    if nms_kernel % 2 == 0:
+        raise ValueError("trajectory_nms_kernel must be odd")
+
+    batch_size = heatmap_probs.shape[0]
+    heatmap_2d = heatmap_probs.view(batch_size, grid_size, grid_size)
+    working = heatmap_2d.clone()
+    k = min(top_k, grid_size * grid_size)
+    suppress_radius = nms_kernel // 2
+
+    selected_ids = []
+    selected_scores = []
+    for _ in range(k):
+        flat = working.view(batch_size, -1)
+        scores, ids = flat.max(dim=1)
+        selected_ids.append(ids)
+        selected_scores.append(scores)
+
+        for b in range(batch_size):
+            peak_id = int(ids[b].item())
+            row = peak_id // grid_size
+            col = peak_id % grid_size
+            r0 = max(0, row - suppress_radius)
+            r1 = min(grid_size, row + suppress_radius + 1)
+            c0 = max(0, col - suppress_radius)
+            c1 = min(grid_size, col + suppress_radius + 1)
+            working[b, r0:r1, c0:c1] = -1.0
+
+    top_ids = torch.stack(selected_ids, dim=1)
+    top_scores = torch.stack(selected_scores, dim=1)
+
+    refined = torch.zeros(
+        batch_size,
+        k,
+        2,
+        device=heatmap_probs.device,
+        dtype=heatmap_probs.dtype,
+    )
+    refine_radius = 1
+
+    for b in range(batch_size):
+        for j in range(k):
+            peak_id = int(top_ids[b, j].item())
+            row = peak_id // grid_size
+            col = peak_id % grid_size
+            r0 = max(0, row - refine_radius)
+            r1 = min(grid_size, row + refine_radius + 1)
+            c0 = max(0, col - refine_radius)
+            c1 = min(grid_size, col + refine_radius + 1)
+
+            patch = heatmap_2d[b, r0:r1, c0:c1]
+            patch_sum = patch.sum().clamp_min(1e-8)
+
+            patch_rows = (
+                torch.arange(r0, r1, device=patch.device, dtype=patch.dtype) + 0.5
+            ) / grid_size
+            patch_cols = (
+                torch.arange(c0, c1, device=patch.device, dtype=patch.dtype) + 0.5
+            ) / grid_size
+            rr, cc = torch.meshgrid(patch_rows, patch_cols, indexing='ij')
+
+            refined[b, j, 0] = (patch * rr).sum() / patch_sum
+            refined[b, j, 1] = (patch * cc).sum() / patch_sum
+
+    return top_ids, top_scores, refined
 
 
 def build_future_trajectory_target(env, ob, current_pose, num_waypoints, map_meters):
@@ -543,7 +643,7 @@ class NavCMTAgent:
 
 
 
-            pred_direction, pred_progress, pred_goals, pred_logits, pred_trajectories, grid_ft = self.vln_model(
+            pred_direction, pred_progress, pred_goals, pred_logits, trajectory_residuals, grid_ft = self.vln_model(
                 directions=input['directions'],
                 frames=input['frames'],
                 lenths=input['lenths'],
@@ -557,22 +657,51 @@ class NavCMTAgent:
                 lang_cls=input['lang_cls']
             )
 
-            # Stage-1 spatial belief: convert 49 grid logits into a 7x7 heatmap.
+            # Dense spatial belief is decoupled from HETT's original 7x7
+            # history grid. NMS keeps only a small set of meaningful modes.
             heatmap_probs = torch.softmax(pred_logits, dim=1)
-            heatmap_goal_ids = heatmap_probs.argmax(dim=1)
-            heatmap_goal_rows = torch.div(
-                heatmap_goal_ids, self.args.grid_size, rounding_mode='floor'
-            ).float()
-            heatmap_goal_cols = (heatmap_goal_ids % self.args.grid_size).float()
-            heatmap_goals = torch.stack(
-                (
-                    (heatmap_goal_rows + 0.5) / self.args.grid_size,
-                    (heatmap_goal_cols + 0.5) / self.args.grid_size,
-                ),
-                dim=1,
+            proposal_ids, proposal_scores, proposal_endpoints = select_dense_proposals(
+                heatmap_probs,
+                self.args.belief_grid_size,
+                self.args.trajectory_top_k,
+                self.args.trajectory_nms_kernel,
             )
-            batch_indices = torch.arange(batch_size, device=pred_logits.device)
-            selected_trajectories = pred_trajectories[batch_indices, heatmap_goal_ids]
+
+            current_xy = input['directions'][:, -1, 2:4]
+
+            gather_index = proposal_ids[:, :, None, None].expand(
+                -1,
+                -1,
+                self.args.trajectory_steps,
+                2,
+            )
+            proposal_residuals = torch.gather(
+                trajectory_residuals,
+                dim=1,
+                index=gather_index,
+            )
+
+            fractions = torch.linspace(
+                1.0 / self.args.trajectory_steps,
+                1.0,
+                self.args.trajectory_steps,
+                device=pred_logits.device,
+                dtype=pred_logits.dtype,
+            ).view(1, 1, self.args.trajectory_steps, 1)
+            proposal_anchors = (
+                current_xy[:, None, None, :]
+                + fractions * (
+                    proposal_endpoints[:, :, None, :]
+                    - current_xy[:, None, None, :]
+                )
+            )
+            proposal_trajectories = (
+                proposal_anchors + proposal_residuals
+            ).clamp(0.0, 1.0)
+
+            # Proposals are sorted by belief score. The first trajectory is
+            # executed now; all K hypotheses are retained for logging/analysis.
+            selected_trajectories = proposal_trajectories[:, 0]
             selected_first_waypoint = selected_trajectories[:, 0, :]
 
             input['grid_fts'] = torch.cat((input['grid_fts'], grid_ft), dim=1)
@@ -606,7 +735,6 @@ class NavCMTAgent:
             gt_direction = np.array([ob['direction'] for ob in obs], dtype=np.float32)
             gt_goal = torch.from_numpy(np.array([ob['normalized_goal'] for ob in obs], dtype=np.float32))
             gt_progress = torch.from_numpy(np.array([ob['progress'] for ob in obs], dtype=np.float32))
-            gt_target = torch.from_numpy(np.array([ob['grid_goal'] for ob in obs], dtype=np.int64))
             # there is no ground truth in unseen_test set
             if not 'test' in self.env_name:
                 # Get ground truth
@@ -642,10 +770,15 @@ class NavCMTAgent:
                     if progress_loss != progress_loss:  # debug for nan loss
                         print('0', progress_loss)
                 # print(at_direction, gt_direction, ml_loss)
+                dense_sigma = (
+                    self.args.heatmap_sigma
+                    * self.args.belief_grid_size
+                    / self.args.grid_size
+                )
                 gt_heatmap = build_gaussian_heatmap(
-                    gt_target,
-                    self.args.grid_size,
-                    self.args.heatmap_sigma,
+                    gt_goal,
+                    self.args.belief_grid_size,
+                    dense_sigma,
                     pred_logits.device,
                 )
                 per_sample_heatmap_loss = -(
@@ -665,7 +798,19 @@ class NavCMTAgent:
                         )
                         for i, ob in enumerate(obs)
                     ])
-                ).to(device=pred_trajectories.device, dtype=pred_trajectories.dtype)
+                ).to(
+                    device=trajectory_residuals.device,
+                    dtype=trajectory_residuals.dtype,
+                )
+
+                dense_anchor_trajectories = build_dense_anchor_trajectories(
+                    current_xy,
+                    self.args.belief_grid_size,
+                    self.args.trajectory_steps,
+                )
+                pred_trajectories = (
+                    dense_anchor_trajectories + trajectory_residuals
+                ).clamp(0.0, 1.0)
 
                 trajectory_targets = gt_future_waypoints[:, None, :, :].expand_as(
                     pred_trajectories
@@ -692,9 +837,18 @@ class NavCMTAgent:
                         traj[i]['gt_progress'].append(gt_progress[i].item())
                         traj[i]['gt_goal'].append(gt_goal[i])
                     traj[i]['progress'].append(pred_progress[i].item())
-                    traj[i]['heatmap_goal_id'].append(int(heatmap_goal_ids[i].item()))
+                    traj[i]['heatmap_goal_id'].append(int(proposal_ids[i, 0].item()))
                     traj[i]['heatmap_confidence'].append(
-                        float(heatmap_probs[i, heatmap_goal_ids[i]].item())
+                        float(proposal_scores[i, 0].item())
+                    )
+                    traj[i]['trajectory_proposal_ids'].append(
+                        proposal_ids[i].detach().cpu().tolist()
+                    )
+                    traj[i]['trajectory_proposal_scores'].append(
+                        proposal_scores[i].detach().cpu().tolist()
+                    )
+                    traj[i]['trajectory_proposal_endpoints'].append(
+                        proposal_endpoints[i].detach().cpu().tolist()
                     )
                     traj[i]['predicted_trajectory'].append(
                         selected_trajectories[i].detach().cpu().tolist()

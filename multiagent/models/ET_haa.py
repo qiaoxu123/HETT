@@ -1,4 +1,3 @@
-import math
 import torch
 from .enc_visual import FeatureFlat
 from .enc_vl import EncoderVL
@@ -115,25 +114,29 @@ class ET(nn.Module):
             nn.Dropout(0.2),
             nn.Linear(32, 1),
         )
-        # Minimal SBF-style language conditioning for the heatmap only.
-        # The zero-initialized scalar gate makes the initial forward path
-        # identical to the existing heatmap branch.
-        self.heatmap_candidate_norm = nn.LayerNorm(self.args.demb)
-        self.heatmap_language_norm = nn.LayerNorm(self.args.demb)
-        self.heatmap_lang_gate = nn.Parameter(torch.tensor(0.0))
-
-        self.decoder_2_logits_full = nn.Sequential(
-            nn.Linear(self.args.demb, self.args.demb // 2),
+        # Dense trajectory-belief decoder. HETT still produces a compact 7x7
+        # multimodal candidate map; this decoder lifts it to a finer spatial
+        # belief without changing the original history/grid backbone.
+        self.belief_feature_dim = 256
+        self.belief_decoder = nn.Sequential(
+            nn.Conv2d(self.args.demb, self.belief_feature_dim, 3, padding=1),
             nn.ReLU(),
-            nn.Linear(self.args.demb // 2, 1),
-        )
-        self.trajectory_residual_head = nn.Sequential(
-            nn.Linear(self.args.demb, self.args.demb // 2),
+            nn.Upsample(
+                size=(self.args.belief_grid_size, self.args.belief_grid_size),
+                mode='bilinear',
+                align_corners=False,
+            ),
+            nn.Conv2d(self.belief_feature_dim, self.belief_feature_dim, 3, padding=1),
             nn.ReLU(),
-            nn.Linear(self.args.demb // 2, self.args.trajectory_steps * 2),
         )
-        nn.init.zeros_(self.trajectory_residual_head[-1].weight)
-        nn.init.zeros_(self.trajectory_residual_head[-1].bias)
+        self.belief_logits_head = nn.Conv2d(self.belief_feature_dim, 1, 1)
+        self.trajectory_residual_head = nn.Conv2d(
+            self.belief_feature_dim,
+            self.args.trajectory_steps * 2,
+            1,
+        )
+        nn.init.zeros_(self.trajectory_residual_head.weight)
+        nn.init.zeros_(self.trajectory_residual_head.bias)
 
         self.decoder_2_goal_full = nn.Sequential(
             nn.Linear(self.args.demb, 512),
@@ -252,64 +255,33 @@ class ET(nn.Module):
 
         progress = self.decoder_2_progress_full(decoder_input)
 
-        # Explicit language-conditioned spatial belief:
-        # each grid cell queries the instruction tokens before heatmap decoding.
-        heatmap_query = self.heatmap_candidate_norm(target_decoder_input)
-        heatmap_language = self.heatmap_language_norm(emb_lang)
-        heatmap_attn_logits = torch.matmul(
-            heatmap_query,
-            heatmap_language.transpose(1, 2),
-        ) / math.sqrt(self.args.demb)
-
-        lang_mask = inputs.get("lang_mask")
-        if lang_mask is not None:
-            heatmap_attn_logits = heatmap_attn_logits.masked_fill(
-                ~lang_mask[:, None, :].bool(),
-                -torch.inf,
-            )
-
-        heatmap_attn = torch.softmax(heatmap_attn_logits, dim=-1)
-        heatmap_lang_context = torch.matmul(heatmap_attn, heatmap_language)
-
-        conditioned_target = (
-            target_decoder_input
-            + torch.tanh(self.heatmap_lang_gate) * heatmap_lang_context
-        )
-
-        # Each spatial mode jointly predicts a heatmap score and a future
-        # trajectory. The trajectory is a zero-initialized residual around a
-        # straight-line anchor from the current UAV position to the cell center.
-        target_logits = self.decoder_2_logits_full(conditioned_target).squeeze(-1)
-
-        trajectory_residual = self.trajectory_residual_head(conditioned_target)
-        trajectory_residual = trajectory_residual.view(
+        # B-core design: the original HETT cross-modal Transformer already
+        # fuses language, visual observation, history, and spatial candidates.
+        # No second language-attention block is applied here.
+        candidate_map = target_decoder_input.transpose(1, 2).reshape(
             batch_size,
-            max_cell_num,
+            self.args.demb,
+            self.args.grid_size,
+            self.args.grid_size,
+        )
+        dense_belief_features = self.belief_decoder(candidate_map)
+
+        target_logits = self.belief_logits_head(
+            dense_belief_features
+        ).flatten(1)
+
+        trajectory_residual = self.trajectory_residual_head(
+            dense_belief_features
+        )
+        trajectory_residual = trajectory_residual.permute(0, 2, 3, 1).reshape(
+            batch_size,
+            self.args.belief_grid_size ** 2,
             self.args.trajectory_steps,
             2,
         )
         trajectory_residual = (
             torch.tanh(trajectory_residual) * self.args.trajectory_residual_scale
         )
-
-        current_xy = inputs["directions"][:, -1, 2:4].view(batch_size, 1, 1, 2)
-        candidate_centers = (
-            inputs["candidates"] + 0.5 / self.args.grid_size
-        ).clamp(0.0, 1.0).unsqueeze(2)
-        fractions = torch.linspace(
-            1.0 / self.args.trajectory_steps,
-            1.0,
-            self.args.trajectory_steps,
-            device=conditioned_target.device,
-            dtype=conditioned_target.dtype,
-        ).view(1, 1, self.args.trajectory_steps, 1)
-        anchor_trajectories = (
-            current_xy
-            + fractions * (candidate_centers - current_xy)
-        )
-        trajectory_waypoints = (
-            anchor_trajectories + trajectory_residual
-        ).clamp(0.0, 1.0)
 
         # print(direction, progress, goal_logits)
 
@@ -318,6 +290,6 @@ class ET(nn.Module):
             progress,
             pred_goals,
             target_logits,
-            trajectory_waypoints,
+            trajectory_residual,
             emb_frames + emb_directions,
         )

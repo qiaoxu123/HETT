@@ -1,74 +1,124 @@
-# Trajectory Belief Prototype
+# Dense Trajectory Belief Prototype
 
-This branch replaces HETT's hard coarse-to-fine execution switch with a
-receding-horizon trajectory-belief controller inspired by the representation
-ideas in HOME, MultiPath, and SBFNav.
+This branch replaces HETT's hard coarse-to-fine execution switch with a dense,
+receding-horizon trajectory-belief controller inspired by HOME, MultiPath/MTR,
+and SBFNav.
 
-## Core idea
+## Design principle
 
-For every one of the 7x7 spatial candidates, the same language-conditioned
-candidate token now predicts:
+HETT already performs language/vision/history fusion in its cross-modal
+Transformer. The trajectory-belief module therefore starts directly from the
+multimodal candidate features; it does **not** add a second language-attention
+block.
 
-1. one heatmap logit (where the target is likely to be), and
-2. a short 2D future trajectory (how to move if that spatial hypothesis is the
-   correct mode).
-
-The trajectory is represented as a learned residual around a straight-line
-anchor from the current UAV position to the candidate-cell center. The final
-residual layer is zero-initialized, so before learning the new branch reduces to
-stable straight-line anchors rather than random waypoints.
-
-At inference:
+The original HETT history representation remains 7x7 for compatibility and
+efficiency. A separate dense belief decoder lifts the 7x7 multimodal candidate
+map to a 28x28 spatial field.
 
 ```
-new observation
-  -> language-conditioned heatmap
-  -> one trajectory hypothesis per heatmap cell
-  -> choose the highest-probability heatmap mode
-  -> execute only the first waypoint
-  -> observe again and replan
+Language + RGB + History/Map
+          |
+ HETT cross-modal Transformer
+          |
+     7x7 candidate features
+          |
+     dense belief decoder
+          |
+     28x28 spatial belief
+          |
+       NMS Top-K
+          |
+  K continuous endpoints
+          |
+ K trajectory hypotheses
+          |
+ execute first waypoint
+          |
+ observe and replan
 ```
 
-There is no Stage-1/Stage-2 distance switch in this controller. The original
-direction head is kept as an auxiliary learning signal, while progress remains
-the stopping signal.
+## Why the grids are decoupled
 
-## Supervision
+A 7x7 grid over a 410 m map has cells roughly 58.6 m wide, so using cell
+centers directly as trajectory modes introduces substantial quantization error.
+The 28x28 belief field reduces the cell width to about 14.6 m while avoiding
+784 expensive controller branches.
 
-At every training state, the current pose is projected to the nearest point on
-the teacher trajectory. The remaining teacher path is sampled into
-`trajectory_steps` arc-length-uniform future waypoints.
+The dense grid describes **where probability lives**. It does not define how
+many trajectories are executed. NMS extracts only the most relevant K modes
+(default K=8).
 
-The future-trajectory loss is computed for all spatial modes and weighted by the
-same Gaussian target distribution used by the heatmap:
+## Continuous endpoint proposals
+
+NMS first finds separated peaks on the 28x28 field. Each peak is then refined by
+a local 3x3 soft-argmax, producing a continuous normalized endpoint rather than
+using the discrete cell center directly.
+
+Default proposal settings:
+
+- dense belief: 28x28
+- NMS Top-K: 8
+- NMS kernel: 5
+- local endpoint refinement: 3x3 soft-argmax
+- future waypoints per trajectory: 5
+
+## Trajectory representation
+
+The network predicts a dense residual field. For each selected endpoint g_k, a
+straight anchor trajectory is constructed from the current UAV position x_t:
+
+```
+A_k = Interpolate(x_t, g_k)
+tau_k = A_k + Delta tau_k
+```
+
+The final residual convolution is zero-initialized, so training starts from
+stable straight anchors instead of random trajectories.
+
+The same residual field is supervised densely during training, but only the
+Top-K hypotheses are instantiated for navigation analysis and execution.
+
+## Training
+
+At each training state, the current pose is projected onto the teacher
+trajectory and the remaining route is sampled into five arc-length-uniform
+future waypoints.
+
+The 28x28 Gaussian target keeps the same approximate physical spread as the
+original 7x7 heatmap by scaling sigma with the grid-resolution ratio.
 
 ```
 L = L_direction
   + 0.1 L_progress
   + 2 L_goal
   + lambda_h L_heatmap
-  + lambda_t sum_k Q(k) L_traj(k)
+  + lambda_t sum_u Q(u) L_traj(u)
 ```
 
-This keeps the endpoint/spatial uncertainty and trajectory hypotheses coupled
-instead of collapsing the heatmap to a single goal before planning.
+Direction remains an auxiliary learning signal. Progress remains the stopping
+signal. Neither is used for a coarse/fine stage switch.
 
-## Default prototype parameters
+## Inference
 
-- grid: 7x7
-- trajectory waypoints per mode: 5
-- trajectory residual range: 0.10 normalized map units
-- trajectory loss weight: 1.0
-- execution: first waypoint only, then replan
-- progress stopping threshold: unchanged from HETT (0.95)
+At every navigation step:
 
-## Intended ablation
+1. predict the 28x28 spatial belief;
+2. apply NMS and keep Top-K peaks;
+3. refine peaks to continuous endpoints;
+4. form K residual-corrected trajectory hypotheses;
+5. execute the first waypoint of the highest-belief trajectory;
+6. observe again and replan.
 
-1. Original HETT hard two-stage controller.
-2. Gaussian heatmap + hard 25 m switch.
-3. Language-conditioned heatmap + hard 25 m switch.
-4. Trajectory belief + receding-horizon execution (this branch).
+There is no Stage-1/Stage-2 distance switch or recovery state machine.
 
-The first experiment should focus on whether removing the hard switch improves
-SR/SPL/NE and reduces the oracle-to-final success gap before adding Top-K
-trajectory selection or a learned selector.
+## Recommended ablation
+
+1. HETT hard two-stage controller.
+2. 7x7 heatmap + hard 25 m switch.
+3. 7x7 trajectory-belief prototype.
+4. 28x28 dense belief + Top-K trajectory proposals (this version).
+5. Optional later comparison: data-driven/K-means intention anchors.
+
+The immediate test should verify whether the finer field improves SR/SPL/NE,
+candidate coverage, and the oracle-to-final-success gap without destabilizing
+trajectory learning.
