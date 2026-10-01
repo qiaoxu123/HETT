@@ -76,35 +76,33 @@ class MapPosEncoding(nn.Module):
         enc = enc / math.sqrt(self.d_model)
         lang = lang + enc[:, : lang.shape[1]]
 
-        for i in range(frames.shape[0]):
-            start_idx = len_lang
-            end_idx = len_lang + frames.shape[1]
-            if end_idx > enc.shape[1]:
-                end_idx = enc.shape[1]
-                start_idx = enc.shape[1] - frames.shape[1]
-            frames[i] = frames[i] + enc[0, start_idx:end_idx]
+        start_idx = len_lang
+        end_idx = len_lang + frames.shape[1]
+        if end_idx > enc.shape[1]:
+            end_idx = enc.shape[1]
+            start_idx = enc.shape[1] - frames.shape[1]
+        frames = frames + enc[0, start_idx:end_idx]
         # use the same position indices for directions as for the frames
-        for i in range(directions.shape[0]):
-            start_idx = len_lang
-            end_idx = len_lang + directions.shape[1]
-            if end_idx > enc.shape[1]:
-                end_idx = enc.shape[1]
-                start_idx = enc.shape[1] - directions.shape[1]
-            directions[i] = directions[i] + enc[0, start_idx:end_idx]
-        for i in range(maps.shape[0]):
-            start_idx = len_lang
-            end_idx = len_lang + maps.shape[1]
-            if end_idx > enc.shape[1]:
-                end_idx = enc.shape[1]
-                start_idx = enc.shape[1] - maps.shape[1]
-            maps[i] = maps[i] + enc[0, start_idx:end_idx]
-        for i in range(positions.shape[0]):
-            start_idx = len_lang + frames.shape[1]
-            end_idx = len_lang + frames.shape[1] + positions.shape[1]
-            if end_idx > enc.shape[1]:
-                end_idx = enc.shape[1]
-                start_idx = enc.shape[1] - positions.shape[1]
-            positions[i] = positions[i] + enc[0, start_idx:end_idx]
+        start_idx = len_lang
+        end_idx = len_lang + directions.shape[1]
+        if end_idx > enc.shape[1]:
+            end_idx = enc.shape[1]
+            start_idx = enc.shape[1] - directions.shape[1]
+        directions = directions + enc[0, start_idx:end_idx]
+
+        start_idx = len_lang
+        end_idx = len_lang + maps.shape[1]
+        if end_idx > enc.shape[1]:
+            end_idx = enc.shape[1]
+            start_idx = enc.shape[1] - maps.shape[1]
+        maps = maps + enc[0, start_idx:end_idx]
+
+        start_idx = len_lang + frames.shape[1]
+        end_idx = len_lang + frames.shape[1] + positions.shape[1]
+        if end_idx > enc.shape[1]:
+            end_idx = enc.shape[1]
+            start_idx = enc.shape[1] - positions.shape[1]
+        positions = positions + enc[0, start_idx:end_idx]
         return lang, frames, directions, maps, positions
 
 

@@ -34,6 +34,7 @@ class EncoderVL(nn.Module):
         self.enc_token = None
         self.enc_layernorm = nn.LayerNorm(args.demb)
         self.enc_dropout = nn.Dropout(args.dropout_emb, inplace=True)
+        self._map_mask_cache = {}
 
     def forward(
             self,
@@ -116,7 +117,26 @@ class EncoderVL(nn.Module):
         length_lang = emb_lang.shape[1]
         # create a mask for padded elements
         length_mask_pad = length_lang + 3 + length_max
-        mask_pad = torch.zeros((len(emb_lang), length_mask_pad), device=emb_lang.device).bool()
+        cache_key = (
+            len(emb_lang), length_lang, emb_frames.shape[1], length_max,
+            emb_lang.device.type, emb_lang.device.index,
+        )
+        cached_masks = self._map_mask_cache.get(cache_key)
+        if cached_masks is None:
+            mask_pad = torch.zeros(
+                (len(emb_lang), length_mask_pad),
+                device=emb_lang.device,
+                dtype=torch.bool,
+            )
+            mask_attn = model_util.generate_attention_mask(
+                length_lang,
+                emb_frames.shape[1],
+                length_max,
+                emb_lang.device,
+            )
+            self._map_mask_cache[cache_key] = (mask_pad, mask_attn)
+        else:
+            mask_pad, mask_attn = cached_masks
         # for i, l in enumerate(lengths):
         #     # mask padded frames
         #     mask_pad[i, (length_lang + l):(length_lang + length_max)] = True
@@ -127,14 +147,6 @@ class EncoderVL(nn.Module):
 
         # print(emb_lang.shape, emb_frames.shape, emb_directions.shape, emb_maps.shape, emb_positions)
         emb_all = self.encode_inputs(emb_lang, emb_frames, emb_directions, emb_maps, emb_positions, length_lang)
-
-        # create a mask for attention (prediction at t should not see frames at >= t+1)
-        mask_attn = model_util.generate_attention_mask(
-            length_lang,
-            emb_frames.shape[1],
-            length_max,
-            emb_all.device,
-        )
 
         # print(emb_all.shape, mask_attn.shape, mask_pad.shape)
 
