@@ -1083,4 +1083,10 @@ class NavCMTAgent:
                      ]
         for param in all_tuple:
             recover_state(*param)
-        return states['vln_model']['epoch'] - 1
+        # save() stores epoch+1, i.e. the number of COMPLETED epochs, which is
+        # exactly the index the next epoch should start at. The trailing "- 1"
+        # upstream made --checkpoint re-run the last completed epoch: run 2
+        # saved 'epoch': 2 after training idx 0 and 1, load returned 1, and
+        # range(1, args.epochs) re-trained idx 1 for nothing. hett-crotonyl
+        # already carries this fix (its agent.py returns the stored value).
+        return states['vln_model']['epoch']
