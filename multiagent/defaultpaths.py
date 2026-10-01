@@ -1,10 +1,13 @@
+import os
 from pathlib import Path
 
 
 PROJECT_ROOT = Path("..")
 
 WEIGHTS_DIR = PROJECT_ROOT/"weights"
-GOAL_PREDICTOR_CHECKPOINT_DIR = PROJECT_ROOT/"checkpoints/multi"
+GOAL_PREDICTOR_CHECKPOINT_DIR = Path(
+    os.environ.get("HETT_CHECKPOINT_DIR", PROJECT_ROOT / "checkpoints/multi")
+)
 
 CITYREFER_DATA_DIR = PROJECT_ROOT/"data/cityrefer"
 OBJECTS_PATH = CITYREFER_DATA_DIR/"objects.json"

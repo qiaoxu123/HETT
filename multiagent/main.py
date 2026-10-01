@@ -198,6 +198,9 @@ def train(args, train_env, val_envs, rank=-1):
         agent.train(loader, args.log_every, feedback=args.feedback,
                     nss_w_weighting=1)  # nss_w_weighting = max(0, (args.iters/2 - idx)/ (args.iters/2)))
 
+        if args.benchmark_batches:
+            return
+
         if default_gpu:
             ml_loss = sum(agent.logs['IL_loss']) / max(len(agent.logs['IL_loss']), 1)
 
