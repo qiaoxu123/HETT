@@ -152,3 +152,23 @@ representation and substantially reduces training cost.
 
 Use `--finetune_bert` or `--finetune_darknet` for backbone fine-tuning
 ablations.
+
+
+## Teacher/student rollout curriculum
+
+Ground-truth teacher trajectories remain mandatory supervision for the belief
+field and future-waypoint targets. Student rollout also remains mandatory because
+the deployed navigator is closed-loop and must learn from its own visited state
+distribution.
+
+Teacher **rollout**, however, is only an early stabilization mechanism. With
+the default `--teacher_warmup_epochs 2`:
+
+```
+early training:  teacher rollout + student rollout
+later training:  student rollout only
+evaluation:      student rollout only
+```
+
+This removes the permanent 2x rollout cost while retaining expert-state warm-up
+and avoiding test-time exposure bias.

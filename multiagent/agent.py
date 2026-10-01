@@ -465,7 +465,8 @@ class NavCMTAgent:
                            prefix='Progress:', suffix='%s (%d/%d)' % (
                     timeSince(start, float(idx) / tot), idx, tot), bar_length=80)
 
-    def train(self, loader, n_epochs, feedback='student', nss_w_weighting=1, **kwargs):
+    def train(self, loader, n_epochs, feedback='student', nss_w_weighting=1,
+              outer_epoch=0, **kwargs):
         ''' Train for a given number of epochs '''
         self.feedback = feedback
 
@@ -478,6 +479,7 @@ class NavCMTAgent:
 
         self.losses = []
         for epoch in range(1, n_epochs + 1):
+            global_train_epoch = outer_epoch * n_epochs + (epoch - 1)
             idx = 0
             start = time.time()
             # print('?')
@@ -492,18 +494,28 @@ class NavCMTAgent:
                 self.et_optimizer.zero_grad()
                 self.loss = 0
 
+                teacher_rollout_used = False
                 if feedback == 'teacher':
                     self.feedback = 'teacher'
                     self.rollout(train_ml=self.args.teacher_weight)
-                elif feedback == 'student':  # agents in teacher and student separately
+                    teacher_rollout_used = True
+                elif feedback == 'student':
+                    # Teacher rollout is only an early curriculum warm-up.
+                    # Student closed-loop rollout remains active throughout
+                    # training to expose the policy to its own state distribution.
+                    if global_train_epoch < self.args.teacher_warmup_epochs:
+                        self.feedback = 'teacher'
+                        self.rollout(train_ml=self.args.ml_weight)
+                        teacher_rollout_used = True
 
-                    self.feedback = 'teacher'
-                    self.rollout(train_ml=self.args.ml_weight)  # self.args.nss_w*nss_w_weighting, **kwargs)
-                    # if epoch_train > 10000:
                     self.feedback = 'student'
                     self.rollout(train_ml=self.args.ml_weight)
                 else:
                     assert False
+
+                self.logs['teacher_rollout_used'].append(
+                    1.0 if teacher_rollout_used else 0.0
+                )
 
                 # print("--- One rollout takes %s seconds ---" % (time.time() - train_loop_start_time))
 

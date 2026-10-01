@@ -195,8 +195,13 @@ def train(args, train_env, val_envs, rank=-1):
         # print(loader.dataset.size())
 
         # Train for 2 epochs before evaluate again
-        agent.train(loader, args.log_every, feedback=args.feedback,
-                    nss_w_weighting=1)  # nss_w_weighting = max(0, (args.iters/2 - idx)/ (args.iters/2)))
+        agent.train(
+            loader,
+            args.log_every,
+            feedback=args.feedback,
+            nss_w_weighting=1,
+            outer_epoch=idx,
+        )
 
         if default_gpu:
             ml_loss = sum(agent.logs['IL_loss']) / max(len(agent.logs['IL_loss']), 1)
@@ -215,9 +220,16 @@ def train(args, train_env, val_envs, rank=-1):
                 record_file
             )
             trajectory_step = sum(agent.logs['trajectory_step']) / max(len(agent.logs['trajectory_step']), 1)
+            teacher_rollout_rate = (
+                sum(agent.logs['teacher_rollout_used'])
+                / max(len(agent.logs['teacher_rollout_used']), 1)
+            )
 
             write_to_record_file(
-                "\ntrajectory_step %.4f" % trajectory_step,
+                "\ntrajectory_step %.4f teacher_rollout_rate %.4f" % (
+                    trajectory_step,
+                    teacher_rollout_rate,
+                ),
                 record_file
             )
 

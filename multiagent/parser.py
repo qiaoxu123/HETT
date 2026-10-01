@@ -124,6 +124,8 @@ def parse_args():
     parser.add_argument("--ml_weight", type=float, default=0.20)
     parser.add_argument('--entropy_loss_weight', type=float, default=0.01)
     parser.add_argument("--teacher_weight", type=float, default=1.)
+    parser.add_argument('--teacher_warmup_epochs', type=int, default=2,
+                        help='Use teacher rollout only for this many initial training epochs; student rollout remains active throughout')
 
     parser.add_argument('--darknet_model_file', type=str, default='../weights/yolo_v3.cfg')
     parser.add_argument('--darknet_weight_file', type=str, default='../weights/best.pt')
