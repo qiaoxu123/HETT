@@ -19,7 +19,8 @@ def aggregate_history_grid(grid_fts, grid_indices, text_fts, grid_proj, cell_cou
 
     history = grid_fts.to(torch.float32)
     indices = grid_indices.to(dtype=torch.long)
-    scores = torch.bmm(history, text_fts).amax(dim=-1)
+    # Match the original max(dim=-1) tie-breaking and gradient behavior.
+    scores = torch.bmm(history, text_fts).max(dim=-1).values
     projected = grid_proj(history)
 
     cell_ids = torch.arange(cell_count, device=indices.device)
