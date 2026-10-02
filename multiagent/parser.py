@@ -103,17 +103,15 @@ def parse_args():
     parser.add_argument('--stage2_recover_patience', type=int, default=2,
                         help='Consecutive far-away Stage-2 steps required before coarse recovery')
     parser.add_argument('--enable_trajectory_belief', action='store_true', default=False,
-                        help='Train and emit dense trajectory-belief proposals')
+                        help='Predict continuous endpoint and trajectory geometry on the 7x7 HETT candidates')
     parser.add_argument('--trajectory_execution', action='store_true', default=False,
                         help='Execute the first waypoint of the top trajectory instead of Two-Stage control')
-    parser.add_argument('--belief_grid_size', type=int, default=28,
-                        help='Dense trajectory-belief resolution independent of the 7x7 HETT grid')
     parser.add_argument('--trajectory_top_k', type=int, default=8)
-    parser.add_argument('--trajectory_nms_kernel', type=int, default=5)
+    parser.add_argument('--trajectory_nms_kernel', type=int, default=3)
     parser.add_argument('--trajectory_horizons_m', type=float, nargs='+',
                         default=[10.0, 25.0, 50.0, 100.0],
-                        help='Fixed physical horizons; final goal is appended automatically')
-    parser.add_argument('--trajectory_belief_loss_weight', type=float, default=0.1)
+                        help='Fixed physical horizons; final endpoint is appended automatically')
+    parser.add_argument('--trajectory_endpoint_loss_weight', type=float, default=1.0)
     parser.add_argument('--trajectory_loss_weight', type=float, default=1.0)
     parser.add_argument('--trajectory_residual_scale', type=float, default=0.05)
     parser.add_argument('--trajectory_move_iteration', type=int, default=2,

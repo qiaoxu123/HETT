@@ -158,35 +158,21 @@ class ET(nn.Module):
             nn.ReLU(),
             nn.Linear(self.args.demb // 2, 1),
         )
-        # Optional dense trajectory belief. The existing 7x7 heatmap and
-        # Two-Stage controller remain untouched unless explicitly enabled.
+        # Optional trajectory geometry on the same 7x7 HETT candidates.
+        # Spatial mode scores are shared with the heatmap head; this avoids the
+        # redundant 7x7 -> 28x28 belief upsampling path.
         _rng_state = torch.get_rng_state()
-        self.trajectory_belief_dim = 256
-        self.trajectory_belief_decoder = nn.Sequential(
-            nn.Conv2d(self.args.demb, self.trajectory_belief_dim, 3, padding=1),
+        self.trajectory_geometry_head = nn.Sequential(
+            nn.Linear(self.args.demb, self.args.demb // 2),
             nn.ReLU(),
-            nn.Upsample(
-                size=(self.args.belief_grid_size, self.args.belief_grid_size),
-                mode='bilinear',
-                align_corners=False,
+            nn.Linear(
+                self.args.demb // 2,
+                2 + self.args.trajectory_steps * 2,
             ),
-            nn.Conv2d(
-                self.trajectory_belief_dim,
-                self.trajectory_belief_dim,
-                3,
-                padding=1,
-            ),
-            nn.ReLU(),
         )
-        self.trajectory_belief_head = nn.Conv2d(
-            self.trajectory_belief_dim,
-            1 + self.args.trajectory_steps * 2,
-            1,
-        )
-        # Geometry starts from straight fixed-horizon anchors, while the score
-        # channel keeps its standard initialization.
-        nn.init.zeros_(self.trajectory_belief_head.weight[1:])
-        nn.init.zeros_(self.trajectory_belief_head.bias[1:])
+        # Start from cell centers + straight fixed-horizon anchors.
+        nn.init.zeros_(self.trajectory_geometry_head[-1].weight)
+        nn.init.zeros_(self.trajectory_geometry_head[-1].bias)
         torch.set_rng_state(_rng_state)
         self.decoder_2_goal_full = nn.Sequential(
             nn.Linear(self.args.demb, 512),
@@ -355,18 +341,16 @@ class ET(nn.Module):
 
         trajectory_belief = None
         if self.args.enable_trajectory_belief:
-            candidate_map = conditioned_target.transpose(1, 2).reshape(
-                batch_size,
-                self.args.demb,
-                self.args.grid_size,
-                self.args.grid_size,
+            geometry = self.trajectory_geometry_head(conditioned_target)
+            # Offset is constrained to half a 7x7 cell so each discrete mode
+            # refines continuously inside its own spatial region.
+            endpoint_offsets = (
+                torch.tanh(geometry[:, :, :2])
+                * (0.5 / float(self.args.grid_size))
             )
-            dense_features = self.trajectory_belief_decoder(candidate_map)
-            joint = self.trajectory_belief_head(dense_features)
-            dense_logits = joint[:, :1].flatten(1)
-            residuals = joint[:, 1:].permute(0, 2, 3, 1).reshape(
+            residuals = geometry[:, :, 2:].reshape(
                 batch_size,
-                self.args.belief_grid_size ** 2,
+                self.args.grid_size ** 2,
                 self.args.trajectory_steps,
                 2,
             )
@@ -374,7 +358,9 @@ class ET(nn.Module):
                 torch.tanh(residuals) * self.args.trajectory_residual_scale
             )
             trajectory_belief = {
-                'logits': dense_logits,
+                # Reuse the heatmap logits as trajectory-mode probabilities.
+                'logits': target_logits,
+                'endpoint_offsets': endpoint_offsets,
                 'residuals': residuals,
             }
 

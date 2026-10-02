@@ -6,6 +6,7 @@ import torch
 from multiagent.trajectory_belief import (
     build_fixed_horizon_anchors,
     prepare_teacher_path,
+    refine_candidate_endpoints,
     sample_fixed_horizon_targets,
     select_nms_topk,
 )
@@ -43,14 +44,23 @@ class TrajectoryBeliefUtilityTest(unittest.TestCase):
         self.assertAlmostEqual(float(first_distance), 10.0, places=4)
         torch.testing.assert_close(anchors[0, 0, -1], endpoints[0, 0])
 
-    def test_nms_returns_spatially_separated_peaks(self):
-        probs = torch.zeros(1, 28 * 28)
-        probs[0, 5 * 28 + 5] = 0.9
-        probs[0, 5 * 28 + 6] = 0.8
-        probs[0, 20 * 28 + 20] = 0.7
-        ids, scores, _ = select_nms_topk(probs, 28, 2, 5)
-        self.assertEqual(int(ids[0, 0]), 5 * 28 + 5)
-        self.assertEqual(int(ids[0, 1]), 20 * 28 + 20)
+    def test_endpoint_offset_refines_inside_7x7_cell(self):
+        offsets = torch.zeros(1, 49, 2)
+        center = refine_candidate_endpoints(offsets, 7)[0, 0]
+        torch.testing.assert_close(center, torch.tensor([0.5 / 7, 0.5 / 7]))
+
+        offsets[0, 0] = torch.tensor([0.5 / 7, -0.5 / 7])
+        refined = refine_candidate_endpoints(offsets, 7)[0, 0]
+        torch.testing.assert_close(refined, torch.tensor([1.0 / 7, 0.0]))
+
+    def test_nms_operates_directly_on_7x7_modes(self):
+        probs = torch.zeros(1, 49)
+        probs[0, 1 * 7 + 1] = 0.9
+        probs[0, 1 * 7 + 2] = 0.8
+        probs[0, 5 * 7 + 5] = 0.7
+        ids, scores, _ = select_nms_topk(probs, 7, 2, 3)
+        self.assertEqual(int(ids[0, 0]), 1 * 7 + 1)
+        self.assertEqual(int(ids[0, 1]), 5 * 7 + 5)
         self.assertGreater(float(scores[0, 0]), float(scores[0, 1]))
 
 

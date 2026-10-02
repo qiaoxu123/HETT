@@ -27,11 +27,10 @@ from multiagent.models.CLIP import CLIP
 from multiagent.models.goal_predictor import GoalPredictor, MapEncoder
 from multiagent.observation import cropclient
 from multiagent.trajectory_belief import (
-    build_continuous_gaussian_heatmap,
     build_fixed_horizon_anchors,
-    dense_cell_centers,
     normalize_targets,
     prepare_teacher_path,
+    refine_candidate_endpoints,
     sample_fixed_horizon_targets,
     select_nms_topk,
 )
@@ -503,7 +502,7 @@ class NavCMTAgent:
         progress_loss = 0.
         goal_predict_loss = 0.
         heatmap_loss = torch.tensor(0.).cuda()
-        trajectory_belief_loss = torch.tensor(0.).cuda()
+        trajectory_endpoint_loss = torch.tensor(0.).cuda()
         trajectory_loss = torch.tensor(0.).cuda()
 
         stage1_step = 0
@@ -624,22 +623,33 @@ class NavCMTAgent:
             selected_first_waypoint = None
             control_goals = heatmap_goals
 
+            refined_candidate_endpoints = None
             if trajectory_belief is not None:
+                # The 7x7 heatmap logits are the trajectory-mode scores.
                 trajectory_probs = torch.softmax(
                     trajectory_belief['logits'],
                     dim=1,
                 )
+                refined_candidate_endpoints = refine_candidate_endpoints(
+                    trajectory_belief['endpoint_offsets'],
+                    self.args.grid_size,
+                )
                 (
                     proposal_ids,
                     proposal_scores,
-                    proposal_endpoints,
+                    _,
                 ) = select_nms_topk(
                     trajectory_probs,
-                    self.args.belief_grid_size,
+                    self.args.grid_size,
                     self.args.trajectory_top_k,
                     self.args.trajectory_nms_kernel,
                 )
 
+                proposal_endpoints = torch.gather(
+                    refined_candidate_endpoints,
+                    dim=1,
+                    index=proposal_ids[:, :, None].expand(-1, -1, 2),
+                )
                 gather_index = proposal_ids[:, :, None, None].expand(
                     -1,
                     -1,
@@ -763,55 +773,56 @@ class NavCMTAgent:
                         dtype=pred_logits.dtype,
                     )
 
-                    dense_sigma = (
-                        self.args.heatmap_sigma
-                        * self.args.belief_grid_size
-                        / self.args.grid_size
+                    # Geometry is supervised only on the GT 7x7 region.
+                    # The existing heatmap loss already supervises mode scores,
+                    # so there is no second spatial-belief loss.
+                    gt_mode_ids = gt_target.to(
+                        device=pred_logits.device,
+                        dtype=torch.long,
                     )
-                    dense_gt_heatmap = build_continuous_gaussian_heatmap(
+                    gt_mode_endpoints = torch.gather(
+                        refined_candidate_endpoints,
+                        dim=1,
+                        index=gt_mode_ids[:, None, None].expand(-1, 1, 2),
+                    ).squeeze(1)
+                    endpoint_error = F.smooth_l1_loss(
+                        gt_mode_endpoints,
                         gt_values[:, 2:4],
-                        self.args.belief_grid_size,
-                        dense_sigma,
-                    )
-                    per_sample_belief_loss = -(
-                        dense_gt_heatmap
-                        * F.log_softmax(trajectory_belief['logits'], dim=1)
-                    ).sum(dim=1)
-                    trajectory_belief_loss += (
-                        per_sample_belief_loss * active_mask
+                        reduction='none',
+                    ).mean(dim=-1)
+                    trajectory_endpoint_loss += (
+                        endpoint_error * active_mask
                     ).sum()
 
-                    dense_endpoints = dense_cell_centers(
-                        batch_size,
-                        self.args.belief_grid_size,
-                        pred_logits.device,
-                        pred_logits.dtype,
-                    )
-                    dense_anchors = build_fixed_horizon_anchors(
+                    gt_mode_residuals = torch.gather(
+                        trajectory_belief['residuals'],
+                        dim=1,
+                        index=gt_mode_ids[:, None, None, None].expand(
+                            -1,
+                            1,
+                            self.args.trajectory_steps,
+                            2,
+                        ),
+                    ).squeeze(1)
+                    gt_mode_anchors = build_fixed_horizon_anchors(
                         input['directions'][:, -1, 2:4],
-                        dense_endpoints,
+                        gt_mode_endpoints[:, None, :],
                         self.args.trajectory_horizons_m,
                         self.args.map_meters,
-                    )
-                    dense_trajectories = (
-                        dense_anchors + trajectory_belief['residuals']
+                    ).squeeze(1)
+                    predicted_gt_trajectory = (
+                        gt_mode_anchors + gt_mode_residuals
                     ).clamp(0.0, 1.0)
 
                     trajectory_error = F.smooth_l1_loss(
-                        dense_trajectories,
-                        gt_trajectory_targets[:, None, :, :].expand_as(
-                            dense_trajectories
-                        ),
+                        predicted_gt_trajectory,
+                        gt_trajectory_targets,
                         reduction='none',
                     ).mean(dim=-1)
-                    valid = gt_trajectory_valid[:, None, :]
-                    per_mode_trajectory_loss = (
-                        (trajectory_error * valid).sum(dim=-1)
-                        / valid.sum(dim=-1).clamp_min(1.0)
-                    )
                     per_sample_trajectory_loss = (
-                        per_mode_trajectory_loss * dense_gt_heatmap
-                    ).sum(dim=1)
+                        (trajectory_error * gt_trajectory_valid).sum(dim=-1)
+                        / gt_trajectory_valid.sum(dim=-1).clamp_min(1.0)
+                    )
                     trajectory_loss += (
                         per_sample_trajectory_loss * active_mask
                     ).sum()
@@ -999,8 +1010,8 @@ class NavCMTAgent:
             if self.args.enable_trajectory_belief:
                 ml_loss = (
                     ml_loss
-                    + self.args.trajectory_belief_loss_weight
-                    * trajectory_belief_loss
+                    + self.args.trajectory_endpoint_loss_weight
+                    * trajectory_endpoint_loss
                     + self.args.trajectory_loss_weight * trajectory_loss
                 )
             # ml_loss = progress_loss + goal_predict_loss
@@ -1012,7 +1023,7 @@ class NavCMTAgent:
             self.logs['progress_loss'].append((progress_loss * train_ml / batch_size).item())
             self.logs['goal_predict_loss'].append((goal_predict_loss * train_ml / batch_size).item())
             self.logs['heatmap_loss'].append((heatmap_loss * train_ml / batch_size).item())
-            self.logs['trajectory_belief_loss'].append((trajectory_belief_loss * train_ml / batch_size).item())
+            self.logs['trajectory_endpoint_loss'].append((trajectory_endpoint_loss * train_ml / batch_size).item())
             self.logs['trajectory_loss'].append((trajectory_loss * train_ml / batch_size).item())
             self.logs['IL_loss'].append((ml_loss * train_ml / batch_size).item())
 

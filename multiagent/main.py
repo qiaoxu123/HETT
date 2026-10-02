@@ -207,11 +207,27 @@ def train(args, train_env, val_envs, rank=-1):
                 goal_predict_loss = sum(agent.logs['goal_predict_loss']) / max(
                     len(agent.logs['goal_predict_loss']), 1
                 )
+                heatmap_loss = sum(agent.logs['heatmap_loss']) / max(
+                    len(agent.logs['heatmap_loss']), 1
+                )
+                trajectory_endpoint_loss = sum(
+                    agent.logs['trajectory_endpoint_loss']
+                ) / max(len(agent.logs['trajectory_endpoint_loss']), 1)
+                trajectory_loss = sum(agent.logs['trajectory_loss']) / max(
+                    len(agent.logs['trajectory_loss']), 1
+                )
                 print(
                     "BENCHMARK_EPOCH epoch=%d IL_loss=%.6f direction_loss=%.6f "
-                    "progress_loss=%.6f goal_predict_loss=%.6f" % (
-                        idx, ml_loss, direction_loss, progress_loss,
+                    "progress_loss=%.6f goal_predict_loss=%.6f heatmap_loss=%.6f "
+                    "trajectory_endpoint_loss=%.6f trajectory_loss=%.6f" % (
+                        idx,
+                        ml_loss,
+                        direction_loss,
+                        progress_loss,
                         goal_predict_loss,
+                        heatmap_loss,
+                        trajectory_endpoint_loss,
+                        trajectory_loss,
                     ),
                     flush=True,
                 )
@@ -225,9 +241,9 @@ def train(args, train_env, val_envs, rank=-1):
 
             progress_loss = sum(agent.logs['progress_loss']) / max(len(agent.logs['progress_loss']), 1)
             goal_predict_loss = sum(agent.logs['goal_predict_loss']) / max(len(agent.logs['goal_predict_loss']), 1)
-            trajectory_belief_loss = (
-                sum(agent.logs['trajectory_belief_loss'])
-                / max(len(agent.logs['trajectory_belief_loss']), 1)
+            trajectory_endpoint_loss = (
+                sum(agent.logs['trajectory_endpoint_loss'])
+                / max(len(agent.logs['trajectory_endpoint_loss']), 1)
             )
             trajectory_loss = (
                 sum(agent.logs['trajectory_loss'])
@@ -236,12 +252,12 @@ def train(args, train_env, val_envs, rank=-1):
 
             write_to_record_file(
                 "\nIL_loss %.4f direction_loss %.4f progress_loss %.4f "
-                "goal_predict_loss %.4f trajectory_belief_loss %.4f trajectory_loss %.4f" % (
+                "goal_predict_loss %.4f trajectory_endpoint_loss %.4f trajectory_loss %.4f" % (
                     ml_loss,
                     direction_loss,
                     progress_loss,
                     goal_predict_loss,
-                    trajectory_belief_loss,
+                    trajectory_endpoint_loss,
                     trajectory_loss,
                 ),
                 record_file

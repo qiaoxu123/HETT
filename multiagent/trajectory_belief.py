@@ -11,40 +11,33 @@ import torch.nn.functional as F
 from multiagent.space import Point2D
 
 
-def build_continuous_gaussian_heatmap(
-    target_xy: torch.Tensor,
-    grid_size: int,
-    sigma: float,
-) -> torch.Tensor:
-    """Normalized Gaussian target on a dense grid from normalized XY."""
-    target_xy = target_xy.to(dtype=torch.float32)
-    coords = (
-        torch.arange(grid_size, device=target_xy.device, dtype=target_xy.dtype)
-        + 0.5
-    ) / grid_size
-    xx, yy = torch.meshgrid(coords, coords, indexing="ij")
-    dist_sq = (
-        (xx[None] - target_xy[:, 0, None, None]) ** 2
-        + (yy[None] - target_xy[:, 1, None, None]) ** 2
-    )
-    sigma_norm = float(sigma) / grid_size
-    heatmap = torch.exp(-dist_sq / (2.0 * sigma_norm ** 2))
-    heatmap = heatmap / heatmap.sum(dim=(1, 2), keepdim=True).clamp_min(1e-8)
-    return heatmap.flatten(1)
-
-
-def dense_cell_centers(
+def grid_cell_centers(
     batch_size: int,
     grid_size: int,
     device: torch.device,
     dtype: torch.dtype,
 ) -> torch.Tensor:
+    """Return normalized centers for the discrete HETT grid."""
     coords = (
         torch.arange(grid_size, device=device, dtype=dtype) + 0.5
     ) / grid_size
-    xx, yy = torch.meshgrid(coords, coords, indexing="ij")
-    centers = torch.stack((xx, yy), dim=-1).reshape(1, -1, 2)
+    rows, cols = torch.meshgrid(coords, coords, indexing="ij")
+    centers = torch.stack((rows, cols), dim=-1).reshape(1, -1, 2)
     return centers.expand(batch_size, -1, -1)
+
+
+def refine_candidate_endpoints(
+    endpoint_offsets: torch.Tensor,
+    grid_size: int,
+) -> torch.Tensor:
+    """Convert per-cell offsets into continuous normalized endpoints."""
+    centers = grid_cell_centers(
+        endpoint_offsets.shape[0],
+        grid_size,
+        endpoint_offsets.device,
+        endpoint_offsets.dtype,
+    )
+    return (centers + endpoint_offsets).clamp(0.0, 1.0)
 
 
 def build_fixed_horizon_anchors(

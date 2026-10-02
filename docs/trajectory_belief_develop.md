@@ -1,70 +1,94 @@
-# Optional Trajectory Belief in develop
+# Simplified Trajectory Belief in develop
 
-Trajectory generation is integrated as an **optional** branch so it can be
-ablated independently from the corrected heatmap + landmark baseline.
+The trajectory path now reuses the original 7x7 HETT candidate grid directly.
+There is no 7x7 -> 28x28 dense upsampling stage.
 
 ## Representation
 
-The original 7x7 HETT/heatmap path is left intact. From the same conditioned
-7x7 candidate features, an auxiliary decoder upsamples to a 28x28 latent field.
-Every dense location predicts one joint trajectory-belief vector:
+For each of the 49 HETT candidate regions, the existing heatmap head supplies
+the mode score. An optional geometry head predicts:
 
 ```
-[mode score | dx1 dy1 | ... | dx5 dy5]
+endpoint offset:      dx, dy
+trajectory residual:  5 x (dx, dy)
 ```
 
-The geometry channels are zero-initialized, so the initial trajectories are
-stable straight anchors.
+So each candidate represents:
+
+```
+region belief
++ continuous endpoint refinement
++ fixed-horizon trajectory residual
+```
+
+The endpoint offset is bounded to half a 7x7 cell in each axis, so every mode
+refines continuously inside its own coarse spatial region.
 
 ## Fixed physical horizons
 
-The first four waypoints have stable metric semantics:
+Each trajectory uses stable metric semantics:
 
 ```
 10 m / 25 m / 50 m / 100 m / final endpoint
 ```
 
-Teacher targets are sampled from the human CityFlight teacher path by continuous
-polyline projection, using the same physical horizons plus the final goal.
-Unavailable long horizons near the goal are masked instead of duplicating the
-goal target.
+The base anchor is the straight fixed-horizon path from the current UAV
+position toward the refined continuous endpoint. The residual head is
+zero-initialized, so the initial prediction is exactly this stable anchor.
 
-## Dense belief and sparse proposals
+## Training
 
-The 28x28 field is supervised by a Gaussian goal belief. Inference performs
-GPU max-pool NMS and retains Top-K proposals (default K=8). Only those K
-trajectories are materialized for proposal logging/execution.
+There is only one spatial classification loss: the existing 7x7 heatmap loss.
 
-## Controller isolation
+Trajectory geometry is supervised on the GT 7x7 region only:
 
-Default behavior remains the existing Two-Stage controller.
+```
+L = L_HETT
+  + lambda_heatmap * L_heatmap
+  + lambda_endpoint * L_endpoint
+  + lambda_trajectory * L_trajectory
+```
 
-Enable trajectory learning only:
+`L_endpoint` refines the GT region center to the continuous target coordinate.
+`L_trajectory` compares the predicted fixed-horizon trajectory in that matched
+mode against the CityFlight human teacher path sampled at
+10/25/50/100 m plus the final goal.
 
-```bash
+Long horizons that do not exist near the destination are masked.
+
+This removes the previous duplicated 28x28 belief loss and avoids supervising
+dozens of unrelated spatial modes toward the same trajectory.
+
+## Top-K proposals
+
+Inference applies local NMS directly on the 7x7 heatmap probabilities, then
+keeps Top-K candidate regions (default K=8, NMS kernel=3). Their learned endpoint
+offsets convert the coarse regions into continuous endpoints before trajectory
+anchors are built.
+
+## Execution
+
+Default behavior is unchanged:
+
+```
 --enable_trajectory_belief
 ```
 
-This trains/logs trajectory proposals but still executes the original heatmap
-Two-Stage controller.
+trains/logs trajectory proposals while the original Two-Stage controller still
+executes navigation.
 
-Enable receding-horizon trajectory execution:
+Optional receding-horizon execution:
 
-```bash
+```
 --enable_trajectory_belief --trajectory_execution
 ```
 
-Then the student executes only the first 10 m-horizon waypoint of the highest
-belief trajectory and replans from the next observation. This bypasses the
-Stage-1/Stage-2 switch for student execution, while the teacher rollout remains
-unchanged.
+selects the highest-score trajectory, executes only its first approximately
+10 m waypoint, observes again, and replans.
 
-## Recommended ablation order
+## Intentionally unchanged
 
-1. corrected 7x7 heatmap baseline;
-2. + zero-gated global landmark prior;
-3. + trajectory belief supervision, Two-Stage execution;
-4. + trajectory receding-horizon execution.
+The existing teacher + student rollout schedule is preserved.
 
-Referenced landmark centroid tokens remain off by default and should be tested
-separately.
+BERT and DarkNet also remain trainable exactly as in the current develop
+baseline.
