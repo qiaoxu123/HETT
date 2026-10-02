@@ -102,6 +102,19 @@ def parse_args():
                         help='Distance in meters for returning from Stage 2 to coarse Stage 1')
     parser.add_argument('--stage2_recover_patience', type=int, default=2,
                         help='Consecutive far-away Stage-2 steps required before coarse recovery')
+    parser.add_argument('--intent_horizons_m', type=float, nargs='+',
+                        default=[10.0, 25.0, 50.0, 100.0],
+                        help='Fixed metric horizons for reconstructed human-intent supervision')
+    parser.add_argument('--intent_min_step_m', type=float, default=1.0,
+                        help='Drop consecutive human poses below this distance unless yaw changes substantially')
+    parser.add_argument('--intent_rdp_tolerance_m', type=float, default=2.5,
+                        help='RDP tolerance for removing keyboard-level XY jitter while preserving route shape')
+    parser.add_argument('--intent_yaw_keyframe_deg', type=float, default=30.0,
+                        help='Preserve human poses with at least this much viewing-direction change')
+    parser.add_argument('--intent_xy_loss_weight', type=float, default=0.5,
+                        help='Weight of fixed-horizon human-intent XY auxiliary loss')
+    parser.add_argument('--intent_yaw_loss_weight', type=float, default=0.1,
+                        help='Weight of fixed-horizon human viewing-direction auxiliary loss')
     parser.add_argument('--demb', type=int, default=768)
     parser.add_argument('--encoder_heads', type=int, default=12)
     parser.add_argument('--encoder_layers', type=int, default=2)

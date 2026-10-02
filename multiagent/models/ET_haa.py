@@ -135,6 +135,12 @@ class ET(nn.Module):
             nn.Linear(256, 2),
             nn.Sigmoid(),
         )
+        self.human_intent_count = len(self.args.intent_horizons_m) + 1
+        self.decoder_2_human_intent_full = nn.Sequential(
+            nn.Linear(self.args.demb, 512),
+            nn.ReLU(),
+            nn.Linear(512, self.human_intent_count * 4),
+        )
         self.direction_embedding = nn.Linear(4, self.args.demb)
 
         self.fc2 = nn.Linear(49, self.args.demb)
@@ -239,6 +245,20 @@ class ET(nn.Module):
         output = self.decoder_2_action_full(action_decoder_input)
         # goal_logits = self.decoder_2_goal_full(goal_decoder_input)
         pred_goals = self.decoder_2_goal_full(goal_decoder_input)
+
+        human_intent_raw = self.decoder_2_human_intent_full(
+            goal_decoder_input
+        ).view(batch_size, self.human_intent_count, 4)
+        human_intent_xy = torch.sigmoid(human_intent_raw[:, :, :2])
+        human_intent_heading = human_intent_raw[:, :, 2:4]
+        human_intent_heading = human_intent_heading / (
+            torch.norm(human_intent_heading, dim=-1, keepdim=True) + 1e-6
+        )
+        pred_human_intent = torch.cat(
+            (human_intent_xy, human_intent_heading),
+            dim=-1,
+        )
+
         norm = torch.norm(output, dim=1, keepdim=True) + 1e-6  # 避免除以零
         direction = output / norm
 
@@ -274,4 +294,11 @@ class ET(nn.Module):
 
         # print(direction, progress, goal_logits)
 
-        return direction, progress, pred_goals, target_logits, emb_frames + emb_directions
+        return (
+            direction,
+            progress,
+            pred_goals,
+            target_logits,
+            pred_human_intent,
+            emb_frames + emb_directions,
+        )

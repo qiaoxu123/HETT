@@ -205,12 +205,25 @@ def train(args, train_env, val_envs, rank=-1):
 
             progress_loss = sum(agent.logs['progress_loss']) / max(len(agent.logs['progress_loss']), 1)
             goal_predict_loss = sum(agent.logs['goal_predict_loss']) / max(len(agent.logs['goal_predict_loss']), 1)
+            intent_xy_loss = sum(agent.logs['intent_xy_loss']) / max(len(agent.logs['intent_xy_loss']), 1)
+            intent_yaw_loss = sum(agent.logs['intent_yaw_loss']) / max(len(agent.logs['intent_yaw_loss']), 1)
+            intent_projection_error = (
+                sum(agent.logs['intent_projection_error'])
+                / max(len(agent.logs['intent_projection_error']), 1)
+            )
             # target_predict_loss = sum(agent.logs['target_predict_loss']) / max(len(agent.logs['target_predict_loss']), 1)
             # writer.add_scalar("loss/IL_loss", IL_loss, iter)
 
             write_to_record_file(
-                "\nIL_loss %.4f direction_loss %.4f progress_loss %.4f goal_predict_loss %.4f" % (
-                    ml_loss, direction_loss, progress_loss, goal_predict_loss),
+                "\nIL_loss %.4f direction_loss %.4f progress_loss %.4f goal_predict_loss %.4f intent_xy_loss %.4f intent_yaw_loss %.4f intent_projection_error %.2fm" % (
+                    ml_loss,
+                    direction_loss,
+                    progress_loss,
+                    goal_predict_loss,
+                    intent_xy_loss,
+                    intent_yaw_loss,
+                    intent_projection_error,
+                ),
                 record_file
             )
             stage1_step = sum(agent.logs['stage1_step']) / max(len(agent.logs['stage1_step']), 1)

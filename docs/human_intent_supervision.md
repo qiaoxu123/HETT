@@ -57,3 +57,36 @@ geometry.
 The heatmap execution logic is intentionally kept unchanged in the first
 commit.  This lets us verify the reconstructed human targets independently
 before coupling them to trajectory-belief execution.
+
+## Auxiliary supervision integration
+
+The second commit connects the reconstructed intent targets to HETT while
+leaving heatmap Stage-1/Stage-2 execution unchanged.
+
+A lightweight auxiliary head predicts one vector per fixed horizon:
+
+```
+[x, y, sin(yaw), cos(yaw)]
+```
+
+from the same fused feature used by HETT's goal predictor.  XY is supervised
+with masked Smooth-L1 and viewing direction with cosine loss.  Invalid horizons
+(longer than the remaining intent path) are masked; the final goal is always
+valid.
+
+Default loss weights:
+
+```
+intent XY  = 0.5
+intent yaw = 0.1
+```
+
+The reconstructed intent path is cached per episode, so RDP/yaw-keyframe
+extraction is not repeated at every rollout step.  Logs include
+`intent_xy_loss`, `intent_yaw_loss`, and the projection distance from the
+current student state to the human intent path.
+
+This branch is deliberately an ablation-friendly intermediate step: if the
+human-intent targets are useful, the same fixed-horizon representation can then
+replace equal-fraction trajectory targets in the separate trajectory-belief
+line.

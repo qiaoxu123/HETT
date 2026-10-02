@@ -25,6 +25,10 @@ from multiagent.models.dark_net import Darknet
 from multiagent.models.CLIP import CLIP
 # from direction.models.ddppo.resenet_encoders import TorchVisionResNet50
 from multiagent.models.goal_predictor import GoalPredictor, MapEncoder
+from multiagent.human_intent import (
+    build_fixed_horizon_intent_targets,
+    reconstruct_human_intent_path,
+)
 from multiagent.observation import cropclient
 from multiagent.space import Pose4D, Point2D, Point3D
 from multiagent.teacher.algorithm.lookahead import lookahead_discrete_action
@@ -145,6 +149,7 @@ class NavCMTAgent:
 
         self.default_gpu = is_default_gpu(self.args)
         self.rank = rank
+        self.intent_path_cache = {}
 
         # Models
 
@@ -234,6 +239,42 @@ class NavCMTAgent:
         # Logs
         sys.stdout.flush()
         self.logs = defaultdict(list)
+
+    def _get_human_intent_path(self, ob):
+        """Cache cleaned human intent once per episode instead of per rollout step."""
+        key = tuple(ob['id']) if isinstance(ob['id'], (list, tuple)) else ob['id']
+        if key not in self.intent_path_cache:
+            self.intent_path_cache[key] = reconstruct_human_intent_path(
+                ob['trajectory'],
+                min_step_m=self.args.intent_min_step_m,
+                rdp_tolerance_m=self.args.intent_rdp_tolerance_m,
+                yaw_keyframe_deg=self.args.intent_yaw_keyframe_deg,
+            )
+        return self.intent_path_cache[key]
+
+    def _build_human_intent_targets(self, ob, current_pose):
+        intent_path = self._get_human_intent_path(ob)
+        target = build_fixed_horizon_intent_targets(
+            intent_path,
+            current_xy=(current_pose.x, current_pose.y),
+            horizons_m=self.args.intent_horizons_m,
+            goal_xy=ob['goal'],
+        )
+        normalized_xy = np.asarray([
+            self.env.normalize_position(
+                Point2D(float(x), float(y)),
+                ob['map_name'],
+                self.args.map_meters,
+            )
+            for x, y in target['xy']
+        ], dtype=np.float32)
+        return {
+            'xy': normalized_xy,
+            'heading': target['heading'],
+            'valid': target['valid'],
+            'remaining_distance_m': target['remaining_distance_m'],
+            'projection_error_m': target['projection_error_m'],
+        }
 
     def get_results(self):
 
@@ -420,6 +461,10 @@ class NavCMTAgent:
         progress_loss = 0.
         goal_predict_loss = 0.
         heatmap_loss = torch.tensor(0.).cuda()
+        intent_xy_loss = torch.tensor(0.).cuda()
+        intent_yaw_loss = torch.tensor(0.).cuda()
+        intent_projection_error_sum = 0.0
+        intent_projection_error_count = 0
 
         stage1_step = 0
         stage2_step = 0
@@ -494,7 +539,7 @@ class NavCMTAgent:
 
 
 
-            pred_direction, pred_progress, pred_goals, pred_logits, grid_ft = self.vln_model(
+            pred_direction, pred_progress, pred_goals, pred_logits, pred_human_intent, grid_ft = self.vln_model(
                 directions=input['directions'],
                 frames=input['frames'],
                 lenths=input['lenths'],
@@ -601,6 +646,48 @@ class NavCMTAgent:
                 ).sum(dim=1)
                 active_mask = torch.from_numpy((~ended).astype(np.float32)).to(pred_logits.device)
                 heatmap_loss += (per_sample_heatmap_loss * active_mask).sum()
+
+                human_intent_targets = [
+                    self._build_human_intent_targets(ob, poses[i])
+                    for i, ob in enumerate(obs)
+                ]
+                intent_target_xy = torch.from_numpy(np.stack([
+                    target['xy'] for target in human_intent_targets
+                ])).to(device=pred_human_intent.device, dtype=pred_human_intent.dtype)
+                intent_target_heading = torch.from_numpy(np.stack([
+                    target['heading'] for target in human_intent_targets
+                ])).to(device=pred_human_intent.device, dtype=pred_human_intent.dtype)
+                intent_valid = torch.from_numpy(np.stack([
+                    target['valid'] for target in human_intent_targets
+                ])).to(device=pred_human_intent.device, dtype=pred_human_intent.dtype)
+
+                intent_xy_error = F.smooth_l1_loss(
+                    pred_human_intent[:, :, :2],
+                    intent_target_xy,
+                    reduction='none',
+                ).mean(dim=-1)
+                intent_heading_similarity = (
+                    pred_human_intent[:, :, 2:4] * intent_target_heading
+                ).sum(dim=-1)
+                intent_yaw_error = 1.0 - intent_heading_similarity
+
+                valid_count = intent_valid.sum(dim=1).clamp_min(1.0)
+                per_sample_intent_xy = (
+                    intent_xy_error * intent_valid
+                ).sum(dim=1) / valid_count
+                per_sample_intent_yaw = (
+                    intent_yaw_error * intent_valid
+                ).sum(dim=1) / valid_count
+
+                intent_xy_loss += (per_sample_intent_xy * active_mask).sum()
+                intent_yaw_loss += (per_sample_intent_yaw * active_mask).sum()
+
+                for i, target in enumerate(human_intent_targets):
+                    if not ended[i]:
+                        intent_projection_error_sum += float(
+                            target['projection_error_m']
+                        )
+                        intent_projection_error_count += 1
                 # print(pred_logits.shape)
             # Log the trajectory
             # print(at_direction, gt_direction)
@@ -616,6 +703,20 @@ class NavCMTAgent:
                     traj[i]['heatmap_confidence'].append(
                         float(heatmap_probs[i, heatmap_goal_ids[i]].item())
                     )
+                    traj[i]['pred_human_intent'].append(
+                        pred_human_intent[i].detach().cpu().tolist()
+                    )
+                    if not 'test' in self.env_name:
+                        target = human_intent_targets[i]
+                        traj[i]['gt_human_intent'].append(
+                            np.concatenate(
+                                (target['xy'], target['heading']),
+                                axis=1,
+                            ).tolist()
+                        )
+                        traj[i]['human_intent_valid'].append(
+                            target['valid'].tolist()
+                        )
 
             if self.feedback == 'teacher':
                 at_goal = gt_goal
@@ -749,7 +850,14 @@ class NavCMTAgent:
         if train_ml is not None:
             # print(ml_loss)
             # ml_loss = direction_loss + progress_loss
-            ml_loss = 1 * direction_loss + 0.1 * progress_loss + 2 * goal_predict_loss + self.args.heatmap_loss_weight * heatmap_loss
+            ml_loss = (
+                1 * direction_loss
+                + 0.1 * progress_loss
+                + 2 * goal_predict_loss
+                + self.args.heatmap_loss_weight * heatmap_loss
+                + self.args.intent_xy_loss_weight * intent_xy_loss
+                + self.args.intent_yaw_loss_weight * intent_yaw_loss
+            )
             # ml_loss = progress_loss + goal_predict_loss
             self.loss += ml_loss * train_ml / batch_size
 
@@ -759,6 +867,8 @@ class NavCMTAgent:
             self.logs['progress_loss'].append((progress_loss * train_ml / batch_size).item())
             self.logs['goal_predict_loss'].append((goal_predict_loss * train_ml / batch_size).item())
             self.logs['heatmap_loss'].append((heatmap_loss * train_ml / batch_size).item())
+            self.logs['intent_xy_loss'].append((intent_xy_loss * train_ml / batch_size).item())
+            self.logs['intent_yaw_loss'].append((intent_yaw_loss * train_ml / batch_size).item())
             self.logs['IL_loss'].append((ml_loss * train_ml / batch_size).item())
 
         if type(self.loss) is int:  # For safety, it will be activated if no losses are added
@@ -772,6 +882,9 @@ class NavCMTAgent:
         self.logs['stage2_step'].append(float(stage2_step) / batch_size)
         self.logs['stage2_rotate'].append(float(stage2_rotate) / batch_size)
         self.logs['stage2_recoveries'].append(float(stage2_recoveries) / batch_size)
+        self.logs['intent_projection_error'].append(
+            intent_projection_error_sum / max(intent_projection_error_count, 1)
+        )
 
         # print('[3]')
         # debug_memory()
