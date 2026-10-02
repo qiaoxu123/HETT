@@ -107,51 +107,88 @@ class EncoderVL(nn.Module):
             emb_directions,
             emb_maps,
             emb_positions,
+            emb_landmark_anchors=None,
+            landmark_anchor_mask=None,
             # lengths
     ):
         """
-        pass embedded inputs through embeddings and encode them using a transformer
+        Encode HETT inputs, optionally adding instruction-referenced landmark
+        centroids as padded geographic anchor tokens.
+
+        The original grid candidates remain the final tokens in the sequence,
+        so downstream grid-logit indexing and the two-stage controller are
+        unchanged.
         """
-        length_max = emb_positions.shape[1]
-        # emb_lang is processed on each GPU separately so they size can vary
+        length_positions = emb_positions.shape[1]
         length_lang = emb_lang.shape[1]
-        # create a mask for padded elements
-        length_mask_pad = length_lang + 3 + length_max
-        cache_key = (
-            len(emb_lang), length_lang, emb_frames.shape[1], length_max,
-            emb_lang.device.type, emb_lang.device.index,
+        length_anchors = (
+            0 if emb_landmark_anchors is None
+            else emb_landmark_anchors.shape[1]
         )
-        cached_masks = self._map_mask_cache.get(cache_key)
-        if cached_masks is None:
-            mask_pad = torch.zeros(
-                (len(emb_lang), length_mask_pad),
-                device=emb_lang.device,
-                dtype=torch.bool,
-            )
-            mask_attn = model_util.generate_attention_mask(
+
+        emb_lang, emb_frames, emb_directions, emb_maps, emb_positions = (
+            self.enc_pos_map(
+                emb_lang,
+                emb_frames,
+                emb_directions,
+                emb_maps,
+                emb_positions,
                 length_lang,
-                emb_frames.shape[1],
-                length_max,
-                emb_lang.device,
             )
-            self._map_mask_cache[cache_key] = (mask_pad, mask_attn)
-        else:
-            mask_pad, mask_attn = cached_masks
-        # for i, l in enumerate(lengths):
-        #     # mask padded frames
-        #     mask_pad[i, (length_lang + l):(length_lang + length_max)] = True
-        #     # mask padded directions
-        #     mask_pad[i, (length_lang + length_max + l):] = True
+        )
 
-        # encode the inputs
+        parts = [emb_lang, emb_frames, emb_directions, emb_maps]
+        if emb_landmark_anchors is not None:
+            parts.append(emb_landmark_anchors)
+        parts.append(emb_positions)
+        emb_all = torch.cat(parts, dim=1)
+        emb_all = self.enc_layernorm(emb_all)
+        emb_all = self.enc_dropout(emb_all)
 
-        # print(emb_lang.shape, emb_frames.shape, emb_directions.shape, emb_maps.shape, emb_positions)
-        emb_all = self.encode_inputs(emb_lang, emb_frames, emb_directions, emb_maps, emb_positions, length_lang)
+        mask_pad = torch.zeros(
+            emb_all.shape[:2],
+            device=emb_all.device,
+            dtype=torch.bool,
+        )
+        if length_anchors and landmark_anchor_mask is not None:
+            anchor_start = (
+                length_lang
+                + emb_frames.shape[1]
+                + emb_directions.shape[1]
+                + emb_maps.shape[1]
+            )
+            mask_pad[
+                :,
+                anchor_start:anchor_start + length_anchors,
+            ] = ~landmark_anchor_mask.bool()
 
-        # print(emb_all.shape, mask_attn.shape, mask_pad.shape)
+        # Preserve the original HETT attention semantics: language queries see
+        # only language tokens, while visual/map/anchor/grid tokens can attend
+        # globally.  The only new restriction is key-padding on unused anchor
+        # slots.
+        total_length = emb_all.shape[1]
+        cache_key = (
+            total_length,
+            length_lang,
+            emb_all.device.type,
+            emb_all.device.index,
+            emb_all.dtype,
+        )
+        mask_attn = self._map_mask_cache.get(cache_key)
+        if mask_attn is None:
+            mask_attn = torch.zeros(
+                (total_length, total_length),
+                device=emb_all.device,
+                dtype=emb_all.dtype,
+            )
+            mask_attn[:length_lang, length_lang:] = float("-inf")
+            self._map_mask_cache[cache_key] = mask_attn
 
-        # encode the inputs
-        output = self.enc_transformer(emb_all.transpose(0, 1), mask_attn, mask_pad).transpose(0, 1)
+        output = self.enc_transformer(
+            emb_all.transpose(0, 1),
+            mask_attn,
+            mask_pad,
+        ).transpose(0, 1)
         return output, mask_pad
 
     def forward_with_centroids(

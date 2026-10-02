@@ -90,12 +90,11 @@ def compute_iou(a, b):
 
 def masked_navigation_losses(pred_direction, pred_progress, pred_goals,
                              gt_direction, gt_progress, gt_goal, active):
-    """Compute the original per-sample losses with batched tensor operations."""
+    """Compute the original per-sample navigation losses in batched form."""
     true_sin_cos = torch.stack(
         (torch.sin(gt_direction), torch.cos(gt_direction)), dim=-1
     )
     active = active.to(dtype=pred_direction.dtype)
-
     direction_per_sample = (pred_direction - true_sin_cos).square().sum(dim=-1)
     progress_per_sample = (
         pred_progress.reshape(pred_progress.shape[0], -1)
@@ -104,7 +103,6 @@ def masked_navigation_losses(pred_direction, pred_progress, pred_goals,
     goal_per_sample = (pred_goals - gt_goal).square().reshape(
         pred_goals.shape[0], -1
     ).mean(dim=-1)
-
     return (
         (direction_per_sample * active).sum(),
         (progress_per_sample * active).sum(),
@@ -135,6 +133,23 @@ def get_direction(start, end):
             _angle = 270
     _angle = (360 - _angle + 90) % 360
     return _angle
+
+
+def build_gaussian_heatmap(target_ids, grid_size, sigma, device):
+    """Build a normalized Gaussian target distribution over the global grid."""
+    target_ids = target_ids.to(device=device, dtype=torch.long)
+    target_rows = torch.div(target_ids, grid_size, rounding_mode='floor').float()
+    target_cols = (target_ids % grid_size).float()
+
+    coords = torch.arange(grid_size, device=device, dtype=torch.float32)
+    grid_rows, grid_cols = torch.meshgrid(coords, coords, indexing='ij')
+    dist_sq = (
+        (grid_rows.unsqueeze(0) - target_rows[:, None, None]) ** 2
+        + (grid_cols.unsqueeze(0) - target_cols[:, None, None]) ** 2
+    )
+    heatmap = torch.exp(-dist_sq / (2 * sigma ** 2))
+    heatmap = heatmap / heatmap.sum(dim=(1, 2), keepdim=True).clamp_min(1e-8)
+    return heatmap.view(-1, grid_size ** 2)
 
 
 class NavCMTAgent:
@@ -413,6 +428,19 @@ class NavCMTAgent:
                                                       for _ in range(batch_size)
                                                       ])).cuda()
 
+        max_landmarks = self.args.max_referenced_landmarks
+        landmark_anchor_coords = np.zeros((batch_size, max_landmarks, 2), dtype=np.float32)
+        landmark_anchor_mask = np.zeros((batch_size, max_landmarks), dtype=np.bool_)
+        if not self.args.disable_referenced_landmark_centroids:
+            for i, ob in enumerate(obs):
+                centroids = ob['referenced_landmark_centroids'][:max_landmarks]
+                count = len(centroids)
+                if count:
+                    landmark_anchor_coords[i, :count] = centroids
+                    landmark_anchor_mask[i, :count] = True
+        landmark_anchor_coords = torch.from_numpy(landmark_anchor_coords).cuda()
+        landmark_anchor_mask = torch.from_numpy(landmark_anchor_mask).cuda()
+
         for i, ob in enumerate(obs):
             traj[i]['goal'] = ob['goal']
             traj[i]['instr_id'] = ob['id']
@@ -426,6 +454,9 @@ class NavCMTAgent:
             traj[i]['gt_trajectory'] = ob['trajectory']
             traj[i]['trajectory'] = [poses[i]]
             traj[i]['stage1_trajectory'] = [poses[i]]
+            traj[i]['referenced_landmark_count'] = int(
+                landmark_anchor_mask[i].sum().item()
+            )
         # print(np.array([len(ob['trajectory']) for ob in obs]))
 
         # Initialization the finishing status
@@ -436,7 +467,7 @@ class NavCMTAgent:
         direction_loss = torch.tensor(0.).cuda()
         progress_loss = 0.
         goal_predict_loss = 0.
-        target_predict_loss = 0.
+        heatmap_loss = torch.tensor(0.).cuda()
 
         stage1_step = 0
         stage2_step = 0
@@ -449,13 +480,18 @@ class NavCMTAgent:
             'frames': torch.zeros(batch_size, 0, 512, 49).cuda(),
             'lenths': [0 for _ in range(batch_size)],
             'lang': lang_features,
+            'lang_mask': attention_mask.bool(),
             'candidates': global_positions,
+            'landmark_anchors': landmark_anchor_coords,
+            'landmark_anchor_mask': landmark_anchor_mask,
             'centroids': torch.zeros((batch_size, 0, 2)).cuda(),
             'lang_cls': linear_cls,
             'map_fts': torch.zeros(batch_size, 0, 512, 49).cuda(),
         }
 
         stage1_ended = np.array([False] * batch_size)
+        stage2_recover_count = np.zeros(batch_size, dtype=np.int32)
+        stage2_recoveries = 0
 
         for t in range(self.args.max_action_len):
 
@@ -516,9 +552,27 @@ class NavCMTAgent:
                 grid_index=input['grid_index'],
                 maps=input['maps'],
                 lang=input['lang'],
+                lang_mask=input['lang_mask'],
                 candidates=input['candidates'],
+                landmark_anchors=input['landmark_anchors'],
+                landmark_anchor_mask=input['landmark_anchor_mask'],
                 centroids=input['centroids'],
                 lang_cls=input['lang_cls']
+            )
+
+            # Stage-1 spatial belief: convert 49 grid logits into a 7x7 heatmap.
+            heatmap_probs = torch.softmax(pred_logits, dim=1)
+            heatmap_goal_ids = heatmap_probs.argmax(dim=1)
+            heatmap_goal_rows = torch.div(
+                heatmap_goal_ids, self.args.grid_size, rounding_mode='floor'
+            ).float()
+            heatmap_goal_cols = (heatmap_goal_ids % self.args.grid_size).float()
+            heatmap_goals = torch.stack(
+                (
+                    (heatmap_goal_rows + 0.5) / self.args.grid_size,
+                    (heatmap_goal_cols + 0.5) / self.args.grid_size,
+                ),
+                dim=1,
             )
 
             input['grid_fts'] = torch.cat((input['grid_fts'], grid_ft), dim=1)
@@ -530,12 +584,12 @@ class NavCMTAgent:
             # pred_direction = output
             # pred_progress = progress
 
-            # Transfer all values used by the CPU simulator in one synchronization.
+            # Transfer simulator-facing outputs in one GPU-to-CPU synchronization.
             nt_direct = torch.atan2(pred_direction[:, 0], pred_direction[:, 1])
             host_predictions = torch.cat((
                 pred_progress.reshape(batch_size, -1)[:, :1],
                 nt_direct.unsqueeze(1),
-                pred_goals.reshape(batch_size, -1)[:, :2],
+                heatmap_goals,
             ), dim=1).detach().cpu().numpy()
             pred_progress_t = host_predictions[:, 0]
             at_direction = host_predictions[:, 1]
@@ -587,7 +641,17 @@ class NavCMTAgent:
                 progress_loss = progress_loss + step_progress_loss
                 goal_predict_loss = goal_predict_loss + step_goal_loss
                 # print(at_direction, gt_direction, ml_loss)
-                target_predict_loss += self.criterion(pred_logits, gt_target.unsqueeze(1).cuda())
+                gt_heatmap = build_gaussian_heatmap(
+                    gt_target,
+                    self.args.grid_size,
+                    self.args.heatmap_sigma,
+                    pred_logits.device,
+                )
+                per_sample_heatmap_loss = -(
+                    gt_heatmap * F.log_softmax(pred_logits, dim=1)
+                ).sum(dim=1)
+                active_mask = torch.from_numpy((~ended).astype(np.float32)).to(pred_logits.device)
+                heatmap_loss += (per_sample_heatmap_loss * active_mask).sum()
                 # print(pred_logits.shape)
             # Log the trajectory
             # print(at_direction, gt_direction)
@@ -599,23 +663,21 @@ class NavCMTAgent:
                         traj[i]['gt_progress'].append(gt_progress[i].item())
                         traj[i]['gt_goal'].append(gt_goal[i])
                     traj[i]['progress'].append(float(host_predictions[i, 0]))
+                    traj[i]['heatmap_goal_id'].append(int(heatmap_goal_ids[i].item()))
+                    traj[i]['heatmap_confidence'].append(
+                        float(heatmap_probs[i, heatmap_goal_ids[i]].item())
+                    )
 
             if self.feedback == 'teacher':
-                # print('teacher', at_goal.shape)
                 a_t = gt_direction
-                pred_progress_t = gt_progress
-                cpu_goal = gt_goal.numpy()
+                pred_progress_t = gt_progress_np
+                cpu_goal = gt_goal_np
             elif self.feedback == 'student':  # student
                 a_t = at_direction
+                # Keep heatmap Stage-1 execution unchanged.
                 cpu_goal = host_predictions[:, 2:4]
-
-                # _, at_goal = pred_logits.max(1)
-                # at_goal = at_goal.squeeze(1)
-                # at_goal = gt_goal
-                # print('student', at_goal.shape)
             else:
                 sys.exit('Invalid feedback option')
-
             # print(cpu_goal)
 
             # Interact with the simulator with actions
@@ -629,44 +691,46 @@ class NavCMTAgent:
                 # dst = Point2D(obs[i]['centroid_goal'][0], obs[i]['centroid_goal'][1])
                 if ended[i]:
                     continue
-                # if dst.dist_to(poses[i].xy) < 10:
-                #     ended[i] = True
-                #     continue
 
+                coarse_goal_dist = dst.dist_to(poses[i].xy)
 
-                elif pred_progress_t[i] > 0.95 and self.feedback == 'student' and stage1_ended[i]:
-                    # Updated 'ended' list and make environment action
+                # Stage-2 recovery is student-only: if newly predicted coarse
+                # goals stay far away, return to Stage 1 instead of remaining
+                # permanently locked in fine navigation. Hysteresis
+                # (25 m enter / 40 m recover by default) avoids boundary chatter.
+                if self.feedback == 'student' and stage1_ended[i]:
+                    if coarse_goal_dist > self.args.stage2_recover_dist:
+                        stage2_recover_count[i] += 1
+                    else:
+                        stage2_recover_count[i] = 0
+
+                    if stage2_recover_count[i] >= self.args.stage2_recover_patience:
+                        stage1_ended[i] = False
+                        stage2_recover_count[i] = 0
+                        stage2_recoveries += 1
+
+                if pred_progress_t[i] > 0.95 and self.feedback == 'student' and stage1_ended[i]:
                     ended[i] = True
                     continue
                 elif t == self.args.max_action_len:
                     ended[i] = True
                     continue
 
-                # print(cpu_goal[i], global_position[cpu_goal[i]])
-                # dst = self.env.unnormalize_position(global_position[cpu_goal[i]], obs[i]['map_name'],
-                #                                     self.args.map_meters)
-                # dst = Point2D(obs[i]['centroid_goal'][0], obs[i]['centroid_goal'][1])
-
-                # if pred_progress_t[i] < 0.75 and dst.dist_to(poses[i].xy) > 20 and not stage1_ended[i]:
-                # if pred_progress_t[i] < 0.75 and dst.dist_to(poses[i].xy) > 10 and not stage1_ended[i]:
-
-                # if pred_progress_t[i] > 0.9 and not stage1_ended[i]:
-                #     stage1_ended[i] = True
-                if dst.dist_to(poses[i].xy) > 5 and not stage1_ended[i]:
+                # Stage 1 only needs to enter the coarse target neighborhood;
+                # fine localization is delegated to Stage 2.
+                if coarse_goal_dist > self.args.stage1_switch_dist and not stage1_ended[i]:
                     stage1_step += 1
                     traj[i]['pred_goal'].append(dst)
-                    # pred_goal_xys = [
-                    #     unnormalize_position(global_position[goal_id] / args.grid_size, eps.map_name, args.map_meters)
-                    #     for eps, goal_id in zip(episodes_batch, goal_ids)]
-                    # dst = Point2D(obs[i]['centroid_goal'][0], obs[i]['centroid_goal'][1])
-                    # dst = self.env.unnormalize_position(global_position[cpu_goal[i]], obs[i]['map_name'], self.args.map_meters)
                     if self.feedback == 'teacher':
                         cur_step = stage1_step * self.args.move_iteration
                         cur_step = cur_step if cur_step < len(obs[i]['trajectory']) else -1
                         poses[i] = obs[i]['trajectory'][cur_step]
                     else:
-                        poses[i] = self.move(poses[i], dst,
-                                         self.args.move_iteration)
+                        poses[i] = self.move(
+                            poses[i],
+                            dst,
+                            self.args.move_iteration,
+                        )
                     if not ended[i]:
                         traj[i]['stage1_trajectory'].append(poses[i])
 
@@ -692,9 +756,13 @@ class NavCMTAgent:
                 if not ended[i]:
                     traj[i]['trajectory'].append(poses[i])
                     # Update the status
+            # Refresh the environment first, then use the resulting pose/state
+            # as the spatial input for the next navigation step.
+            obs = self.env._get_obs(poses, random_direction=(self.feedback == 'teacher'))
+            current_directions = [np.array(ob['pose'].yaw, dtype=np.float32) for ob in obs]
+            current_positions = [np.array(ob['position'], dtype=np.float32) for ob in obs]
             direction_t = torch.from_numpy(np.array(current_directions, dtype=np.float32))
             position_t = torch.from_numpy(np.array(current_positions, dtype=np.float32))
-            obs = self.env._get_obs(poses, random_direction=(self.feedback == 'teacher'))  # get gt_obs
             # current_view_corners = [np.array(ob['gt_path_corners'][0]) for ob in obs]
 
             # Early exit if all ended
@@ -724,7 +792,7 @@ class NavCMTAgent:
         if train_ml is not None:
             # print(ml_loss)
             # ml_loss = direction_loss + progress_loss
-            ml_loss = 1 * direction_loss + 0.1 * progress_loss + 2 * goal_predict_loss + 0.1 * target_predict_loss
+            ml_loss = 1 * direction_loss + 0.1 * progress_loss + 2 * goal_predict_loss + self.args.heatmap_loss_weight * heatmap_loss
             # ml_loss = progress_loss + goal_predict_loss
             self.loss += ml_loss * train_ml / batch_size
 
@@ -733,7 +801,7 @@ class NavCMTAgent:
             self.logs['direction_loss'].append((direction_loss * train_ml / batch_size).item())
             self.logs['progress_loss'].append((progress_loss * train_ml / batch_size).item())
             self.logs['goal_predict_loss'].append((goal_predict_loss * train_ml / batch_size).item())
-            self.logs['target_predict_loss'].append((target_predict_loss * train_ml / batch_size).item())
+            self.logs['heatmap_loss'].append((heatmap_loss * train_ml / batch_size).item())
             self.logs['IL_loss'].append((ml_loss * train_ml / batch_size).item())
 
         if type(self.loss) is int:  # For safety, it will be activated if no losses are added
@@ -746,6 +814,7 @@ class NavCMTAgent:
         self.logs['stage1_step'].append(float(stage1_step) / batch_size)
         self.logs['stage2_step'].append(float(stage2_step) / batch_size)
         self.logs['stage2_rotate'].append(float(stage2_rotate) / batch_size)
+        self.logs['stage2_recoveries'].append(float(stage2_recoveries) / batch_size)
 
         # print('[3]')
         # debug_memory()
@@ -791,20 +860,42 @@ class NavCMTAgent:
 
         def recover_state(name, model, optimizer):
             state = model.state_dict()
-            model_keys = set(state.keys())
-            load_keys = set(states[name]['state_dict'].keys())
-            if model_keys == load_keys:
-                print("NOTICE: LOADing ALL KEYS IN THE ", name)
-                state_dict = states[name]['state_dict']
-            else:
-                print("NOTICE: DIFFERENT KEYS IN THE ", name)
-                # if not list(model_keys)[0].startswith('module.') and list(load_keys)[0].startswith('module.'):
-                #     state_dict = {k.replace('module.', ''): v for k, v in state_dict.items()}
-                state_dict = {k: v for k, v in states[name]['state_dict'].items() if k in model_keys}
+            saved_state = states[name]['state_dict']
+            state_dict = {}
+            adapted_map_input = False
+
+            for key, value in saved_state.items():
+                if key not in state:
+                    continue
+                if value.shape == state[key].shape:
+                    state_dict[key] = value
+                    continue
+                if (
+                    name == "vln_model"
+                    and key == "map_encoder.main.1.weight"
+                    and value.ndim == 4
+                    and value.shape[1] == 3
+                    and state[key].shape[1] == 4
+                    and value.shape[0] == state[key].shape[0]
+                    and value.shape[2:] == state[key].shape[2:]
+                ):
+                    adapted = state[key].clone()
+                    adapted.zero_()
+                    adapted[:, :2] = value[:, :2]
+                    adapted[:, 3:4] = value[:, 2:3]
+                    state_dict[key] = adapted
+                    adapted_map_input = True
+                    print("NOTICE: adapted 3-channel HETT map encoder to global+referenced 4-channel input")
+                    continue
+                print("NOTICE: skip shape-mismatched parameter", name, key, tuple(value.shape), "->", tuple(state[key].shape))
+
             state.update(state_dict)
             model.load_state_dict(state)
             if self.args.resume_optimizer:
-                optimizer.load_state_dict(states[name]['optimizer'])
+                if adapted_map_input and name == "vln_model":
+                    print("NOTICE: skip old vln optimizer state because map input dimensionality changed")
+                else:
+                    optimizer.load_state_dict(states[name]['optimizer'])
 
             def count_parameters(mo):
                 return sum(p.numel() for p in mo.parameters() if p.requires_grad)

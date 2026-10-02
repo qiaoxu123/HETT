@@ -92,6 +92,16 @@ def parse_args():
 
     # model
     parser.add_argument('--grid_size', type=int, default=7)
+    parser.add_argument('--heatmap_sigma', type=float, default=0.8,
+                        help='Gaussian sigma (in grid cells) for Stage-1 heatmap supervision')
+    parser.add_argument('--heatmap_loss_weight', type=float, default=0.1,
+                        help='Weight of the Stage-1 heatmap loss')
+    parser.add_argument('--stage1_switch_dist', type=float, default=25.0,
+                        help='Distance in meters for switching from coarse Stage 1 to fine Stage 2')
+    parser.add_argument('--stage2_recover_dist', type=float, default=40.0,
+                        help='Distance in meters for returning from Stage 2 to coarse Stage 1')
+    parser.add_argument('--stage2_recover_patience', type=int, default=2,
+                        help='Consecutive far-away Stage-2 steps required before coarse recovery')
     parser.add_argument('--demb', type=int, default=768)
     parser.add_argument('--encoder_heads', type=int, default=12)
     parser.add_argument('--encoder_layers', type=int, default=2)
@@ -118,6 +128,10 @@ def parse_args():
     parser.add_argument('--map_size', type=int, default=240)
     parser.add_argument('--map_meters', type=float, default=410.)
     parser.add_argument('--map_update_interval', type=int, default=5)
+    parser.add_argument('--disable_global_landmark_prior', action='store_true', default=False)
+    parser.add_argument('--disable_referenced_landmark_mask', action='store_true', default=False)
+    parser.add_argument('--disable_referenced_landmark_centroids', action='store_true', default=False)
+    parser.add_argument('--max_referenced_landmarks', type=int, default=8)
     parser.add_argument('--max_depth', type=float, default=200.)
     parser.add_argument('--altitude', type=float, default=50)
     parser.add_argument('--ablate', type=str, choices=['rgb', 'depth', 'tracking', 'landmark', 'gsam', ''], default='')

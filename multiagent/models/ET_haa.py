@@ -1,3 +1,4 @@
+import math
 import torch
 from .enc_visual import FeatureFlat
 from .enc_vl import EncoderVL
@@ -16,20 +17,15 @@ def aggregate_history_grid(grid_fts, grid_indices, text_fts, grid_proj, cell_cou
     batch_size, history_len, feature_dim = grid_fts.shape
     if history_len == 0:
         return grid_fts.new_zeros((batch_size, cell_count, feature_dim))
-
     history = grid_fts.to(torch.float32)
     indices = grid_indices.to(dtype=torch.long)
-    # Match the original max(dim=-1) tie-breaking and gradient behavior.
     scores = torch.bmm(history, text_fts).max(dim=-1).values
     projected = grid_proj(history)
-
     cell_ids = torch.arange(cell_count, device=indices.device)
     cell_mask = indices.unsqueeze(-1) == cell_ids.view(1, 1, -1)
     has_history = cell_mask.any(dim=1, keepdim=True)
     masked_scores = scores.unsqueeze(-1).masked_fill(~cell_mask, -torch.inf)
-    masked_scores = torch.where(
-        has_history, masked_scores, torch.zeros_like(masked_scores)
-    )
+    masked_scores = torch.where(has_history, masked_scores, torch.zeros_like(masked_scores))
     weights = torch.softmax(masked_scores, dim=1) * cell_mask
     return torch.einsum('btc,btd->bcd', weights, projected)
 
@@ -93,7 +89,7 @@ class ET(nn.Module):
         super().__init__()
         self.args = args
         # encoder and visual embeddings
-        self.map_encoder = MapEncoder(240)
+        self.map_encoder = MapEncoder(240, input_channels=4)
         self.encoder_vl = EncoderVL(args)
         self.candidate_encoder = nn.Sequential(
             nn.Linear(2, self.args.demb),
@@ -103,6 +99,11 @@ class ET(nn.Module):
             nn.Linear(2, self.args.demb),
             nn.LayerNorm(self.args.demb, eps=1e-12)
         )
+        self.landmark_anchor_encoder = nn.Sequential(
+            nn.Linear(2, self.args.demb),
+            nn.LayerNorm(self.args.demb, eps=1e-12),
+        )
+        self.landmark_anchor_type = nn.Parameter(torch.zeros(1, 1, self.args.demb))
         # # feature embeddings
         # self.vis_feat = FeatureFlat(input_shape=self.visual_tensor_shape, output_size=args.demb)
         # dataset id learned encoding (applied after the encoder_lang)
@@ -137,6 +138,13 @@ class ET(nn.Module):
             nn.Dropout(0.2),
             nn.Linear(32, 1),
         )
+        # Minimal SBF-style language conditioning for the heatmap only.
+        # The zero-initialized scalar gate makes the initial forward path
+        # identical to the existing heatmap branch.
+        self.heatmap_candidate_norm = nn.LayerNorm(self.args.demb)
+        self.heatmap_language_norm = nn.LayerNorm(self.args.demb)
+        self.heatmap_lang_gate = nn.Parameter(torch.tensor(0.0))
+
         self.decoder_2_logits_full = nn.Sequential(
             nn.Linear(self.args.demb, self.args.demb // 2),
             nn.ReLU(),
@@ -170,6 +178,14 @@ class ET(nn.Module):
         map_feat = self.map_encoder(inputs['maps'])
 
         emb_candidates = self.candidate_encoder(inputs['candidates']) * emb_lang[:, :1, :]
+        landmark_anchor_mask = inputs.get('landmark_anchor_mask')
+        landmark_anchors = inputs.get('landmark_anchors')
+        if landmark_anchors is None:
+            emb_landmark_anchors = None
+        else:
+            emb_landmark_anchors = self.landmark_anchor_encoder(landmark_anchors) + self.landmark_anchor_type
+            if landmark_anchor_mask is not None:
+                emb_landmark_anchors = emb_landmark_anchors * landmark_anchor_mask.unsqueeze(-1).to(emb_landmark_anchors.dtype)
         # print(torch.isnan(map_feat).any(), torch.isinf(map_feat).any())
 
         # # embed frames and direiction (650,49) --> 768
@@ -228,6 +244,8 @@ class ET(nn.Module):
             emb_directions,
             emb_maps,
             emb_candidates,
+            emb_landmark_anchors=emb_landmark_anchors,
+            landmark_anchor_mask=landmark_anchor_mask,
 
             # inputs['lenths']
         )
@@ -236,7 +254,8 @@ class ET(nn.Module):
         encoder_out_visual = encoder_out[:, emb_lang.shape[1]]
         encoder_out_direction = encoder_out[:, emb_lang.shape[1] + 1]
         # encoder_out_candidates = encoder_out[:, emb_lang.shape[1] + 3: emb_lang.shape[1] + 3 + emb_candidates.shape[1]]
-        encoder_out_candidates = encoder_out[:, emb_lang.shape[1] + 3:]
+        landmark_anchor_count = 0 if emb_landmark_anchors is None else emb_landmark_anchors.shape[1]
+        encoder_out_candidates = encoder_out[:, emb_lang.shape[1] + 3 + landmark_anchor_count:]
         encoder_out_centroids = encoder_out[:, emb_lang.shape[1] + 2]
         # get the output actions
         decoder_input = encoder_out_visual.reshape(-1, self.args.demb)
@@ -253,7 +272,32 @@ class ET(nn.Module):
 
         progress = self.decoder_2_progress_full(decoder_input)
 
-        target_logits = self.decoder_2_logits_full(target_decoder_input)
+        # Explicit language-conditioned spatial belief:
+        # each grid cell queries the instruction tokens before heatmap decoding.
+        heatmap_query = self.heatmap_candidate_norm(target_decoder_input)
+        heatmap_language = self.heatmap_language_norm(emb_lang)
+        heatmap_attn_logits = torch.matmul(
+            heatmap_query,
+            heatmap_language.transpose(1, 2),
+        ) / math.sqrt(self.args.demb)
+
+        lang_mask = inputs.get("lang_mask")
+        if lang_mask is not None:
+            heatmap_attn_logits = heatmap_attn_logits.masked_fill(
+                ~lang_mask[:, None, :].bool(),
+                -torch.inf,
+            )
+
+        heatmap_attn = torch.softmax(heatmap_attn_logits, dim=-1)
+        heatmap_lang_context = torch.matmul(heatmap_attn, heatmap_language)
+
+        conditioned_target = (
+            target_decoder_input
+            + torch.tanh(self.heatmap_lang_gate) * heatmap_lang_context
+        )
+
+        # One logit per global grid cell; reshaped to a 2D heatmap in the agent.
+        target_logits = self.decoder_2_logits_full(conditioned_target).squeeze(-1)
         # print(encoder_out_candidates.shape)
 
         # print(direction, progress, goal_logits)
