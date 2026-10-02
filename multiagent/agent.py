@@ -379,6 +379,30 @@ class NavCMTAgent:
                                                       for _ in range(batch_size)
                                                       ])).cuda()
 
+        max_landmarks = self.args.max_referenced_landmarks
+        landmark_anchor_coords = np.zeros(
+            (batch_size, max_landmarks, 2),
+            dtype=np.float32,
+        )
+        landmark_anchor_mask = np.zeros(
+            (batch_size, max_landmarks),
+            dtype=np.bool_,
+        )
+        if not self.args.disable_referenced_landmark_centroids:
+            for i, ob in enumerate(obs):
+                centroids = ob['referenced_landmark_centroids'][:max_landmarks]
+                count = len(centroids)
+                if count:
+                    landmark_anchor_coords[i, :count] = centroids
+                    landmark_anchor_mask[i, :count] = True
+
+        landmark_anchor_coords = torch.from_numpy(
+            landmark_anchor_coords
+        ).cuda()
+        landmark_anchor_mask = torch.from_numpy(
+            landmark_anchor_mask
+        ).cuda()
+
         for i, ob in enumerate(obs):
             traj[i]['goal'] = ob['goal']
             traj[i]['instr_id'] = ob['id']
@@ -392,6 +416,9 @@ class NavCMTAgent:
             traj[i]['gt_trajectory'] = ob['trajectory']
             traj[i]['trajectory'] = [poses[i]]
             traj[i]['stage1_trajectory'] = [poses[i]]
+            traj[i]['referenced_landmark_count'] = int(
+                landmark_anchor_mask[i].sum().item()
+            )
         # print(np.array([len(ob['trajectory']) for ob in obs]))
 
         # Initialization the finishing status
@@ -416,6 +443,8 @@ class NavCMTAgent:
             'lenths': [0 for _ in range(batch_size)],
             'lang': lang_features,
             'candidates': global_positions,
+            'landmark_anchors': landmark_anchor_coords,
+            'landmark_anchor_mask': landmark_anchor_mask,
             'centroids': torch.zeros((batch_size, 0, 2)).cuda(),
             'lang_cls': linear_cls,
             'map_fts': torch.zeros(batch_size, 0, 512, 49).cuda(),
@@ -483,6 +512,8 @@ class NavCMTAgent:
                 maps=input['maps'],
                 lang=input['lang'],
                 candidates=input['candidates'],
+                landmark_anchors=input['landmark_anchors'],
+                landmark_anchor_mask=input['landmark_anchor_mask'],
                 centroids=input['centroids'],
                 lang_cls=input['lang_cls']
             )

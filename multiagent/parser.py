@@ -122,6 +122,10 @@ def parse_args():
                         help='Ablate the block-level all-landmark geographic-prior map channel')
     parser.add_argument('--disable_referenced_landmark_mask', action='store_true', default=False,
                         help='Ablate the instruction-referenced landmark mask channel')
+    parser.add_argument('--disable_referenced_landmark_centroids', action='store_true', default=False,
+                        help='Ablate explicit instruction-referenced landmark centroid anchor tokens')
+    parser.add_argument('--max_referenced_landmarks', type=int, default=8,
+                        help='Maximum number of referenced landmark centroid anchors per episode')
     parser.add_argument('--max_depth', type=float, default=200.)
     parser.add_argument('--altitude', type=float, default=50)
     parser.add_argument('--ablate', type=str, choices=['rgb', 'depth', 'tracking', 'landmark', 'gsam', ''], default='')
