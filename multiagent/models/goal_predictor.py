@@ -8,11 +8,11 @@ from torch import Tensor
 class MapEncoder(nn.Module):
     '''Encodes maps of size (240, 240, 5) into a (15 * 15 * 32) feature vector'''
 
-    def __init__(self, map_size: int):
+    def __init__(self, map_size: int, input_channels: int = 3):
         super(MapEncoder, self).__init__()
 
         self.main = nn.Sequential(
-            nn.MaxPool2d(2), nn.Conv2d(3, 32, 3, stride=1, padding=1), nn.ReLU(),
+            nn.MaxPool2d(2), nn.Conv2d(input_channels, 32, 3, stride=1, padding=1), nn.ReLU(),
             nn.MaxPool2d(2), nn.Conv2d(32, 64, 3, stride=1, padding=1), nn.ReLU(),
             nn.MaxPool2d(2), nn.Conv2d(64, 128, 3, stride=1, padding=1), nn.ReLU(),
             nn.MaxPool2d(2), nn.Conv2d(128, 64, 3, stride=1, padding=1), nn.ReLU(),

@@ -5,7 +5,7 @@ import Levenshtein
 from multiagent.cityreferobject import get_landmarks, remove_duplicate_landmarks_by_area
 
 from .map import Map
-from typing import List, Dict, Callable, Tuple
+from typing import List, Dict, Callable, Optional, Tuple
 
 class LandmarkMap(Map):
     _landmarks_cache = None
@@ -16,11 +16,15 @@ class LandmarkMap(Map):
         map_name: str,
         map_shape: Tuple[int, int],
         pixels_per_meter: float,
-        landmark_names: List[str],
+        landmark_names: Optional[List[str]],
     ):
         super().__init__(map_name, map_shape, pixels_per_meter)
-        self.landmark_names = landmark_names
-        self.landmarks = LandmarkMap._search_landmarks_by_name(map_name, landmark_names)
+        if landmark_names is None:
+            self.landmarks = LandmarkMap._all_landmarks(map_name)
+            self.landmark_names = [landmark.name for landmark in self.landmarks]
+        else:
+            self.landmark_names = landmark_names
+            self.landmarks = LandmarkMap._search_landmarks_by_name(map_name, landmark_names)
 
         self.landmark_map = np.zeros(map_shape, dtype=np.uint8)
         for lm in self.landmarks:
@@ -45,12 +49,21 @@ class LandmarkMap(Map):
         return self.landmark_map[np.newaxis].astype(dtype)
     
     @classmethod
-    def _search_landmarks_by_name(cls, map_name: str, query_names: List[str]):
-        # load landmark data
+    def _ensure_landmark_cache(cls):
         if cls._landmarks_cache is None:
             cls._landmarks_cache = remove_duplicate_landmarks_by_area(get_landmarks())
 
-        landmarks = cls._landmarks_cache[map_name].values()
+    @classmethod
+    def _all_landmarks(cls, map_name: str):
+        cls._ensure_landmark_cache()
+        return list(cls._landmarks_cache[map_name].values())
+
+    @classmethod
+    def _search_landmarks_by_name(cls, map_name: str, query_names: List[str]):
+        cls._ensure_landmark_cache()
+        landmarks = list(cls._landmarks_cache[map_name].values())
+        if not landmarks:
+            return []
 
         return [
             min(landmarks, key=lambda lm, q=query: Levenshtein.distance(lm.name, q))

@@ -118,6 +118,10 @@ def parse_args():
     parser.add_argument('--map_size', type=int, default=240)
     parser.add_argument('--map_meters', type=float, default=410.)
     parser.add_argument('--map_update_interval', type=int, default=5)
+    parser.add_argument('--disable_global_landmark_prior', action='store_true', default=False,
+                        help='Ablate the block-level all-landmark geographic-prior map channel')
+    parser.add_argument('--disable_referenced_landmark_mask', action='store_true', default=False,
+                        help='Ablate the instruction-referenced landmark mask channel')
     parser.add_argument('--max_depth', type=float, default=200.)
     parser.add_argument('--altitude', type=float, default=50)
     parser.add_argument('--ablate', type=str, choices=['rgb', 'depth', 'tracking', 'landmark', 'gsam', ''], default='')

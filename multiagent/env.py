@@ -264,17 +264,32 @@ class CityNavBatch(torch.utils.data.IterableDataset):
             # update map
             self.nav_maps[i].update_observations(poses[i])
 
-            landmarks = self.nav_maps[i].landmark_map.get_contours()
-            centroids = _convert_contours_to_centroids(landmarks)
+            referenced_landmarks = (
+                self.nav_maps[i].referenced_landmark_map.get_contours()
+            )
+            referenced_centroids = _convert_contours_to_centroids(
+                referenced_landmarks
+            )
 
-            normalized_position = self.normalize_position(poses[i].xy, episode.map_name, self.args.map_meters)
+            normalized_position = self.normalize_position(
+                poses[i].xy, episode.map_name, self.args.map_meters
+            )
 
-            normalized_centroids = [self.normalize_position(Point2D(centroid[0], centroid[1]),
-                                                            episode.map_name,
-                                                            self.args.map_meters) for centroid in centroids]
+            normalized_centroids = [
+                self.normalize_position(
+                    Point2D(centroid[0], centroid[1]),
+                    episode.map_name,
+                    self.args.map_meters,
+                )
+                for centroid in referenced_centroids
+            ]
             # normalized_centroids
             # print(landmarks, centroids)
-            pred_goal_xy = np.mean(centroids, axis=0) if centroids else np.array([0, 0])
+            pred_goal_xy = (
+                np.mean(referenced_centroids, axis=0)
+                if referenced_centroids
+                else np.array([0, 0])
+            )
 
             rgb = cropclient.crop_image(episode.map_name, poses[i], (224, 224), 'rgb')
             progress = np.clip(
@@ -285,7 +300,10 @@ class CityNavBatch(torch.utils.data.IterableDataset):
                 'instruction': episode.target_description,
                 'map_name': episode.map_name,
                 'id': episode.id,
-                'maps': self.nav_maps[i].to_array(),
+                'maps': self.nav_maps[i].to_array(
+                    use_global_landmark_prior=not self.args.disable_global_landmark_prior,
+                    use_referenced_landmark_mask=not self.args.disable_referenced_landmark_mask,
+                ),
                 'rgb': rgb,
                 'pose': poses[i],
                 'goal': episode.target_position.xy,
@@ -295,6 +313,13 @@ class CityNavBatch(torch.utils.data.IterableDataset):
                 'trajectory': episode.trajectory,
                 'progress': progress,
                 'centroids': np.mean(normalized_centroids, axis=0) if normalized_centroids else np.array([0, 0]),
+                'referenced_landmark_centroids': np.asarray(
+                    normalized_centroids,
+                    dtype=np.float32,
+                ).reshape(-1, 2),
+                'referenced_landmark_names': list(
+                    self.nav_maps[i].referenced_landmark_map.landmark_names
+                ),
                 'centroid_goal': pred_goal_xy,
                 'normalized_goal': normalized_goal_xys,
                 'grid_goal': normalized_goal_id

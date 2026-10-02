@@ -70,7 +70,8 @@ class ET(nn.Module):
         super().__init__()
         self.args = args
         # encoder and visual embeddings
-        self.map_encoder = MapEncoder(240)
+        # tracking (2) + global landmark prior (1) + referenced mask (1)
+        self.map_encoder = MapEncoder(240, input_channels=4)
         self.encoder_vl = EncoderVL(args)
         self.candidate_encoder = nn.Sequential(
             nn.Linear(2, self.args.demb),
