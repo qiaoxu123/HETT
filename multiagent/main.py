@@ -225,21 +225,47 @@ def train(args, train_env, val_envs, rank=-1):
 
             progress_loss = sum(agent.logs['progress_loss']) / max(len(agent.logs['progress_loss']), 1)
             goal_predict_loss = sum(agent.logs['goal_predict_loss']) / max(len(agent.logs['goal_predict_loss']), 1)
-            # target_predict_loss = sum(agent.logs['target_predict_loss']) / max(len(agent.logs['target_predict_loss']), 1)
-            # writer.add_scalar("loss/IL_loss", IL_loss, iter)
+            trajectory_belief_loss = (
+                sum(agent.logs['trajectory_belief_loss'])
+                / max(len(agent.logs['trajectory_belief_loss']), 1)
+            )
+            trajectory_loss = (
+                sum(agent.logs['trajectory_loss'])
+                / max(len(agent.logs['trajectory_loss']), 1)
+            )
 
             write_to_record_file(
-                "\nIL_loss %.4f direction_loss %.4f progress_loss %.4f goal_predict_loss %.4f" % (
-                    ml_loss, direction_loss, progress_loss, goal_predict_loss),
+                "\nIL_loss %.4f direction_loss %.4f progress_loss %.4f "
+                "goal_predict_loss %.4f trajectory_belief_loss %.4f trajectory_loss %.4f" % (
+                    ml_loss,
+                    direction_loss,
+                    progress_loss,
+                    goal_predict_loss,
+                    trajectory_belief_loss,
+                    trajectory_loss,
+                ),
                 record_file
             )
             stage1_step = sum(agent.logs['stage1_step']) / max(len(agent.logs['stage1_step']), 1)
             stage2_step = sum(agent.logs['stage2_step']) / max(len(agent.logs['stage2_step']), 1)
             stage2_rotate = sum(agent.logs['stage2_rotate']) / max(len(agent.logs['stage2_rotate']), 1)
 
+            trajectory_step = (
+                sum(agent.logs['trajectory_step'])
+                / max(len(agent.logs['trajectory_step']), 1)
+            )
+            global_landmark_gate = (
+                sum(agent.logs['global_landmark_gate'])
+                / max(len(agent.logs['global_landmark_gate']), 1)
+            )
             write_to_record_file(
-                "\nstage %.4f %.4f %.4f" % (
-                    stage1_step, stage2_step, stage2_rotate),
+                "\nstage %.4f %.4f %.4f trajectory_step %.4f global_landmark_gate %.4f" % (
+                    stage1_step,
+                    stage2_step,
+                    stage2_rotate,
+                    trajectory_step,
+                    global_landmark_gate,
+                ),
                 record_file
             )
 
@@ -265,9 +291,22 @@ def train(args, train_env, val_envs, rank=-1):
                 stage2_step = sum(agent_eval.logs['stage2_step']) / max(len(agent_eval.logs['stage2_step']), 1)
                 stage2_rotate = sum(agent_eval.logs['stage2_rotate']) / max(len(agent_eval.logs['stage2_rotate']), 1)
 
+                trajectory_step = (
+                    sum(agent_eval.logs['trajectory_step'])
+                    / max(len(agent_eval.logs['trajectory_step']), 1)
+                )
+                global_landmark_gate = (
+                    sum(agent_eval.logs['global_landmark_gate'])
+                    / max(len(agent_eval.logs['global_landmark_gate']), 1)
+                )
                 write_to_record_file(
-                    "\nstage %.4f %.4f %.4f" % (
-                        stage1_step, stage2_step, stage2_rotate),
+                    "\nstage %.4f %.4f %.4f trajectory_step %.4f global_landmark_gate %.4f" % (
+                        stage1_step,
+                        stage2_step,
+                        stage2_rotate,
+                        trajectory_step,
+                        global_landmark_gate,
+                    ),
                     record_file
                 )
                 loss_str += "\n%s " % env_name

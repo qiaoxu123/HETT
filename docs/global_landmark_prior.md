@@ -1,105 +1,63 @@
-# Global Landmark Prior for HETT
+# Global Landmark Prior in develop
 
-Branch base: `main`.
+The develop branch keeps the original HETT map pathway baseline-compatible and
+adds block-level global landmarks as a zero-gated residual.
 
-This branch isolates the landmark-grounding change from the heatmap and
-trajectory-belief experiments.  The original HETT two-stage controller is kept
-unchanged.
+## Baseline-preserving map fusion
 
-## What changes
-
-The previous HETT map contained two tracking channels plus one landmark channel
-constructed only from the landmarks resolved from the current instruction.
-
-The new planning map has four channels:
+The original HETT input remains exactly:
 
 ```
-0 current observation footprint
-1 accumulated explored area
-2 block-level global landmark prior
-3 instruction-referenced landmark mask
+tracking_current
+tracking_explored
+instruction_referenced_landmarks
+        |
+   original 3-channel MapEncoder
+        |
+      F_base
 ```
 
-The global prior contains all named geographic landmarks available in the
-current CityNav block from the first navigation step.  The referenced mask is a
-strict subset containing only the landmarks resolved from the current
-instruction.
-
-This mirrors the information separation used by SBFNav: geographic structure
-is available globally, while instruction-specific landmarks are explicitly
-marked rather than being conflated with the entire landmark map.
-
-## Compatibility
-
-`LandmarkNavMap.landmark_map` remains an alias for the referenced landmark map
-so existing visualization code keeps working.
-
-The map encoder now accepts four input channels.  Two ablation flags zero the
-new channels without changing tensor shapes:
+The global landmark occupancy prior is encoded separately:
 
 ```
---disable_global_landmark_prior
---disable_referenced_landmark_mask
+all block landmarks
+        |
+  1-channel Global MapEncoder
+        |
+      F_global
 ```
 
-Referenced landmark centroids are also exposed by the environment as
-`referenced_landmark_centroids`; the next commit injects these as explicit
-landmark-anchor candidates while leaving the two-stage controller unchanged.
-
-
-## Referenced landmark centroid anchors
-
-The second commit injects the centroids of instruction-referenced landmarks as
-explicit geographic anchor tokens.  This is intentionally implemented as
-**context candidates**, not as a new controller or selector:
+Fusion is:
 
 ```
-HETT tokens =
-language
-+ current visual feature
-+ direction
-+ global/referenced map feature
-+ referenced landmark centroid anchors
-+ original 7x7 grid candidates
+F_map = F_base + tanh(alpha) * F_global
 ```
 
-The 7x7 grid candidates remain the only tokens decoded by the existing grid
-classification head, and the original continuous-goal + Stage-1/Stage-2
-execution path is untouched.  This isolates the effect of richer long-range
-grounding information.
+with `alpha = 0` at initialization. Therefore a from-scratch model starts from
+the original HETT map behavior instead of changing the first convolution from
+3 to 4 input channels.
 
-Centroid anchors are normalized global coordinates, padded to
-`--max_referenced_landmarks 8`, and padding slots are masked in Transformer
-attention.  Use
+Use `--disable_global_landmark_prior` for the clean ablation.
 
-```
---disable_referenced_landmark_centroids
-```
+## Referenced landmarks
 
-for the corresponding ablation.
+Instruction-referenced landmarks remain the third baseline map channel and keep
+the original HETT name-matching behavior so the corrected baseline is
+comparable to the previous heatmap branch.
 
-This differs slightly from the full SBFNav proposal selector: SBFNav unions
-referenced landmark centroids with field peaks as executable candidate goals.
-Here they are first introduced only as Transformer geographic anchors so the
-HETT controller can remain exactly unchanged.  A later heatmap-specific branch
-can promote the same anchors into the executable Top-K proposal pool.
+When the optional centroid-token ablation is enabled, centroids use the
+annotated CityRefer object center instead of the arithmetic mean of contour
+vertices.
 
-
-## Warm-starting from HETT main checkpoints
-
-The first map convolution changes from three to four input channels.  Loading a
-main-branch checkpoint is supported explicitly.  Its original referenced-
-landmark channel is copied to the new referenced-mask channel, while the new
-global-prior channel starts with zero convolution weight:
+Explicit centroid tokens are **off by default** because coordinates alone do
+not carry landmark identity. They can be enabled only for ablation with:
 
 ```
-old: [tracking_0, tracking_1, referenced]
-new: [tracking_0, tracking_1, global, referenced]
-                              ^
-                        initialized to zero
+--enable_referenced_landmark_centroids
 ```
 
-This preserves the old map behaviour at checkpoint load and lets training learn
-how much to use the additional global prior.  If the input convolution is
-adapted, old VLN optimizer state is not restored because its tensor shape is no
-longer compatible.
+## Formal heatmap resolution
+
+Formal training scripts now default to `grid_size=7`. The previous inherited
+5x5 script setting made one coarse cell about 82 m wide on the 410 m map and was
+inconsistent with the heatmap/two-stage design.

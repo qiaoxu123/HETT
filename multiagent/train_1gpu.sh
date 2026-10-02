@@ -5,7 +5,7 @@ cd "$(dirname "$0")"
 
 EPOCHS=${EPOCHS:-2}
 BATCH=${BATCH:-8}
-GRID=${GRID:-5}
+GRID=${GRID:-7}
 SEED=${SEED:-0}
 RUN_NAME=${RUN_NAME:-performance_test}
 REPO_ROOT=$(cd .. && pwd)

@@ -35,15 +35,14 @@ class LandmarkMap(Map):
             )
 
     def get_contours(self):
-        contours = []
-        for lm in self.landmarks:
-            # print(len(lm.contour))
-            # contour = []
-            # for point in lm.contour:
-            #     contour.append(np.array([point.x, point.y]))
-            # contour = np.stack(contour)
-            contours.append(lm.contour)
-        return contours
+        return [lm.contour for lm in self.landmarks]
+
+    def get_centroids(self):
+        """Use annotated landmark centers rather than the mean of contour vertices."""
+        return [
+            np.array([lm.position.x, lm.position.y], dtype=np.float32)
+            for lm in self.landmarks
+        ]
     
     def to_array(self, dtype=np.float32) -> np.ndarray:
         return self.landmark_map[np.newaxis].astype(dtype)

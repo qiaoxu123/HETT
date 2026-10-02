@@ -264,11 +264,8 @@ class CityNavBatch(torch.utils.data.IterableDataset):
             # update map
             self.nav_maps[i].update_observations(poses[i])
 
-            referenced_landmarks = (
-                self.nav_maps[i].referenced_landmark_map.get_contours()
-            )
-            referenced_centroids = _convert_contours_to_centroids(
-                referenced_landmarks
+            referenced_centroids = (
+                self.nav_maps[i].referenced_landmark_map.get_centroids()
             )
 
             normalized_position = self.normalize_position(
@@ -301,8 +298,10 @@ class CityNavBatch(torch.utils.data.IterableDataset):
                 'map_name': episode.map_name,
                 'id': episode.id,
                 'maps': self.nav_maps[i].to_array(
-                    use_global_landmark_prior=not self.args.disable_global_landmark_prior,
                     use_referenced_landmark_mask=not self.args.disable_referenced_landmark_mask,
+                ),
+                'global_landmark_prior': self.nav_maps[i].global_prior_array(
+                    enabled=not self.args.disable_global_landmark_prior,
                 ),
                 'rgb': rgb,
                 'pose': poses[i],

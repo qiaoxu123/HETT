@@ -102,6 +102,22 @@ def parse_args():
                         help='Distance in meters for returning from Stage 2 to coarse Stage 1')
     parser.add_argument('--stage2_recover_patience', type=int, default=2,
                         help='Consecutive far-away Stage-2 steps required before coarse recovery')
+    parser.add_argument('--enable_trajectory_belief', action='store_true', default=False,
+                        help='Train and emit dense trajectory-belief proposals')
+    parser.add_argument('--trajectory_execution', action='store_true', default=False,
+                        help='Execute the first waypoint of the top trajectory instead of Two-Stage control')
+    parser.add_argument('--belief_grid_size', type=int, default=28,
+                        help='Dense trajectory-belief resolution independent of the 7x7 HETT grid')
+    parser.add_argument('--trajectory_top_k', type=int, default=8)
+    parser.add_argument('--trajectory_nms_kernel', type=int, default=5)
+    parser.add_argument('--trajectory_horizons_m', type=float, nargs='+',
+                        default=[10.0, 25.0, 50.0, 100.0],
+                        help='Fixed physical horizons; final goal is appended automatically')
+    parser.add_argument('--trajectory_belief_loss_weight', type=float, default=0.1)
+    parser.add_argument('--trajectory_loss_weight', type=float, default=1.0)
+    parser.add_argument('--trajectory_residual_scale', type=float, default=0.05)
+    parser.add_argument('--trajectory_move_iteration', type=int, default=2,
+                        help='Controller iterations for the first fixed-horizon waypoint')
     parser.add_argument('--demb', type=int, default=768)
     parser.add_argument('--encoder_heads', type=int, default=12)
     parser.add_argument('--encoder_layers', type=int, default=2)
@@ -130,6 +146,8 @@ def parse_args():
     parser.add_argument('--map_update_interval', type=int, default=5)
     parser.add_argument('--disable_global_landmark_prior', action='store_true', default=False)
     parser.add_argument('--disable_referenced_landmark_mask', action='store_true', default=False)
+    parser.add_argument('--enable_referenced_landmark_centroids', action='store_true', default=False,
+                        help='Opt in to referenced-landmark centroid tokens; off by default')
     parser.add_argument('--disable_referenced_landmark_centroids', action='store_true', default=False)
     parser.add_argument('--max_referenced_landmarks', type=int, default=8)
     parser.add_argument('--max_depth', type=float, default=200.)
@@ -187,6 +205,12 @@ def postprocess_args(args):
 
     args.map_shape = (args.map_size, args.map_size)
     args.map_pixels_per_meter = args.map_size / args.map_meters
-
+    args.trajectory_steps = len(args.trajectory_horizons_m) + 1
+    if args.trajectory_execution:
+        args.enable_trajectory_belief = True
+    if args.trajectory_nms_kernel % 2 != 1:
+        raise ValueError('trajectory_nms_kernel must be odd')
+    if args.grid_size != 7:
+        print('WARNING: HETT heatmap was designed for grid_size=7; got', args.grid_size)
 
     return args

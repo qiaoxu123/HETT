@@ -89,7 +89,13 @@ class ET(nn.Module):
         super().__init__()
         self.args = args
         # encoder and visual embeddings
-        self.map_encoder = MapEncoder(240, input_channels=4)
+        self.map_encoder = MapEncoder(240, input_channels=3)
+        # Preserve baseline RNG so optional branches do not change any
+        # original HETT parameter initialization under the same seed.
+        _rng_state = torch.get_rng_state()
+        self.global_landmark_encoder = MapEncoder(240, input_channels=1)
+        torch.set_rng_state(_rng_state)
+        self.global_landmark_gate = nn.Parameter(torch.tensor(0.0))
         self.encoder_vl = EncoderVL(args)
         self.candidate_encoder = nn.Sequential(
             nn.Linear(2, self.args.demb),
@@ -99,10 +105,12 @@ class ET(nn.Module):
             nn.Linear(2, self.args.demb),
             nn.LayerNorm(self.args.demb, eps=1e-12)
         )
+        _rng_state = torch.get_rng_state()
         self.landmark_anchor_encoder = nn.Sequential(
             nn.Linear(2, self.args.demb),
             nn.LayerNorm(self.args.demb, eps=1e-12),
         )
+        torch.set_rng_state(_rng_state)
         self.landmark_anchor_type = nn.Parameter(torch.zeros(1, 1, self.args.demb))
         # # feature embeddings
         # self.vis_feat = FeatureFlat(input_shape=self.visual_tensor_shape, output_size=args.demb)
@@ -150,6 +158,36 @@ class ET(nn.Module):
             nn.ReLU(),
             nn.Linear(self.args.demb // 2, 1),
         )
+        # Optional dense trajectory belief. The existing 7x7 heatmap and
+        # Two-Stage controller remain untouched unless explicitly enabled.
+        _rng_state = torch.get_rng_state()
+        self.trajectory_belief_dim = 256
+        self.trajectory_belief_decoder = nn.Sequential(
+            nn.Conv2d(self.args.demb, self.trajectory_belief_dim, 3, padding=1),
+            nn.ReLU(),
+            nn.Upsample(
+                size=(self.args.belief_grid_size, self.args.belief_grid_size),
+                mode='bilinear',
+                align_corners=False,
+            ),
+            nn.Conv2d(
+                self.trajectory_belief_dim,
+                self.trajectory_belief_dim,
+                3,
+                padding=1,
+            ),
+            nn.ReLU(),
+        )
+        self.trajectory_belief_head = nn.Conv2d(
+            self.trajectory_belief_dim,
+            1 + self.args.trajectory_steps * 2,
+            1,
+        )
+        # Geometry starts from straight fixed-horizon anchors, while the score
+        # channel keeps its standard initialization.
+        nn.init.zeros_(self.trajectory_belief_head.weight[1:])
+        nn.init.zeros_(self.trajectory_belief_head.bias[1:])
+        torch.set_rng_state(_rng_state)
         self.decoder_2_goal_full = nn.Sequential(
             nn.Linear(self.args.demb, 512),
             nn.ReLU(),
@@ -163,6 +201,9 @@ class ET(nn.Module):
         self.fc2 = nn.Linear(49, self.args.demb)
 
         self.fc_map = nn.Linear(self.map_encoder.out_features, args.demb)
+        _rng_state = torch.get_rng_state()
+        self.fc_global_map = nn.Linear(self.global_landmark_encoder.out_features, args.demb)
+        torch.set_rng_state(_rng_state)
 
         self.text_proj = nn.Linear(768, 768)
         self.grid_proj = nn.Linear(768, 768)
@@ -176,6 +217,11 @@ class ET(nn.Module):
         emb_lang = inputs["lang"]
 
         map_feat = self.map_encoder(inputs['maps'])
+        global_map_feat = None
+        if not self.args.disable_global_landmark_prior:
+            global_map_feat = self.global_landmark_encoder(
+                inputs['global_landmark_prior']
+            )
 
         emb_candidates = self.candidate_encoder(inputs['candidates']) * emb_lang[:, :1, :]
         landmark_anchor_mask = inputs.get('landmark_anchor_mask')
@@ -214,6 +260,14 @@ class ET(nn.Module):
         emb_frames = self.fc2(att_frame_feature.view(-1, 49)).view(*im_feature.shape[:2], -1)
 
         emb_maps = self.fc_map(map_feat).view(im_feature.shape[0], -1, 768)
+        if global_map_feat is not None:
+            emb_global_maps = self.fc_global_map(global_map_feat).view(
+                im_feature.shape[0], -1, 768
+            )
+            emb_maps = (
+                emb_maps
+                + torch.tanh(self.global_landmark_gate) * emb_global_maps
+            )
         # print('sss', emb_frames.shape, emb_maps.shape)
         # print(map_feat.shape)
 
@@ -296,10 +350,39 @@ class ET(nn.Module):
             + torch.tanh(self.heatmap_lang_gate) * heatmap_lang_context
         )
 
-        # One logit per global grid cell; reshaped to a 2D heatmap in the agent.
+        # One logit per original 7x7 global grid cell.
         target_logits = self.decoder_2_logits_full(conditioned_target).squeeze(-1)
-        # print(encoder_out_candidates.shape)
 
-        # print(direction, progress, goal_logits)
+        trajectory_belief = None
+        if self.args.enable_trajectory_belief:
+            candidate_map = conditioned_target.transpose(1, 2).reshape(
+                batch_size,
+                self.args.demb,
+                self.args.grid_size,
+                self.args.grid_size,
+            )
+            dense_features = self.trajectory_belief_decoder(candidate_map)
+            joint = self.trajectory_belief_head(dense_features)
+            dense_logits = joint[:, :1].flatten(1)
+            residuals = joint[:, 1:].permute(0, 2, 3, 1).reshape(
+                batch_size,
+                self.args.belief_grid_size ** 2,
+                self.args.trajectory_steps,
+                2,
+            )
+            residuals = (
+                torch.tanh(residuals) * self.args.trajectory_residual_scale
+            )
+            trajectory_belief = {
+                'logits': dense_logits,
+                'residuals': residuals,
+            }
 
-        return direction, progress, pred_goals, target_logits, emb_frames + emb_directions
+        return (
+            direction,
+            progress,
+            pred_goals,
+            target_logits,
+            trajectory_belief,
+            emb_frames + emb_directions,
+        )

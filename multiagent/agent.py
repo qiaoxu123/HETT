@@ -26,6 +26,15 @@ from multiagent.models.CLIP import CLIP
 # from direction.models.ddppo.resenet_encoders import TorchVisionResNet50
 from multiagent.models.goal_predictor import GoalPredictor, MapEncoder
 from multiagent.observation import cropclient
+from multiagent.trajectory_belief import (
+    build_continuous_gaussian_heatmap,
+    build_fixed_horizon_anchors,
+    dense_cell_centers,
+    normalize_targets,
+    prepare_teacher_path,
+    sample_fixed_horizon_targets,
+    select_nms_topk,
+)
 from multiagent.space import Pose4D, Point2D, Point3D
 from multiagent.teacher.algorithm.lookahead import lookahead_discrete_action
 from multiagent.teacher.trajectory import _moved_pose
@@ -167,6 +176,7 @@ class NavCMTAgent:
 
         self.default_gpu = is_default_gpu(self.args)
         self.rank = rank
+        self.trajectory_path_cache = {}
 
         # Models
 
@@ -256,6 +266,28 @@ class NavCMTAgent:
         # Logs
         sys.stdout.flush()
         self.logs = defaultdict(list)
+
+    def _fixed_horizon_trajectory_target(self, ob, current_pose):
+        key = tuple(ob['id']) if isinstance(ob['id'], (list, tuple)) else ob['id']
+        cached = self.trajectory_path_cache.get(key)
+        if cached is None:
+            cached = prepare_teacher_path(ob['trajectory'], ob['goal'])
+            self.trajectory_path_cache[key] = cached
+
+        points, cumulative = cached
+        targets, valid = sample_fixed_horizon_targets(
+            points,
+            cumulative,
+            (current_pose.x, current_pose.y),
+            self.args.trajectory_horizons_m,
+        )
+        targets = normalize_targets(
+            self.env,
+            ob['map_name'],
+            self.args.map_meters,
+            targets,
+        )
+        return targets, valid
 
     def get_results(self):
 
@@ -431,7 +463,10 @@ class NavCMTAgent:
         max_landmarks = self.args.max_referenced_landmarks
         landmark_anchor_coords = np.zeros((batch_size, max_landmarks, 2), dtype=np.float32)
         landmark_anchor_mask = np.zeros((batch_size, max_landmarks), dtype=np.bool_)
-        if not self.args.disable_referenced_landmark_centroids:
+        if (
+            self.args.enable_referenced_landmark_centroids
+            and not self.args.disable_referenced_landmark_centroids
+        ):
             for i, ob in enumerate(obs):
                 centroids = ob['referenced_landmark_centroids'][:max_landmarks]
                 count = len(centroids)
@@ -468,10 +503,13 @@ class NavCMTAgent:
         progress_loss = 0.
         goal_predict_loss = 0.
         heatmap_loss = torch.tensor(0.).cuda()
+        trajectory_belief_loss = torch.tensor(0.).cuda()
+        trajectory_loss = torch.tensor(0.).cuda()
 
         stage1_step = 0
         stage2_step = 0
         stage2_rotate = 0
+        trajectory_step = 0
 
         input = {
             'directions': torch.zeros((batch_size, 0, 4)).cuda(),
@@ -527,6 +565,9 @@ class NavCMTAgent:
             # print(input['frames'].shape, im_feature.shape)
             input['frames'] = im_feature.view(-1, 1, 512, 49)
             input['maps'] = torch.from_numpy(np.array([ob['maps'] for ob in obs], dtype=np.float32)).cuda()
+            input['global_landmark_prior'] = torch.from_numpy(
+                np.array([ob['global_landmark_prior'] for ob in obs], dtype=np.float32)
+            ).cuda()
 
 
             centroid_lens = np.array(len(ob['centroids']) for ob in obs)
@@ -544,13 +585,14 @@ class NavCMTAgent:
 
 
 
-            pred_direction, pred_progress, pred_goals, pred_logits, grid_ft = self.vln_model(
+            pred_direction, pred_progress, pred_goals, pred_logits, trajectory_belief, grid_ft = self.vln_model(
                 directions=input['directions'],
                 frames=input['frames'],
                 lenths=input['lenths'],
                 grid_fts=input['grid_fts'],
                 grid_index=input['grid_index'],
                 maps=input['maps'],
+                global_landmark_prior=input['global_landmark_prior'],
                 lang=input['lang'],
                 lang_mask=input['lang_mask'],
                 candidates=input['candidates'],
@@ -575,6 +617,54 @@ class NavCMTAgent:
                 dim=1,
             )
 
+            proposal_ids = None
+            proposal_scores = None
+            proposal_endpoints = None
+            proposal_trajectories = None
+            selected_first_waypoint = None
+            control_goals = heatmap_goals
+
+            if trajectory_belief is not None:
+                trajectory_probs = torch.softmax(
+                    trajectory_belief['logits'],
+                    dim=1,
+                )
+                (
+                    proposal_ids,
+                    proposal_scores,
+                    proposal_endpoints,
+                ) = select_nms_topk(
+                    trajectory_probs,
+                    self.args.belief_grid_size,
+                    self.args.trajectory_top_k,
+                    self.args.trajectory_nms_kernel,
+                )
+
+                gather_index = proposal_ids[:, :, None, None].expand(
+                    -1,
+                    -1,
+                    self.args.trajectory_steps,
+                    2,
+                )
+                proposal_residuals = torch.gather(
+                    trajectory_belief['residuals'],
+                    dim=1,
+                    index=gather_index,
+                )
+                current_xy = input['directions'][:, -1, 2:4]
+                proposal_anchors = build_fixed_horizon_anchors(
+                    current_xy,
+                    proposal_endpoints,
+                    self.args.trajectory_horizons_m,
+                    self.args.map_meters,
+                )
+                proposal_trajectories = (
+                    proposal_anchors + proposal_residuals
+                ).clamp(0.0, 1.0)
+                selected_first_waypoint = proposal_trajectories[:, 0, 0, :]
+                if self.args.trajectory_execution and self.feedback == 'student':
+                    control_goals = selected_first_waypoint
+
             input['grid_fts'] = torch.cat((input['grid_fts'], grid_ft), dim=1)
             grid_index = torch.tensor(np.array([ob['cur_grid'] for ob in obs])).unsqueeze(1).cuda()
             # print(input['grid_index'], grid_index)
@@ -589,7 +679,7 @@ class NavCMTAgent:
             host_predictions = torch.cat((
                 pred_progress.reshape(batch_size, -1)[:, :1],
                 nt_direct.unsqueeze(1),
-                heatmap_goals,
+                control_goals,
             ), dim=1).detach().cpu().numpy()
             pred_progress_t = host_predictions[:, 0]
             at_direction = host_predictions[:, 1]
@@ -612,6 +702,8 @@ class NavCMTAgent:
             gt_goal = torch.from_numpy(gt_goal_np)
             gt_progress = torch.from_numpy(gt_progress_np)
             gt_target = torch.from_numpy(np.array([ob['grid_goal'] for ob in obs], dtype=np.int64))
+            gt_trajectory_targets = None
+            gt_trajectory_valid = None
             # there is no ground truth in unseen_test set
             if not 'test' in self.env_name:
                 # Get ground truth
@@ -652,6 +744,77 @@ class NavCMTAgent:
                 ).sum(dim=1)
                 active_mask = torch.from_numpy((~ended).astype(np.float32)).to(pred_logits.device)
                 heatmap_loss += (per_sample_heatmap_loss * active_mask).sum()
+
+                if trajectory_belief is not None:
+                    trajectory_target_data = [
+                        self._fixed_horizon_trajectory_target(ob, poses[i])
+                        for i, ob in enumerate(obs)
+                    ]
+                    gt_trajectory_targets = torch.from_numpy(
+                        np.stack([item[0] for item in trajectory_target_data])
+                    ).to(
+                        device=pred_logits.device,
+                        dtype=pred_logits.dtype,
+                    )
+                    gt_trajectory_valid = torch.from_numpy(
+                        np.stack([item[1] for item in trajectory_target_data])
+                    ).to(
+                        device=pred_logits.device,
+                        dtype=pred_logits.dtype,
+                    )
+
+                    dense_sigma = (
+                        self.args.heatmap_sigma
+                        * self.args.belief_grid_size
+                        / self.args.grid_size
+                    )
+                    dense_gt_heatmap = build_continuous_gaussian_heatmap(
+                        gt_values[:, 2:4],
+                        self.args.belief_grid_size,
+                        dense_sigma,
+                    )
+                    per_sample_belief_loss = -(
+                        dense_gt_heatmap
+                        * F.log_softmax(trajectory_belief['logits'], dim=1)
+                    ).sum(dim=1)
+                    trajectory_belief_loss += (
+                        per_sample_belief_loss * active_mask
+                    ).sum()
+
+                    dense_endpoints = dense_cell_centers(
+                        batch_size,
+                        self.args.belief_grid_size,
+                        pred_logits.device,
+                        pred_logits.dtype,
+                    )
+                    dense_anchors = build_fixed_horizon_anchors(
+                        input['directions'][:, -1, 2:4],
+                        dense_endpoints,
+                        self.args.trajectory_horizons_m,
+                        self.args.map_meters,
+                    )
+                    dense_trajectories = (
+                        dense_anchors + trajectory_belief['residuals']
+                    ).clamp(0.0, 1.0)
+
+                    trajectory_error = F.smooth_l1_loss(
+                        dense_trajectories,
+                        gt_trajectory_targets[:, None, :, :].expand_as(
+                            dense_trajectories
+                        ),
+                        reduction='none',
+                    ).mean(dim=-1)
+                    valid = gt_trajectory_valid[:, None, :]
+                    per_mode_trajectory_loss = (
+                        (trajectory_error * valid).sum(dim=-1)
+                        / valid.sum(dim=-1).clamp_min(1.0)
+                    )
+                    per_sample_trajectory_loss = (
+                        per_mode_trajectory_loss * dense_gt_heatmap
+                    ).sum(dim=1)
+                    trajectory_loss += (
+                        per_sample_trajectory_loss * active_mask
+                    ).sum()
                 # print(pred_logits.shape)
             # Log the trajectory
             # print(at_direction, gt_direction)
@@ -667,6 +830,26 @@ class NavCMTAgent:
                     traj[i]['heatmap_confidence'].append(
                         float(heatmap_probs[i, heatmap_goal_ids[i]].item())
                     )
+                    if proposal_ids is not None:
+                        traj[i]['trajectory_proposal_ids'].append(
+                            proposal_ids[i].detach().cpu().tolist()
+                        )
+                        traj[i]['trajectory_proposal_scores'].append(
+                            proposal_scores[i].detach().cpu().tolist()
+                        )
+                        traj[i]['trajectory_proposal_endpoints'].append(
+                            proposal_endpoints[i].detach().cpu().tolist()
+                        )
+                        traj[i]['predicted_trajectory'].append(
+                            proposal_trajectories[i, 0].detach().cpu().tolist()
+                        )
+                        if gt_trajectory_targets is not None:
+                            traj[i]['gt_fixed_horizon_trajectory'].append(
+                                gt_trajectory_targets[i].detach().cpu().tolist()
+                            )
+                            traj[i]['gt_fixed_horizon_valid'].append(
+                                gt_trajectory_valid[i].detach().cpu().tolist()
+                            )
 
             if self.feedback == 'teacher':
                 a_t = gt_direction
@@ -690,6 +873,21 @@ class NavCMTAgent:
                 #                                     self.args.map_meters)
                 # dst = Point2D(obs[i]['centroid_goal'][0], obs[i]['centroid_goal'][1])
                 if ended[i]:
+                    continue
+
+                if self.args.trajectory_execution and self.feedback == 'student':
+                    if pred_progress_t[i] > 0.95:
+                        ended[i] = True
+                        continue
+                    trajectory_step += 1
+                    traj[i]['pred_goal'].append(dst)
+                    poses[i] = self.move(
+                        poses[i],
+                        dst,
+                        self.args.trajectory_move_iteration,
+                    )
+                    if not ended[i]:
+                        traj[i]['stage1_trajectory'].append(poses[i])
                     continue
 
                 coarse_goal_dist = dst.dist_to(poses[i].xy)
@@ -792,7 +990,19 @@ class NavCMTAgent:
         if train_ml is not None:
             # print(ml_loss)
             # ml_loss = direction_loss + progress_loss
-            ml_loss = 1 * direction_loss + 0.1 * progress_loss + 2 * goal_predict_loss + self.args.heatmap_loss_weight * heatmap_loss
+            ml_loss = (
+                1 * direction_loss
+                + 0.1 * progress_loss
+                + 2 * goal_predict_loss
+                + self.args.heatmap_loss_weight * heatmap_loss
+            )
+            if self.args.enable_trajectory_belief:
+                ml_loss = (
+                    ml_loss
+                    + self.args.trajectory_belief_loss_weight
+                    * trajectory_belief_loss
+                    + self.args.trajectory_loss_weight * trajectory_loss
+                )
             # ml_loss = progress_loss + goal_predict_loss
             self.loss += ml_loss * train_ml / batch_size
 
@@ -802,6 +1012,8 @@ class NavCMTAgent:
             self.logs['progress_loss'].append((progress_loss * train_ml / batch_size).item())
             self.logs['goal_predict_loss'].append((goal_predict_loss * train_ml / batch_size).item())
             self.logs['heatmap_loss'].append((heatmap_loss * train_ml / batch_size).item())
+            self.logs['trajectory_belief_loss'].append((trajectory_belief_loss * train_ml / batch_size).item())
+            self.logs['trajectory_loss'].append((trajectory_loss * train_ml / batch_size).item())
             self.logs['IL_loss'].append((ml_loss * train_ml / batch_size).item())
 
         if type(self.loss) is int:  # For safety, it will be activated if no losses are added
@@ -815,6 +1027,12 @@ class NavCMTAgent:
         self.logs['stage2_step'].append(float(stage2_step) / batch_size)
         self.logs['stage2_rotate'].append(float(stage2_rotate) / batch_size)
         self.logs['stage2_recoveries'].append(float(stage2_recoveries) / batch_size)
+        self.logs['trajectory_step'].append(float(trajectory_step) / batch_size)
+        self.logs['global_landmark_gate'].append(
+            float(torch.tanh(
+                self.vln_model_without_ddp.global_landmark_gate
+            ).detach().cpu().item())
+        )
 
         # print('[3]')
         # debug_memory()
@@ -874,18 +1092,17 @@ class NavCMTAgent:
                     name == "vln_model"
                     and key == "map_encoder.main.1.weight"
                     and value.ndim == 4
-                    and value.shape[1] == 3
-                    and state[key].shape[1] == 4
+                    and value.shape[1] == 4
+                    and state[key].shape[1] == 3
                     and value.shape[0] == state[key].shape[0]
                     and value.shape[2:] == state[key].shape[2:]
                 ):
                     adapted = state[key].clone()
-                    adapted.zero_()
                     adapted[:, :2] = value[:, :2]
-                    adapted[:, 3:4] = value[:, 2:3]
+                    adapted[:, 2:3] = value[:, 3:4]
                     state_dict[key] = adapted
                     adapted_map_input = True
-                    print("NOTICE: adapted 3-channel HETT map encoder to global+referenced 4-channel input")
+                    print("NOTICE: adapted prior 4-channel develop map encoder back to baseline 3-channel HETT map input")
                     continue
                 print("NOTICE: skip shape-mismatched parameter", name, key, tuple(value.shape), "->", tuple(state[key].shape))
 
@@ -895,7 +1112,14 @@ class NavCMTAgent:
                 if adapted_map_input and name == "vln_model":
                     print("NOTICE: skip old vln optimizer state because map input dimensionality changed")
                 else:
-                    optimizer.load_state_dict(states[name]['optimizer'])
+                    try:
+                        optimizer.load_state_dict(states[name]['optimizer'])
+                    except (ValueError, RuntimeError) as exc:
+                        print(
+                            "NOTICE: skip incompatible optimizer state for",
+                            name,
+                            str(exc),
+                        )
 
             def count_parameters(mo):
                 return sum(p.numel() for p in mo.parameters() if p.requires_grad)

@@ -17,7 +17,7 @@ flag="--world_size ${ngpus}
       --log_dir log
       --move_iteration 10
       --max_action_len 20
-      --grid_size 5
+      --grid_size 7
       "
 
 
