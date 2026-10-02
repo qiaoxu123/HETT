@@ -790,20 +790,66 @@ class NavCMTAgent:
 
         def recover_state(name, model, optimizer):
             state = model.state_dict()
-            model_keys = set(state.keys())
-            load_keys = set(states[name]['state_dict'].keys())
-            if model_keys == load_keys:
-                print("NOTICE: LOADing ALL KEYS IN THE ", name)
-                state_dict = states[name]['state_dict']
-            else:
-                print("NOTICE: DIFFERENT KEYS IN THE ", name)
-                # if not list(model_keys)[0].startswith('module.') and list(load_keys)[0].startswith('module.'):
-                #     state_dict = {k.replace('module.', ''): v for k, v in state_dict.items()}
-                state_dict = {k: v for k, v in states[name]['state_dict'].items() if k in model_keys}
+            saved_state = states[name]['state_dict']
+            state_dict = {}
+            adapted_map_input = False
+
+            for key, value in saved_state.items():
+                if key not in state:
+                    continue
+
+                if value.shape == state[key].shape:
+                    state_dict[key] = value
+                    continue
+
+                # Warm-start a main-branch HETT checkpoint whose map encoder
+                # expected [tracking_0, tracking_1, referenced_landmark].
+                # Preserve those semantics exactly at initialization:
+                #   old ch0 -> new ch0 tracking
+                #   old ch1 -> new ch1 tracking
+                #   new ch2 global prior starts with zero weight
+                #   old ch2 -> new ch3 referenced mask
+                if (
+                    name == "vln_model"
+                    and key == "map_encoder.main.1.weight"
+                    and value.ndim == 4
+                    and value.shape[1] == 3
+                    and state[key].shape[1] == 4
+                    and value.shape[0] == state[key].shape[0]
+                    and value.shape[2:] == state[key].shape[2:]
+                ):
+                    adapted = state[key].clone()
+                    adapted.zero_()
+                    adapted[:, :2] = value[:, :2]
+                    adapted[:, 3:4] = value[:, 2:3]
+                    state_dict[key] = adapted
+                    adapted_map_input = True
+                    print(
+                        "NOTICE: adapted 3-channel HETT map encoder "
+                        "to global+referenced 4-channel input"
+                    )
+                    continue
+
+                print(
+                    "NOTICE: skip shape-mismatched parameter",
+                    name,
+                    key,
+                    tuple(value.shape),
+                    "->",
+                    tuple(state[key].shape),
+                )
+
             state.update(state_dict)
             model.load_state_dict(state)
+
             if self.args.resume_optimizer:
-                optimizer.load_state_dict(states[name]['optimizer'])
+                if adapted_map_input and name == "vln_model":
+                    print(
+                        "NOTICE: skip old vln optimizer state because "
+                        "map input dimensionality changed"
+                    )
+                else:
+                    optimizer.load_state_dict(states[name]['optimizer'])
 
             def count_parameters(mo):
                 return sum(p.numel() for p in mo.parameters() if p.requires_grad)

@@ -83,3 +83,23 @@ referenced landmark centroids with field peaks as executable candidate goals.
 Here they are first introduced only as Transformer geographic anchors so the
 HETT controller can remain exactly unchanged.  A later heatmap-specific branch
 can promote the same anchors into the executable Top-K proposal pool.
+
+
+## Warm-starting from HETT main checkpoints
+
+The first map convolution changes from three to four input channels.  Loading a
+main-branch checkpoint is supported explicitly.  Its original referenced-
+landmark channel is copied to the new referenced-mask channel, while the new
+global-prior channel starts with zero convolution weight:
+
+```
+old: [tracking_0, tracking_1, referenced]
+new: [tracking_0, tracking_1, global, referenced]
+                              ^
+                        initialized to zero
+```
+
+This preserves the old map behaviour at checkpoint load and lets training learn
+how much to use the additional global prior.  If the input convolution is
+adapted, old VLN optimizer state is not restored because its tensor shape is no
+longer compatible.

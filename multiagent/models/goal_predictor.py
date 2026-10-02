@@ -6,7 +6,7 @@ from torch import Tensor
 
 
 class MapEncoder(nn.Module):
-    '''Encodes maps of size (240, 240, 5) into a (15 * 15 * 32) feature vector'''
+    '''Encodes C-channel 240x240 maps into a (15 * 15 * 32) feature vector.'''
 
     def __init__(self, map_size: int, input_channels: int = 3):
         super(MapEncoder, self).__init__()
