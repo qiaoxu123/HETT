@@ -25,6 +25,150 @@ from torch.utils.data.distributed import DistributedSampler
 from torch.utils.data.dataloader import DataLoader
 
 
+def _mean_log(logs, key):
+    values = logs.get(key, [])
+    return float(np.mean(values)) if values else None
+
+
+DIAGNOSTIC_NAMES = (
+    'heatmap_top1_acc',
+    'heatmap_top3_acc',
+    'heatmap_gt_prob',
+    'heatmap_top1_conf',
+    'heatmap_entropy',
+    'heatmap_gt_rank',
+    'heatmap_cell_error',
+    'heatmap_coarse_goal_error_m',
+    'trajectory_top1_endpoint_error_m',
+    'trajectory_oracle_topk_endpoint_error_m',
+    'trajectory_topk_gt_recall',
+    'trajectory_first_wp_error_m',
+    'progress_mae',
+    'stop_trigger_rate',
+    'premature_stop_rate',
+    'near_goal_continue_rate',
+)
+
+
+def collect_policy_diagnostics(logs, policy):
+    diagnostics = {}
+    for name in DIAGNOSTIC_NAMES:
+        value = _mean_log(logs, policy + '_' + name)
+        if value is not None:
+            diagnostics[name] = value
+
+    if policy == 'teacher':
+        for key in ('teacher_coverage_ratio', 'teacher_truncated_rate'):
+            value = _mean_log(logs, key)
+            if value is not None:
+                diagnostics[key] = value
+    return diagnostics
+
+
+def collect_heatmap_distribution(logs, policy, grid_size):
+    prefix = policy + '_'
+    count_values = logs.get(prefix + 'heatmap_sample_count', [])
+    if not count_values:
+        return None
+
+    sample_count = float(np.sum(count_values))
+    if sample_count <= 0:
+        return None
+
+    gt_hist = np.sum(
+        np.asarray(logs[prefix + 'heatmap_gt_hist']),
+        axis=0,
+    )
+    pred_hist = np.sum(
+        np.asarray(logs[prefix + 'heatmap_pred_hist']),
+        axis=0,
+    )
+    prob_sum = np.sum(
+        np.asarray(logs[prefix + 'heatmap_prob_sum']),
+        axis=0,
+    )
+    confusion = np.sum(
+        np.asarray(logs[prefix + 'heatmap_confusion']),
+        axis=0,
+    )
+
+    cell_count = grid_size ** 2
+    return {
+        'grid_size': int(grid_size),
+        'sample_count': sample_count,
+        'gt_frequency': (gt_hist / sample_count).reshape(
+            grid_size, grid_size
+        ).tolist(),
+        'pred_frequency': (pred_hist / sample_count).reshape(
+            grid_size, grid_size
+        ).tolist(),
+        'mean_probability': (prob_sum / sample_count).reshape(
+            grid_size, grid_size
+        ).tolist(),
+        'confusion_counts': confusion.reshape(
+            cell_count, cell_count
+        ).astype(np.int64).tolist(),
+    }
+
+
+def write_diagnostics_jsonl(
+    path,
+    epoch,
+    phase,
+    split,
+    policy,
+    diagnostics,
+    metrics=None,
+    heatmap_distribution=None,
+):
+    payload = {
+        'epoch': int(epoch),
+        'phase': phase,
+        'split': split,
+        'policy': policy,
+        'diagnostics': diagnostics,
+    }
+    if metrics is not None:
+        payload['navigation_metrics'] = {
+            key: float(value)
+            for key, value in metrics.items()
+            if np.isscalar(value) and np.isfinite(value)
+        }
+    if heatmap_distribution is not None:
+        payload['heatmap_distribution'] = heatmap_distribution
+    with open(path, 'a') as outf:
+        outf.write(json.dumps(payload, sort_keys=True) + '\n')
+
+
+def format_diagnostics_line(policy, diagnostics):
+    preferred = [
+        'heatmap_top1_acc',
+        'heatmap_top3_acc',
+        'heatmap_gt_prob',
+        'heatmap_top1_conf',
+        'heatmap_entropy',
+        'heatmap_gt_rank',
+        'heatmap_cell_error',
+        'heatmap_coarse_goal_error_m',
+        'trajectory_top1_endpoint_error_m',
+        'trajectory_oracle_topk_endpoint_error_m',
+        'trajectory_topk_gt_recall',
+        'trajectory_first_wp_error_m',
+        'progress_mae',
+        'stop_trigger_rate',
+        'premature_stop_rate',
+        'near_goal_continue_rate',
+        'teacher_coverage_ratio',
+        'teacher_truncated_rate',
+    ]
+    parts = [
+        '%s=%.4f' % (key, diagnostics[key])
+        for key in preferred
+        if key in diagnostics
+    ]
+    return 'DIAG %s %s' % (policy, ' '.join(parts))
+
+
 def get_tokenizer(args):
     from transformers import AutoTokenizer
     tokenizer = AutoTokenizer.from_pretrained('/cver/xcding/code/tokenizer_files/bert-base-uncase')
@@ -117,6 +261,10 @@ def train(args, train_env, val_envs, rank=-1):
             json.dump(vars(args), outf, indent=4)
         # writer = SummaryWriter(log_dir=args.log_dir)
         record_file = os.path.join(GOAL_PREDICTOR_CHECKPOINT_DIR, 'train.txt')
+        diagnostics_file = os.path.join(
+            GOAL_PREDICTOR_CHECKPOINT_DIR,
+            'navigation_diagnostics.jsonl',
+        )
         write_to_record_file(str(args) + '\n\n', record_file)
 
     best_val = {'val_unseen': {"sr": 0., "state": ""}, 'val_unseen_full_traj': {"sr": 0., "state": ""}}
@@ -124,6 +272,7 @@ def train(args, train_env, val_envs, rank=-1):
     # first evaluation
     if args.eval_first:
         loss_str = ""
+        start_epoch = -1
         if default_gpu:
 
             for env_name, env in val_envs.items():
@@ -142,7 +291,7 @@ def train(args, train_env, val_envs, rank=-1):
                 # sampler = DistributedSampler(env, num_replicas=args.world_size, rank=rank)
                 loader = DataLoader(env, batch_size=1)
                 # Get validation distance from goal under test evaluation conditions
-                agent_eval.test(loader, feedback='student')
+                agent_eval.test(loader, env_name=env_name, feedback='student')
                 pred_results = agent_eval.get_results()
 
                 score_summary, result = env.eval_metrics(pred_results)
@@ -231,6 +380,13 @@ def train(args, train_env, val_envs, rank=-1):
                     ),
                     flush=True,
                 )
+                for policy in ('teacher', 'student'):
+                    diagnostics = collect_policy_diagnostics(agent.logs, policy)
+                    if diagnostics:
+                        print(
+                            format_diagnostics_line(policy, diagnostics),
+                            flush=True,
+                        )
             torch.cuda.empty_cache()
             continue
 
@@ -289,6 +445,28 @@ def train(args, train_env, val_envs, rank=-1):
                 record_file
             )
 
+            for policy in ('teacher', 'student'):
+                diagnostics = collect_policy_diagnostics(agent.logs, policy)
+                if diagnostics:
+                    write_to_record_file(
+                        "\n" + format_diagnostics_line(policy, diagnostics),
+                        record_file,
+                    )
+                    heatmap_distribution = collect_heatmap_distribution(
+                        agent.logs,
+                        policy,
+                        args.grid_size,
+                    )
+                    write_diagnostics_jsonl(
+                        diagnostics_file,
+                        idx,
+                        'train',
+                        'train_seen',
+                        policy,
+                        diagnostics,
+                        heatmap_distribution=heatmap_distribution,
+                    )
+
             # Run validation
             loss_str = "\nepoch {}".format(idx)
 
@@ -303,7 +481,7 @@ def train(args, train_env, val_envs, rank=-1):
                 agent_eval.env = env
                 loader = DataLoader(env, batch_size=1)
                 # Get validation distance from goal under test evaluation conditions
-                agent_eval.test(loader, feedback='student')
+                agent_eval.test(loader, env_name=env_name, feedback='student')
                 pred_results = agent_eval.get_results()
 
                 score_summary, result = env.eval_metrics(pred_results)
@@ -322,6 +500,30 @@ def train(args, train_env, val_envs, rank=-1):
                     ),
                     record_file
                 )
+                diagnostics = collect_policy_diagnostics(
+                    agent_eval.logs,
+                    'student',
+                )
+                if diagnostics:
+                    write_to_record_file(
+                        "\n" + format_diagnostics_line('student', diagnostics),
+                        record_file,
+                    )
+                    heatmap_distribution = collect_heatmap_distribution(
+                        agent_eval.logs,
+                        'student',
+                        args.grid_size,
+                    )
+                    write_diagnostics_jsonl(
+                        diagnostics_file,
+                        idx,
+                        'validation',
+                        env_name,
+                        'student',
+                        diagnostics,
+                        score_summary,
+                        heatmap_distribution,
+                    )
                 loss_str += "\n%s " % env_name
                 for metric, val in score_summary.items():
                     loss_str += ', %s: %.2f' % (metric, val)
@@ -350,8 +552,10 @@ def valid(args, val_envs, rank=-1):
 
         agent_class_eval = NavCMTAgent
         agent_eval = agent_class_eval(args, rank=rank, allow_ngpus=False)
-        epoch = agent_eval.load(args.checkpoint)
+        epoch = -1
+        loss_str = "\nepoch {}".format(epoch)
         if args.checkpoint is not None:
+            epoch = agent_eval.load(args.checkpoint)
             print("Loaded the listener model at epoch %d from %s" % \
                   (epoch, args.checkpoint))
             loss_str = "\nepoch {}".format(epoch)
@@ -359,12 +563,16 @@ def valid(args, val_envs, rank=-1):
         with open(os.path.join(GOAL_PREDICTOR_CHECKPOINT_DIR, 'validation_args.json'), 'w') as outf:
             json.dump(vars(args), outf, indent=4)
         record_file = os.path.join(GOAL_PREDICTOR_CHECKPOINT_DIR, 'valid.txt')
+        diagnostics_file = os.path.join(
+            GOAL_PREDICTOR_CHECKPOINT_DIR,
+            'navigation_diagnostics.jsonl',
+        )
         for env_name, env in val_envs.items():
             agent_eval.logs = defaultdict(list)
             agent_eval.env = env
             loader = DataLoader(env, batch_size=1)
             # Get validation distance from goal under test evaluation conditions
-            agent_eval.test(loader, feedback='student')
+            agent_eval.test(loader, env_name=env_name, feedback='student')
             pred_results = agent_eval.get_results()
 
             score_summary, result = env.eval_metrics(pred_results)
@@ -376,6 +584,30 @@ def valid(args, val_envs, rank=-1):
                 "\nrollout trajectory_step %.4f" % trajectory_step,
                 record_file
             )
+            diagnostics = collect_policy_diagnostics(
+                agent_eval.logs,
+                'student',
+            )
+            if diagnostics:
+                write_to_record_file(
+                    "\n" + format_diagnostics_line('student', diagnostics),
+                    record_file,
+                )
+                heatmap_distribution = collect_heatmap_distribution(
+                    agent_eval.logs,
+                    'student',
+                    args.grid_size,
+                )
+                write_diagnostics_jsonl(
+                    diagnostics_file,
+                    epoch,
+                    'validation',
+                    env_name,
+                    'student',
+                    diagnostics,
+                    score_summary,
+                    heatmap_distribution,
+                )
             loss_str += "\n%s " % env_name
             for metric, val in score_summary.items():
                 loss_str += ', %s: %.2f' % (metric, val)

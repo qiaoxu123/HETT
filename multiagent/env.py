@@ -419,70 +419,18 @@ class CityNavBatch(torch.utils.data.IterableDataset):
                 # else:
                 metrics[k].append(v)
 
-            traj = [pose.xy for pose in item['stage1_trajectory']]  # x = (corners, directions)
-            if len(traj) == 0:
-                traj = [item['trajectory'][0].xy]
-            traj_scores = self._eval_item(gt_trajs, traj, goal)
-            for k, v in traj_scores.items():
-                if k == 'trajectory_lengths':
-                    metrics['stage1_trajectory_lengths'].append(v)
-                if k == 'success':
-                    metrics['stage1_success'].append(v)
-                if k == 'oracle_success':
-                    metrics['stage1_oracle_success'].append(v)
-                if k == 'ne':
-                    metrics['stage1_ne'].append(v)
-                if k == 'oracle_ne':
-                    metrics['stage1_oracle_ne'].append(v)
-                # # else:
-                # metrics[k].append(v)
-
-            traj = [pose.xy for pose in item['stage2_trajectory']]
-            if len(traj) == 0:
-                traj = [item['trajectory'][-1].xy]
-            traj_scores = self._eval_item(gt_trajs, traj, goal)
-            for k, v in traj_scores.items():
-                if k == 'trajectory_lengths':
-                    metrics['stage2_trajectory_lengths'].append(v)
-                if k == 'success':
-                    metrics['stage2_success'].append(v)
-                if k == 'oracle_success':
-                    metrics['stage2_oracle_success'].append(v)
-                if k == 'ne':
-                    metrics['stage2_ne'].append(v)
-                if k == 'oracle_ne':
-                    metrics['stage2_oracle_ne'].append(v)
-
             metrics['instr_id'].append(instr_id)
+
+        # Direct-trajectory evaluation: legacy Stage-1/Stage-2 and goal-
+        # predictor metrics were no longer meaningful and could emit NaNs.
         avg_metrics = {
-            # 'steps': np.mean(metrics['trajectory_steps']),
             'lengths': np.mean(metrics['trajectory_lengths']),
-            'stage1_length': np.mean(metrics['stage1_trajectory_lengths']),
-            'stage2_length': np.mean(metrics['stage2_trajectory_lengths']),
             'sr': np.mean(metrics['success']) * 100,
-            'sr1': np.mean(metrics['stage1_success']) * 100,
-            'sr2': np.mean(metrics['stage2_success']) * 100,
             'oracle_sr': np.mean(metrics['oracle_success']) * 100,
-            'oracle_sr1': np.mean(metrics['stage1_oracle_success']) * 100,
-            'oracle_sr2': np.mean(metrics['stage2_oracle_success']) * 100,
             'spl': np.mean(metrics['spl']) * 100,
             'ne': np.mean(metrics['ne']),
             'oracle_ne': np.mean(metrics['oracle_ne']),
-            'stage1_ne': np.mean(metrics['stage1_ne']),
-            'stage1_oracle_ne': np.mean(metrics['stage1_oracle_ne']),
-            'stage2_ne': np.mean(metrics['stage2_ne']),
-            'stage2_oracle_ne': np.mean(metrics['stage2_oracle_ne']),
             'gt_length': np.mean(metrics['gt_length']),
-            'gp_sr': np.mean(metrics['gp_success']) * 100,
-            'oracle_gp_sr': np.mean(metrics['oracle_gp_success']) * 100
-            # 'oracle_goal_sr': np.mean(metrics['oracle_goal_success']),
-            # 'goal_sr': np.mean(metrics['goal_success'])
-            # 'oracle_pred_sr': np.mean(item['oracle_success']) * 100,
-            # 'pred_sr':
-            # 'iou': np.mean(metrics['iou']),
-            # 'spl_short': np.mean(metrics['spl_short']) * 100,
-            # 'sr_short': np.mean(metrics['success_short']) * 100,
-            # 'gp_short': np.mean(metrics['gp_short']),
         }
 
         return avg_metrics, metrics

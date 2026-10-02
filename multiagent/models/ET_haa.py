@@ -357,7 +357,6 @@ class ET(nn.Module):
             torch.tanh(residuals) * self.args.trajectory_residual_scale
         )
         trajectory_belief = {
-            'logits': target_logits,
             'endpoint_offsets': endpoint_offsets,
             'residuals': residuals,
         }

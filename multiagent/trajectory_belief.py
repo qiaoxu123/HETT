@@ -40,6 +40,119 @@ def refine_candidate_endpoints(
     return (centers + endpoint_offsets).clamp(0.0, 1.0)
 
 
+def compute_heatmap_statistics(
+    probabilities: torch.Tensor,
+    gt_ids: torch.Tensor,
+    gt_xy: torch.Tensor,
+    grid_size: int,
+    map_meters: float,
+) -> dict:
+    """Return per-sample diagnostics for the shared 7x7 spatial belief."""
+    probs = probabilities.detach()
+    gt_ids = gt_ids.to(device=probs.device, dtype=torch.long)
+    gt_xy = gt_xy.to(device=probs.device, dtype=probs.dtype)
+
+    top1_conf, top1_ids = probs.max(dim=1)
+    topk_ids = torch.topk(
+        probs,
+        k=min(3, probs.shape[1]),
+        dim=1,
+    ).indices
+    gt_prob = probs.gather(1, gt_ids[:, None]).squeeze(1)
+    gt_rank = (probs > gt_prob[:, None]).sum(dim=1).to(probs.dtype) + 1.0
+
+    entropy = -(probs * probs.clamp_min(1e-8).log()).sum(dim=1)
+    entropy = entropy / float(np.log(probs.shape[1]))
+
+    pred_rows = torch.div(top1_ids, grid_size, rounding_mode="floor")
+    pred_cols = top1_ids % grid_size
+    gt_rows = torch.div(gt_ids, grid_size, rounding_mode="floor")
+    gt_cols = gt_ids % grid_size
+    cell_error = torch.sqrt(
+        (pred_rows.to(probs.dtype) - gt_rows.to(probs.dtype)).square()
+        + (pred_cols.to(probs.dtype) - gt_cols.to(probs.dtype)).square()
+    )
+
+    centers = grid_cell_centers(
+        probs.shape[0],
+        grid_size,
+        probs.device,
+        probs.dtype,
+    )
+    top1_centers = centers.gather(
+        1,
+        top1_ids[:, None, None].expand(-1, 1, 2),
+    ).squeeze(1)
+    coarse_goal_error_m = (
+        torch.linalg.norm(top1_centers - gt_xy, dim=-1)
+        * float(map_meters)
+    )
+
+    return {
+        "heatmap_top1_acc": (top1_ids == gt_ids).to(probs.dtype),
+        "heatmap_top3_acc": (topk_ids == gt_ids[:, None]).any(dim=1).to(probs.dtype),
+        "heatmap_gt_prob": gt_prob,
+        "heatmap_top1_conf": top1_conf,
+        "heatmap_entropy": entropy,
+        "heatmap_gt_rank": gt_rank,
+        "heatmap_cell_error": cell_error,
+        "heatmap_coarse_goal_error_m": coarse_goal_error_m,
+    }
+
+
+def compute_trajectory_statistics(
+    top1_ids: torch.Tensor,
+    refined_endpoints: torch.Tensor,
+    proposal_ids: torch.Tensor,
+    proposal_endpoints: torch.Tensor,
+    proposal_trajectories: torch.Tensor,
+    gt_ids: torch.Tensor,
+    gt_xy: torch.Tensor,
+    gt_trajectory_targets: torch.Tensor,
+    gt_trajectory_valid: torch.Tensor,
+    map_meters: float,
+) -> dict:
+    """Return per-sample endpoint/first-waypoint diagnostics."""
+    dtype = refined_endpoints.dtype
+    gt_ids = gt_ids.to(device=refined_endpoints.device, dtype=torch.long)
+    gt_xy = gt_xy.to(device=refined_endpoints.device, dtype=dtype)
+
+    top1_endpoints = refined_endpoints.gather(
+        1,
+        top1_ids[:, None, None].expand(-1, 1, 2),
+    ).squeeze(1)
+    top1_endpoint_error_m = (
+        torch.linalg.norm(top1_endpoints - gt_xy, dim=-1)
+        * float(map_meters)
+    )
+
+    proposal_endpoint_errors = (
+        torch.linalg.norm(proposal_endpoints - gt_xy[:, None, :], dim=-1)
+        * float(map_meters)
+    )
+    oracle_topk_endpoint_error_m = proposal_endpoint_errors.min(dim=1).values
+    topk_gt_recall = (
+        proposal_ids == gt_ids[:, None]
+    ).any(dim=1).to(dtype)
+
+    first_wp_error_m = (
+        torch.linalg.norm(
+            proposal_trajectories[:, 0, 0, :] - gt_trajectory_targets[:, 0, :],
+            dim=-1,
+        )
+        * float(map_meters)
+    )
+    first_wp_valid = gt_trajectory_valid[:, 0].to(dtype)
+
+    return {
+        "trajectory_top1_endpoint_error_m": top1_endpoint_error_m,
+        "trajectory_oracle_topk_endpoint_error_m": oracle_topk_endpoint_error_m,
+        "trajectory_topk_gt_recall": topk_gt_recall,
+        "trajectory_first_wp_error_m": first_wp_error_m,
+        "trajectory_first_wp_valid": first_wp_valid,
+    }
+
+
 def build_fixed_horizon_anchors(
     current_xy: torch.Tensor,
     endpoints: torch.Tensor,
@@ -85,9 +198,16 @@ def select_nms_topk(
         padding=kernel_size // 2,
     )
     peak_mask = field >= pooled
-    candidate_scores = field.masked_fill(~peak_mask, -torch.inf).flatten(1)
     k = min(int(top_k), grid_size * grid_size)
-    scores, ids = torch.topk(candidate_scores, k=k, dim=1)
+
+    # Prioritize true local maxima, but keep a finite fallback when there are
+    # fewer than K peaks. Hard -inf masking previously produced arbitrary
+    # invalid proposal ids in that case. Since probabilities are in [0, 1],
+    # a +2 bonus guarantees that all local maxima rank ahead of fallback cells.
+    flat_probs = field.flatten(1)
+    ranking_scores = flat_probs + peak_mask.flatten(1).to(flat_probs.dtype) * 2.0
+    _, ids = torch.topk(ranking_scores, k=k, dim=1)
+    scores = torch.gather(flat_probs, dim=1, index=ids)
 
     rows = torch.div(ids, grid_size, rounding_mode="floor").to(probabilities.dtype)
     cols = (ids % grid_size).to(probabilities.dtype)

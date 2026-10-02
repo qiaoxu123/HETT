@@ -5,6 +5,8 @@ import torch
 
 from multiagent.trajectory_belief import (
     build_fixed_horizon_anchors,
+    compute_heatmap_statistics,
+    compute_trajectory_statistics,
     prepare_teacher_path,
     prepare_teacher_rollout_path,
     refine_candidate_endpoints,
@@ -91,6 +93,79 @@ class TrajectoryBeliefUtilityTest(unittest.TestCase):
             points, cumulative, 20.0, (5.0,)
         )
         np.testing.assert_allclose(targets[0], [-5.0, 0.0], atol=1e-5)
+
+    def test_heatmap_statistics_are_interpretable(self):
+        probs = torch.full((1, 49), 0.1 / 48)
+        probs[0, 8] = 0.9
+        gt_ids = torch.tensor([8])
+        gt_xy = torch.tensor([[(1.5 / 7), (1.5 / 7)]])
+        stats = compute_heatmap_statistics(
+            probs,
+            gt_ids,
+            gt_xy,
+            7,
+            410.0,
+        )
+        self.assertEqual(float(stats['heatmap_top1_acc'][0]), 1.0)
+        self.assertEqual(float(stats['heatmap_top3_acc'][0]), 1.0)
+        self.assertAlmostEqual(float(stats['heatmap_gt_prob'][0]), 0.9, places=5)
+        self.assertAlmostEqual(float(stats['heatmap_gt_rank'][0]), 1.0, places=5)
+        self.assertAlmostEqual(float(stats['heatmap_cell_error'][0]), 0.0, places=5)
+        self.assertAlmostEqual(
+            float(stats['heatmap_coarse_goal_error_m'][0]),
+            0.0,
+            places=4,
+        )
+
+    def test_trajectory_statistics_separate_top1_and_oracle_topk(self):
+        refined = torch.zeros(1, 49, 2)
+        refined[0, 0] = torch.tensor([0.1, 0.1])
+        refined[0, 1] = torch.tensor([0.5, 0.5])
+        proposal_ids = torch.tensor([[0, 1]])
+        proposal_endpoints = torch.tensor([[[0.1, 0.1], [0.5, 0.5]]])
+        proposal_trajectories = torch.zeros(1, 2, 5, 2)
+        proposal_trajectories[0, 0, 0] = torch.tensor([0.2, 0.2])
+        gt_ids = torch.tensor([1])
+        gt_xy = torch.tensor([[0.5, 0.5]])
+        gt_trajectory = torch.zeros(1, 5, 2)
+        gt_trajectory[0, 0] = torch.tensor([0.2, 0.2])
+        valid = torch.ones(1, 5)
+
+        stats = compute_trajectory_statistics(
+            torch.tensor([0]),
+            refined,
+            proposal_ids,
+            proposal_endpoints,
+            proposal_trajectories,
+            gt_ids,
+            gt_xy,
+            gt_trajectory,
+            valid,
+            410.0,
+        )
+        self.assertGreater(
+            float(stats['trajectory_top1_endpoint_error_m'][0]),
+            200.0,
+        )
+        self.assertAlmostEqual(
+            float(stats['trajectory_oracle_topk_endpoint_error_m'][0]),
+            0.0,
+            places=4,
+        )
+        self.assertEqual(float(stats['trajectory_topk_gt_recall'][0]), 1.0)
+        self.assertAlmostEqual(
+            float(stats['trajectory_first_wp_error_m'][0]),
+            0.0,
+            places=4,
+        )
+
+    def test_nms_fills_topk_when_local_peaks_are_sparse(self):
+        probs = torch.linspace(0.0, 1.0, 49).view(1, -1)
+        ids, scores, _ = select_nms_topk(probs, 7, 8, 3)
+        self.assertEqual(ids.shape, (1, 8))
+        self.assertEqual(scores.shape, (1, 8))
+        self.assertTrue(torch.isfinite(scores).all())
+        self.assertEqual(len(set(ids[0].tolist())), 8)
 
     def test_nms_operates_directly_on_7x7_modes(self):
         probs = torch.zeros(1, 49)

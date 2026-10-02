@@ -110,6 +110,72 @@ The legacy Stage-1 / Stage-2 code remains reachable only inside the preserved
 teacher rollout path so that the requested teacher training behavior is not
 changed.
 
+## Bottleneck diagnostics
+
+Every train epoch and validation split now records structured diagnostics in:
+
+```
+navigation_diagnostics.jsonl
+```
+
+Each JSONL record also stores raw aggregated 7x7 heatmap data:
+
+```
+gt_frequency       # 7x7 GT-cell frequency
+pred_frequency     # 7x7 predicted Top-1 frequency
+mean_probability   # mean 7x7 probability field
+confusion_counts   # 49x49 GT-cell -> predicted-cell confusion matrix
+sample_count
+```
+
+This makes center bias, mode collapse, spatial blind spots, and systematic
+cell-to-cell confusion directly inspectable after training.
+
+Key heatmap statistics:
+
+```
+heatmap_top1_acc
+heatmap_top3_acc
+heatmap_gt_prob
+heatmap_top1_conf
+heatmap_entropy
+heatmap_gt_rank
+heatmap_cell_error
+heatmap_coarse_goal_error_m
+```
+
+Trajectory statistics:
+
+```
+trajectory_top1_endpoint_error_m
+trajectory_oracle_topk_endpoint_error_m
+trajectory_topk_gt_recall
+trajectory_first_wp_error_m
+```
+
+Progress/stop diagnostics:
+
+```
+progress_mae
+stop_trigger_rate
+premature_stop_rate
+near_goal_continue_rate
+```
+
+Teacher rollout diagnostics additionally include:
+
+```
+teacher_coverage_ratio
+teacher_truncated_rate
+```
+
+These make it possible to distinguish four common bottlenecks:
+
+1. low heatmap Top-1/Top-3 -> spatial grounding failure;
+2. good Top-K but poor Top-1 -> ranking failure;
+3. good mode accuracy but large endpoint/first-waypoint error -> geometry failure;
+4. good localization but poor SR -> stop/finalization or execution failure.
+
 ## Key simplification
 
 Previous:

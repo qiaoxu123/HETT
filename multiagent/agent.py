@@ -27,6 +27,8 @@ from multiagent.models.goal_predictor import GoalPredictor, MapEncoder
 from multiagent.observation import cropclient
 from multiagent.trajectory_belief import (
     build_fixed_horizon_anchors,
+    compute_heatmap_statistics,
+    compute_trajectory_statistics,
     normalize_targets,
     prepare_teacher_path,
     prepare_teacher_rollout_path,
@@ -538,10 +540,33 @@ class NavCMTAgent:
         teacher_step = 0
         teacher_distance_m = 0.0
         teacher_arc_m = np.zeros(batch_size, dtype=np.float32)
-        teacher_paths = [
-            self._teacher_rollout_path(ob)
-            for ob in obs
-        ]
+        teacher_paths = (
+            [self._teacher_rollout_path(ob) for ob in obs]
+            if self.feedback == 'teacher'
+            else None
+        )
+
+        diagnostic_sums = {}
+        diagnostic_counts = {}
+        heatmap_gt_hist = None
+        heatmap_pred_hist = None
+        heatmap_prob_sum = None
+        heatmap_confusion = None
+        heatmap_sample_count = None
+
+        def accumulate_diagnostic(name, values, mask=None):
+            values = values.detach().to(dtype=torch.float32)
+            if mask is None:
+                mask = torch.ones_like(values)
+            else:
+                mask = mask.detach().to(
+                    device=values.device,
+                    dtype=values.dtype,
+                )
+            total = (values * mask).sum()
+            count = mask.sum()
+            diagnostic_sums[name] = diagnostic_sums.get(name, 0.0) + total
+            diagnostic_counts[name] = diagnostic_counts.get(name, 0.0) + count
 
         input = {
             'directions': torch.zeros((batch_size, 0, 4)).cuda(),
@@ -636,10 +661,10 @@ class NavCMTAgent:
             # Direct trajectory execution. The heatmap probabilities are the
             # 7x7 trajectory-mode scores; each selected mode is refined to a
             # continuous endpoint and expanded into a fixed-horizon trajectory.
-            trajectory_probs = torch.softmax(
-                trajectory_belief['logits'],
-                dim=1,
-            )
+            # Trajectory modes share exactly the same 7x7 logits as the
+            # heatmap head; reuse the probability tensor instead of a second
+            # identical softmax.
+            trajectory_probs = heatmap_probs
             refined_candidate_endpoints = refine_candidate_endpoints(
                 trajectory_belief['endpoint_offsets'],
                 self.args.grid_size,
@@ -841,6 +866,121 @@ class NavCMTAgent:
                 trajectory_loss += (
                     per_sample_trajectory_loss * active_mask
                 ).sum()
+
+                # Diagnostics are detached and accumulated on-device, so they
+                # add only one synchronization per metric at rollout end.
+                with torch.no_grad():
+                    heatmap_stats = compute_heatmap_statistics(
+                        heatmap_probs,
+                        gt_mode_ids,
+                        gt_values[:, 2:4],
+                        self.args.grid_size,
+                        self.args.map_meters,
+                    )
+                    for name, values in heatmap_stats.items():
+                        accumulate_diagnostic(name, values, active_mask)
+
+                    active_bool = active_mask.bool()
+                    cell_count = self.args.grid_size ** 2
+                    step_gt_hist = torch.bincount(
+                        gt_mode_ids[active_bool],
+                        minlength=cell_count,
+                    ).to(dtype=torch.float32)
+                    step_pred_hist = torch.bincount(
+                        heatmap_goal_ids[active_bool],
+                        minlength=cell_count,
+                    ).to(dtype=torch.float32)
+                    step_prob_sum = (
+                        heatmap_probs.detach()
+                        * active_mask[:, None]
+                    ).sum(dim=0)
+                    confusion_ids = (
+                        gt_mode_ids[active_bool] * cell_count
+                        + heatmap_goal_ids[active_bool]
+                    )
+                    step_confusion = torch.bincount(
+                        confusion_ids,
+                        minlength=cell_count * cell_count,
+                    ).reshape(cell_count, cell_count).to(dtype=torch.float32)
+                    step_count = active_mask.sum().detach()
+
+                    if heatmap_gt_hist is None:
+                        heatmap_gt_hist = step_gt_hist
+                        heatmap_pred_hist = step_pred_hist
+                        heatmap_prob_sum = step_prob_sum
+                        heatmap_confusion = step_confusion
+                        heatmap_sample_count = step_count
+                    else:
+                        heatmap_gt_hist = heatmap_gt_hist + step_gt_hist
+                        heatmap_pred_hist = heatmap_pred_hist + step_pred_hist
+                        heatmap_prob_sum = heatmap_prob_sum + step_prob_sum
+                        heatmap_confusion = heatmap_confusion + step_confusion
+                        heatmap_sample_count = heatmap_sample_count + step_count
+
+                    trajectory_stats = compute_trajectory_statistics(
+                        heatmap_goal_ids,
+                        refined_candidate_endpoints,
+                        proposal_ids,
+                        proposal_endpoints,
+                        proposal_trajectories,
+                        gt_mode_ids,
+                        gt_values[:, 2:4],
+                        gt_trajectory_targets,
+                        gt_trajectory_valid,
+                        self.args.map_meters,
+                    )
+                    first_wp_valid = trajectory_stats.pop(
+                        'trajectory_first_wp_valid'
+                    )
+                    for name, values in trajectory_stats.items():
+                        metric_mask = active_mask
+                        if name == 'trajectory_first_wp_error_m':
+                            metric_mask = active_mask * first_wp_valid
+                        accumulate_diagnostic(name, values, metric_mask)
+
+                    pred_progress_flat = pred_progress.reshape(
+                        pred_progress.shape[0], -1
+                    )[:, 0]
+                    progress_abs_error = (
+                        pred_progress_flat - gt_values[:, 1]
+                    ).abs()
+                    accumulate_diagnostic(
+                        'progress_mae',
+                        progress_abs_error,
+                        active_mask,
+                    )
+
+                    stop_trigger = (
+                        pred_progress_flat > self.args.stop_progress_threshold
+                    ).to(active_mask.dtype)
+                    accumulate_diagnostic(
+                        'stop_trigger_rate',
+                        stop_trigger,
+                        active_mask,
+                    )
+
+                    success_progress = max(
+                        0.0,
+                        1.0 - self.args.success_dist / 100.0,
+                    )
+                    true_near_goal = (
+                        gt_values[:, 1] >= success_progress
+                    ).to(active_mask.dtype)
+                    true_far_goal = 1.0 - true_near_goal
+                    premature_stop = stop_trigger * true_far_goal
+                    accumulate_diagnostic(
+                        'premature_stop_rate',
+                        premature_stop,
+                        active_mask * stop_trigger,
+                    )
+                    near_goal_continue = (
+                        (1.0 - stop_trigger) * true_near_goal
+                    )
+                    accumulate_diagnostic(
+                        'near_goal_continue_rate',
+                        near_goal_continue,
+                        active_mask * true_near_goal,
+                    )
                 # print(pred_logits.shape)
             # Log the trajectory
             # print(at_direction, gt_direction)
@@ -915,7 +1055,7 @@ class NavCMTAgent:
                         ended[i] = True
                     continue
 
-                if pred_progress_t[i] > 0.95:
+                if pred_progress_t[i] > self.args.stop_progress_threshold:
                     ended[i] = True
                     continue
 
@@ -1007,9 +1147,61 @@ class NavCMTAgent:
 
         # if t==0:
         #     self.logs
-        self.logs['trajectory_step'].append(float(trajectory_step) / batch_size)
-        self.logs['teacher_step'].append(float(teacher_step) / batch_size)
-        self.logs['teacher_distance_m'].append(float(teacher_distance_m) / batch_size)
+        if self.feedback == 'student':
+            self.logs['trajectory_step'].append(
+                float(trajectory_step) / batch_size
+            )
+        if self.feedback == 'teacher':
+            self.logs['teacher_step'].append(
+                float(teacher_step) / batch_size
+            )
+            self.logs['teacher_distance_m'].append(
+                float(teacher_distance_m) / batch_size
+            )
+
+        if self.feedback == 'teacher':
+            total_teacher_lengths = np.asarray(
+                [float(cumulative[-1]) for _, cumulative in teacher_paths],
+                dtype=np.float32,
+            )
+            coverage = np.ones_like(total_teacher_lengths, dtype=np.float32)
+            valid_teacher_lengths = total_teacher_lengths > 1e-6
+            coverage[valid_teacher_lengths] = np.minimum(
+                teacher_arc_m[valid_teacher_lengths]
+                / total_teacher_lengths[valid_teacher_lengths],
+                1.0,
+            )
+            truncated = (
+                teacher_arc_m + 1e-6 < total_teacher_lengths
+            ).astype(np.float32)
+            self.logs['teacher_coverage_ratio'].append(float(np.mean(coverage)))
+            self.logs['teacher_truncated_rate'].append(float(np.mean(truncated)))
+
+        diagnostic_prefix = self.feedback
+        for name, total in diagnostic_sums.items():
+            count = diagnostic_counts[name]
+            mean_value = total / count.clamp_min(1.0)
+            self.logs[f'{diagnostic_prefix}_{name}'].append(
+                float(mean_value.detach().cpu().item())
+            )
+
+        if heatmap_sample_count is not None:
+            self.logs[f'{diagnostic_prefix}_heatmap_gt_hist'].append(
+                heatmap_gt_hist.detach().cpu().numpy()
+            )
+            self.logs[f'{diagnostic_prefix}_heatmap_pred_hist'].append(
+                heatmap_pred_hist.detach().cpu().numpy()
+            )
+            self.logs[f'{diagnostic_prefix}_heatmap_prob_sum'].append(
+                heatmap_prob_sum.detach().cpu().numpy()
+            )
+            self.logs[f'{diagnostic_prefix}_heatmap_confusion'].append(
+                heatmap_confusion.detach().cpu().numpy()
+            )
+            self.logs[f'{diagnostic_prefix}_heatmap_sample_count'].append(
+                float(heatmap_sample_count.detach().cpu().item())
+            )
+
         self.logs['global_landmark_gate'].append(
             float(torch.tanh(
                 self.vln_model_without_ddp.global_landmark_gate

@@ -106,6 +106,8 @@ def parse_args():
     parser.add_argument('--trajectory_residual_scale', type=float, default=0.05)
     parser.add_argument('--trajectory_move_iteration', type=int, default=2,
                         help='Controller iterations for the first fixed-horizon waypoint')
+    parser.add_argument('--stop_progress_threshold', type=float, default=0.95,
+                        help='Student stop threshold on predicted progress; default preserves prior behavior')
     parser.add_argument('--teacher_step_m', type=float, default=10.0,
                         help='Metric arc-length step for human teacher rollout')
     parser.add_argument('--demb', type=int, default=768)
@@ -198,6 +200,8 @@ def postprocess_args(args):
     args.trajectory_steps = len(args.trajectory_horizons_m) + 1
     if args.teacher_step_m <= 0:
         raise ValueError('teacher_step_m must be positive')
+    if not 0.0 <= args.stop_progress_threshold <= 1.0:
+        raise ValueError('stop_progress_threshold must be in [0, 1]')
     if args.trajectory_nms_kernel % 2 != 1:
         raise ValueError('trajectory_nms_kernel must be odd')
     if args.grid_size != 7:
