@@ -25,16 +25,17 @@ from multiagent.models.CLIP import CLIP
 # from direction.models.ddppo.resenet_encoders import TorchVisionResNet50
 from multiagent.models.goal_predictor import GoalPredictor, MapEncoder
 from multiagent.observation import cropclient
+from multiagent.human_intent import (
+    build_next_core_anchor_target,
+    extract_human_core_anchors,
+)
 from multiagent.trajectory_belief import (
     build_fixed_horizon_anchors,
     compute_heatmap_statistics,
     compute_trajectory_statistics,
     normalize_targets,
-    prepare_teacher_path,
     prepare_teacher_rollout_path,
     refine_candidate_endpoints,
-    sample_fixed_horizon_targets,
-    sample_fixed_horizon_targets_from_arc,
     sample_teacher_pose_at_arc,
     select_nms_topk,
 )
@@ -179,8 +180,8 @@ class NavCMTAgent:
 
         self.default_gpu = is_default_gpu(self.args)
         self.rank = rank
-        self.trajectory_path_cache = {}
         self.teacher_rollout_cache = {}
+        self.human_anchor_cache = {}
 
         # Models
 
@@ -282,40 +283,136 @@ class NavCMTAgent:
             self.teacher_rollout_cache[key] = cached
         return cached
 
-    def _fixed_horizon_trajectory_target(
+    def _human_core_anchors(self, ob):
+        key = self._episode_cache_key(ob)
+        cached = self.human_anchor_cache.get(key)
+        if cached is None:
+            cached = extract_human_core_anchors(
+                ob['trajectory'],
+                ob.get('referenced_landmark_centroids_world', ()),
+                min_step_m=self.args.human_anchor_min_step_m,
+                rdp_tolerance_m=self.args.human_anchor_rdp_tolerance_m,
+                yaw_keyframe_deg=self.args.human_anchor_yaw_keyframe_deg,
+                landmark_radius_m=self.args.human_anchor_landmark_radius_m,
+            )
+            self.human_anchor_cache[key] = cached
+        return cached
+
+    def _core_anchor_target(
         self,
         ob,
         current_pose,
         current_arc_m=None,
     ):
-        key = self._episode_cache_key(ob)
-        cached = self.trajectory_path_cache.get(key)
-        if cached is None:
-            cached = prepare_teacher_path(ob['trajectory'], ob['goal'])
-            self.trajectory_path_cache[key] = cached
-
-        points, cumulative = cached
-        if current_arc_m is None:
-            targets, valid = sample_fixed_horizon_targets(
-                points,
-                cumulative,
-                (current_pose.x, current_pose.y),
-                self.args.trajectory_horizons_m,
-            )
-        else:
-            targets, valid = sample_fixed_horizon_targets_from_arc(
-                points,
-                cumulative,
-                current_arc_m,
-                self.args.trajectory_horizons_m,
-            )
-        targets = normalize_targets(
+        core = self._human_core_anchors(ob)
+        target = build_next_core_anchor_target(
+            ob['trajectory'],
+            core,
+            (current_pose.x, current_pose.y),
+            self.args.trajectory_horizons_m,
+            min_lookahead_m=self.args.human_anchor_min_lookahead_m,
+            current_arc_m=current_arc_m,
+        )
+        anchor_xy = np.asarray(
+            self.env.normalize_position(
+                Point2D(
+                    float(target['anchor_xy'][0]),
+                    float(target['anchor_xy'][1]),
+                ),
+                ob['map_name'],
+                self.args.map_meters,
+            ),
+            dtype=np.float32,
+        )
+        trajectory_xy = normalize_targets(
             self.env,
             ob['map_name'],
             self.args.map_meters,
-            targets,
+            target['trajectory_xy'],
         )
-        return targets, valid
+        return {
+            'anchor_xy': anchor_xy,
+            'trajectory_xy': trajectory_xy,
+            'valid': target['valid'],
+            'anchor_distance_m': target['anchor_distance_m'],
+            'projection_error_m': target['projection_error_m'],
+            'anchor_reasons': target['anchor_reasons'],
+        }
+
+    def _encode_semantic_landmarks(
+        self,
+        obs,
+        instruction_token_ids,
+        lang_features,
+    ):
+        """Bind landmark coordinates to contextual instruction token features.
+
+        This reuses the single instruction BERT forward instead of running BERT
+        again for every landmark name.  When an exact WordPiece subsequence is
+        not found, the instruction CLS feature is used as a conservative
+        fallback while the coordinate remains available.
+        """
+        max_landmarks = self.args.max_referenced_landmarks
+        batch_size = len(obs)
+        coords = np.zeros(
+            (batch_size, max_landmarks, 2),
+            dtype=np.float32,
+        )
+        mask = np.zeros(
+            (batch_size, max_landmarks),
+            dtype=np.bool_,
+        )
+        token_rows = instruction_token_ids.tolist()
+        semantic_rows = []
+
+        for batch_idx, ob in enumerate(obs):
+            centroids = ob['referenced_landmark_centroids'][:max_landmarks]
+            names = ob['referenced_landmark_names'][:max_landmarks]
+            count = min(len(centroids), len(names), max_landmarks)
+            if count:
+                coords[batch_idx, :count] = centroids[:count]
+                mask[batch_idx, :count] = True
+
+            row = []
+            for landmark_idx in range(max_landmarks):
+                if landmark_idx >= count:
+                    row.append(lang_features[batch_idx, 0] * 0.0)
+                    continue
+
+                name_ids = self.tokenizer(
+                    str(names[landmark_idx]),
+                    add_special_tokens=False,
+                )['input_ids']
+                instruction_ids = token_rows[batch_idx]
+                start_idx = None
+                if name_ids:
+                    width = len(name_ids)
+                    for token_idx in range(
+                        0,
+                        len(instruction_ids) - width + 1,
+                    ):
+                        if instruction_ids[
+                            token_idx:token_idx + width
+                        ] == name_ids:
+                            start_idx = token_idx
+                            break
+
+                if start_idx is None:
+                    embedding = lang_features[batch_idx, 0]
+                else:
+                    embedding = lang_features[
+                        batch_idx,
+                        start_idx:start_idx + len(name_ids),
+                    ].mean(dim=0)
+                row.append(embedding)
+            semantic_rows.append(torch.stack(row, dim=0))
+
+        semantic_embeddings = torch.stack(semantic_rows, dim=0)
+        return (
+            torch.from_numpy(coords).cuda(),
+            torch.from_numpy(mask).cuda(),
+            semantic_embeddings,
+        )
 
     def get_results(self):
 
@@ -467,6 +564,15 @@ class NavCMTAgent:
         input_ids = encoding['input_ids'].cuda()
         attention_mask = encoding['attention_mask'].cuda()
         lang_features, linear_cls, cls_hidden = self.lang_model(input_ids, attention_mask)
+        (
+            semantic_landmark_coords,
+            semantic_landmark_mask,
+            semantic_landmark_embeddings,
+        ) = self._encode_semantic_landmarks(
+            obs,
+            encoding['input_ids'],
+            lang_features,
+        )
 
         # lang_features --> 768
         # linear_cls --> 49 (used to attend to img features)
@@ -520,7 +626,7 @@ class NavCMTAgent:
             traj[i]['trajectory'] = [poses[i]]
             traj[i]['stage1_trajectory'] = [poses[i]]
             traj[i]['referenced_landmark_count'] = int(
-                landmark_anchor_mask[i].sum().item()
+                semantic_landmark_mask[i].sum().item()
             )
         # print(np.array([len(ob['trajectory']) for ob in obs]))
 
@@ -533,7 +639,8 @@ class NavCMTAgent:
         progress_loss = 0.
         goal_predict_loss = 0.
         heatmap_loss = torch.tensor(0.).cuda()
-        trajectory_endpoint_loss = torch.tensor(0.).cuda()
+        semantic_anchor_loss = torch.tensor(0.).cuda()
+        semantic_anchor_position_loss = torch.tensor(0.).cuda()
         trajectory_loss = torch.tensor(0.).cuda()
 
         trajectory_step = 0
@@ -579,6 +686,9 @@ class NavCMTAgent:
             'candidates': global_positions,
             'landmark_anchors': landmark_anchor_coords,
             'landmark_anchor_mask': landmark_anchor_mask,
+            'semantic_landmark_coords': semantic_landmark_coords,
+            'semantic_landmark_mask': semantic_landmark_mask,
+            'semantic_landmark_embeddings': semantic_landmark_embeddings,
             'centroids': torch.zeros((batch_size, 0, 2)).cuda(),
             'lang_cls': linear_cls,
             'map_fts': torch.zeros(batch_size, 0, 512, 49).cuda(),
@@ -638,7 +748,15 @@ class NavCMTAgent:
 
 
 
-            pred_direction, pred_progress, pred_goals, pred_logits, trajectory_belief, grid_ft = self.vln_model(
+            (
+                pred_direction,
+                pred_progress,
+                pred_goals,
+                pred_logits,
+                semantic_anchor_logits,
+                trajectory_belief,
+                grid_ft,
+            ) = self.vln_model(
                 directions=input['directions'],
                 frames=input['frames'],
                 lenths=input['lenths'],
@@ -651,20 +769,25 @@ class NavCMTAgent:
                 candidates=input['candidates'],
                 landmark_anchors=input['landmark_anchors'],
                 landmark_anchor_mask=input['landmark_anchor_mask'],
+                semantic_landmark_coords=input['semantic_landmark_coords'],
+                semantic_landmark_mask=input['semantic_landmark_mask'],
+                semantic_landmark_embeddings=input['semantic_landmark_embeddings'],
                 centroids=input['centroids'],
                 lang_cls=input['lang_cls']
             )
 
-            # Stage-1 spatial belief: convert 49 grid logits into a 7x7 heatmap.
+            # Final-goal heatmap is kept as the long-range spatial prior.
             heatmap_probs = torch.softmax(pred_logits, dim=1)
             heatmap_goal_ids = heatmap_probs.argmax(dim=1)
-            # Direct trajectory execution. The heatmap probabilities are the
-            # 7x7 trajectory-mode scores; each selected mode is refined to a
-            # continuous endpoint and expanded into a fixed-horizon trajectory.
-            # Trajectory modes share exactly the same 7x7 logits as the
-            # heatmap head; reuse the probability tensor instead of a second
-            # identical softmax.
-            trajectory_probs = heatmap_probs
+
+            # Trajectory generation is now driven by the predicted next human
+            # core anchor rather than by all final-goal heatmap cells.
+            semantic_anchor_probs = torch.softmax(
+                semantic_anchor_logits,
+                dim=1,
+            )
+            semantic_anchor_ids = semantic_anchor_probs.argmax(dim=1)
+            trajectory_probs = semantic_anchor_probs
             refined_candidate_endpoints = refine_candidate_endpoints(
                 trajectory_belief['endpoint_offsets'],
                 self.args.grid_size,
@@ -789,8 +912,8 @@ class NavCMTAgent:
                 active_mask = torch.from_numpy((~ended).astype(np.float32)).to(pred_logits.device)
                 heatmap_loss += (per_sample_heatmap_loss * active_mask).sum()
 
-                trajectory_target_data = [
-                    self._fixed_horizon_trajectory_target(
+                core_target_data = [
+                    self._core_anchor_target(
                         ob,
                         poses[i],
                         current_arc_m=(
@@ -801,43 +924,79 @@ class NavCMTAgent:
                     )
                     for i, ob in enumerate(obs)
                 ]
+                gt_anchor_xy_np = np.stack(
+                    [item['anchor_xy'] for item in core_target_data]
+                )
+                gt_anchor_xy = torch.from_numpy(gt_anchor_xy_np).to(
+                    device=pred_logits.device,
+                    dtype=pred_logits.dtype,
+                )
+                gt_anchor_grid = np.floor(
+                    gt_anchor_xy_np * self.args.grid_size
+                ).astype(np.int64)
+                gt_anchor_grid = np.clip(
+                    gt_anchor_grid,
+                    0,
+                    self.args.grid_size - 1,
+                )
+                gt_anchor_ids = torch.from_numpy(
+                    gt_anchor_grid[:, 0] * self.args.grid_size
+                    + gt_anchor_grid[:, 1]
+                ).to(
+                    device=pred_logits.device,
+                    dtype=torch.long,
+                )
+
                 gt_trajectory_targets = torch.from_numpy(
-                    np.stack([item[0] for item in trajectory_target_data])
+                    np.stack(
+                        [item['trajectory_xy'] for item in core_target_data]
+                    )
                 ).to(
                     device=pred_logits.device,
                     dtype=pred_logits.dtype,
                 )
                 gt_trajectory_valid = torch.from_numpy(
-                    np.stack([item[1] for item in trajectory_target_data])
+                    np.stack([item['valid'] for item in core_target_data])
                 ).to(
                     device=pred_logits.device,
                     dtype=pred_logits.dtype,
                 )
 
-                # Geometry is supervised only on the GT 7x7 mode. Heatmap loss
-                # is the single mode-classification objective.
-                gt_mode_ids = gt_target.to(
-                    device=pred_logits.device,
-                    dtype=torch.long,
+                # Human core-anchor classification is distinct from the final-
+                # goal heatmap.  It answers "where is the next meaningful
+                # decision point?" instead of "where is the destination?".
+                gt_anchor_heatmap = build_gaussian_heatmap(
+                    gt_anchor_ids,
+                    self.args.grid_size,
+                    self.args.heatmap_sigma,
+                    semantic_anchor_logits.device,
                 )
+                per_sample_anchor_loss = -(
+                    gt_anchor_heatmap
+                    * F.log_softmax(semantic_anchor_logits, dim=1)
+                ).sum(dim=1)
+                semantic_anchor_loss += (
+                    per_sample_anchor_loss * active_mask
+                ).sum()
+
                 gt_mode_endpoints = torch.gather(
                     refined_candidate_endpoints,
                     dim=1,
-                    index=gt_mode_ids[:, None, None].expand(-1, 1, 2),
+                    index=gt_anchor_ids[:, None, None].expand(-1, 1, 2),
                 ).squeeze(1)
-                endpoint_error = F.smooth_l1_loss(
+                anchor_position_error = F.smooth_l1_loss(
                     gt_mode_endpoints,
-                    gt_values[:, 2:4],
+                    gt_anchor_xy,
                     reduction='none',
                 ).mean(dim=-1)
-                trajectory_endpoint_loss += (
-                    endpoint_error * active_mask
+                semantic_anchor_position_loss += (
+                    anchor_position_error * active_mask
                 ).sum()
 
                 gt_mode_residuals = torch.gather(
                     trajectory_belief['residuals'],
                     dim=1,
-                    index=gt_mode_ids[:, None, None, None].expand(
+                    index=gt_anchor_ids[:, None, None, None].expand(
                         -1,
                         1,
                         self.args.trajectory_steps,
@@ -870,9 +1029,13 @@ class NavCMTAgent:
                 # Diagnostics are detached and accumulated on-device, so they
                 # add only one synchronization per metric at rollout end.
                 with torch.no_grad():
+                    gt_goal_mode_ids = gt_target.to(
+                        device=pred_logits.device,
+                        dtype=torch.long,
+                    )
                     heatmap_stats = compute_heatmap_statistics(
                         heatmap_probs,
-                        gt_mode_ids,
+                        gt_goal_mode_ids,
                         gt_values[:, 2:4],
                         self.args.grid_size,
                         self.args.map_meters,
@@ -880,10 +1043,70 @@ class NavCMTAgent:
                     for name, values in heatmap_stats.items():
                         accumulate_diagnostic(name, values, active_mask)
 
+                    anchor_stats = compute_heatmap_statistics(
+                        semantic_anchor_probs,
+                        gt_anchor_ids,
+                        gt_anchor_xy,
+                        self.args.grid_size,
+                        self.args.map_meters,
+                    )
+                    for name, values in anchor_stats.items():
+                        anchor_name = name.replace(
+                            'heatmap_',
+                            'semantic_anchor_',
+                            1,
+                        )
+                        accumulate_diagnostic(
+                            anchor_name,
+                            values,
+                            active_mask,
+                        )
+
+                    anchor_distance_m = torch.as_tensor(
+                        [
+                            float(item['anchor_distance_m'])
+                            for item in core_target_data
+                        ],
+                        device=pred_logits.device,
+                        dtype=pred_logits.dtype,
+                    )
+                    anchor_projection_error_m = torch.as_tensor(
+                        [
+                            float(item['projection_error_m'])
+                            for item in core_target_data
+                        ],
+                        device=pred_logits.device,
+                        dtype=pred_logits.dtype,
+                    )
+                    accumulate_diagnostic(
+                        'human_anchor_distance_m',
+                        anchor_distance_m,
+                        active_mask,
+                    )
+                    accumulate_diagnostic(
+                        'human_anchor_projection_error_m',
+                        anchor_projection_error_m,
+                        active_mask,
+                    )
+                    for reason in ('turn', 'yaw', 'landmark', 'goal'):
+                        reason_values = torch.as_tensor(
+                            [
+                                float(reason in item['anchor_reasons'])
+                                for item in core_target_data
+                            ],
+                            device=pred_logits.device,
+                            dtype=pred_logits.dtype,
+                        )
+                        accumulate_diagnostic(
+                            'human_anchor_%s_rate' % reason,
+                            reason_values,
+                            active_mask,
+                        )
+
                     active_bool = active_mask.bool()
                     cell_count = self.args.grid_size ** 2
                     step_gt_hist = torch.bincount(
-                        gt_mode_ids[active_bool],
+                        gt_goal_mode_ids[active_bool],
                         minlength=cell_count,
                     ).to(dtype=torch.float32)
                     step_pred_hist = torch.bincount(
@@ -895,7 +1118,7 @@ class NavCMTAgent:
                         * active_mask[:, None]
                     ).sum(dim=0)
                     confusion_ids = (
-                        gt_mode_ids[active_bool] * cell_count
+                        gt_goal_mode_ids[active_bool] * cell_count
                         + heatmap_goal_ids[active_bool]
                     )
                     step_confusion = torch.bincount(
@@ -918,13 +1141,13 @@ class NavCMTAgent:
                         heatmap_sample_count = heatmap_sample_count + step_count
 
                     trajectory_stats = compute_trajectory_statistics(
-                        heatmap_goal_ids,
+                        semantic_anchor_ids,
                         refined_candidate_endpoints,
                         proposal_ids,
                         proposal_endpoints,
                         proposal_trajectories,
-                        gt_mode_ids,
-                        gt_values[:, 2:4],
+                        gt_anchor_ids,
+                        gt_anchor_xy,
                         gt_trajectory_targets,
                         gt_trajectory_valid,
                         self.args.map_meters,
@@ -996,6 +1219,24 @@ class NavCMTAgent:
                     traj[i]['heatmap_confidence'].append(
                         float(heatmap_probs[i, heatmap_goal_ids[i]].item())
                     )
+                    traj[i]['semantic_anchor_id'].append(
+                        int(semantic_anchor_ids[i].item())
+                    )
+                    traj[i]['semantic_anchor_confidence'].append(
+                        float(
+                            semantic_anchor_probs[
+                                i,
+                                semantic_anchor_ids[i],
+                            ].item()
+                        )
+                    )
+                    if gt_trajectory_targets is not None:
+                        traj[i]['gt_semantic_anchor'].append(
+                            gt_anchor_xy[i].detach().cpu().tolist()
+                        )
+                        traj[i]['gt_semantic_anchor_reasons'].append(
+                            list(core_target_data[i]['anchor_reasons'])
+                        )
                     if proposal_ids is not None:
                         traj[i]['trajectory_proposal_ids'].append(
                             proposal_ids[i].detach().cpu().tolist()
@@ -1123,8 +1364,10 @@ class NavCMTAgent:
             )
             ml_loss = (
                 ml_loss
-                + self.args.trajectory_endpoint_loss_weight
-                * trajectory_endpoint_loss
+                + self.args.semantic_anchor_loss_weight
+                * semantic_anchor_loss
+                + self.args.semantic_anchor_position_loss_weight
+                * semantic_anchor_position_loss
                 + self.args.trajectory_loss_weight * trajectory_loss
             )
             # ml_loss = progress_loss + goal_predict_loss
@@ -1136,7 +1379,12 @@ class NavCMTAgent:
             self.logs['progress_loss'].append((progress_loss * train_ml / batch_size).item())
             self.logs['goal_predict_loss'].append((goal_predict_loss * train_ml / batch_size).item())
             self.logs['heatmap_loss'].append((heatmap_loss * train_ml / batch_size).item())
-            self.logs['trajectory_endpoint_loss'].append((trajectory_endpoint_loss * train_ml / batch_size).item())
+            self.logs['semantic_anchor_loss'].append(
+                (semantic_anchor_loss * train_ml / batch_size).item()
+            )
+            self.logs['semantic_anchor_position_loss'].append(
+                (semantic_anchor_position_loss * train_ml / batch_size).item()
+            )
             self.logs['trajectory_loss'].append((trajectory_loss * train_ml / batch_size).item())
             self.logs['IL_loss'].append((ml_loss * train_ml / batch_size).item())
 
@@ -1207,6 +1455,21 @@ class NavCMTAgent:
                 self.vln_model_without_ddp.global_landmark_gate
             ).detach().cpu().item())
         )
+        self.logs['semantic_anchor_landmark_gate'].append(
+            float(torch.tanh(
+                self.vln_model_without_ddp.semantic_anchor_landmark_gate
+            ).detach().cpu().item())
+        )
+        self.logs['semantic_anchor_visual_gate'].append(
+            float(torch.tanh(
+                self.vln_model_without_ddp.semantic_anchor_visual_gate
+            ).detach().cpu().item())
+        )
+        self.logs['semantic_anchor_language_gate'].append(
+            float(torch.tanh(
+                self.vln_model_without_ddp.semantic_anchor_language_gate
+            ).detach().cpu().item())
+        )
 
         # print('[3]')
         # debug_memory()
@@ -1257,28 +1520,45 @@ class NavCMTAgent:
             adapted_map_input = False
 
             for key, value in saved_state.items():
-                if key not in state:
+                target_key = key
+                if (
+                    name == "vln_model"
+                    and key.startswith("trajectory_geometry_head.")
+                ):
+                    target_key = key.replace(
+                        "trajectory_geometry_head.",
+                        "semantic_anchor_geometry_head.",
+                        1,
+                    )
+                if target_key not in state:
                     continue
-                if value.shape == state[key].shape:
-                    state_dict[key] = value
+                if value.shape == state[target_key].shape:
+                    state_dict[target_key] = value
                     continue
                 if (
                     name == "vln_model"
-                    and key == "map_encoder.main.1.weight"
+                    and target_key == "map_encoder.main.1.weight"
                     and value.ndim == 4
                     and value.shape[1] == 4
-                    and state[key].shape[1] == 3
-                    and value.shape[0] == state[key].shape[0]
-                    and value.shape[2:] == state[key].shape[2:]
+                    and state[target_key].shape[1] == 3
+                    and value.shape[0] == state[target_key].shape[0]
+                    and value.shape[2:] == state[target_key].shape[2:]
                 ):
-                    adapted = state[key].clone()
+                    adapted = state[target_key].clone()
                     adapted[:, :2] = value[:, :2]
                     adapted[:, 2:3] = value[:, 3:4]
-                    state_dict[key] = adapted
+                    state_dict[target_key] = adapted
                     adapted_map_input = True
                     print("NOTICE: adapted prior 4-channel develop map encoder back to baseline 3-channel HETT map input")
                     continue
-                print("NOTICE: skip shape-mismatched parameter", name, key, tuple(value.shape), "->", tuple(state[key].shape))
+                print(
+                    "NOTICE: skip shape-mismatched parameter",
+                    name,
+                    key,
+                    tuple(value.shape),
+                    "->",
+                    tuple(state[target_key].shape),
+                )
 
             state.update(state_dict)
             model.load_state_dict(state)

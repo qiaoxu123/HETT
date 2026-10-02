@@ -101,8 +101,16 @@ def parse_args():
     parser.add_argument('--trajectory_horizons_m', type=float, nargs='+',
                         default=[10.0, 25.0, 50.0, 100.0],
                         help='Fixed physical horizons; final endpoint is appended automatically')
-    parser.add_argument('--trajectory_endpoint_loss_weight', type=float, default=1.0)
     parser.add_argument('--trajectory_loss_weight', type=float, default=1.0)
+    parser.add_argument('--semantic_anchor_loss_weight', type=float, default=0.5,
+                        help='Weight for next human core-anchor region classification')
+    parser.add_argument('--semantic_anchor_position_loss_weight', type=float, default=1.0,
+                        help='Weight for continuous core-anchor refinement')
+    parser.add_argument('--human_anchor_min_step_m', type=float, default=1.0)
+    parser.add_argument('--human_anchor_rdp_tolerance_m', type=float, default=2.5)
+    parser.add_argument('--human_anchor_yaw_keyframe_deg', type=float, default=30.0)
+    parser.add_argument('--human_anchor_landmark_radius_m', type=float, default=30.0)
+    parser.add_argument('--human_anchor_min_lookahead_m', type=float, default=8.0)
     parser.add_argument('--trajectory_residual_scale', type=float, default=0.05)
     parser.add_argument('--trajectory_move_iteration', type=int, default=2,
                         help='Controller iterations for the first fixed-horizon waypoint')
@@ -200,6 +208,12 @@ def postprocess_args(args):
     args.trajectory_steps = len(args.trajectory_horizons_m) + 1
     if args.teacher_step_m <= 0:
         raise ValueError('teacher_step_m must be positive')
+    if args.human_anchor_min_lookahead_m <= 0:
+        raise ValueError('human_anchor_min_lookahead_m must be positive')
+    if args.human_anchor_rdp_tolerance_m < 0:
+        raise ValueError('human_anchor_rdp_tolerance_m must be non-negative')
+    if args.human_anchor_landmark_radius_m < 0:
+        raise ValueError('human_anchor_landmark_radius_m must be non-negative')
     if not 0.0 <= args.stop_progress_threshold <= 1.0:
         raise ValueError('stop_progress_threshold must be in [0, 1]')
     if args.trajectory_nms_kernel % 2 != 1:

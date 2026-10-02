@@ -158,11 +158,44 @@ class ET(nn.Module):
             nn.ReLU(),
             nn.Linear(self.args.demb // 2, 1),
         )
-        # Optional trajectory geometry on the same 7x7 HETT candidates.
-        # Spatial mode scores are shared with the heatmap head; this avoids the
-        # redundant 7x7 -> 28x28 belief upsampling path.
+
+        # Semantic core-anchor branch.  Final-goal heatmap prediction remains a
+        # long-range spatial prior, while the next trajectory segment is
+        # grounded on a sparse human-intent anchor learned from language,
+        # referenced landmark semantics and the current visual state.
         _rng_state = torch.get_rng_state()
-        self.trajectory_geometry_head = nn.Sequential(
+        self.semantic_landmark_coord_encoder = nn.Sequential(
+            nn.Linear(2, self.args.demb),
+            nn.LayerNorm(self.args.demb, eps=1e-12),
+        )
+        self.semantic_landmark_name_proj = nn.Linear(
+            self.args.demb,
+            self.args.demb,
+        )
+        self.semantic_anchor_candidate_norm = nn.LayerNorm(self.args.demb)
+        self.semantic_anchor_landmark_norm = nn.LayerNorm(self.args.demb)
+        self.semantic_anchor_visual_proj = nn.Linear(
+            self.args.demb,
+            self.args.demb,
+        )
+        self.semantic_anchor_language_proj = nn.Linear(
+            self.args.demb,
+            self.args.demb,
+        )
+        self.semantic_anchor_landmark_gate = nn.Parameter(torch.tensor(0.0))
+        self.semantic_anchor_visual_gate = nn.Parameter(torch.tensor(0.0))
+        self.semantic_anchor_language_gate = nn.Parameter(torch.tensor(0.0))
+        self.semantic_anchor_score_head = nn.Sequential(
+            nn.Linear(self.args.demb, self.args.demb // 2),
+            nn.ReLU(),
+            nn.Linear(self.args.demb // 2, 1),
+        )
+        # Preserve the current develop policy at initialization: before the
+        # human-anchor residual learns anything, trajectory modes are ranked by
+        # the existing final-goal heatmap.
+        nn.init.zeros_(self.semantic_anchor_score_head[-1].weight)
+        nn.init.zeros_(self.semantic_anchor_score_head[-1].bias)
+        self.semantic_anchor_geometry_head = nn.Sequential(
             nn.Linear(self.args.demb, self.args.demb // 2),
             nn.ReLU(),
             nn.Linear(
@@ -170,9 +203,10 @@ class ET(nn.Module):
                 2 + self.args.trajectory_steps * 2,
             ),
         )
-        # Start from cell centers + straight fixed-horizon anchors.
-        nn.init.zeros_(self.trajectory_geometry_head[-1].weight)
-        nn.init.zeros_(self.trajectory_geometry_head[-1].bias)
+        # Geometry starts from the selected grid-cell center and a straight
+        # path toward that core anchor.  Human intent is learned as a residual.
+        nn.init.zeros_(self.semantic_anchor_geometry_head[-1].weight)
+        nn.init.zeros_(self.semantic_anchor_geometry_head[-1].bias)
         torch.set_rng_state(_rng_state)
         self.decoder_2_goal_full = nn.Sequential(
             nn.Linear(self.args.demb, 512),
@@ -336,13 +370,92 @@ class ET(nn.Module):
             + torch.tanh(self.heatmap_lang_gate) * heatmap_lang_context
         )
 
-        # One logit per original 7x7 global grid cell.
+        # One logit per original 7x7 global grid cell.  This remains the
+        # final-goal heatmap and is not itself the trajectory-mode selector.
         target_logits = self.decoder_2_logits_full(conditioned_target).squeeze(-1)
 
-        # Direct trajectory navigation: every 7x7 candidate is a trajectory
-        # mode. The existing heatmap logits provide the mode probabilities and
-        # this head predicts continuous endpoint refinement + path geometry.
-        geometry = self.trajectory_geometry_head(conditioned_target)
+        semantic_landmark_coords = inputs.get('semantic_landmark_coords')
+        semantic_landmark_embeddings = inputs.get('semantic_landmark_embeddings')
+        semantic_landmark_mask = inputs.get('semantic_landmark_mask')
+
+        anchor_features = conditioned_target
+        if (
+            semantic_landmark_coords is not None
+            and semantic_landmark_embeddings is not None
+            and semantic_landmark_mask is not None
+        ):
+            landmark_tokens = (
+                self.semantic_landmark_coord_encoder(semantic_landmark_coords)
+                + self.semantic_landmark_name_proj(
+                    semantic_landmark_embeddings
+                )
+            )
+            landmark_tokens = self.semantic_anchor_landmark_norm(
+                landmark_tokens
+            )
+            anchor_query = self.semantic_anchor_candidate_norm(
+                conditioned_target
+            )
+            landmark_scores = torch.matmul(
+                anchor_query,
+                landmark_tokens.transpose(1, 2),
+            ) / math.sqrt(self.args.demb)
+
+            # Geographic proximity helps bind a language-named landmark to
+            # candidate regions without making the coordinate itself a goal.
+            candidate_coords = (
+                inputs['candidates']
+                + 0.5 / float(self.args.grid_size)
+            )
+            landmark_distance = torch.linalg.norm(
+                candidate_coords[:, :, None, :]
+                - semantic_landmark_coords[:, None, :, :],
+                dim=-1,
+            )
+            landmark_scores = landmark_scores - landmark_distance / 0.20
+
+            valid_landmarks = semantic_landmark_mask[:, None, :].bool()
+            landmark_scores = landmark_scores.masked_fill(
+                ~valid_landmarks,
+                -1e4,
+            )
+            landmark_weights = torch.softmax(landmark_scores, dim=-1)
+            landmark_weights = (
+                landmark_weights
+                * valid_landmarks.to(landmark_weights.dtype)
+            )
+            landmark_weights = landmark_weights / landmark_weights.sum(
+                dim=-1,
+                keepdim=True,
+            ).clamp_min(1e-8)
+            landmark_context = torch.matmul(
+                landmark_weights,
+                landmark_tokens,
+            )
+            anchor_features = (
+                anchor_features
+                + torch.tanh(self.semantic_anchor_landmark_gate)
+                * landmark_context
+            )
+
+        visual_context = self.semantic_anchor_visual_proj(
+            decoder_input
+        ).unsqueeze(1)
+        language_context = self.semantic_anchor_language_proj(
+            emb_lang[:, 0]
+        ).unsqueeze(1)
+        anchor_features = (
+            anchor_features
+            + torch.tanh(self.semantic_anchor_visual_gate) * visual_context
+            + torch.tanh(self.semantic_anchor_language_gate) * language_context
+        )
+
+        semantic_anchor_logits = (
+            target_logits
+            + self.semantic_anchor_score_head(anchor_features).squeeze(-1)
+        )
+
+        geometry = self.semantic_anchor_geometry_head(anchor_features)
         endpoint_offsets = (
             torch.tanh(geometry[:, :, :2])
             * (0.5 / float(self.args.grid_size))
@@ -366,6 +479,7 @@ class ET(nn.Module):
             progress,
             pred_goals,
             target_logits,
+            semantic_anchor_logits,
             trajectory_belief,
             emb_frames + emb_directions,
         )

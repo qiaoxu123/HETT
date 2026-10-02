@@ -39,6 +39,20 @@ DIAGNOSTIC_NAMES = (
     'heatmap_gt_rank',
     'heatmap_cell_error',
     'heatmap_coarse_goal_error_m',
+    'semantic_anchor_top1_acc',
+    'semantic_anchor_top3_acc',
+    'semantic_anchor_gt_prob',
+    'semantic_anchor_top1_conf',
+    'semantic_anchor_entropy',
+    'semantic_anchor_gt_rank',
+    'semantic_anchor_cell_error',
+    'semantic_anchor_coarse_goal_error_m',
+    'human_anchor_distance_m',
+    'human_anchor_projection_error_m',
+    'human_anchor_turn_rate',
+    'human_anchor_yaw_rate',
+    'human_anchor_landmark_rate',
+    'human_anchor_goal_rate',
     'trajectory_top1_endpoint_error_m',
     'trajectory_oracle_topk_endpoint_error_m',
     'trajectory_topk_gt_recall',
@@ -150,6 +164,15 @@ def format_diagnostics_line(policy, diagnostics):
         'heatmap_gt_rank',
         'heatmap_cell_error',
         'heatmap_coarse_goal_error_m',
+        'semantic_anchor_top1_acc',
+        'semantic_anchor_top3_acc',
+        'semantic_anchor_gt_rank',
+        'semantic_anchor_coarse_goal_error_m',
+        'human_anchor_distance_m',
+        'human_anchor_turn_rate',
+        'human_anchor_yaw_rate',
+        'human_anchor_landmark_rate',
+        'human_anchor_goal_rate',
         'trajectory_top1_endpoint_error_m',
         'trajectory_oracle_topk_endpoint_error_m',
         'trajectory_topk_gt_recall',
@@ -359,23 +382,28 @@ def train(args, train_env, val_envs, rank=-1):
                 heatmap_loss = sum(agent.logs['heatmap_loss']) / max(
                     len(agent.logs['heatmap_loss']), 1
                 )
-                trajectory_endpoint_loss = sum(
-                    agent.logs['trajectory_endpoint_loss']
-                ) / max(len(agent.logs['trajectory_endpoint_loss']), 1)
+                semantic_anchor_loss = sum(
+                    agent.logs['semantic_anchor_loss']
+                ) / max(len(agent.logs['semantic_anchor_loss']), 1)
+                semantic_anchor_position_loss = sum(
+                    agent.logs['semantic_anchor_position_loss']
+                ) / max(len(agent.logs['semantic_anchor_position_loss']), 1)
                 trajectory_loss = sum(agent.logs['trajectory_loss']) / max(
                     len(agent.logs['trajectory_loss']), 1
                 )
                 print(
                     "BENCHMARK_EPOCH epoch=%d IL_loss=%.6f direction_loss=%.6f "
                     "progress_loss=%.6f goal_predict_loss=%.6f heatmap_loss=%.6f "
-                    "trajectory_endpoint_loss=%.6f trajectory_loss=%.6f" % (
+                    "semantic_anchor_loss=%.6f semantic_anchor_position_loss=%.6f "
+                    "trajectory_loss=%.6f" % (
                         idx,
                         ml_loss,
                         direction_loss,
                         progress_loss,
                         goal_predict_loss,
                         heatmap_loss,
-                        trajectory_endpoint_loss,
+                        semantic_anchor_loss,
+                        semantic_anchor_position_loss,
                         trajectory_loss,
                     ),
                     flush=True,
@@ -397,9 +425,13 @@ def train(args, train_env, val_envs, rank=-1):
 
             progress_loss = sum(agent.logs['progress_loss']) / max(len(agent.logs['progress_loss']), 1)
             goal_predict_loss = sum(agent.logs['goal_predict_loss']) / max(len(agent.logs['goal_predict_loss']), 1)
-            trajectory_endpoint_loss = (
-                sum(agent.logs['trajectory_endpoint_loss'])
-                / max(len(agent.logs['trajectory_endpoint_loss']), 1)
+            semantic_anchor_loss = (
+                sum(agent.logs['semantic_anchor_loss'])
+                / max(len(agent.logs['semantic_anchor_loss']), 1)
+            )
+            semantic_anchor_position_loss = (
+                sum(agent.logs['semantic_anchor_position_loss'])
+                / max(len(agent.logs['semantic_anchor_position_loss']), 1)
             )
             trajectory_loss = (
                 sum(agent.logs['trajectory_loss'])
@@ -408,12 +440,14 @@ def train(args, train_env, val_envs, rank=-1):
 
             write_to_record_file(
                 "\nIL_loss %.4f direction_loss %.4f progress_loss %.4f "
-                "goal_predict_loss %.4f trajectory_endpoint_loss %.4f trajectory_loss %.4f" % (
+                "goal_predict_loss %.4f semantic_anchor_loss %.4f "
+                "semantic_anchor_position_loss %.4f trajectory_loss %.4f" % (
                     ml_loss,
                     direction_loss,
                     progress_loss,
                     goal_predict_loss,
-                    trajectory_endpoint_loss,
+                    semantic_anchor_loss,
+                    semantic_anchor_position_loss,
                     trajectory_loss,
                 ),
                 record_file
@@ -434,13 +468,26 @@ def train(args, train_env, val_envs, rank=-1):
                 sum(agent.logs['global_landmark_gate'])
                 / max(len(agent.logs['global_landmark_gate']), 1)
             )
+            semantic_anchor_landmark_gate = _mean_log(
+                agent.logs, 'semantic_anchor_landmark_gate'
+            ) or 0.0
+            semantic_anchor_visual_gate = _mean_log(
+                agent.logs, 'semantic_anchor_visual_gate'
+            ) or 0.0
+            semantic_anchor_language_gate = _mean_log(
+                agent.logs, 'semantic_anchor_language_gate'
+            ) or 0.0
             write_to_record_file(
                 "\nrollout trajectory_step %.4f teacher_step %.4f "
-                "teacher_distance_m %.4f global_landmark_gate %.4f" % (
+                "teacher_distance_m %.4f global_landmark_gate %.4f "
+                "anchor_gates landmark %.4f visual %.4f language %.4f" % (
                     trajectory_step,
                     teacher_step,
                     teacher_distance_m,
                     global_landmark_gate,
+                    semantic_anchor_landmark_gate,
+                    semantic_anchor_visual_gate,
+                    semantic_anchor_language_gate,
                 ),
                 record_file
             )
@@ -493,10 +540,23 @@ def train(args, train_env, val_envs, rank=-1):
                     sum(agent_eval.logs['global_landmark_gate'])
                     / max(len(agent_eval.logs['global_landmark_gate']), 1)
                 )
+                anchor_landmark_gate = _mean_log(
+                    agent_eval.logs, 'semantic_anchor_landmark_gate'
+                ) or 0.0
+                anchor_visual_gate = _mean_log(
+                    agent_eval.logs, 'semantic_anchor_visual_gate'
+                ) or 0.0
+                anchor_language_gate = _mean_log(
+                    agent_eval.logs, 'semantic_anchor_language_gate'
+                ) or 0.0
                 write_to_record_file(
-                    "\nrollout trajectory_step %.4f global_landmark_gate %.4f" % (
+                    "\nrollout trajectory_step %.4f global_landmark_gate %.4f "
+                    "anchor_gates landmark %.4f visual %.4f language %.4f" % (
                         trajectory_step,
                         global_landmark_gate,
+                        anchor_landmark_gate,
+                        anchor_visual_gate,
+                        anchor_language_gate,
                     ),
                     record_file
                 )

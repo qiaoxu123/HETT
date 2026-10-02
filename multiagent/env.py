@@ -316,6 +316,10 @@ class CityNavBatch(torch.utils.data.IterableDataset):
                     normalized_centroids,
                     dtype=np.float32,
                 ).reshape(-1, 2),
+                'referenced_landmark_centroids_world': np.asarray(
+                    referenced_centroids,
+                    dtype=np.float32,
+                ).reshape(-1, 2),
                 'referenced_landmark_names': list(
                     self.nav_maps[i].referenced_landmark_map.landmark_names
                 ),

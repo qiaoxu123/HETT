@@ -1,201 +1,191 @@
-# Direct Trajectory Navigation in develop
+# Semantic Core-Anchor Trajectory Navigation
 
-The learned student policy no longer uses the Stage-1 / Stage-2 controller.
-Navigation is driven directly by trajectory hypotheses built on the original
-7x7 HETT candidate grid.
+The develop branch now separates **final-goal localization** from **next
+trajectory decision**.
 
-## Representation
+The 7x7 final-goal heatmap remains a long-range spatial prior.  Trajectory
+generation is no longer driven directly by all 49 goal cells.  Instead the
+policy predicts the next sparse human-intent **core anchor**, then generates a
+short receding-horizon trajectory toward that anchor.
 
-For each of the 49 HETT candidate regions, the existing heatmap head provides
-the trajectory-mode score. A geometry head predicts:
+## Human core anchors
 
-```
-endpoint offset:      dx, dy
-trajectory residual:  5 x (dx, dy)
-```
+CityFlight keyboard traces contain dense low-level samples.  Training derives
+sparse anchors from four sources:
 
-Each candidate therefore represents:
+1. **route turns**: RDP corners preserve meaningful XY route changes;
+2. **view changes**: large first-person yaw changes are retained;
+3. **referenced landmark passages**: the closest demonstrated point to each
+   instruction-referenced landmark is retained when the route passes within a
+   configurable radius;
+4. **final goal**: the demonstrated endpoint is always retained.
 
-```
-region belief
-+ continuous endpoint refinement
-+ fixed-horizon trajectory residual
-```
+Small spatial/yaw jitter is removed before the core set is formed.
 
-The endpoint offset is bounded to half a 7x7 cell in each axis, so each mode
-refines continuously inside its coarse region.
-
-## Fixed physical horizons
-
-Each trajectory uses:
+Default extraction parameters:
 
 ```
-10 m / 25 m / 50 m / 100 m / final endpoint
+human_anchor_min_step_m = 1.0
+human_anchor_rdp_tolerance_m = 2.5
+human_anchor_yaw_keyframe_deg = 30
+human_anchor_landmark_radius_m = 30
+human_anchor_min_lookahead_m = 8
 ```
 
-A straight fixed-horizon anchor is built from the current UAV position toward
-the refined endpoint. The residual head is zero-initialized, so early training
-starts from stable straight anchors.
+At each teacher/student training state the next future core anchor is selected.
+For teacher states the known human arc coordinate is used directly; for
+student states the current XY is projected continuously onto the human path.
 
-## Training
+## Semantic anchor inference
 
-There is one spatial mode-classification objective: the existing 7x7 heatmap
-loss.
-
-Trajectory geometry is supervised only on the GT 7x7 mode:
+Inference does **not** use the human trajectory.  The next core-anchor belief
+is predicted from information already available to the agent:
 
 ```
-L = L_HETT
-  + lambda_heatmap * L_heatmap
-  + lambda_endpoint * L_endpoint
-  + lambda_trajectory * L_trajectory
+final-goal 7x7 heatmap
+instruction representation
+current visual state
+referenced landmark names (BERT)
+referenced landmark coordinates
+map/history-conditioned HETT candidate features
 ```
 
-The CityFlight human teacher path is projected continuously from the current
-state and sampled at 10/25/50/100 m plus the final goal. Invalid long horizons
-near the destination are masked.
+Referenced landmark names reuse contextual token features from the single
+trainable instruction-BERT forward.  No extra landmark BERT pass is required.
+Each contextual name embedding is paired with its geographic coordinate.
+Candidate-to-landmark attention combines semantic similarity with geographic
+proximity.
 
-The teacher + student rollout schedule is preserved, and BERT/DarkNet remain
-trainable. The teacher state generator itself is now aligned with the
-trajectory policy: it advances along the recorded CityFlight human trajectory
-by a fixed physical arc-length step (default 10 m), preserving interpolated
-human x/y/z/yaw instead of using the legacy Stage-1/Stage-2 controller.
+The anchor branch uses the final-goal heatmap logits as the initialization
+prior and learns a residual core-anchor score.  The residual head is
+zero-initialized, so the first forward pass preserves the previous develop
+trajectory ranking.  Landmark, visual and language contexts enter through
+separate learnable residual gates.
 
-For teacher states, trajectory targets use the known human-path arc coordinate
-directly rather than re-projecting the pose to the polyline. This avoids
-ambiguous supervision at loops or self-intersections. Student states still use
-continuous projection onto the human teacher path to obtain recovery targets.
-
-## Teacher rollout
-
-Teacher and student use the same HETT/trajectory network and the same losses.
-They differ only in next-state generation:
+## Two spatial beliefs with different roles
 
 ```
-teacher: current human arc -> + teacher_step_m -> interpolated human Pose4D
-student: predicted Top-1 trajectory -> first waypoint -> controller move
+Final-goal heatmap:
+    Where is the destination roughly?
+
+Semantic core-anchor belief:
+    What is the next meaningful decision point on the way there?
 ```
 
-Teacher yaw is no longer randomized. It is interpolated on the shortest wrapped
-angular path between recorded human poses, preserving the first-person viewing
-behavior in CityFlight.
+These are intentionally not the same target.
 
-The teacher rollout is still capped by `max_action_len`; `teacher_step_m`
-controls the physical spacing of teacher states.
+## Anchor-conditioned trajectory
+
+For each 7x7 anchor region the model predicts:
+
+```
+continuous anchor offset:  dx, dy
+trajectory residual:       5 x (dx, dy)
+```
+
+The selected anchor is refined continuously inside its coarse cell.  A straight
+fixed-horizon path is then constructed toward it:
+
+```
+10 m / 25 m / 50 m / 100 m / core anchor
+```
+
+Horizons beyond the human core anchor are masked in the trajectory loss.  This
+prevents the trajectory head from being supervised on motion that belongs to a
+later semantic decision segment.
+
+The residual head is zero-initialized, so early training starts from stable
+straight anchor-directed motion.
+
+## Training objectives
+
+```
+L =
+  L_HETT
++ lambda_heatmap * L_final_goal_heatmap
++ lambda_anchor * L_core_anchor_region
++ lambda_anchor_pos * L_core_anchor_position
++ lambda_traj * L_anchor_conditioned_trajectory
+```
+
+The existing final-goal coordinate and progress losses are preserved for
+diagnostics/backward compatibility.
+
+Default new weights:
+
+```
+semantic_anchor_loss_weight = 0.5
+semantic_anchor_position_loss_weight = 1.0
+trajectory_loss_weight = 1.0
+```
 
 ## Student execution
 
-Student navigation is trajectory-only:
-
 ```
-7x7 trajectory-mode scores
-        ↓
-3x3 NMS + Top-K
-        ↓
-continuous endpoints
-        ↓
-fixed-horizon trajectories
-        ↓
-select Top-1 trajectory
-        ↓
-execute only first ~10 m waypoint
-        ↓
-observe again and replan
-```
-
-There is no learned-policy Stage-1 / Stage-2 switch, recovery threshold, or
-fine-navigation branch in student execution.
-
-The legacy Stage-1 / Stage-2 code remains reachable only inside the preserved
-teacher rollout path so that the requested teacher training behavior is not
-changed.
-
-## Bottleneck diagnostics
-
-Every train epoch and validation split now records structured diagnostics in:
-
-```
-navigation_diagnostics.jsonl
+Language + RGB + map/history
+            |
+           HETT
+            |
+      final-goal heatmap
+            |
+    semantic core anchors
+            |
+       NMS + Top-K
+            |
+  continuous anchor refinement
+            |
+anchor-conditioned trajectories
+            |
+execute first ~10 m waypoint
+            |
+       observe + replan
 ```
 
-Each JSONL record also stores raw aggregated 7x7 heatmap data:
+The learned student policy remains trajectory-only; Stage-1/Stage-2 execution
+is not used.
+
+## Teacher rollout
+
+Teacher and student use the same network and losses.  They differ only in
+next-state generation:
 
 ```
-gt_frequency       # 7x7 GT-cell frequency
-pred_frequency     # 7x7 predicted Top-1 frequency
-mean_probability   # mean 7x7 probability field
-confusion_counts   # 49x49 GT-cell -> predicted-cell confusion matrix
-sample_count
+teacher -> recorded human path + teacher_step_m
+student -> predicted core-anchor trajectory first waypoint
 ```
 
-This makes center bias, mode collapse, spatial blind spots, and systematic
-cell-to-cell confusion directly inspectable after training.
+Teacher x/y/z/yaw are interpolated from the human demonstration.
 
-Key heatmap statistics:
+## Diagnostics
+
+`navigation_diagnostics.jsonl` continues to store final-goal heatmap data and
+now also reports semantic-anchor quality:
+
+```
+semantic_anchor_top1_acc
+semantic_anchor_top3_acc
+semantic_anchor_gt_rank
+semantic_anchor_coarse_goal_error_m
+human_anchor_distance_m
+human_anchor_projection_error_m
+human_anchor_turn_rate
+human_anchor_yaw_rate
+human_anchor_landmark_rate
+human_anchor_goal_rate
+```
+
+Trajectory endpoint metrics now measure the predicted **core anchor**, not the
+final destination.
+
+The existing final-goal heatmap diagnostics remain separate:
 
 ```
 heatmap_top1_acc
 heatmap_top3_acc
-heatmap_gt_prob
-heatmap_top1_conf
-heatmap_entropy
-heatmap_gt_rank
-heatmap_cell_error
 heatmap_coarse_goal_error_m
+gt_frequency / pred_frequency / mean_probability / confusion_counts
 ```
 
-Trajectory statistics:
-
-```
-trajectory_top1_endpoint_error_m
-trajectory_oracle_topk_endpoint_error_m
-trajectory_topk_gt_recall
-trajectory_first_wp_error_m
-```
-
-Progress/stop diagnostics:
-
-```
-progress_mae
-stop_trigger_rate
-premature_stop_rate
-near_goal_continue_rate
-```
-
-Teacher rollout diagnostics additionally include:
-
-```
-teacher_coverage_ratio
-teacher_truncated_rate
-```
-
-These make it possible to distinguish four common bottlenecks:
-
-1. low heatmap Top-1/Top-3 -> spatial grounding failure;
-2. good Top-K but poor Top-1 -> ranking failure;
-3. good mode accuracy but large endpoint/first-waypoint error -> geometry failure;
-4. good localization but poor SR -> stop/finalization or execution failure.
-
-## Key simplification
-
-Previous:
-
-```
-7x7 heatmap -> Stage-1 -> Stage-2
-                    or
-7x7 -> 28x28 dense belief -> trajectory
-```
-
-Current:
-
-```
-7x7 HETT candidates
-        ↓
-score + endpoint offset + trajectory residual
-        ↓
-Top-K trajectories
-        ↓
-first waypoint
-        ↓
-replan
-```
+This separation allows later experiments to tell whether a failure comes from
+long-range grounding, core-anchor inference, local trajectory geometry, or
+stop/finalization.
