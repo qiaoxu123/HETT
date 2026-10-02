@@ -396,6 +396,19 @@ class NavCMTAgent:
                                                       for _ in range(batch_size)
                                                       ])).cuda()
 
+        max_landmarks = self.args.max_referenced_landmarks
+        landmark_anchor_coords = np.zeros((batch_size, max_landmarks, 2), dtype=np.float32)
+        landmark_anchor_mask = np.zeros((batch_size, max_landmarks), dtype=np.bool_)
+        if not self.args.disable_referenced_landmark_centroids:
+            for i, ob in enumerate(obs):
+                centroids = ob['referenced_landmark_centroids'][:max_landmarks]
+                count = len(centroids)
+                if count:
+                    landmark_anchor_coords[i, :count] = centroids
+                    landmark_anchor_mask[i, :count] = True
+        landmark_anchor_coords = torch.from_numpy(landmark_anchor_coords).cuda()
+        landmark_anchor_mask = torch.from_numpy(landmark_anchor_mask).cuda()
+
         for i, ob in enumerate(obs):
             traj[i]['goal'] = ob['goal']
             traj[i]['instr_id'] = ob['id']
@@ -409,6 +422,9 @@ class NavCMTAgent:
             traj[i]['gt_trajectory'] = ob['trajectory']
             traj[i]['trajectory'] = [poses[i]]
             traj[i]['stage1_trajectory'] = [poses[i]]
+            traj[i]['referenced_landmark_count'] = int(
+                landmark_anchor_mask[i].sum().item()
+            )
         # print(np.array([len(ob['trajectory']) for ob in obs]))
 
         # Initialization the finishing status
@@ -434,6 +450,8 @@ class NavCMTAgent:
             'lang': lang_features,
             'lang_mask': attention_mask.bool(),
             'candidates': global_positions,
+            'landmark_anchors': landmark_anchor_coords,
+            'landmark_anchor_mask': landmark_anchor_mask,
             'centroids': torch.zeros((batch_size, 0, 2)).cuda(),
             'lang_cls': linear_cls,
             'map_fts': torch.zeros(batch_size, 0, 512, 49).cuda(),
@@ -504,6 +522,8 @@ class NavCMTAgent:
                 lang=input['lang'],
                 lang_mask=input['lang_mask'],
                 candidates=input['candidates'],
+                landmark_anchors=input['landmark_anchors'],
+                landmark_anchor_mask=input['landmark_anchor_mask'],
                 centroids=input['centroids'],
                 lang_cls=input['lang_cls']
             )
@@ -817,20 +837,42 @@ class NavCMTAgent:
 
         def recover_state(name, model, optimizer):
             state = model.state_dict()
-            model_keys = set(state.keys())
-            load_keys = set(states[name]['state_dict'].keys())
-            if model_keys == load_keys:
-                print("NOTICE: LOADing ALL KEYS IN THE ", name)
-                state_dict = states[name]['state_dict']
-            else:
-                print("NOTICE: DIFFERENT KEYS IN THE ", name)
-                # if not list(model_keys)[0].startswith('module.') and list(load_keys)[0].startswith('module.'):
-                #     state_dict = {k.replace('module.', ''): v for k, v in state_dict.items()}
-                state_dict = {k: v for k, v in states[name]['state_dict'].items() if k in model_keys}
+            saved_state = states[name]['state_dict']
+            state_dict = {}
+            adapted_map_input = False
+
+            for key, value in saved_state.items():
+                if key not in state:
+                    continue
+                if value.shape == state[key].shape:
+                    state_dict[key] = value
+                    continue
+                if (
+                    name == "vln_model"
+                    and key == "map_encoder.main.1.weight"
+                    and value.ndim == 4
+                    and value.shape[1] == 3
+                    and state[key].shape[1] == 4
+                    and value.shape[0] == state[key].shape[0]
+                    and value.shape[2:] == state[key].shape[2:]
+                ):
+                    adapted = state[key].clone()
+                    adapted.zero_()
+                    adapted[:, :2] = value[:, :2]
+                    adapted[:, 3:4] = value[:, 2:3]
+                    state_dict[key] = adapted
+                    adapted_map_input = True
+                    print("NOTICE: adapted 3-channel HETT map encoder to global+referenced 4-channel input")
+                    continue
+                print("NOTICE: skip shape-mismatched parameter", name, key, tuple(value.shape), "->", tuple(state[key].shape))
+
             state.update(state_dict)
             model.load_state_dict(state)
             if self.args.resume_optimizer:
-                optimizer.load_state_dict(states[name]['optimizer'])
+                if adapted_map_input and name == "vln_model":
+                    print("NOTICE: skip old vln optimizer state because map input dimensionality changed")
+                else:
+                    optimizer.load_state_dict(states[name]['optimizer'])
 
             def count_parameters(mo):
                 return sum(p.numel() for p in mo.parameters() if p.requires_grad)

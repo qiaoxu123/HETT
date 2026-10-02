@@ -71,7 +71,7 @@ class ET(nn.Module):
         super().__init__()
         self.args = args
         # encoder and visual embeddings
-        self.map_encoder = MapEncoder(240)
+        self.map_encoder = MapEncoder(240, input_channels=4)
         self.encoder_vl = EncoderVL(args)
         self.candidate_encoder = nn.Sequential(
             nn.Linear(2, self.args.demb),
@@ -81,6 +81,11 @@ class ET(nn.Module):
             nn.Linear(2, self.args.demb),
             nn.LayerNorm(self.args.demb, eps=1e-12)
         )
+        self.landmark_anchor_encoder = nn.Sequential(
+            nn.Linear(2, self.args.demb),
+            nn.LayerNorm(self.args.demb, eps=1e-12),
+        )
+        self.landmark_anchor_type = nn.Parameter(torch.zeros(1, 1, self.args.demb))
         # # feature embeddings
         # self.vis_feat = FeatureFlat(input_shape=self.visual_tensor_shape, output_size=args.demb)
         # dataset id learned encoding (applied after the encoder_lang)
@@ -155,6 +160,14 @@ class ET(nn.Module):
         map_feat = self.map_encoder(inputs['maps'])
 
         emb_candidates = self.candidate_encoder(inputs['candidates']) * emb_lang[:, :1, :]
+        landmark_anchor_mask = inputs.get('landmark_anchor_mask')
+        landmark_anchors = inputs.get('landmark_anchors')
+        if landmark_anchors is None:
+            emb_landmark_anchors = None
+        else:
+            emb_landmark_anchors = self.landmark_anchor_encoder(landmark_anchors) + self.landmark_anchor_type
+            if landmark_anchor_mask is not None:
+                emb_landmark_anchors = emb_landmark_anchors * landmark_anchor_mask.unsqueeze(-1).to(emb_landmark_anchors.dtype)
         # print(torch.isnan(map_feat).any(), torch.isinf(map_feat).any())
 
         # # embed frames and direiction (650,49) --> 768
@@ -219,6 +232,8 @@ class ET(nn.Module):
             emb_directions,
             emb_maps,
             emb_candidates,
+            emb_landmark_anchors=emb_landmark_anchors,
+            landmark_anchor_mask=landmark_anchor_mask,
 
             # inputs['lenths']
         )
@@ -227,7 +242,8 @@ class ET(nn.Module):
         encoder_out_visual = encoder_out[:, emb_lang.shape[1]]
         encoder_out_direction = encoder_out[:, emb_lang.shape[1] + 1]
         # encoder_out_candidates = encoder_out[:, emb_lang.shape[1] + 3: emb_lang.shape[1] + 3 + emb_candidates.shape[1]]
-        encoder_out_candidates = encoder_out[:, emb_lang.shape[1] + 3:]
+        landmark_anchor_count = 0 if emb_landmark_anchors is None else emb_landmark_anchors.shape[1]
+        encoder_out_candidates = encoder_out[:, emb_lang.shape[1] + 3 + landmark_anchor_count:]
         encoder_out_centroids = encoder_out[:, emb_lang.shape[1] + 2]
         # get the output actions
         decoder_input = encoder_out_visual.reshape(-1, self.args.demb)
