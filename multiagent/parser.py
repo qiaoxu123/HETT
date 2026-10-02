@@ -102,10 +102,6 @@ def parse_args():
                         help='Distance in meters for returning from Stage 2 to coarse Stage 1')
     parser.add_argument('--stage2_recover_patience', type=int, default=2,
                         help='Consecutive far-away Stage-2 steps required before coarse recovery')
-    parser.add_argument('--enable_trajectory_belief', action='store_true', default=False,
-                        help='Predict continuous endpoint and trajectory geometry on the 7x7 HETT candidates')
-    parser.add_argument('--trajectory_execution', action='store_true', default=False,
-                        help='Execute the first waypoint of the top trajectory instead of Two-Stage control')
     parser.add_argument('--trajectory_top_k', type=int, default=8)
     parser.add_argument('--trajectory_nms_kernel', type=int, default=3)
     parser.add_argument('--trajectory_horizons_m', type=float, nargs='+',
@@ -204,8 +200,6 @@ def postprocess_args(args):
     args.map_shape = (args.map_size, args.map_size)
     args.map_pixels_per_meter = args.map_size / args.map_meters
     args.trajectory_steps = len(args.trajectory_horizons_m) + 1
-    if args.trajectory_execution:
-        args.enable_trajectory_belief = True
     if args.trajectory_nms_kernel % 2 != 1:
         raise ValueError('trajectory_nms_kernel must be odd')
     if args.grid_size != 7:

@@ -339,30 +339,28 @@ class ET(nn.Module):
         # One logit per original 7x7 global grid cell.
         target_logits = self.decoder_2_logits_full(conditioned_target).squeeze(-1)
 
-        trajectory_belief = None
-        if self.args.enable_trajectory_belief:
-            geometry = self.trajectory_geometry_head(conditioned_target)
-            # Offset is constrained to half a 7x7 cell so each discrete mode
-            # refines continuously inside its own spatial region.
-            endpoint_offsets = (
-                torch.tanh(geometry[:, :, :2])
-                * (0.5 / float(self.args.grid_size))
-            )
-            residuals = geometry[:, :, 2:].reshape(
-                batch_size,
-                self.args.grid_size ** 2,
-                self.args.trajectory_steps,
-                2,
-            )
-            residuals = (
-                torch.tanh(residuals) * self.args.trajectory_residual_scale
-            )
-            trajectory_belief = {
-                # Reuse the heatmap logits as trajectory-mode probabilities.
-                'logits': target_logits,
-                'endpoint_offsets': endpoint_offsets,
-                'residuals': residuals,
-            }
+        # Direct trajectory navigation: every 7x7 candidate is a trajectory
+        # mode. The existing heatmap logits provide the mode probabilities and
+        # this head predicts continuous endpoint refinement + path geometry.
+        geometry = self.trajectory_geometry_head(conditioned_target)
+        endpoint_offsets = (
+            torch.tanh(geometry[:, :, :2])
+            * (0.5 / float(self.args.grid_size))
+        )
+        residuals = geometry[:, :, 2:].reshape(
+            batch_size,
+            self.args.grid_size ** 2,
+            self.args.trajectory_steps,
+            2,
+        )
+        residuals = (
+            torch.tanh(residuals) * self.args.trajectory_residual_scale
+        )
+        trajectory_belief = {
+            'logits': target_logits,
+            'endpoint_offsets': endpoint_offsets,
+            'residuals': residuals,
+        }
 
         return (
             direction,

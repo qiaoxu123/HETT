@@ -604,76 +604,56 @@ class NavCMTAgent:
             # Stage-1 spatial belief: convert 49 grid logits into a 7x7 heatmap.
             heatmap_probs = torch.softmax(pred_logits, dim=1)
             heatmap_goal_ids = heatmap_probs.argmax(dim=1)
-            heatmap_goal_rows = torch.div(
-                heatmap_goal_ids, self.args.grid_size, rounding_mode='floor'
-            ).float()
-            heatmap_goal_cols = (heatmap_goal_ids % self.args.grid_size).float()
-            heatmap_goals = torch.stack(
-                (
-                    (heatmap_goal_rows + 0.5) / self.args.grid_size,
-                    (heatmap_goal_cols + 0.5) / self.args.grid_size,
-                ),
+            # Direct trajectory execution. The heatmap probabilities are the
+            # 7x7 trajectory-mode scores; each selected mode is refined to a
+            # continuous endpoint and expanded into a fixed-horizon trajectory.
+            trajectory_probs = torch.softmax(
+                trajectory_belief['logits'],
                 dim=1,
             )
+            refined_candidate_endpoints = refine_candidate_endpoints(
+                trajectory_belief['endpoint_offsets'],
+                self.args.grid_size,
+            )
+            (
+                proposal_ids,
+                proposal_scores,
+                _,
+            ) = select_nms_topk(
+                trajectory_probs,
+                self.args.grid_size,
+                self.args.trajectory_top_k,
+                self.args.trajectory_nms_kernel,
+            )
 
-            proposal_ids = None
-            proposal_scores = None
-            proposal_endpoints = None
-            proposal_trajectories = None
-            selected_first_waypoint = None
-            control_goals = heatmap_goals
-
-            refined_candidate_endpoints = None
-            if trajectory_belief is not None:
-                # The 7x7 heatmap logits are the trajectory-mode scores.
-                trajectory_probs = torch.softmax(
-                    trajectory_belief['logits'],
-                    dim=1,
-                )
-                refined_candidate_endpoints = refine_candidate_endpoints(
-                    trajectory_belief['endpoint_offsets'],
-                    self.args.grid_size,
-                )
-                (
-                    proposal_ids,
-                    proposal_scores,
-                    _,
-                ) = select_nms_topk(
-                    trajectory_probs,
-                    self.args.grid_size,
-                    self.args.trajectory_top_k,
-                    self.args.trajectory_nms_kernel,
-                )
-
-                proposal_endpoints = torch.gather(
-                    refined_candidate_endpoints,
-                    dim=1,
-                    index=proposal_ids[:, :, None].expand(-1, -1, 2),
-                )
-                gather_index = proposal_ids[:, :, None, None].expand(
-                    -1,
-                    -1,
-                    self.args.trajectory_steps,
-                    2,
-                )
-                proposal_residuals = torch.gather(
-                    trajectory_belief['residuals'],
-                    dim=1,
-                    index=gather_index,
-                )
-                current_xy = input['directions'][:, -1, 2:4]
-                proposal_anchors = build_fixed_horizon_anchors(
-                    current_xy,
-                    proposal_endpoints,
-                    self.args.trajectory_horizons_m,
-                    self.args.map_meters,
-                )
-                proposal_trajectories = (
-                    proposal_anchors + proposal_residuals
-                ).clamp(0.0, 1.0)
-                selected_first_waypoint = proposal_trajectories[:, 0, 0, :]
-                if self.args.trajectory_execution and self.feedback == 'student':
-                    control_goals = selected_first_waypoint
+            proposal_endpoints = torch.gather(
+                refined_candidate_endpoints,
+                dim=1,
+                index=proposal_ids[:, :, None].expand(-1, -1, 2),
+            )
+            gather_index = proposal_ids[:, :, None, None].expand(
+                -1,
+                -1,
+                self.args.trajectory_steps,
+                2,
+            )
+            proposal_residuals = torch.gather(
+                trajectory_belief['residuals'],
+                dim=1,
+                index=gather_index,
+            )
+            current_xy = input['directions'][:, -1, 2:4]
+            proposal_anchors = build_fixed_horizon_anchors(
+                current_xy,
+                proposal_endpoints,
+                self.args.trajectory_horizons_m,
+                self.args.map_meters,
+            )
+            proposal_trajectories = (
+                proposal_anchors + proposal_residuals
+            ).clamp(0.0, 1.0)
+            selected_first_waypoint = proposal_trajectories[:, 0, 0, :]
+            control_goals = selected_first_waypoint
 
             input['grid_fts'] = torch.cat((input['grid_fts'], grid_ft), dim=1)
             grid_index = torch.tensor(np.array([ob['cur_grid'] for ob in obs])).unsqueeze(1).cuda()
@@ -755,77 +735,75 @@ class NavCMTAgent:
                 active_mask = torch.from_numpy((~ended).astype(np.float32)).to(pred_logits.device)
                 heatmap_loss += (per_sample_heatmap_loss * active_mask).sum()
 
-                if trajectory_belief is not None:
-                    trajectory_target_data = [
-                        self._fixed_horizon_trajectory_target(ob, poses[i])
-                        for i, ob in enumerate(obs)
-                    ]
-                    gt_trajectory_targets = torch.from_numpy(
-                        np.stack([item[0] for item in trajectory_target_data])
-                    ).to(
-                        device=pred_logits.device,
-                        dtype=pred_logits.dtype,
-                    )
-                    gt_trajectory_valid = torch.from_numpy(
-                        np.stack([item[1] for item in trajectory_target_data])
-                    ).to(
-                        device=pred_logits.device,
-                        dtype=pred_logits.dtype,
-                    )
+                trajectory_target_data = [
+                    self._fixed_horizon_trajectory_target(ob, poses[i])
+                    for i, ob in enumerate(obs)
+                ]
+                gt_trajectory_targets = torch.from_numpy(
+                    np.stack([item[0] for item in trajectory_target_data])
+                ).to(
+                    device=pred_logits.device,
+                    dtype=pred_logits.dtype,
+                )
+                gt_trajectory_valid = torch.from_numpy(
+                    np.stack([item[1] for item in trajectory_target_data])
+                ).to(
+                    device=pred_logits.device,
+                    dtype=pred_logits.dtype,
+                )
 
-                    # Geometry is supervised only on the GT 7x7 region.
-                    # The existing heatmap loss already supervises mode scores,
-                    # so there is no second spatial-belief loss.
-                    gt_mode_ids = gt_target.to(
-                        device=pred_logits.device,
-                        dtype=torch.long,
-                    )
-                    gt_mode_endpoints = torch.gather(
-                        refined_candidate_endpoints,
-                        dim=1,
-                        index=gt_mode_ids[:, None, None].expand(-1, 1, 2),
-                    ).squeeze(1)
-                    endpoint_error = F.smooth_l1_loss(
-                        gt_mode_endpoints,
-                        gt_values[:, 2:4],
-                        reduction='none',
-                    ).mean(dim=-1)
-                    trajectory_endpoint_loss += (
-                        endpoint_error * active_mask
-                    ).sum()
+                # Geometry is supervised only on the GT 7x7 mode. Heatmap loss
+                # is the single mode-classification objective.
+                gt_mode_ids = gt_target.to(
+                    device=pred_logits.device,
+                    dtype=torch.long,
+                )
+                gt_mode_endpoints = torch.gather(
+                    refined_candidate_endpoints,
+                    dim=1,
+                    index=gt_mode_ids[:, None, None].expand(-1, 1, 2),
+                ).squeeze(1)
+                endpoint_error = F.smooth_l1_loss(
+                    gt_mode_endpoints,
+                    gt_values[:, 2:4],
+                    reduction='none',
+                ).mean(dim=-1)
+                trajectory_endpoint_loss += (
+                    endpoint_error * active_mask
+                ).sum()
 
-                    gt_mode_residuals = torch.gather(
-                        trajectory_belief['residuals'],
-                        dim=1,
-                        index=gt_mode_ids[:, None, None, None].expand(
-                            -1,
-                            1,
-                            self.args.trajectory_steps,
-                            2,
-                        ),
-                    ).squeeze(1)
-                    gt_mode_anchors = build_fixed_horizon_anchors(
-                        input['directions'][:, -1, 2:4],
-                        gt_mode_endpoints[:, None, :],
-                        self.args.trajectory_horizons_m,
-                        self.args.map_meters,
-                    ).squeeze(1)
-                    predicted_gt_trajectory = (
-                        gt_mode_anchors + gt_mode_residuals
-                    ).clamp(0.0, 1.0)
+                gt_mode_residuals = torch.gather(
+                    trajectory_belief['residuals'],
+                    dim=1,
+                    index=gt_mode_ids[:, None, None, None].expand(
+                        -1,
+                        1,
+                        self.args.trajectory_steps,
+                        2,
+                    ),
+                ).squeeze(1)
+                gt_mode_anchors = build_fixed_horizon_anchors(
+                    input['directions'][:, -1, 2:4],
+                    gt_mode_endpoints[:, None, :],
+                    self.args.trajectory_horizons_m,
+                    self.args.map_meters,
+                ).squeeze(1)
+                predicted_gt_trajectory = (
+                    gt_mode_anchors + gt_mode_residuals
+                ).clamp(0.0, 1.0)
 
-                    trajectory_error = F.smooth_l1_loss(
-                        predicted_gt_trajectory,
-                        gt_trajectory_targets,
-                        reduction='none',
-                    ).mean(dim=-1)
-                    per_sample_trajectory_loss = (
-                        (trajectory_error * gt_trajectory_valid).sum(dim=-1)
-                        / gt_trajectory_valid.sum(dim=-1).clamp_min(1.0)
-                    )
-                    trajectory_loss += (
-                        per_sample_trajectory_loss * active_mask
-                    ).sum()
+                trajectory_error = F.smooth_l1_loss(
+                    predicted_gt_trajectory,
+                    gt_trajectory_targets,
+                    reduction='none',
+                ).mean(dim=-1)
+                per_sample_trajectory_loss = (
+                    (trajectory_error * gt_trajectory_valid).sum(dim=-1)
+                    / gt_trajectory_valid.sum(dim=-1).clamp_min(1.0)
+                )
+                trajectory_loss += (
+                    per_sample_trajectory_loss * active_mask
+                ).sum()
                 # print(pred_logits.shape)
             # Log the trajectory
             # print(at_direction, gt_direction)
@@ -866,9 +844,10 @@ class NavCMTAgent:
                 a_t = gt_direction
                 pred_progress_t = gt_progress_np
                 cpu_goal = gt_goal_np
-            elif self.feedback == 'student':  # student
+            elif self.feedback == 'student':
                 a_t = at_direction
-                # Keep heatmap Stage-1 execution unchanged.
+                # Student policy is trajectory-only: the control goal is the
+                # first waypoint of the highest-scoring trajectory.
                 cpu_goal = host_predictions[:, 2:4]
             else:
                 sys.exit('Invalid feedback option')
@@ -886,7 +865,7 @@ class NavCMTAgent:
                 if ended[i]:
                     continue
 
-                if self.args.trajectory_execution and self.feedback == 'student':
+                if self.feedback == 'student':
                     if pred_progress_t[i] > 0.95:
                         ended[i] = True
                         continue
@@ -899,6 +878,8 @@ class NavCMTAgent:
                     )
                     if not ended[i]:
                         traj[i]['stage1_trajectory'].append(poses[i])
+                    # No Stage-1 / Stage-2 switch for the learned student
+                    # policy. Reobserve after this first waypoint and replan.
                     continue
 
                 coarse_goal_dist = dst.dist_to(poses[i].xy)
@@ -1007,13 +988,12 @@ class NavCMTAgent:
                 + 2 * goal_predict_loss
                 + self.args.heatmap_loss_weight * heatmap_loss
             )
-            if self.args.enable_trajectory_belief:
-                ml_loss = (
-                    ml_loss
-                    + self.args.trajectory_endpoint_loss_weight
-                    * trajectory_endpoint_loss
-                    + self.args.trajectory_loss_weight * trajectory_loss
-                )
+            ml_loss = (
+                ml_loss
+                + self.args.trajectory_endpoint_loss_weight
+                * trajectory_endpoint_loss
+                + self.args.trajectory_loss_weight * trajectory_loss
+            )
             # ml_loss = progress_loss + goal_predict_loss
             self.loss += ml_loss * train_ml / batch_size
 
