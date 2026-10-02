@@ -96,12 +96,6 @@ def parse_args():
                         help='Gaussian sigma (in grid cells) for Stage-1 heatmap supervision')
     parser.add_argument('--heatmap_loss_weight', type=float, default=0.1,
                         help='Weight of the Stage-1 heatmap loss')
-    parser.add_argument('--stage1_switch_dist', type=float, default=25.0,
-                        help='Distance in meters for switching from coarse Stage 1 to fine Stage 2')
-    parser.add_argument('--stage2_recover_dist', type=float, default=40.0,
-                        help='Distance in meters for returning from Stage 2 to coarse Stage 1')
-    parser.add_argument('--stage2_recover_patience', type=int, default=2,
-                        help='Consecutive far-away Stage-2 steps required before coarse recovery')
     parser.add_argument('--trajectory_top_k', type=int, default=8)
     parser.add_argument('--trajectory_nms_kernel', type=int, default=3)
     parser.add_argument('--trajectory_horizons_m', type=float, nargs='+',
@@ -112,6 +106,8 @@ def parse_args():
     parser.add_argument('--trajectory_residual_scale', type=float, default=0.05)
     parser.add_argument('--trajectory_move_iteration', type=int, default=2,
                         help='Controller iterations for the first fixed-horizon waypoint')
+    parser.add_argument('--teacher_step_m', type=float, default=10.0,
+                        help='Metric arc-length step for human teacher rollout')
     parser.add_argument('--demb', type=int, default=768)
     parser.add_argument('--encoder_heads', type=int, default=12)
     parser.add_argument('--encoder_layers', type=int, default=2)
@@ -200,6 +196,8 @@ def postprocess_args(args):
     args.map_shape = (args.map_size, args.map_size)
     args.map_pixels_per_meter = args.map_size / args.map_meters
     args.trajectory_steps = len(args.trajectory_horizons_m) + 1
+    if args.teacher_step_m <= 0:
+        raise ValueError('teacher_step_m must be positive')
     if args.trajectory_nms_kernel % 2 != 1:
         raise ValueError('trajectory_nms_kernel must be odd')
     if args.grid_size != 7:

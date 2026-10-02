@@ -262,24 +262,28 @@ def train(args, train_env, val_envs, rank=-1):
                 ),
                 record_file
             )
-            stage1_step = sum(agent.logs['stage1_step']) / max(len(agent.logs['stage1_step']), 1)
-            stage2_step = sum(agent.logs['stage2_step']) / max(len(agent.logs['stage2_step']), 1)
-            stage2_rotate = sum(agent.logs['stage2_rotate']) / max(len(agent.logs['stage2_rotate']), 1)
-
             trajectory_step = (
                 sum(agent.logs['trajectory_step'])
                 / max(len(agent.logs['trajectory_step']), 1)
+            )
+            teacher_step = (
+                sum(agent.logs['teacher_step'])
+                / max(len(agent.logs['teacher_step']), 1)
+            )
+            teacher_distance_m = (
+                sum(agent.logs['teacher_distance_m'])
+                / max(len(agent.logs['teacher_distance_m']), 1)
             )
             global_landmark_gate = (
                 sum(agent.logs['global_landmark_gate'])
                 / max(len(agent.logs['global_landmark_gate']), 1)
             )
             write_to_record_file(
-                "\nstage %.4f %.4f %.4f trajectory_step %.4f global_landmark_gate %.4f" % (
-                    stage1_step,
-                    stage2_step,
-                    stage2_rotate,
+                "\nrollout trajectory_step %.4f teacher_step %.4f "
+                "teacher_distance_m %.4f global_landmark_gate %.4f" % (
                     trajectory_step,
+                    teacher_step,
+                    teacher_distance_m,
                     global_landmark_gate,
                 ),
                 record_file
@@ -303,10 +307,6 @@ def train(args, train_env, val_envs, rank=-1):
                 pred_results = agent_eval.get_results()
 
                 score_summary, result = env.eval_metrics(pred_results)
-                stage1_step = sum(agent_eval.logs['stage1_step']) / max(len(agent_eval.logs['stage1_step']), 1)
-                stage2_step = sum(agent_eval.logs['stage2_step']) / max(len(agent_eval.logs['stage2_step']), 1)
-                stage2_rotate = sum(agent_eval.logs['stage2_rotate']) / max(len(agent_eval.logs['stage2_rotate']), 1)
-
                 trajectory_step = (
                     sum(agent_eval.logs['trajectory_step'])
                     / max(len(agent_eval.logs['trajectory_step']), 1)
@@ -316,10 +316,7 @@ def train(args, train_env, val_envs, rank=-1):
                     / max(len(agent_eval.logs['global_landmark_gate']), 1)
                 )
                 write_to_record_file(
-                    "\nstage %.4f %.4f %.4f trajectory_step %.4f global_landmark_gate %.4f" % (
-                        stage1_step,
-                        stage2_step,
-                        stage2_rotate,
+                    "\nrollout trajectory_step %.4f global_landmark_gate %.4f" % (
                         trajectory_step,
                         global_landmark_gate,
                     ),
@@ -371,13 +368,12 @@ def valid(args, val_envs, rank=-1):
             pred_results = agent_eval.get_results()
 
             score_summary, result = env.eval_metrics(pred_results)
-            stage1_step = sum(agent_eval.logs['stage1_step']) / max(len(agent_eval.logs['stage1_step']), 1)
-            stage2_step = sum(agent_eval.logs['stage2_step']) / max(len(agent_eval.logs['stage2_step']), 1)
-            stage2_rotate = sum(agent_eval.logs['stage2_rotate']) / max(len(agent_eval.logs['stage2_rotate']), 1)
-
+            trajectory_step = (
+                sum(agent_eval.logs['trajectory_step'])
+                / max(len(agent_eval.logs['trajectory_step']), 1)
+            )
             write_to_record_file(
-                "\nstage %.4f %.4f %.4f" % (
-                    stage1_step, stage2_step, stage2_rotate),
+                "\nrollout trajectory_step %.4f" % trajectory_step,
                 record_file
             )
             loss_str += "\n%s " % env_name

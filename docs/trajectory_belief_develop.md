@@ -55,8 +55,33 @@ The CityFlight human teacher path is projected continuously from the current
 state and sampled at 10/25/50/100 m plus the final goal. Invalid long horizons
 near the destination are masked.
 
-The teacher + student rollout schedule is intentionally unchanged. BERT and
-DarkNet also remain trainable.
+The teacher + student rollout schedule is preserved, and BERT/DarkNet remain
+trainable. The teacher state generator itself is now aligned with the
+trajectory policy: it advances along the recorded CityFlight human trajectory
+by a fixed physical arc-length step (default 10 m), preserving interpolated
+human x/y/z/yaw instead of using the legacy Stage-1/Stage-2 controller.
+
+For teacher states, trajectory targets use the known human-path arc coordinate
+directly rather than re-projecting the pose to the polyline. This avoids
+ambiguous supervision at loops or self-intersections. Student states still use
+continuous projection onto the human teacher path to obtain recovery targets.
+
+## Teacher rollout
+
+Teacher and student use the same HETT/trajectory network and the same losses.
+They differ only in next-state generation:
+
+```
+teacher: current human arc -> + teacher_step_m -> interpolated human Pose4D
+student: predicted Top-1 trajectory -> first waypoint -> controller move
+```
+
+Teacher yaw is no longer randomized. It is interpolated on the shortest wrapped
+angular path between recorded human poses, preserving the first-person viewing
+behavior in CityFlight.
+
+The teacher rollout is still capped by `max_action_len`; `teacher_step_m`
+controls the physical spacing of teacher states.
 
 ## Student execution
 

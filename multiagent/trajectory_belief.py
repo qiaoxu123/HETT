@@ -8,7 +8,7 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
-from multiagent.space import Point2D
+from multiagent.space import Point2D, Pose4D
 
 
 def grid_cell_centers(
@@ -98,6 +98,59 @@ def select_nms_topk(
     return ids, scores, endpoints
 
 
+def prepare_teacher_rollout_path(
+    trajectory: Sequence,
+) -> Tuple[np.ndarray, np.ndarray]:
+    """Prepare the recorded human Pose4D path for metric teacher rollout."""
+    poses = np.asarray(
+        [[p.x, p.y, p.z, p.yaw] for p in trajectory],
+        dtype=np.float32,
+    )
+    if len(poses) == 0:
+        raise ValueError("teacher trajectory must contain at least one pose")
+
+    if len(poses) == 1:
+        cumulative = np.zeros(1, dtype=np.float32)
+    else:
+        segments = np.linalg.norm(poses[1:, :2] - poses[:-1, :2], axis=1)
+        cumulative = np.concatenate(
+            (np.zeros(1, dtype=np.float32), np.cumsum(segments, dtype=np.float32))
+        )
+    return poses, cumulative
+
+
+def _interpolate_angle(yaw0: float, yaw1: float, ratio: float) -> float:
+    """Interpolate yaw along the shortest wrapped angular displacement."""
+    delta = (float(yaw1) - float(yaw0) + np.pi) % (2.0 * np.pi) - np.pi
+    return float((float(yaw0) + ratio * delta + np.pi) % (2.0 * np.pi) - np.pi)
+
+
+def sample_teacher_pose_at_arc(
+    poses: np.ndarray,
+    cumulative: np.ndarray,
+    arc_m: float,
+) -> Pose4D:
+    """Interpolate human x/y/z/yaw at a physical arc-length position."""
+    if len(poses) == 1:
+        p = poses[0]
+        return Pose4D(float(p[0]), float(p[1]), float(p[2]), float(p[3]))
+
+    arc_m = float(np.clip(arc_m, 0.0, cumulative[-1]))
+    if arc_m >= float(cumulative[-1]) - 1e-8:
+        p = poses[-1]
+        return Pose4D(float(p[0]), float(p[1]), float(p[2]), float(p[3]))
+
+    upper = int(np.searchsorted(cumulative, arc_m, side="right"))
+    upper = min(max(upper, 1), len(poses) - 1)
+    lower = upper - 1
+    denom = max(float(cumulative[upper] - cumulative[lower]), 1e-8)
+    ratio = (arc_m - float(cumulative[lower])) / denom
+
+    xyz = poses[lower, :3] + ratio * (poses[upper, :3] - poses[lower, :3])
+    yaw = _interpolate_angle(poses[lower, 3], poses[upper, 3], ratio)
+    return Pose4D(float(xyz[0]), float(xyz[1]), float(xyz[2]), yaw)
+
+
 def prepare_teacher_path(
     trajectory: Sequence,
     goal_xy: Iterable[float],
@@ -158,15 +211,14 @@ def _sample_at_arc(
     return points[lower] + ratio * (points[upper] - points[lower])
 
 
-def sample_fixed_horizon_targets(
+def sample_fixed_horizon_targets_from_arc(
     points: np.ndarray,
     cumulative: np.ndarray,
-    current_xy: Iterable[float],
+    current_arc_m: float,
     horizons_m: Sequence[float],
 ) -> Tuple[np.ndarray, np.ndarray]:
-    """Sample human teacher path at stable metric horizons plus final goal."""
-    current = np.asarray(current_xy, dtype=np.float32)
-    current_arc = _project_to_polyline(current, points, cumulative)
+    """Sample stable physical horizons from a known path arc position."""
+    current_arc = float(np.clip(current_arc_m, 0.0, cumulative[-1]))
     remaining = max(0.0, float(cumulative[-1]) - current_arc)
 
     targets = []
@@ -181,6 +233,23 @@ def sample_fixed_horizon_targets(
     targets.append(points[-1])
     valid.append(True)
     return np.asarray(targets, dtype=np.float32), np.asarray(valid, dtype=np.float32)
+
+
+def sample_fixed_horizon_targets(
+    points: np.ndarray,
+    cumulative: np.ndarray,
+    current_xy: Iterable[float],
+    horizons_m: Sequence[float],
+) -> Tuple[np.ndarray, np.ndarray]:
+    """Project an arbitrary state to the human path, then sample horizons."""
+    current = np.asarray(current_xy, dtype=np.float32)
+    current_arc = _project_to_polyline(current, points, cumulative)
+    return sample_fixed_horizon_targets_from_arc(
+        points,
+        cumulative,
+        current_arc,
+        horizons_m,
+    )
 
 
 def normalize_targets(env, map_name: str, map_meters: float, targets: np.ndarray) -> np.ndarray:

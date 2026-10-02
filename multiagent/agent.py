@@ -19,7 +19,6 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 from torchvision import transforms
 
 # from r2r.agent_cmt import Seq2SeqCMTAgent
-from multiagent.actions import Action
 from multiagent.defaultpaths import GOAL_PREDICTOR_CHECKPOINT_DIR
 from multiagent.models.dark_net import Darknet
 from multiagent.models.CLIP import CLIP
@@ -30,8 +29,11 @@ from multiagent.trajectory_belief import (
     build_fixed_horizon_anchors,
     normalize_targets,
     prepare_teacher_path,
+    prepare_teacher_rollout_path,
     refine_candidate_endpoints,
     sample_fixed_horizon_targets,
+    sample_fixed_horizon_targets_from_arc,
+    sample_teacher_pose_at_arc,
     select_nms_topk,
 )
 from multiagent.space import Pose4D, Point2D, Point3D
@@ -176,6 +178,7 @@ class NavCMTAgent:
         self.default_gpu = is_default_gpu(self.args)
         self.rank = rank
         self.trajectory_path_cache = {}
+        self.teacher_rollout_cache = {}
 
         # Models
 
@@ -266,20 +269,44 @@ class NavCMTAgent:
         sys.stdout.flush()
         self.logs = defaultdict(list)
 
-    def _fixed_horizon_trajectory_target(self, ob, current_pose):
-        key = tuple(ob['id']) if isinstance(ob['id'], (list, tuple)) else ob['id']
+    def _episode_cache_key(self, ob):
+        return tuple(ob['id']) if isinstance(ob['id'], (list, tuple)) else ob['id']
+
+    def _teacher_rollout_path(self, ob):
+        key = self._episode_cache_key(ob)
+        cached = self.teacher_rollout_cache.get(key)
+        if cached is None:
+            cached = prepare_teacher_rollout_path(ob['trajectory'])
+            self.teacher_rollout_cache[key] = cached
+        return cached
+
+    def _fixed_horizon_trajectory_target(
+        self,
+        ob,
+        current_pose,
+        current_arc_m=None,
+    ):
+        key = self._episode_cache_key(ob)
         cached = self.trajectory_path_cache.get(key)
         if cached is None:
             cached = prepare_teacher_path(ob['trajectory'], ob['goal'])
             self.trajectory_path_cache[key] = cached
 
         points, cumulative = cached
-        targets, valid = sample_fixed_horizon_targets(
-            points,
-            cumulative,
-            (current_pose.x, current_pose.y),
-            self.args.trajectory_horizons_m,
-        )
+        if current_arc_m is None:
+            targets, valid = sample_fixed_horizon_targets(
+                points,
+                cumulative,
+                (current_pose.x, current_pose.y),
+                self.args.trajectory_horizons_m,
+            )
+        else:
+            targets, valid = sample_fixed_horizon_targets_from_arc(
+                points,
+                cumulative,
+                current_arc_m,
+                self.args.trajectory_horizons_m,
+            )
         targets = normalize_targets(
             self.env,
             ob['map_name'],
@@ -422,7 +449,9 @@ class NavCMTAgent:
 
         # rollout_start_time = time.time()
 
-        obs = self.env._get_obs(random_direction=(self.feedback == 'teacher'))
+        # Preserve the recorded first-person yaw for both teacher and student.
+        # Teacher rollout now advances directly along the human demonstration.
+        obs = self.env._get_obs(random_direction=False)
         batch_size = len(obs)
 
         # Language input
@@ -505,10 +534,14 @@ class NavCMTAgent:
         trajectory_endpoint_loss = torch.tensor(0.).cuda()
         trajectory_loss = torch.tensor(0.).cuda()
 
-        stage1_step = 0
-        stage2_step = 0
-        stage2_rotate = 0
         trajectory_step = 0
+        teacher_step = 0
+        teacher_distance_m = 0.0
+        teacher_arc_m = np.zeros(batch_size, dtype=np.float32)
+        teacher_paths = [
+            self._teacher_rollout_path(ob)
+            for ob in obs
+        ]
 
         input = {
             'directions': torch.zeros((batch_size, 0, 4)).cuda(),
@@ -525,10 +558,6 @@ class NavCMTAgent:
             'lang_cls': linear_cls,
             'map_fts': torch.zeros(batch_size, 0, 512, 49).cuda(),
         }
-
-        stage1_ended = np.array([False] * batch_size)
-        stage2_recover_count = np.zeros(batch_size, dtype=np.int32)
-        stage2_recoveries = 0
 
         for t in range(self.args.max_action_len):
 
@@ -736,7 +765,15 @@ class NavCMTAgent:
                 heatmap_loss += (per_sample_heatmap_loss * active_mask).sum()
 
                 trajectory_target_data = [
-                    self._fixed_horizon_trajectory_target(ob, poses[i])
+                    self._fixed_horizon_trajectory_target(
+                        ob,
+                        poses[i],
+                        current_arc_m=(
+                            float(teacher_arc_m[i])
+                            if self.feedback == 'teacher'
+                            else None
+                        ),
+                    )
                     for i, ob in enumerate(obs)
                 ]
                 gt_trajectory_targets = torch.from_numpy(
@@ -840,106 +877,62 @@ class NavCMTAgent:
                                 gt_trajectory_valid[i].detach().cpu().tolist()
                             )
 
-            if self.feedback == 'teacher':
-                a_t = gt_direction
-                pred_progress_t = gt_progress_np
-                cpu_goal = gt_goal_np
-            elif self.feedback == 'student':
-                a_t = at_direction
-                # Student policy is trajectory-only: the control goal is the
-                # first waypoint of the highest-scoring trajectory.
+            if self.feedback == 'student':
                 cpu_goal = host_predictions[:, 2:4]
-            else:
+            elif self.feedback != 'teacher':
                 sys.exit('Invalid feedback option')
-            # print(cpu_goal)
 
-            # Interact with the simulator with actions
+            # Teacher and student now share the same model/losses. They differ
+            # only in how the next state is generated:
+            # teacher -> recorded human path; student -> predicted trajectory.
             for i in range(len(obs)):
-
-                dst = self.env.unnormalize_position(cpu_goal[i], obs[i]['map_name'],
-                                                    self.args.map_meters)
-
-                # gt_center = self.env.unnormalize_position(global_position[gt_goal.cpu().detach().numpy()[i]], obs[i]['map_name'],
-                #                                     self.args.map_meters)
-                # dst = Point2D(obs[i]['centroid_goal'][0], obs[i]['centroid_goal'][1])
                 if ended[i]:
                     continue
 
-                if self.feedback == 'student':
-                    if pred_progress_t[i] > 0.95:
-                        ended[i] = True
-                        continue
-                    trajectory_step += 1
-                    traj[i]['pred_goal'].append(dst)
-                    poses[i] = self.move(
-                        poses[i],
-                        dst,
-                        self.args.trajectory_move_iteration,
+                if self.feedback == 'teacher':
+                    teacher_poses, teacher_cumulative = teacher_paths[i]
+                    current_arc = float(teacher_arc_m[i])
+                    total_arc = float(teacher_cumulative[-1])
+                    next_arc = min(
+                        current_arc + self.args.teacher_step_m,
+                        total_arc,
                     )
-                    if not ended[i]:
-                        traj[i]['stage1_trajectory'].append(poses[i])
-                    # No Stage-1 / Stage-2 switch for the learned student
-                    # policy. Reobserve after this first waypoint and replan.
+                    poses[i] = sample_teacher_pose_at_arc(
+                        teacher_poses,
+                        teacher_cumulative,
+                        next_arc,
+                    )
+                    teacher_arc_m[i] = next_arc
+                    teacher_step += 1
+                    teacher_distance_m += max(0.0, next_arc - current_arc)
+                    traj[i]['teacher_arc_m'].append(next_arc)
+                    traj[i]['teacher_pose'].append(poses[i])
+
+                    if next_arc >= total_arc - 1e-6:
+                        # Preserve the final demonstrated first-person pose in
+                        # the returned trajectory before marking the episode done.
+                        traj[i]['trajectory'].append(poses[i])
+                        ended[i] = True
                     continue
 
-                coarse_goal_dist = dst.dist_to(poses[i].xy)
-
-                # Stage-2 recovery is student-only: if newly predicted coarse
-                # goals stay far away, return to Stage 1 instead of remaining
-                # permanently locked in fine navigation. Hysteresis
-                # (25 m enter / 40 m recover by default) avoids boundary chatter.
-                if self.feedback == 'student' and stage1_ended[i]:
-                    if coarse_goal_dist > self.args.stage2_recover_dist:
-                        stage2_recover_count[i] += 1
-                    else:
-                        stage2_recover_count[i] = 0
-
-                    if stage2_recover_count[i] >= self.args.stage2_recover_patience:
-                        stage1_ended[i] = False
-                        stage2_recover_count[i] = 0
-                        stage2_recoveries += 1
-
-                if pred_progress_t[i] > 0.95 and self.feedback == 'student' and stage1_ended[i]:
-                    ended[i] = True
-                    continue
-                elif t == self.args.max_action_len:
+                if pred_progress_t[i] > 0.95:
                     ended[i] = True
                     continue
 
-                # Stage 1 only needs to enter the coarse target neighborhood;
-                # fine localization is delegated to Stage 2.
-                if coarse_goal_dist > self.args.stage1_switch_dist and not stage1_ended[i]:
-                    stage1_step += 1
-                    traj[i]['pred_goal'].append(dst)
-                    if self.feedback == 'teacher':
-                        cur_step = stage1_step * self.args.move_iteration
-                        cur_step = cur_step if cur_step < len(obs[i]['trajectory']) else -1
-                        poses[i] = obs[i]['trajectory'][cur_step]
-                    else:
-                        poses[i] = self.move(
-                            poses[i],
-                            dst,
-                            self.args.move_iteration,
-                        )
-                    if not ended[i]:
-                        traj[i]['stage1_trajectory'].append(poses[i])
-
-                elif abs(a_t[i]) < np.pi / 12:
-                    stage1_ended[i] = True
-                    stage2_step += 1
-                    poses[i] = _moved_pose(poses[i], *Action(5, 0, 0))
-                    if len(traj[i]['stage2_trajectory']) == 0:
-                        traj[i]['stage2_trajectory'].append(traj[i]['stage1_trajectory'][-1])
-                    if not ended[i]:
-                        traj[i]['stage2_trajectory'].append(poses[i])
-                else:
-                    stage1_ended[i] = True
-                    stage2_rotate += 1
-                    poses[i] = _moved_pose(poses[i], *Action(0, a_t[i], 0))
-                    if len(traj[i]['stage2_trajectory']) == 0:
-                        traj[i]['stage2_trajectory'].append(traj[i]['stage1_trajectory'][-1])
-                    if not ended[i]:
-                        traj[i]['stage2_trajectory'].append(poses[i])
+                dst = self.env.unnormalize_position(
+                    cpu_goal[i],
+                    obs[i]['map_name'],
+                    self.args.map_meters,
+                )
+                trajectory_step += 1
+                traj[i]['pred_goal'].append(dst)
+                poses[i] = self.move(
+                    poses[i],
+                    dst,
+                    self.args.trajectory_move_iteration,
+                )
+                if not ended[i]:
+                    traj[i]['stage1_trajectory'].append(poses[i])
 
             # Save trajectory output
             for i, ob in enumerate(obs):
@@ -948,7 +941,7 @@ class NavCMTAgent:
                     # Update the status
             # Refresh the environment first, then use the resulting pose/state
             # as the spatial input for the next navigation step.
-            obs = self.env._get_obs(poses, random_direction=(self.feedback == 'teacher'))
+            obs = self.env._get_obs(poses, random_direction=False)
             current_directions = [np.array(ob['pose'].yaw, dtype=np.float32) for ob in obs]
             current_positions = [np.array(ob['position'], dtype=np.float32) for ob in obs]
             direction_t = torch.from_numpy(np.array(current_directions, dtype=np.float32))
@@ -1014,11 +1007,9 @@ class NavCMTAgent:
 
         # if t==0:
         #     self.logs
-        self.logs['stage1_step'].append(float(stage1_step) / batch_size)
-        self.logs['stage2_step'].append(float(stage2_step) / batch_size)
-        self.logs['stage2_rotate'].append(float(stage2_rotate) / batch_size)
-        self.logs['stage2_recoveries'].append(float(stage2_recoveries) / batch_size)
         self.logs['trajectory_step'].append(float(trajectory_step) / batch_size)
+        self.logs['teacher_step'].append(float(teacher_step) / batch_size)
+        self.logs['teacher_distance_m'].append(float(teacher_distance_m) / batch_size)
         self.logs['global_landmark_gate'].append(
             float(torch.tanh(
                 self.vln_model_without_ddp.global_landmark_gate
