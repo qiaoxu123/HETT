@@ -12,6 +12,24 @@ import numpy as np
 from .goal_predictor import MapEncoder
 
 
+def aggregate_history_grid(grid_fts, grid_indices, text_fts, grid_proj, cell_count):
+    """Language-weight history features per grid cell without Python loops."""
+    batch_size, history_len, feature_dim = grid_fts.shape
+    if history_len == 0:
+        return grid_fts.new_zeros((batch_size, cell_count, feature_dim))
+    history = grid_fts.to(torch.float32)
+    indices = grid_indices.to(dtype=torch.long)
+    scores = torch.bmm(history, text_fts).max(dim=-1).values
+    projected = grid_proj(history)
+    cell_ids = torch.arange(cell_count, device=indices.device)
+    cell_mask = indices.unsqueeze(-1) == cell_ids.view(1, 1, -1)
+    has_history = cell_mask.any(dim=1, keepdim=True)
+    masked_scores = scores.unsqueeze(-1).masked_fill(~cell_mask, -torch.inf)
+    masked_scores = torch.where(has_history, masked_scores, torch.zeros_like(masked_scores))
+    weights = torch.softmax(masked_scores, dim=1) * cell_mask
+    return torch.einsum('btc,btd->bcd', weights, projected)
+
+
 class SoftDotAttention(nn.Module):
     '''Soft Dot Attention. 
 
@@ -179,10 +197,19 @@ class ET(nn.Module):
 
         # embed frames and direiction (1,49) --> 768
         im_feature = inputs["frames"]
-        att_frame_feature = torch.zeros((im_feature.shape[0], 0, 49)).cuda()
-        for i in range(im_feature.shape[1]):
-            att_single_frame_feature, beta = self.attention_layer_vision(inputs["lang_cls"], im_feature[:, i, :, :])
-            att_frame_feature = torch.concat((att_frame_feature, att_single_frame_feature.unsqueeze(1)), axis=1)
+        if im_feature.shape[1] == 1:
+            att_single_frame_feature, beta = self.attention_layer_vision(
+                inputs["lang_cls"], im_feature[:, 0, :, :]
+            )
+            att_frame_feature = att_single_frame_feature.unsqueeze(1)
+        else:
+            attended = [
+                self.attention_layer_vision(
+                    inputs["lang_cls"], im_feature[:, i, :, :]
+                )[0]
+                for i in range(im_feature.shape[1])
+            ]
+            att_frame_feature = torch.stack(attended, dim=1)
 
         emb_frames = self.fc2(att_frame_feature.view(-1, 49)).view(*im_feature.shape[:2], -1)
 
@@ -194,32 +221,17 @@ class ET(nn.Module):
                                                                                          768)  # (batch, embedding_size)
         batch_size = emb_lang.shape[0]
 
-        grid_map_input = torch.zeros(batch_size, self.args.grid_size ** 2, 768).cuda()
-
         text_fts = self.text_proj(emb_lang).permute(0, 2, 1)
-        grid_masks = [[] for b in range(batch_size)]
         max_cell_num = self.args.grid_size ** 2
         grid_fts = inputs['grid_fts']
         grid_map_indexs = inputs['grid_index']
-        for b in range(batch_size):
-            tmp_fts = grid_fts[b].to(torch.float32)
-            grid_fts_weight, _ = (tmp_fts @ text_fts[b]).max(dim=-1)
-            tmp_fts = self.grid_proj(tmp_fts)
-
-            for i in range(self.args.grid_size ** 2):
-                cell_fts = tmp_fts[grid_map_indexs[b] == i]
-                if cell_fts.shape[0] == 0:
-                    grid_masks[b].append(0)
-                else:
-                    grid_masks[b].append(1)
-                grid_map_input[b, i] = (
-                        cell_fts * torch.softmax(grid_fts_weight[grid_map_indexs[b] == i], dim=-1).unsqueeze(
-                    -1)).sum(-2)
-
-            # if max_cell_num < sum(grid_masks[b]):
-            #     max_cell_num = sum(grid_masks[b])
-        # grid_masks = torch.tensor(grid_masks).cuda()
-        grid_map_embeds = torch.zeros(batch_size, max_cell_num, 768).to(grid_fts[0].device)
+        grid_map_input = aggregate_history_grid(
+            grid_fts,
+            grid_map_indexs,
+            text_fts,
+            self.grid_proj,
+            max_cell_num,
+        )
 
         emb_candidates = emb_candidates + grid_map_input
 

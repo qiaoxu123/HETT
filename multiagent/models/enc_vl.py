@@ -34,6 +34,7 @@ class EncoderVL(nn.Module):
         self.enc_token = None
         self.enc_layernorm = nn.LayerNorm(args.demb)
         self.enc_dropout = nn.Dropout(args.dropout_emb, inplace=True)
+        self._map_mask_cache = {}
 
     def forward(
             self,
@@ -166,12 +167,22 @@ class EncoderVL(nn.Module):
         # globally.  The only new restriction is key-padding on unused anchor
         # slots.
         total_length = emb_all.shape[1]
-        mask_attn = torch.zeros(
-            (total_length, total_length),
-            device=emb_all.device,
-            dtype=emb_all.dtype,
+        cache_key = (
+            total_length,
+            length_lang,
+            emb_all.device.type,
+            emb_all.device.index,
+            emb_all.dtype,
         )
-        mask_attn[:length_lang, length_lang:] = float("-inf")
+        mask_attn = self._map_mask_cache.get(cache_key)
+        if mask_attn is None:
+            mask_attn = torch.zeros(
+                (total_length, total_length),
+                device=emb_all.device,
+                dtype=emb_all.dtype,
+            )
+            mask_attn[:length_lang, length_lang:] = float("-inf")
+            self._map_mask_cache[cache_key] = mask_attn
 
         output = self.enc_transformer(
             emb_all.transpose(0, 1),

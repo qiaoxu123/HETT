@@ -88,6 +88,28 @@ def compute_iou(a, b):
     return iou
 
 
+def masked_navigation_losses(pred_direction, pred_progress, pred_goals,
+                             gt_direction, gt_progress, gt_goal, active):
+    """Compute the original per-sample navigation losses in batched form."""
+    true_sin_cos = torch.stack(
+        (torch.sin(gt_direction), torch.cos(gt_direction)), dim=-1
+    )
+    active = active.to(dtype=pred_direction.dtype)
+    direction_per_sample = (pred_direction - true_sin_cos).square().sum(dim=-1)
+    progress_per_sample = (
+        pred_progress.reshape(pred_progress.shape[0], -1)
+        - gt_progress.reshape(gt_progress.shape[0], -1)
+    ).square().sum(dim=-1)
+    goal_per_sample = (pred_goals - gt_goal).square().reshape(
+        pred_goals.shape[0], -1
+    ).mean(dim=-1)
+    return (
+        (direction_per_sample * active).sum(),
+        (progress_per_sample * active).sum(),
+        (goal_per_sample * active).sum(),
+    )
+
+
 def is_default_gpu(opts) -> bool:
     return opts.local_rank == -1 or dist.get_rank() == 0
 
@@ -148,7 +170,7 @@ class NavCMTAgent:
 
         # Models
 
-        self.tokenizer = BertTokenizerFast.from_pretrained('/cver/xcding/code/tokenizer_files/bert-base-uncase')
+        self.tokenizer = BertTokenizerFast.from_pretrained('bert-base-uncased')
         self.lang_model = CustomBERTModel().cuda()
 
         # self.img_tensor = transforms.ToTensor()
@@ -265,6 +287,7 @@ class NavCMTAgent:
                     timeSince(start, float(idx) / tot), idx, tot), bar_length=80)
 
 
+    @torch.inference_mode()
     def test(self, loader, env_name='no_name_provided', feedback='student', not_in_train=False, **kwargs):
         ''' Evaluate once on each instruction in the current environment '''
         self.feedback = feedback
@@ -305,12 +328,14 @@ class NavCMTAgent:
             # print('?')
             for _, l in enumerate(loader):
                 idx += 1
+                if self.args.benchmark_batches and idx > self.args.benchmark_batches:
+                    break
                 # if idx >= 100:
                 #     break
                 # train_loop_start_time = time.time()
-                self.lang_model_optimizer.zero_grad()
-                self.vision_model_optimizer.zero_grad()
-                self.et_optimizer.zero_grad()
+                self.lang_model_optimizer.zero_grad(set_to_none=True)
+                self.vision_model_optimizer.zero_grad(set_to_none=True)
+                self.et_optimizer.zero_grad(set_to_none=True)
                 self.loss = 0
 
                 if feedback == 'teacher':
@@ -347,6 +372,13 @@ class NavCMTAgent:
                     print_progress(idx, tot,
                                    prefix='Progress:', suffix='%s (%d/%d)' % (
                             timeSince(start, float(idx) / tot), idx, tot), bar_length=80)
+            if self.args.benchmark_batches:
+                elapsed = time.time() - start
+                print('\nBENCHMARK batches=%d seconds=%.3f seconds_per_batch=%.6f' % (
+                    min(idx, self.args.benchmark_batches), elapsed,
+                    elapsed / max(min(idx, self.args.benchmark_batches), 1)
+                ), flush=True)
+                break
 
     def zero_grad(self):
         self.loss = 0.
@@ -552,12 +584,15 @@ class NavCMTAgent:
             # pred_direction = output
             # pred_progress = progress
 
-            # Predicted progress
-            pred_progress_t = pred_progress.cpu().detach().numpy()
-
-            # Predicted waypoint
+            # Transfer simulator-facing outputs in one GPU-to-CPU synchronization.
             nt_direct = torch.atan2(pred_direction[:, 0], pred_direction[:, 1])
-            at_direction = nt_direct.cpu().detach().numpy()
+            host_predictions = torch.cat((
+                pred_progress.reshape(batch_size, -1)[:, :1],
+                nt_direct.unsqueeze(1),
+                heatmap_goals,
+            ), dim=1).detach().cpu().numpy()
+            pred_progress_t = host_predictions[:, 0]
+            at_direction = host_predictions[:, 1]
             # for i in range(len(a_t_next_pos_ratio)):
             #     max_of_a_t_next_pos_i = max(abs(a_t_next_pos_ratio[i][0]), abs(a_t_next_pos_ratio[i][1]), 1)
             #     a_t_next_pos_ratio[i][0] /= max_of_a_t_next_pos_i
@@ -572,8 +607,10 @@ class NavCMTAgent:
             # for i in range(len(pred_progress_t)):
             #     pred_progress_t[i] = min(1., max(0., pred_progress_t[i]))
             gt_direction = np.array([ob['direction'] for ob in obs], dtype=np.float32)
-            gt_goal = torch.from_numpy(np.array([ob['normalized_goal'] for ob in obs], dtype=np.float32))
-            gt_progress = torch.from_numpy(np.array([ob['progress'] for ob in obs], dtype=np.float32))
+            gt_goal_np = np.array([ob['normalized_goal'] for ob in obs], dtype=np.float32)
+            gt_progress_np = np.array([ob['progress'] for ob in obs], dtype=np.float32)
+            gt_goal = torch.from_numpy(gt_goal_np)
+            gt_progress = torch.from_numpy(gt_progress_np)
             gt_target = torch.from_numpy(np.array([ob['grid_goal'] for ob in obs], dtype=np.int64))
             # there is no ground truth in unseen_test set
             if not 'test' in self.env_name:
@@ -582,33 +619,27 @@ class NavCMTAgent:
 
                 # Compute loss
 
-                for i in range(len(obs)):
-                    true_direction = torch.tensor(gt_direction[i])
-
-                    true_sin = torch.sin(true_direction)
-                    true_cos = torch.cos(true_direction)
-                    true_sin_cos = torch.stack([true_sin, true_cos], dim=-1).cuda()
-                    # gt_progress = torch.tensor(obs[i]['progress']).cuda()
-                    # print(pred_direction[i].view(-1).shape, pred_progress[i].view(-1).shape, true_sin_cos.shape, gt_progress[i].view(-1).shape)
-                    # cuda_gt_next_pos_ratio = torch.from_numpy(target[i][0]).cuda()
-                    # print(pred_direction[i].view(-1), true_sin_cos)
-                    if not ended[i]:
-                        # if stage1_ended[i]:
-                        direction_loss += self.progress_regression(pred_direction[i].view(-1), true_sin_cos)
-
-                        progress_loss += self.progress_regression(pred_progress[i].view(-1),
-                                                                  gt_progress[i].view(-1).cuda())
-                        goal_predict_loss += F.mse_loss(pred_goals[i].view(-1), gt_goal[i].view(-1).cuda())
-                        # print(pred_goals[i], gt_goal[i], goal_predict_loss)
-
-                    # ml_loss += direction_loss
-                    # ml_loss += progress_loss
-
-                    # print(ml_loss)
-                    if direction_loss != direction_loss:  # debug for nan loss
-                        print('0', direction_loss)
-                    if progress_loss != progress_loss:  # debug for nan loss
-                        print('0', progress_loss)
+                device = pred_direction.device
+                gt_values = torch.as_tensor(
+                    np.concatenate((
+                        gt_direction[:, None],
+                        gt_progress_np[:, None],
+                        gt_goal_np,
+                    ), axis=1),
+                    device=device,
+                )
+                step_direction_loss, step_progress_loss, step_goal_loss = masked_navigation_losses(
+                    pred_direction,
+                    pred_progress,
+                    pred_goals,
+                    gt_values[:, 0],
+                    gt_values[:, 1],
+                    gt_values[:, 2:4],
+                    torch.as_tensor(~ended, device=device),
+                )
+                direction_loss = direction_loss + step_direction_loss
+                progress_loss = progress_loss + step_progress_loss
+                goal_predict_loss = goal_predict_loss + step_goal_loss
                 # print(at_direction, gt_direction, ml_loss)
                 gt_heatmap = build_gaussian_heatmap(
                     gt_target,
@@ -631,30 +662,22 @@ class NavCMTAgent:
                         traj[i]['gt_actions'].append(gt_direction[i])
                         traj[i]['gt_progress'].append(gt_progress[i].item())
                         traj[i]['gt_goal'].append(gt_goal[i])
-                    traj[i]['progress'].append(pred_progress[i].item())
+                    traj[i]['progress'].append(float(host_predictions[i, 0]))
                     traj[i]['heatmap_goal_id'].append(int(heatmap_goal_ids[i].item()))
                     traj[i]['heatmap_confidence'].append(
                         float(heatmap_probs[i, heatmap_goal_ids[i]].item())
                     )
 
             if self.feedback == 'teacher':
-                at_goal = gt_goal
-                # print('teacher', at_goal.shape)
                 a_t = gt_direction
-                pred_progress_t = gt_progress
+                pred_progress_t = gt_progress_np
+                cpu_goal = gt_goal_np
             elif self.feedback == 'student':  # student
                 a_t = at_direction
-                # Use the highest-probability heatmap cell as the coarse Stage-1 goal.
-                at_goal = heatmap_goals
-
-                # _, at_goal = pred_logits.max(1)
-                # at_goal = at_goal.squeeze(1)
-                # at_goal = gt_goal
-                # print('student', at_goal.shape)
+                # Keep heatmap Stage-1 execution unchanged.
+                cpu_goal = host_predictions[:, 2:4]
             else:
                 sys.exit('Invalid feedback option')
-
-            cpu_goal = at_goal.cpu().detach().numpy()
             # print(cpu_goal)
 
             # Interact with the simulator with actions
