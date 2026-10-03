@@ -815,6 +815,9 @@ class NavCMTAgent:
         self.logs['stage2_step'].append(float(stage2_step) / batch_size)
         self.logs['stage2_rotate'].append(float(stage2_rotate) / batch_size)
         self.logs['stage2_recoveries'].append(float(stage2_recoveries) / batch_size)
+        self.logs['first_person_spatial_gate'].append(
+            float(self.vln_model_without_ddp.first_person_spatial.gate.detach().cpu())
+        )
 
         # print('[3]')
         # debug_memory()

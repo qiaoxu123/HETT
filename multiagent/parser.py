@@ -96,6 +96,8 @@ def parse_args():
                         help='Gaussian sigma (in grid cells) for Stage-1 heatmap supervision')
     parser.add_argument('--heatmap_loss_weight', type=float, default=0.1,
                         help='Weight of the Stage-1 heatmap loss')
+    parser.add_argument('--disable_first_person_spatial', action='store_true',
+                        help='Ablate candidate attention over the current 7x7 RGB features')
     parser.add_argument('--stage1_switch_dist', type=float, default=25.0,
                         help='Distance in meters for switching from coarse Stage 1 to fine Stage 2')
     parser.add_argument('--stage2_recover_dist', type=float, default=40.0,

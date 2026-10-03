@@ -195,8 +195,10 @@ def train(args, train_env, val_envs, rank=-1):
         # print(loader.dataset.size())
 
         # Train for 2 epochs before evaluate again
+        train_epoch_started = time.time()
         agent.train(loader, args.log_every, feedback=args.feedback,
                     nss_w_weighting=1)  # nss_w_weighting = max(0, (args.iters/2 - idx)/ (args.iters/2)))
+        train_epoch_seconds = time.time() - train_epoch_started
 
         if args.benchmark_batches:
             if default_gpu:
@@ -207,11 +209,18 @@ def train(args, train_env, val_envs, rank=-1):
                 goal_predict_loss = sum(agent.logs['goal_predict_loss']) / max(
                     len(agent.logs['goal_predict_loss']), 1
                 )
+                heatmap_loss = sum(agent.logs['heatmap_loss']) / max(
+                    len(agent.logs['heatmap_loss']), 1
+                )
+                spatial_gate = sum(agent.logs['first_person_spatial_gate']) / max(
+                    len(agent.logs['first_person_spatial_gate']), 1
+                )
                 print(
                     "BENCHMARK_EPOCH epoch=%d IL_loss=%.6f direction_loss=%.6f "
-                    "progress_loss=%.6f goal_predict_loss=%.6f" % (
+                    "progress_loss=%.6f goal_predict_loss=%.6f heatmap_loss=%.6f "
+                    "first_person_spatial_gate=%.6f" % (
                         idx, ml_loss, direction_loss, progress_loss,
-                        goal_predict_loss,
+                        goal_predict_loss, heatmap_loss, spatial_gate,
                     ),
                     flush=True,
                 )
@@ -225,27 +234,34 @@ def train(args, train_env, val_envs, rank=-1):
 
             progress_loss = sum(agent.logs['progress_loss']) / max(len(agent.logs['progress_loss']), 1)
             goal_predict_loss = sum(agent.logs['goal_predict_loss']) / max(len(agent.logs['goal_predict_loss']), 1)
+            heatmap_loss = sum(agent.logs['heatmap_loss']) / max(len(agent.logs['heatmap_loss']), 1)
+            spatial_gate = sum(agent.logs['first_person_spatial_gate']) / max(len(agent.logs['first_person_spatial_gate']), 1)
             # target_predict_loss = sum(agent.logs['target_predict_loss']) / max(len(agent.logs['target_predict_loss']), 1)
             # writer.add_scalar("loss/IL_loss", IL_loss, iter)
 
             write_to_record_file(
-                "\nIL_loss %.4f direction_loss %.4f progress_loss %.4f goal_predict_loss %.4f" % (
-                    ml_loss, direction_loss, progress_loss, goal_predict_loss),
+                "\ntrain_time_seconds %.2f IL_loss %.4f direction_loss %.4f "
+                "progress_loss %.4f goal_predict_loss %.4f heatmap_loss %.4f "
+                "first_person_spatial_gate %.6f" % (
+                    train_epoch_seconds, ml_loss, direction_loss, progress_loss,
+                    goal_predict_loss, heatmap_loss, spatial_gate),
                 record_file
             )
             stage1_step = sum(agent.logs['stage1_step']) / max(len(agent.logs['stage1_step']), 1)
             stage2_step = sum(agent.logs['stage2_step']) / max(len(agent.logs['stage2_step']), 1)
             stage2_rotate = sum(agent.logs['stage2_rotate']) / max(len(agent.logs['stage2_rotate']), 1)
+            stage2_recoveries = sum(agent.logs['stage2_recoveries']) / max(len(agent.logs['stage2_recoveries']), 1)
 
             write_to_record_file(
-                "\nstage %.4f %.4f %.4f" % (
-                    stage1_step, stage2_step, stage2_rotate),
+                "\nstage %.4f %.4f %.4f stage2_recoveries %.4f" % (
+                    stage1_step, stage2_step, stage2_rotate, stage2_recoveries),
                 record_file
             )
 
             # Run validation
             loss_str = "\nepoch {}".format(idx)
 
+            validation_started = time.time()
             agent.save(idx, os.path.join(GOAL_PREDICTOR_CHECKPOINT_DIR, "latest"))
             agent_class_eval = NavCMTAgent
             agent_eval = agent_class_eval(args, rank=rank, allow_ngpus=False)
@@ -264,10 +280,12 @@ def train(args, train_env, val_envs, rank=-1):
                 stage1_step = sum(agent_eval.logs['stage1_step']) / max(len(agent_eval.logs['stage1_step']), 1)
                 stage2_step = sum(agent_eval.logs['stage2_step']) / max(len(agent_eval.logs['stage2_step']), 1)
                 stage2_rotate = sum(agent_eval.logs['stage2_rotate']) / max(len(agent_eval.logs['stage2_rotate']), 1)
+                stage2_recoveries = sum(agent_eval.logs['stage2_recoveries']) / max(len(agent_eval.logs['stage2_recoveries']), 1)
 
                 write_to_record_file(
-                    "\nstage %.4f %.4f %.4f" % (
-                        stage1_step, stage2_step, stage2_rotate),
+                    "\n%s sample_count %d stage %.4f %.4f %.4f stage2_recoveries %.4f" % (
+                        env_name, len(pred_results), stage1_step, stage2_step,
+                        stage2_rotate, stage2_recoveries),
                     record_file
                 )
                 loss_str += "\n%s " % env_name
@@ -280,6 +298,10 @@ def train(args, train_env, val_envs, rank=-1):
                         best_val[env_name]['state'] = 'Epoch %d %s' % (idx, loss_str)
                         agent_eval.save(idx, os.path.join(GOAL_PREDICTOR_CHECKPOINT_DIR, "best_%s" % (env_name)))
 
+            write_to_record_file(
+                "\nvalidation_time_seconds %.2f" % (time.time() - validation_started),
+                record_file,
+            )
             write_to_record_file(
                 ('\n%s (%d %d%%) %s' % (
                     timeSince(start, float(idx + 1) / args.epochs), idx + 1, float(idx + 1) / args.epochs * 100,

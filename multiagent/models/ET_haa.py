@@ -30,6 +30,47 @@ def aggregate_history_grid(grid_fts, grid_indices, text_fts, grid_proj, cell_cou
     return torch.einsum('btc,btd->bcd', weights, projected)
 
 
+class FirstPersonSpatialFusion(nn.Module):
+    """Let each map candidate read the current first-person RGB feature grid."""
+
+    def __init__(self, candidate_dim=768, image_channels=512, attention_dim=128,
+                 image_grid_size=7):
+        super().__init__()
+        self.query = nn.Linear(candidate_dim + 4, attention_dim)
+        self.key = nn.Linear(image_channels + 2, attention_dim)
+        self.value = nn.Linear(image_channels + 2, attention_dim)
+        self.output = nn.Linear(attention_dim, candidate_dim)
+        self.gate = nn.Parameter(torch.zeros(()))
+        coords = torch.linspace(-1.0, 1.0, image_grid_size)
+        rows, cols = torch.meshgrid(coords, coords, indexing='ij')
+        self.register_buffer(
+            'image_coordinates',
+            torch.stack((rows, cols), dim=-1).reshape(1, -1, 2),
+            persistent=False,
+        )
+        self.attention_scale = attention_dim ** -0.5
+
+    def forward(self, candidates, candidate_xy, current_state, rgb_features):
+        # Candidate geometry is expressed relative to the current UAV pose.
+        relative_xy = candidate_xy - current_state[:, None, 2:4]
+        heading = current_state[:, None, :2].expand(-1, candidates.shape[1], -1)
+        query = self.query(torch.cat((candidates, relative_xy, heading), dim=-1))
+
+        image_tokens = rgb_features.transpose(1, 2)
+        image_coords = self.image_coordinates.to(dtype=image_tokens.dtype).expand(
+            image_tokens.shape[0], -1, -1
+        )
+        image_tokens = torch.cat((image_tokens, image_coords), dim=-1)
+        keys = self.key(image_tokens)
+        values = self.value(image_tokens)
+        weights = torch.softmax(
+            torch.bmm(query, keys.transpose(1, 2)) * self.attention_scale,
+            dim=-1,
+        )
+        visual_context = torch.bmm(weights, values)
+        return candidates + torch.tanh(self.gate) * self.output(visual_context)
+
+
 class SoftDotAttention(nn.Module):
     '''Soft Dot Attention. 
 
@@ -167,6 +208,14 @@ class ET(nn.Module):
         self.text_proj = nn.Linear(768, 768)
         self.grid_proj = nn.Linear(768, 768)
 
+        # Keep the original HETT parameter initialization identical at a
+        # fixed seed; only this optional branch consumes the saved RNG stream.
+        rng_state = torch.get_rng_state()
+        self.first_person_spatial = FirstPersonSpatialFusion(
+            candidate_dim=self.args.demb,
+        )
+        torch.set_rng_state(rng_state)
+
     def forward(self, **inputs):
         """
         forward the model for multiple time-steps (used for training)
@@ -295,6 +344,13 @@ class ET(nn.Module):
             target_decoder_input
             + torch.tanh(self.heatmap_lang_gate) * heatmap_lang_context
         )
+        if not getattr(self.args, 'disable_first_person_spatial', False):
+            conditioned_target = self.first_person_spatial(
+                conditioned_target,
+                inputs['candidates'],
+                inputs['directions'][:, -1, :],
+                im_feature[:, -1, :, :],
+            )
 
         # One logit per global grid cell; reshaped to a 2D heatmap in the agent.
         target_logits = self.decoder_2_logits_full(conditioned_target).squeeze(-1)
