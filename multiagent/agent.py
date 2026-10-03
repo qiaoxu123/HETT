@@ -112,6 +112,13 @@ def masked_navigation_losses(pred_direction, pred_progress, pred_goals,
     )
 
 
+def advance_teacher_stage1_index(step_counts, episode_index, move_iteration, trajectory_length):
+    """Advance one teacher trajectory without using other batch members' steps."""
+    step_counts[episode_index] += 1
+    index = int(step_counts[episode_index]) * move_iteration
+    return index if index < trajectory_length else -1
+
+
 def is_default_gpu(opts) -> bool:
     return opts.local_rank == -1 or dist.get_rank() == 0
 
@@ -439,6 +446,7 @@ class NavCMTAgent:
         target_predict_loss = 0.
 
         stage1_step = 0
+        teacher_stage1_steps = np.zeros(batch_size, dtype=np.int32)
         stage2_step = 0
         stage2_rotate = 0
 
@@ -661,8 +669,10 @@ class NavCMTAgent:
                     # dst = Point2D(obs[i]['centroid_goal'][0], obs[i]['centroid_goal'][1])
                     # dst = self.env.unnormalize_position(global_position[cpu_goal[i]], obs[i]['map_name'], self.args.map_meters)
                     if self.feedback == 'teacher':
-                        cur_step = stage1_step * self.args.move_iteration
-                        cur_step = cur_step if cur_step < len(obs[i]['trajectory']) else -1
+                        cur_step = advance_teacher_stage1_index(
+                            teacher_stage1_steps, i, self.args.move_iteration,
+                            len(obs[i]['trajectory']),
+                        )
                         poses[i] = obs[i]['trajectory'][cur_step]
                     else:
                         poses[i] = self.move(poses[i], dst,
