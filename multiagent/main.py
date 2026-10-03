@@ -184,6 +184,7 @@ def train(args, train_env, val_envs, rank=-1):
     # zero_start_iter = 0
     for idx in range(start_epoch, args.epochs):
         agent.logs = defaultdict(list)
+        epoch_train_start = time.time()
 
         # iter = idx + interval
         # if args.train_val_on_full:
@@ -197,6 +198,7 @@ def train(args, train_env, val_envs, rank=-1):
         # Train for 2 epochs before evaluate again
         agent.train(loader, args.log_every, feedback=args.feedback,
                     nss_w_weighting=1)  # nss_w_weighting = max(0, (args.iters/2 - idx)/ (args.iters/2)))
+        epoch_train_seconds = time.time() - epoch_train_start
 
         if args.benchmark_batches:
             if default_gpu:
@@ -220,6 +222,13 @@ def train(args, train_env, val_envs, rank=-1):
 
         if default_gpu:
             ml_loss = sum(agent.logs['IL_loss']) / max(len(agent.logs['IL_loss']), 1)
+            heatmap_loss = sum(agent.logs['heatmap_loss']) / max(len(agent.logs['heatmap_loss']), 1)
+            write_to_record_file(
+                "\nEPOCH_TIMING epoch=%d train_seconds=%.2f train_samples=%d train_batches=%d heatmap_loss=%.6f" % (
+                    idx, epoch_train_seconds, train_env.size(),
+                    len(loader), heatmap_loss,
+                ), record_file
+            )
 
             direction_loss = sum(agent.logs['direction_loss']) / max(len(agent.logs['direction_loss']), 1)
 
@@ -253,6 +262,7 @@ def train(args, train_env, val_envs, rank=-1):
                   (agent_eval.load(os.path.join(GOAL_PREDICTOR_CHECKPOINT_DIR, "latest")),
                    os.path.join(GOAL_PREDICTOR_CHECKPOINT_DIR, "latest")))
             for env_name, env in val_envs.items():
+                validation_start = time.time()
                 agent_eval.logs = defaultdict(list)
                 agent_eval.env = env
                 loader = DataLoader(env, batch_size=1)
@@ -261,6 +271,11 @@ def train(args, train_env, val_envs, rank=-1):
                 pred_results = agent_eval.get_results()
 
                 score_summary, result = env.eval_metrics(pred_results)
+                write_to_record_file(
+                    "\nVALIDATION_TIMING epoch=%d split=%s seconds=%.2f samples=%d" % (
+                        idx, env_name, time.time() - validation_start, env.size(),
+                    ), record_file
+                )
                 stage1_step = sum(agent_eval.logs['stage1_step']) / max(len(agent_eval.logs['stage1_step']), 1)
                 stage2_step = sum(agent_eval.logs['stage2_step']) / max(len(agent_eval.logs['stage2_step']), 1)
                 stage2_rotate = sum(agent_eval.logs['stage2_rotate']) / max(len(agent_eval.logs['stage2_rotate']), 1)
