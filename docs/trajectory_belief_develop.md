@@ -119,6 +119,71 @@ semantic_anchor_position_loss_weight = 1.0
 trajectory_loss_weight = 1.0
 ```
 
+## Stability safeguards after the first semantic-anchor run
+
+The first semantic-anchor experiment showed severe closed-loop regression.  The
+current branch therefore keeps the new reasoning branch isolated from the
+stable final-goal backbone:
+
+- the final-goal heatmap prior is detached before entering the core-anchor
+  classifier;
+- core-anchor base candidate features are detached, so intermediate-anchor and
+  trajectory losses do not overwrite the shared final-goal candidate backbone;
+- landmark, language and current RGB features are also read as detached
+  features by the auxiliary anchor branch; BERT and DarkNet remain trainable
+  through the original HETT losses;
+- current RGB is grounded with candidate-specific attention over the 7x7
+  DarkNet patch grid instead of broadcasting one global visual token;
+- the final-goal prior is softened to 0.25 inside the core-anchor classifier.
+
+Closed-loop training and execution use curricula:
+
+```
+epoch 0-1:
+    teacher-dominant training
+    student self-rollout weight = 0
+    semantic execution alpha = 0
+
+epoch 2-4:
+    gradually add student rollout
+    gradually blend semantic-anchor execution
+
+epoch >=4:
+    full configured teacher/student weights
+    full semantic-anchor trajectory execution
+```
+
+During semantic warmup, navigation remains trajectory-only but uses a stable
+final-goal fallback: the 7x7 heatmap selects the region, the original continuous
+goal head refines inside that region, and the controller executes the 25 m
+trajectory waypoint.  This avoids both the old Two-Stage controller and the
+coarse cell-center quantization error.
+
+The 25 m execution waypoint plus a 10-action low-level controller budget avoids
+the previous hard range bottleneck of at most roughly 200 m over 20 high-level
+steps.
+
+Student core-anchor supervision is masked when projection to the human path is
+farther than 30 m, preventing badly off-path states from creating ambiguous
+pseudo labels.
+
+Teacher stepping is adaptive: short routes retain the nominal 10 m spacing,
+while long demonstrations enlarge the physical step enough to fit inside
+`max_action_len`; steps are clipped to nearby human core anchors so important
+route/landmark decisions are not skipped when possible.
+
+Large yaw changes are now treated as view-intent metadata rather than standalone
+XY anchors.  They are associated with the nearest spatial anchor but do not by
+themselves force the trajectory generator toward an arbitrary position.
+
+BERT and DarkNet remain trainable, but use smaller learning rates than new HETT
+heads and have explicit gradient clipping.
+
+The first epoch has a val_seen SR regression guard (20% by default).  If this
+floor is missed, training stops after epoch 0 instead of spending the remaining
+epochs on a regressed policy.  This is a regression guard, not a guarantee that
+the model will achieve 20% before it is empirically evaluated.
+
 ## Student execution
 
 ```

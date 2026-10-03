@@ -28,7 +28,7 @@ class HumanCoreAnchorTest(unittest.TestCase):
         pos = core.indices.index(2)
         self.assertIn("turn", core.reasons[pos])
 
-    def test_large_view_change_is_preserved(self):
+    def test_large_view_change_is_metadata_not_xy_anchor(self):
         trajectory = [
             Pose4D(0.0, 0.0, 50.0, 0.0),
             Pose4D(0.2, 0.0, 50.0, math.pi / 2),
@@ -40,9 +40,10 @@ class HumanCoreAnchorTest(unittest.TestCase):
             rdp_tolerance_m=10.0,
             yaw_keyframe_deg=30.0,
         )
-        self.assertIn(1, core.indices)
-        pos = core.indices.index(1)
-        self.assertIn("yaw", core.reasons[pos])
+        self.assertNotIn(1, core.indices)
+        self.assertTrue(
+            any("yaw" in reasons for reasons in core.reasons)
+        )
 
     def test_referenced_landmark_passage_becomes_anchor(self):
         trajectory = [

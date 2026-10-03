@@ -31,6 +31,7 @@ from multiagent.human_intent import (
 )
 from multiagent.trajectory_belief import (
     build_fixed_horizon_anchors,
+    clamp_goal_to_selected_cell,
     compute_heatmap_statistics,
     compute_trajectory_statistics,
     normalize_targets,
@@ -180,6 +181,7 @@ class NavCMTAgent:
 
         self.default_gpu = is_default_gpu(self.args)
         self.rank = rank
+        self.current_epoch = 0
         self.teacher_rollout_cache = {}
         self.human_anchor_cache = {}
 
@@ -235,12 +237,18 @@ class NavCMTAgent:
         # optimizer        
         assert args.optim in ("adam", "adamW")
         OptimizerClass = torch.optim.Adam if args.optim == "adam" else torch.optim.AdamW
-        self.et_optimizer = OptimizerClass(filter(lambda p: p.requires_grad, self.vln_model.parameters()),
-                                           lr=args.learning_rate)
-        self.lang_model_optimizer = OptimizerClass(filter(lambda p: p.requires_grad, self.lang_model.parameters()),
-                                                   lr=self.args.learning_rate)
-        self.vision_model_optimizer = OptimizerClass(filter(lambda p: p.requires_grad, self.vision_model.parameters()),
-                                                     lr=self.args.learning_rate)
+        self.et_optimizer = OptimizerClass(
+            filter(lambda p: p.requires_grad, self.vln_model.parameters()),
+            lr=args.learning_rate,
+        )
+        self.lang_model_optimizer = OptimizerClass(
+            filter(lambda p: p.requires_grad, self.lang_model.parameters()),
+            lr=self.args.learning_rate * self.args.language_lr_scale,
+        )
+        self.vision_model_optimizer = OptimizerClass(
+            filter(lambda p: p.requires_grad, self.vision_model.parameters()),
+            lr=self.args.learning_rate * self.args.vision_lr_scale,
+        )
         self.optimizers = (self.et_optimizer, self.lang_model_optimizer, self.vision_model_optimizer)
         # self.optimizers = (self.et_optimizer, self.lang_model_optimizer)
 
@@ -397,13 +405,35 @@ class NavCMTAgent:
                             start_idx = token_idx
                             break
 
-                if start_idx is None:
-                    embedding = lang_features[batch_idx, 0]
-                else:
+                if start_idx is not None:
                     embedding = lang_features[
                         batch_idx,
                         start_idx:start_idx + len(name_ids),
                     ].mean(dim=0)
+                else:
+                    # Canonical landmark names are not always verbatim spans
+                    # in CityRefer instructions.  Fall back to contextual
+                    # tokens that overlap the landmark WordPieces before using
+                    # CLS, otherwise multiple landmarks collapse to the same
+                    # semantic vector.
+                    name_id_set = set(name_ids)
+                    overlap_positions = [
+                        token_idx
+                        for token_idx, token_id in enumerate(instruction_ids)
+                        if token_id in name_id_set
+                        and token_id not in (
+                            self.tokenizer.cls_token_id,
+                            self.tokenizer.sep_token_id,
+                            self.tokenizer.pad_token_id,
+                        )
+                    ]
+                    if overlap_positions:
+                        embedding = lang_features[
+                            batch_idx,
+                            overlap_positions,
+                        ].mean(dim=0)
+                    else:
+                        embedding = lang_features[batch_idx, 0]
                 row.append(embedding)
             semantic_rows.append(torch.stack(row, dim=0))
 
@@ -470,9 +500,41 @@ class NavCMTAgent:
                            prefix='Progress:', suffix='%s (%d/%d)' % (
                     timeSince(start, float(idx) / tot), idx, tot), bar_length=80)
 
-    def train(self, loader, n_epochs, feedback='student', nss_w_weighting=1, **kwargs):
+    @staticmethod
+    def _ramp_fraction(epoch_idx, warmup_epochs, ramp_epochs):
+        if epoch_idx < warmup_epochs:
+            return 0.0
+        if ramp_epochs <= 0:
+            return 1.0
+        return min(
+            1.0,
+            max(
+                0.0,
+                (epoch_idx - warmup_epochs + 1) / float(ramp_epochs),
+            ),
+        )
+
+    def _semantic_execution_alpha(self):
+        return self._ramp_fraction(
+            self.current_epoch,
+            self.args.semantic_policy_warmup_epochs,
+            self.args.semantic_policy_ramp_epochs,
+        )
+
+    def _student_rollout_weight(self):
+        return (
+            self.args.student_rollout_max_weight
+            * self._ramp_fraction(
+                self.current_epoch,
+                self.args.student_rollout_warmup_epochs,
+                self.args.student_rollout_ramp_epochs,
+            )
+        )
+
+    def train(self, loader, n_epochs, feedback='student', nss_w_weighting=1, outer_epoch=0, **kwargs):
         ''' Train for a given number of epochs '''
         self.feedback = feedback
+        self.current_epoch = int(outer_epoch)
 
         self.lang_model.train()
         self.vln_model.train()
@@ -498,13 +560,23 @@ class NavCMTAgent:
                 if feedback == 'teacher':
                     self.feedback = 'teacher'
                     self.rollout(train_ml=self.args.teacher_weight)
-                elif feedback == 'student':  # agents in teacher and student separately
-
+                elif feedback == 'student':
+                    # Keep the total imitation weight approximately constant:
+                    # before student rollout is trustworthy, transfer its share
+                    # to the clean human-teacher rollout instead of halving the
+                    # optimization signal.
+                    student_weight = self._student_rollout_weight()
+                    teacher_weight = (
+                        self.args.ml_weight
+                        + self.args.student_rollout_max_weight
+                        - student_weight
+                    )
                     self.feedback = 'teacher'
-                    self.rollout(train_ml=self.args.ml_weight)  # self.args.nss_w*nss_w_weighting, **kwargs)
-                    # if epoch_train > 10000:
-                    self.feedback = 'student'
-                    self.rollout(train_ml=self.args.ml_weight)
+                    self.rollout(train_ml=teacher_weight)
+
+                    if student_weight > 0:
+                        self.feedback = 'student'
+                        self.rollout(train_ml=student_weight)
                 else:
                     assert False
 
@@ -516,7 +588,18 @@ class NavCMTAgent:
                 self.loss.backward()
                 # print('suc')
 
-                torch.nn.utils.clip_grad_norm_(self.vln_model.parameters(), 40.)
+                torch.nn.utils.clip_grad_norm_(
+                    self.vln_model.parameters(),
+                    40.,
+                )
+                torch.nn.utils.clip_grad_norm_(
+                    self.lang_model.parameters(),
+                    self.args.pretrained_grad_clip,
+                )
+                torch.nn.utils.clip_grad_norm_(
+                    self.vision_model.parameters(),
+                    self.args.pretrained_grad_clip,
+                )
 
                 self.lang_model_optimizer.step()
                 self.vision_model_optimizer.step()
@@ -660,6 +743,11 @@ class NavCMTAgent:
         heatmap_prob_sum = None
         heatmap_confusion = None
         heatmap_sample_count = None
+        semantic_anchor_gt_hist = None
+        semantic_anchor_pred_hist = None
+        semantic_anchor_prob_sum = None
+        semantic_anchor_confusion = None
+        semantic_anchor_sample_count = None
 
         def accumulate_diagnostic(name, values, mask=None):
             values = values.detach().to(dtype=torch.float32)
@@ -787,8 +875,13 @@ class NavCMTAgent:
                 dim=1,
             )
             semantic_anchor_ids = semantic_anchor_probs.argmax(dim=1)
+
+            # Semantic proposals are always computed for training and
+            # diagnostics. Closed-loop execution is blended separately with a
+            # stable final-goal fallback during the curriculum.
+            semantic_execution_alpha = self._semantic_execution_alpha()
             trajectory_probs = semantic_anchor_probs
-            refined_candidate_endpoints = refine_candidate_endpoints(
+            semantic_candidate_endpoints = refine_candidate_endpoints(
                 trajectory_belief['endpoint_offsets'],
                 self.args.grid_size,
             )
@@ -804,7 +897,7 @@ class NavCMTAgent:
             )
 
             proposal_endpoints = torch.gather(
-                refined_candidate_endpoints,
+                semantic_candidate_endpoints,
                 dim=1,
                 index=proposal_ids[:, :, None].expand(-1, -1, 2),
             )
@@ -829,8 +922,43 @@ class NavCMTAgent:
             proposal_trajectories = (
                 proposal_anchors + proposal_residuals
             ).clamp(0.0, 1.0)
-            selected_first_waypoint = proposal_trajectories[:, 0, 0, :]
-            control_goals = selected_first_waypoint
+            execution_waypoint_index = min(
+                self.args.trajectory_execution_waypoint_index,
+                proposal_trajectories.shape[2] - 1,
+            )
+            semantic_control_goal = proposal_trajectories[
+                :,
+                0,
+                execution_waypoint_index,
+                :,
+            ]
+
+            # Stable final-goal fallback: heatmap chooses the coarse region,
+            # while the original continuous goal head refines only inside that
+            # region. This preserves trajectory-only execution without forcing
+            # the UAV toward a coarse cell center during semantic warmup.
+            fallback_endpoint = clamp_goal_to_selected_cell(
+                pred_goals,
+                heatmap_goal_ids,
+                self.args.grid_size,
+            )
+            fallback_anchors = build_fixed_horizon_anchors(
+                current_xy,
+                fallback_endpoint[:, None, :],
+                self.args.trajectory_horizons_m,
+                self.args.map_meters,
+            )
+            fallback_control_goal = fallback_anchors[
+                :,
+                0,
+                execution_waypoint_index,
+                :,
+            ]
+            control_goals = (
+                (1.0 - semantic_execution_alpha) * fallback_control_goal
+                + semantic_execution_alpha * semantic_control_goal
+            )
+            selected_first_waypoint = semantic_control_goal
 
             input['grid_fts'] = torch.cat((input['grid_fts'], grid_ft), dim=1)
             grid_index = torch.tensor(np.array([ob['cur_grid'] for ob in obs])).unsqueeze(1).cuda()
@@ -962,6 +1090,24 @@ class NavCMTAgent:
                     dtype=pred_logits.dtype,
                 )
 
+                anchor_projection_error_m = torch.as_tensor(
+                    [
+                        float(item['projection_error_m'])
+                        for item in core_target_data
+                    ],
+                    device=pred_logits.device,
+                    dtype=pred_logits.dtype,
+                )
+                anchor_supervision_mask = active_mask
+                if self.feedback == 'student':
+                    anchor_supervision_mask = (
+                        active_mask
+                        * (
+                            anchor_projection_error_m
+                            <= self.args.student_anchor_max_projection_error_m
+                        ).to(active_mask.dtype)
+                    )
+
                 # Human core-anchor classification is distinct from the final-
                 # goal heatmap.  It answers "where is the next meaningful
                 # decision point?" instead of "where is the destination?".
@@ -976,11 +1122,11 @@ class NavCMTAgent:
                     * F.log_softmax(semantic_anchor_logits, dim=1)
                 ).sum(dim=1)
                 semantic_anchor_loss += (
-                    per_sample_anchor_loss * active_mask
+                    per_sample_anchor_loss * anchor_supervision_mask
                 ).sum()
 
                 gt_mode_endpoints = torch.gather(
-                    refined_candidate_endpoints,
+                    semantic_candidate_endpoints,
                     dim=1,
                     index=gt_anchor_ids[:, None, None].expand(-1, 1, 2),
                 ).squeeze(1)
@@ -990,7 +1136,7 @@ class NavCMTAgent:
                     reduction='none',
                 ).mean(dim=-1)
                 semantic_anchor_position_loss += (
-                    anchor_position_error * active_mask
+                    anchor_position_error * anchor_supervision_mask
                 ).sum()
 
                 gt_mode_residuals = torch.gather(
@@ -1023,7 +1169,7 @@ class NavCMTAgent:
                     / gt_trajectory_valid.sum(dim=-1).clamp_min(1.0)
                 )
                 trajectory_loss += (
-                    per_sample_trajectory_loss * active_mask
+                    per_sample_trajectory_loss * anchor_supervision_mask
                 ).sum()
 
                 # Diagnostics are detached and accumulated on-device, so they
@@ -1043,6 +1189,31 @@ class NavCMTAgent:
                     for name, values in heatmap_stats.items():
                         accumulate_diagnostic(name, values, active_mask)
 
+                    continuous_goal_error_m = (
+                        torch.linalg.norm(
+                            pred_goals - gt_values[:, 2:4],
+                            dim=-1,
+                        )
+                        * float(self.args.map_meters)
+                    )
+                    fallback_goal_error_m = (
+                        torch.linalg.norm(
+                            fallback_endpoint - gt_values[:, 2:4],
+                            dim=-1,
+                        )
+                        * float(self.args.map_meters)
+                    )
+                    accumulate_diagnostic(
+                        'continuous_goal_error_m',
+                        continuous_goal_error_m,
+                        active_mask,
+                    )
+                    accumulate_diagnostic(
+                        'fallback_goal_error_m',
+                        fallback_goal_error_m,
+                        active_mask,
+                    )
+
                     anchor_stats = compute_heatmap_statistics(
                         semantic_anchor_probs,
                         gt_anchor_ids,
@@ -1059,7 +1230,57 @@ class NavCMTAgent:
                         accumulate_diagnostic(
                             anchor_name,
                             values,
-                            active_mask,
+                            anchor_supervision_mask,
+                        )
+
+                    anchor_active_bool = anchor_supervision_mask.bool()
+                    anchor_cell_count = self.args.grid_size ** 2
+                    step_anchor_gt_hist = torch.bincount(
+                        gt_anchor_ids[anchor_active_bool],
+                        minlength=anchor_cell_count,
+                    ).to(dtype=torch.float32)
+                    step_anchor_pred_hist = torch.bincount(
+                        semantic_anchor_ids[anchor_active_bool],
+                        minlength=anchor_cell_count,
+                    ).to(dtype=torch.float32)
+                    step_anchor_prob_sum = (
+                        semantic_anchor_probs.detach()
+                        * anchor_supervision_mask[:, None]
+                    ).sum(dim=0)
+                    anchor_confusion_ids = (
+                        gt_anchor_ids[anchor_active_bool] * anchor_cell_count
+                        + semantic_anchor_ids[anchor_active_bool]
+                    )
+                    step_anchor_confusion = torch.bincount(
+                        anchor_confusion_ids,
+                        minlength=anchor_cell_count * anchor_cell_count,
+                    ).reshape(
+                        anchor_cell_count,
+                        anchor_cell_count,
+                    ).to(dtype=torch.float32)
+                    step_anchor_count = anchor_supervision_mask.sum().detach()
+
+                    if semantic_anchor_gt_hist is None:
+                        semantic_anchor_gt_hist = step_anchor_gt_hist
+                        semantic_anchor_pred_hist = step_anchor_pred_hist
+                        semantic_anchor_prob_sum = step_anchor_prob_sum
+                        semantic_anchor_confusion = step_anchor_confusion
+                        semantic_anchor_sample_count = step_anchor_count
+                    else:
+                        semantic_anchor_gt_hist = (
+                            semantic_anchor_gt_hist + step_anchor_gt_hist
+                        )
+                        semantic_anchor_pred_hist = (
+                            semantic_anchor_pred_hist + step_anchor_pred_hist
+                        )
+                        semantic_anchor_prob_sum = (
+                            semantic_anchor_prob_sum + step_anchor_prob_sum
+                        )
+                        semantic_anchor_confusion = (
+                            semantic_anchor_confusion + step_anchor_confusion
+                        )
+                        semantic_anchor_sample_count = (
+                            semantic_anchor_sample_count + step_anchor_count
                         )
 
                     anchor_distance_m = torch.as_tensor(
@@ -1070,22 +1291,19 @@ class NavCMTAgent:
                         device=pred_logits.device,
                         dtype=pred_logits.dtype,
                     )
-                    anchor_projection_error_m = torch.as_tensor(
-                        [
-                            float(item['projection_error_m'])
-                            for item in core_target_data
-                        ],
-                        device=pred_logits.device,
-                        dtype=pred_logits.dtype,
-                    )
                     accumulate_diagnostic(
                         'human_anchor_distance_m',
                         anchor_distance_m,
-                        active_mask,
+                        anchor_supervision_mask,
                     )
                     accumulate_diagnostic(
                         'human_anchor_projection_error_m',
                         anchor_projection_error_m,
+                        active_mask,
+                    )
+                    accumulate_diagnostic(
+                        'human_anchor_supervision_rate',
+                        anchor_supervision_mask,
                         active_mask,
                     )
                     for reason in ('turn', 'yaw', 'landmark', 'goal'):
@@ -1100,7 +1318,7 @@ class NavCMTAgent:
                         accumulate_diagnostic(
                             'human_anchor_%s_rate' % reason,
                             reason_values,
-                            active_mask,
+                            anchor_supervision_mask,
                         )
 
                     active_bool = active_mask.bool()
@@ -1142,7 +1360,7 @@ class NavCMTAgent:
 
                     trajectory_stats = compute_trajectory_statistics(
                         semantic_anchor_ids,
-                        refined_candidate_endpoints,
+                        semantic_candidate_endpoints,
                         proposal_ids,
                         proposal_endpoints,
                         proposal_trajectories,
@@ -1160,6 +1378,24 @@ class NavCMTAgent:
                         if name == 'trajectory_first_wp_error_m':
                             metric_mask = active_mask * first_wp_valid
                         accumulate_diagnostic(name, values, metric_mask)
+
+                    exec_idx = min(
+                        self.args.trajectory_execution_waypoint_index,
+                        gt_trajectory_targets.shape[1] - 1,
+                    )
+                    execution_wp_error_m = (
+                        torch.linalg.norm(
+                            control_goals - gt_trajectory_targets[:, exec_idx, :],
+                            dim=-1,
+                        )
+                        * float(self.args.map_meters)
+                    )
+                    execution_wp_valid = gt_trajectory_valid[:, exec_idx]
+                    accumulate_diagnostic(
+                        'trajectory_execution_wp_error_m',
+                        execution_wp_error_m,
+                        anchor_supervision_mask * execution_wp_valid,
+                    )
 
                     pred_progress_flat = pred_progress.reshape(
                         pred_progress.shape[0], -1
@@ -1274,10 +1510,47 @@ class NavCMTAgent:
                     teacher_poses, teacher_cumulative = teacher_paths[i]
                     current_arc = float(teacher_arc_m[i])
                     total_arc = float(teacher_cumulative[-1])
-                    next_arc = min(
-                        current_arc + self.args.teacher_step_m,
+                    # Keep fine teacher states on short routes, but ensure
+                    # long CityFlight demonstrations can still be covered
+                    # within max_action_len instead of truncating near 200 m.
+                    remaining_teacher_steps = max(
+                        self.args.max_action_len - t,
+                        1,
+                    )
+                    adaptive_teacher_step = max(
+                        self.args.teacher_step_m,
+                        (total_arc - current_arc)
+                        / float(remaining_teacher_steps),
+                    )
+                    proposed_next_arc = min(
+                        current_arc + adaptive_teacher_step,
                         total_arc,
                     )
+
+                    # Do not stride across a human core change if that anchor
+                    # lies inside the adaptive step. This keeps teacher states
+                    # concentrated on meaningful route/landmark decisions while
+                    # the remaining-step term still guarantees end coverage.
+                    core = self._human_core_anchors(ob)
+                    future_core_arcs = core.arcs_m[
+                        core.arcs_m > current_arc + 1e-6
+                    ]
+                    if len(future_core_arcs):
+                        next_core_arc = float(future_core_arcs[0])
+                        # Visit the next core event only when all remaining
+                        # events (plus the final endpoint) can still fit in the
+                        # available teacher steps. Otherwise keep the adaptive
+                        # stride so coverage is not sacrificed by an overly
+                        # dense anchor set.
+                        can_visit_all_remaining = (
+                            len(future_core_arcs) <= remaining_teacher_steps
+                        )
+                        if (
+                            can_visit_all_remaining
+                            and next_core_arc <= proposed_next_arc + 1e-6
+                        ):
+                            proposed_next_arc = next_core_arc
+                    next_arc = proposed_next_arc
                     poses[i] = sample_teacher_pose_at_arc(
                         teacher_poses,
                         teacher_cumulative,
@@ -1450,6 +1723,39 @@ class NavCMTAgent:
                 float(heatmap_sample_count.detach().cpu().item())
             )
 
+        if semantic_anchor_sample_count is not None:
+            self.logs[f'{diagnostic_prefix}_semantic_anchor_gt_hist'].append(
+                semantic_anchor_gt_hist.detach().cpu().numpy()
+            )
+            self.logs[f'{diagnostic_prefix}_semantic_anchor_pred_hist'].append(
+                semantic_anchor_pred_hist.detach().cpu().numpy()
+            )
+            self.logs[f'{diagnostic_prefix}_semantic_anchor_prob_sum'].append(
+                semantic_anchor_prob_sum.detach().cpu().numpy()
+            )
+            self.logs[f'{diagnostic_prefix}_semantic_anchor_confusion'].append(
+                semantic_anchor_confusion.detach().cpu().numpy()
+            )
+            self.logs[
+                f'{diagnostic_prefix}_semantic_anchor_sample_count'
+            ].append(
+                float(
+                    semantic_anchor_sample_count.detach().cpu().item()
+                )
+            )
+
+        self.logs['semantic_execution_alpha'].append(
+            float(self._semantic_execution_alpha())
+        )
+        current_student_weight = float(self._student_rollout_weight())
+        self.logs['student_rollout_weight'].append(current_student_weight)
+        self.logs['teacher_rollout_weight'].append(
+            float(
+                self.args.ml_weight
+                + self.args.student_rollout_max_weight
+                - current_student_weight
+            )
+        )
         self.logs['global_landmark_gate'].append(
             float(torch.tanh(
                 self.vln_model_without_ddp.global_landmark_gate
@@ -1575,6 +1881,21 @@ class NavCMTAgent:
                             str(exc),
                         )
 
+                if name == "lang_model":
+                    desired_lr = (
+                        self.args.learning_rate
+                        * self.args.language_lr_scale
+                    )
+                elif name == "vision_model":
+                    desired_lr = (
+                        self.args.learning_rate
+                        * self.args.vision_lr_scale
+                    )
+                else:
+                    desired_lr = self.args.learning_rate
+                for param_group in optimizer.param_groups:
+                    param_group['lr'] = desired_lr
+
             def count_parameters(mo):
                 return sum(p.numel() for p in mo.parameters() if p.requires_grad)
 
@@ -1586,4 +1907,8 @@ class NavCMTAgent:
                      ]
         for param in all_tuple:
             recover_state(*param)
-        return states['vln_model']['epoch'] - 1
+        # Checkpoints store epoch + 1. Returning that stored value makes
+        # training resume at the next epoch instead of silently repeating the
+        # epoch that produced the checkpoint. Evaluation converts it back to
+        # the zero-based policy epoch when needed.
+        return states['vln_model']['epoch']

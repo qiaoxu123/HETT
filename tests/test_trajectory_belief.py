@@ -5,6 +5,7 @@ import torch
 
 from multiagent.trajectory_belief import (
     build_fixed_horizon_anchors,
+    clamp_goal_to_selected_cell,
     compute_heatmap_statistics,
     compute_trajectory_statistics,
     prepare_teacher_path,
@@ -48,6 +49,24 @@ class TrajectoryBeliefUtilityTest(unittest.TestCase):
         first_distance = torch.linalg.norm(anchors[0, 0, 0] - current[0]) * 410.0
         self.assertAlmostEqual(float(first_distance), 10.0, places=4)
         torch.testing.assert_close(anchors[0, 0, -1], endpoints[0, 0])
+
+    def test_goal_fallback_stays_inside_selected_heatmap_cell(self):
+        predicted_goal = torch.tensor([[0.95, 0.95], [0.01, 0.99]])
+        cell_ids = torch.tensor([0, 3 * 7 + 4])
+        refined = clamp_goal_to_selected_cell(
+            predicted_goal,
+            cell_ids,
+            7,
+        )
+        self.assertGreaterEqual(float(refined[0, 0]), 0.0)
+        self.assertLessEqual(float(refined[0, 0]), 1.0 / 7)
+        self.assertGreaterEqual(float(refined[0, 1]), 0.0)
+        self.assertLessEqual(float(refined[0, 1]), 1.0 / 7)
+
+        self.assertGreaterEqual(float(refined[1, 0]), 3.0 / 7)
+        self.assertLessEqual(float(refined[1, 0]), 4.0 / 7)
+        self.assertGreaterEqual(float(refined[1, 1]), 4.0 / 7)
+        self.assertLessEqual(float(refined[1, 1]), 5.0 / 7)
 
     def test_endpoint_offset_refines_inside_7x7_cell(self):
         offsets = torch.zeros(1, 49, 2)

@@ -212,36 +212,41 @@ def extract_human_core_anchors(
 
     yaw_threshold = np.deg2rad(float(yaw_keyframe_deg))
 
-    # Remove only points that are both spatially tiny and visually redundant.
-    filtered_indices = [0]
+    # Build route geometry from spatially meaningful samples only. View-only
+    # changes are tracked separately below so an in-place look-around cannot
+    # accidentally become an XY turn anchor through RDP.
+    spatial_indices = [0]
     for idx in range(1, len(trajectory) - 1):
-        previous = trajectory[filtered_indices[-1]]
+        previous = trajectory[spatial_indices[-1]]
         pose = trajectory[idx]
         step = np.hypot(pose.x - previous.x, pose.y - previous.y)
-        yaw_change = _angle_distance(pose.yaw, previous.yaw)
-        if step >= min_step_m or yaw_change >= yaw_threshold:
-            filtered_indices.append(idx)
-    filtered_indices.append(len(trajectory) - 1)
+        if step >= min_step_m:
+            spatial_indices.append(idx)
+    spatial_indices.append(len(trajectory) - 1)
 
-    filtered_xy = np.asarray(
+    spatial_xy = np.asarray(
         [
             [trajectory[idx].x, trajectory[idx].y]
-            for idx in filtered_indices
+            for idx in spatial_indices
         ],
         dtype=np.float32,
     )
-    for local_idx in _rdp_indices(filtered_xy, float(rdp_tolerance_m)):
-        original_idx = filtered_indices[local_idx]
+    rdp_keep = _rdp_indices(spatial_xy, float(rdp_tolerance_m))
+    for local_idx in rdp_keep:
+        if local_idx in (0, len(spatial_indices) - 1):
+            continue
+        original_idx = spatial_indices[local_idx]
         reasons.setdefault(original_idx, set()).add("turn")
 
-    # Keep first-person observation changes even when XY barely changes.
-    last_yaw_idx = filtered_indices[0]
-    for original_idx in filtered_indices[1:-1]:
+    # Record large first-person view changes independently from route geometry.
+    yaw_event_indices = []
+    last_yaw_idx = 0
+    for original_idx in range(1, len(trajectory) - 1):
         if _angle_distance(
             trajectory[original_idx].yaw,
             trajectory[last_yaw_idx].yaw,
         ) >= yaw_threshold:
-            reasons.setdefault(original_idx, set()).add("yaw")
+            yaw_event_indices.append(original_idx)
             last_yaw_idx = original_idx
 
     # Preserve the human passage most closely associated with every referenced
@@ -258,6 +263,15 @@ def extract_human_core_anchors(
         nearest_idx = int(np.argmin(distances))
         if float(distances[nearest_idx]) <= float(landmark_radius_m):
             reasons.setdefault(nearest_idx, set()).add("landmark")
+
+    spatial_indices = sorted(reasons)
+    if yaw_event_indices and spatial_indices:
+        spatial_arcs = cumulative[spatial_indices]
+        for yaw_idx in yaw_event_indices:
+            nearest_pos = int(
+                np.argmin(np.abs(spatial_arcs - cumulative[yaw_idx]))
+            )
+            reasons[spatial_indices[nearest_pos]].add("yaw")
 
     indices = tuple(sorted(reasons))
     return HumanCoreAnchors(

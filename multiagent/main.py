@@ -39,6 +39,8 @@ DIAGNOSTIC_NAMES = (
     'heatmap_gt_rank',
     'heatmap_cell_error',
     'heatmap_coarse_goal_error_m',
+    'continuous_goal_error_m',
+    'fallback_goal_error_m',
     'semantic_anchor_top1_acc',
     'semantic_anchor_top3_acc',
     'semantic_anchor_gt_prob',
@@ -49,6 +51,7 @@ DIAGNOSTIC_NAMES = (
     'semantic_anchor_coarse_goal_error_m',
     'human_anchor_distance_m',
     'human_anchor_projection_error_m',
+    'human_anchor_supervision_rate',
     'human_anchor_turn_rate',
     'human_anchor_yaw_rate',
     'human_anchor_landmark_rate',
@@ -57,6 +60,7 @@ DIAGNOSTIC_NAMES = (
     'trajectory_oracle_topk_endpoint_error_m',
     'trajectory_topk_gt_recall',
     'trajectory_first_wp_error_m',
+    'trajectory_execution_wp_error_m',
     'progress_mae',
     'stop_trigger_rate',
     'premature_stop_rate',
@@ -125,6 +129,52 @@ def collect_heatmap_distribution(logs, policy, grid_size):
     }
 
 
+def collect_semantic_anchor_distribution(logs, policy, grid_size):
+    prefix = policy + '_semantic_anchor_'
+    count_values = logs.get(prefix + 'sample_count', [])
+    if not count_values:
+        return None
+
+    sample_count = float(np.sum(count_values))
+    if sample_count <= 0:
+        return None
+
+    gt_hist = np.sum(
+        np.asarray(logs[prefix + 'gt_hist']),
+        axis=0,
+    )
+    pred_hist = np.sum(
+        np.asarray(logs[prefix + 'pred_hist']),
+        axis=0,
+    )
+    prob_sum = np.sum(
+        np.asarray(logs[prefix + 'prob_sum']),
+        axis=0,
+    )
+    confusion = np.sum(
+        np.asarray(logs[prefix + 'confusion']),
+        axis=0,
+    )
+
+    cell_count = grid_size ** 2
+    return {
+        'grid_size': int(grid_size),
+        'sample_count': sample_count,
+        'gt_frequency': (gt_hist / sample_count).reshape(
+            grid_size, grid_size
+        ).tolist(),
+        'pred_frequency': (pred_hist / sample_count).reshape(
+            grid_size, grid_size
+        ).tolist(),
+        'mean_probability': (prob_sum / sample_count).reshape(
+            grid_size, grid_size
+        ).tolist(),
+        'confusion_counts': confusion.reshape(
+            cell_count, cell_count
+        ).astype(np.int64).tolist(),
+    }
+
+
 def write_diagnostics_jsonl(
     path,
     epoch,
@@ -134,6 +184,7 @@ def write_diagnostics_jsonl(
     diagnostics,
     metrics=None,
     heatmap_distribution=None,
+    semantic_anchor_distribution=None,
 ):
     payload = {
         'epoch': int(epoch),
@@ -150,6 +201,8 @@ def write_diagnostics_jsonl(
         }
     if heatmap_distribution is not None:
         payload['heatmap_distribution'] = heatmap_distribution
+    if semantic_anchor_distribution is not None:
+        payload['semantic_anchor_distribution'] = semantic_anchor_distribution
     with open(path, 'a') as outf:
         outf.write(json.dumps(payload, sort_keys=True) + '\n')
 
@@ -164,11 +217,14 @@ def format_diagnostics_line(policy, diagnostics):
         'heatmap_gt_rank',
         'heatmap_cell_error',
         'heatmap_coarse_goal_error_m',
+        'continuous_goal_error_m',
+        'fallback_goal_error_m',
         'semantic_anchor_top1_acc',
         'semantic_anchor_top3_acc',
         'semantic_anchor_gt_rank',
         'semantic_anchor_coarse_goal_error_m',
         'human_anchor_distance_m',
+        'human_anchor_supervision_rate',
         'human_anchor_turn_rate',
         'human_anchor_yaw_rate',
         'human_anchor_landmark_rate',
@@ -177,6 +233,7 @@ def format_diagnostics_line(policy, diagnostics):
         'trajectory_oracle_topk_endpoint_error_m',
         'trajectory_topk_gt_recall',
         'trajectory_first_wp_error_m',
+        'trajectory_execution_wp_error_m',
         'progress_mae',
         'stop_trigger_rate',
         'premature_stop_rate',
@@ -310,6 +367,7 @@ def train(args, train_env, val_envs, rank=-1):
                             record_file
                         )
 
+                agent_eval.current_epoch = max(start_epoch - 1, 0)
                 agent_eval.env = env
                 # sampler = DistributedSampler(env, num_replicas=args.world_size, rank=rank)
                 loader = DataLoader(env, batch_size=1)
@@ -367,8 +425,13 @@ def train(args, train_env, val_envs, rank=-1):
         # print(loader.dataset.size())
 
         # Train for 2 epochs before evaluate again
-        agent.train(loader, args.log_every, feedback=args.feedback,
-                    nss_w_weighting=1)  # nss_w_weighting = max(0, (args.iters/2 - idx)/ (args.iters/2)))
+        agent.train(
+            loader,
+            args.log_every,
+            feedback=args.feedback,
+            nss_w_weighting=1,
+            outer_epoch=idx,
+        )
 
         if args.benchmark_batches:
             if default_gpu:
@@ -425,6 +488,10 @@ def train(args, train_env, val_envs, rank=-1):
 
             progress_loss = sum(agent.logs['progress_loss']) / max(len(agent.logs['progress_loss']), 1)
             goal_predict_loss = sum(agent.logs['goal_predict_loss']) / max(len(agent.logs['goal_predict_loss']), 1)
+            heatmap_loss = (
+                sum(agent.logs['heatmap_loss'])
+                / max(len(agent.logs['heatmap_loss']), 1)
+            )
             semantic_anchor_loss = (
                 sum(agent.logs['semantic_anchor_loss'])
                 / max(len(agent.logs['semantic_anchor_loss']), 1)
@@ -440,12 +507,13 @@ def train(args, train_env, val_envs, rank=-1):
 
             write_to_record_file(
                 "\nIL_loss %.4f direction_loss %.4f progress_loss %.4f "
-                "goal_predict_loss %.4f semantic_anchor_loss %.4f "
+                "goal_predict_loss %.4f heatmap_loss %.4f semantic_anchor_loss %.4f "
                 "semantic_anchor_position_loss %.4f trajectory_loss %.4f" % (
                     ml_loss,
                     direction_loss,
                     progress_loss,
                     goal_predict_loss,
+                    heatmap_loss,
                     semantic_anchor_loss,
                     semantic_anchor_position_loss,
                     trajectory_loss,
@@ -477,10 +545,20 @@ def train(args, train_env, val_envs, rank=-1):
             semantic_anchor_language_gate = _mean_log(
                 agent.logs, 'semantic_anchor_language_gate'
             ) or 0.0
+            semantic_execution_alpha = _mean_log(
+                agent.logs, 'semantic_execution_alpha'
+            ) or 0.0
+            student_rollout_weight = _mean_log(
+                agent.logs, 'student_rollout_weight'
+            ) or 0.0
+            teacher_rollout_weight = _mean_log(
+                agent.logs, 'teacher_rollout_weight'
+            ) or 0.0
             write_to_record_file(
                 "\nrollout trajectory_step %.4f teacher_step %.4f "
                 "teacher_distance_m %.4f global_landmark_gate %.4f "
-                "anchor_gates landmark %.4f visual %.4f language %.4f" % (
+                "anchor_gates landmark %.4f visual %.4f language %.4f "
+                "semantic_execution_alpha %.4f teacher_weight %.4f student_weight %.4f" % (
                     trajectory_step,
                     teacher_step,
                     teacher_distance_m,
@@ -488,6 +566,9 @@ def train(args, train_env, val_envs, rank=-1):
                     semantic_anchor_landmark_gate,
                     semantic_anchor_visual_gate,
                     semantic_anchor_language_gate,
+                    semantic_execution_alpha,
+                    teacher_rollout_weight,
+                    student_rollout_weight,
                 ),
                 record_file
             )
@@ -504,6 +585,13 @@ def train(args, train_env, val_envs, rank=-1):
                         policy,
                         args.grid_size,
                     )
+                    semantic_anchor_distribution = (
+                        collect_semantic_anchor_distribution(
+                            agent.logs,
+                            policy,
+                            args.grid_size,
+                        )
+                    )
                     write_diagnostics_jsonl(
                         diagnostics_file,
                         idx,
@@ -512,16 +600,22 @@ def train(args, train_env, val_envs, rank=-1):
                         policy,
                         diagnostics,
                         heatmap_distribution=heatmap_distribution,
+                        semantic_anchor_distribution=semantic_anchor_distribution,
                     )
 
             # Run validation
             loss_str = "\nepoch {}".format(idx)
+            initial_val_seen_sr = None
 
             agent.save(idx, os.path.join(GOAL_PREDICTOR_CHECKPOINT_DIR, "latest"))
             agent_class_eval = NavCMTAgent
             agent_eval = agent_class_eval(args, rank=rank, allow_ngpus=False)
+            loaded_epoch = agent_eval.load(
+                os.path.join(GOAL_PREDICTOR_CHECKPOINT_DIR, "latest")
+            )
+            agent_eval.current_epoch = idx
             print("Loaded the listener model at epoch %d from %s" % \
-                  (agent_eval.load(os.path.join(GOAL_PREDICTOR_CHECKPOINT_DIR, "latest")),
+                  (loaded_epoch,
                    os.path.join(GOAL_PREDICTOR_CHECKPOINT_DIR, "latest")))
             for env_name, env in val_envs.items():
                 agent_eval.logs = defaultdict(list)
@@ -549,14 +643,19 @@ def train(args, train_env, val_envs, rank=-1):
                 anchor_language_gate = _mean_log(
                     agent_eval.logs, 'semantic_anchor_language_gate'
                 ) or 0.0
+                validation_alpha = _mean_log(
+                    agent_eval.logs, 'semantic_execution_alpha'
+                ) or 0.0
                 write_to_record_file(
                     "\nrollout trajectory_step %.4f global_landmark_gate %.4f "
-                    "anchor_gates landmark %.4f visual %.4f language %.4f" % (
+                    "anchor_gates landmark %.4f visual %.4f language %.4f "
+                    "semantic_execution_alpha %.4f" % (
                         trajectory_step,
                         global_landmark_gate,
                         anchor_landmark_gate,
                         anchor_visual_gate,
                         anchor_language_gate,
+                        validation_alpha,
                     ),
                     record_file
                 )
@@ -574,6 +673,13 @@ def train(args, train_env, val_envs, rank=-1):
                         'student',
                         args.grid_size,
                     )
+                    semantic_anchor_distribution = (
+                        collect_semantic_anchor_distribution(
+                            agent_eval.logs,
+                            'student',
+                            args.grid_size,
+                        )
+                    )
                     write_diagnostics_jsonl(
                         diagnostics_file,
                         idx,
@@ -583,11 +689,14 @@ def train(args, train_env, val_envs, rank=-1):
                         diagnostics,
                         score_summary,
                         heatmap_distribution,
+                        semantic_anchor_distribution,
                     )
                 loss_str += "\n%s " % env_name
                 for metric, val in score_summary.items():
                     loss_str += ', %s: %.2f' % (metric, val)
                     # writer.add_scalar('%s/%s' % (metric, env_name), score_summary[metric], iter)
+                if env_name == 'val_seen':
+                    initial_val_seen_sr = float(score_summary['sr'])
                 if env_name in best_val:
                     if score_summary['sr'] >= best_val[env_name]['sr']:
                         best_val[env_name]['sr'] = score_summary['sr']
@@ -603,6 +712,25 @@ def train(args, train_env, val_envs, rank=-1):
             write_to_record_file("BEST RESULT TILL NOW", record_file)
             for env_name in best_val:
                 write_to_record_file(env_name + ' | ' + best_val[env_name]['state'], record_file)
+
+            if (
+                idx == 0
+                and not args.disable_initial_sr_guard
+                and args.min_initial_val_seen_sr > 0
+                and initial_val_seen_sr is not None
+                and initial_val_seen_sr < args.min_initial_val_seen_sr
+            ):
+                guard_message = (
+                    "REGRESSION_GUARD: initial val_seen SR %.2f < required %.2f; "
+                    "stop cleanly after epoch 0 and debug before continuing."
+                    % (
+                        initial_val_seen_sr,
+                        args.min_initial_val_seen_sr,
+                    )
+                )
+                print(guard_message, flush=True)
+                write_to_record_file(guard_message, record_file)
+                return
         torch.cuda.empty_cache()
 
 
@@ -619,6 +747,7 @@ def valid(args, val_envs, rank=-1):
             print("Loaded the listener model at epoch %d from %s" % \
                   (epoch, args.checkpoint))
             loss_str = "\nepoch {}".format(epoch)
+        agent_eval.current_epoch = max(epoch - 1, 0)
 
         with open(os.path.join(GOAL_PREDICTOR_CHECKPOINT_DIR, 'validation_args.json'), 'w') as outf:
             json.dump(vars(args), outf, indent=4)
@@ -658,6 +787,13 @@ def valid(args, val_envs, rank=-1):
                     'student',
                     args.grid_size,
                 )
+                semantic_anchor_distribution = (
+                    collect_semantic_anchor_distribution(
+                        agent_eval.logs,
+                        'student',
+                        args.grid_size,
+                    )
+                )
                 write_diagnostics_jsonl(
                     diagnostics_file,
                     epoch,
@@ -667,6 +803,7 @@ def valid(args, val_envs, rank=-1):
                     diagnostics,
                     score_summary,
                     heatmap_distribution,
+                    semantic_anchor_distribution,
                 )
             loss_str += "\n%s " % env_name
             for metric, val in score_summary.items():
@@ -693,6 +830,7 @@ def visualize(args, vis_envs, rank=-1):
             print("Loaded the listener model at epoch %d from %s" % \
                   (epoch, args.checkpoint))
             loss_str = "\nepoch {}".format(epoch)
+        agent_eval.current_epoch = max(epoch - 1, 0)
 
         with open(os.path.join(GOAL_PREDICTOR_CHECKPOINT_DIR, 'validation_args.json'), 'w') as outf:
             json.dump(vars(args), outf, indent=4)

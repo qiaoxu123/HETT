@@ -174,10 +174,11 @@ class ET(nn.Module):
         )
         self.semantic_anchor_candidate_norm = nn.LayerNorm(self.args.demb)
         self.semantic_anchor_landmark_norm = nn.LayerNorm(self.args.demb)
-        self.semantic_anchor_visual_proj = nn.Linear(
-            self.args.demb,
+        self.semantic_anchor_visual_patch_proj = nn.Linear(
+            512,
             self.args.demb,
         )
+        self.semantic_anchor_visual_norm = nn.LayerNorm(self.args.demb)
         self.semantic_anchor_language_proj = nn.Linear(
             self.args.demb,
             self.args.demb,
@@ -378,7 +379,11 @@ class ET(nn.Module):
         semantic_landmark_embeddings = inputs.get('semantic_landmark_embeddings')
         semantic_landmark_mask = inputs.get('semantic_landmark_mask')
 
-        anchor_features = conditioned_target
+        # Keep the final-goal backbone protected from noisy intermediate-
+        # anchor supervision.  The semantic branch learns residual reasoning
+        # on top of the evolving goal representation without writing anchor
+        # gradients back into the shared candidate backbone.
+        anchor_features = conditioned_target.detach()
         if (
             semantic_landmark_coords is not None
             and semantic_landmark_embeddings is not None
@@ -387,14 +392,14 @@ class ET(nn.Module):
             landmark_tokens = (
                 self.semantic_landmark_coord_encoder(semantic_landmark_coords)
                 + self.semantic_landmark_name_proj(
-                    semantic_landmark_embeddings
+                    semantic_landmark_embeddings.detach()
                 )
             )
             landmark_tokens = self.semantic_anchor_landmark_norm(
                 landmark_tokens
             )
             anchor_query = self.semantic_anchor_candidate_norm(
-                conditioned_target
+                anchor_features
             )
             landmark_scores = torch.matmul(
                 anchor_query,
@@ -438,11 +443,23 @@ class ET(nn.Module):
                 * landmark_context
             )
 
-        visual_context = self.semantic_anchor_visual_proj(
-            decoder_input
-        ).unsqueeze(1)
+        # Candidate-specific visual grounding over the current 7x7 DarkNet
+        # patches.  This replaces the previous single global visual token that
+        # was broadcast identically to all candidate cells.
+        current_visual_patches = im_feature[:, -1].transpose(1, 2).detach()
+        visual_tokens = self.semantic_anchor_visual_norm(
+            self.semantic_anchor_visual_patch_proj(current_visual_patches)
+        )
+        visual_query = self.semantic_anchor_candidate_norm(anchor_features)
+        visual_scores = torch.matmul(
+            visual_query,
+            visual_tokens.transpose(1, 2),
+        ) / math.sqrt(self.args.demb)
+        visual_weights = torch.softmax(visual_scores, dim=-1)
+        visual_context = torch.matmul(visual_weights, visual_tokens)
+
         language_context = self.semantic_anchor_language_proj(
-            emb_lang[:, 0]
+            emb_lang[:, 0].detach()
         ).unsqueeze(1)
         anchor_features = (
             anchor_features
@@ -450,9 +467,15 @@ class ET(nn.Module):
             + torch.tanh(self.semantic_anchor_language_gate) * language_context
         )
 
+        anchor_residual_logits = self.semantic_anchor_score_head(
+            anchor_features
+        ).squeeze(-1)
+        # Crucial separation: the intermediate-anchor objective may read the
+        # final-goal prior, but it must not back-propagate through that prior.
         semantic_anchor_logits = (
-            target_logits
-            + self.semantic_anchor_score_head(anchor_features).squeeze(-1)
+            self.args.semantic_anchor_goal_prior_scale
+            * target_logits.detach()
+            + anchor_residual_logits
         )
 
         geometry = self.semantic_anchor_geometry_head(anchor_features)

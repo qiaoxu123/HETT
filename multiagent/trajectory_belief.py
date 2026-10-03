@@ -26,6 +26,34 @@ def grid_cell_centers(
     return centers.expand(batch_size, -1, -1)
 
 
+def clamp_goal_to_selected_cell(
+    predicted_goal: torch.Tensor,
+    cell_ids: torch.Tensor,
+    grid_size: int,
+) -> torch.Tensor:
+    """Refine a selected coarse cell with a continuous goal prediction.
+
+    The heatmap remains responsible for the discrete region.  The continuous
+    goal head may only refine inside that region, preventing a disagreement
+    between the two heads from sending the fallback trajectory to another cell.
+    """
+    rows = torch.div(
+        cell_ids,
+        grid_size,
+        rounding_mode="floor",
+    ).to(predicted_goal.dtype)
+    cols = (cell_ids % grid_size).to(predicted_goal.dtype)
+    lower = torch.stack((rows, cols), dim=-1) / float(grid_size)
+    upper = torch.stack(
+        (rows + 1.0, cols + 1.0),
+        dim=-1,
+    ) / float(grid_size)
+    return torch.maximum(
+        lower,
+        torch.minimum(predicted_goal, upper),
+    )
+
+
 def refine_candidate_endpoints(
     endpoint_offsets: torch.Tensor,
     grid_size: int,
