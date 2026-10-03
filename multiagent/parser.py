@@ -169,6 +169,9 @@ def parse_args():
     # eval params
     parser.add_argument('--eval_every', type=int, default=10)
     parser.add_argument('--eval_first', action='store_true', default=False)
+    parser.add_argument('--eval_splits', nargs='+',
+                        choices=['val_seen', 'val_unseen', 'test_unseen'],
+                        default=['val_seen', 'val_unseen', 'test_unseen'])
     parser.add_argument('--max_action_len', type=int, default=20)
     parser.add_argument('--eval_client', type=str, choices=['crop', 'airsim'], default='crop')
     parser.add_argument('--success_dist', type=float, default=20.)

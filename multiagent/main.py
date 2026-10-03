@@ -68,7 +68,7 @@ def build_val_dataset(args, rank=0):
     # print(rank)
     dataset_class = CityNavBatch
 
-    val_env_names = ['val_seen', 'val_unseen', 'test_unseen', ]  # 'test_unseen'
+    val_env_names = args.eval_splits
     # val_env_names = ['visualization' ]  # 'test_unseen'
 
     val_envs = {}
@@ -330,6 +330,7 @@ def valid(args, val_envs, rank=-1):
             json.dump(vars(args), outf, indent=4)
         record_file = os.path.join(GOAL_PREDICTOR_CHECKPOINT_DIR, 'valid.txt')
         for env_name, env in val_envs.items():
+            split_started = time.time()
             agent_eval.logs = defaultdict(list)
             agent_eval.env = env
             loader = DataLoader(env, batch_size=1)
@@ -341,10 +342,13 @@ def valid(args, val_envs, rank=-1):
             stage1_step = sum(agent_eval.logs['stage1_step']) / max(len(agent_eval.logs['stage1_step']), 1)
             stage2_step = sum(agent_eval.logs['stage2_step']) / max(len(agent_eval.logs['stage2_step']), 1)
             stage2_rotate = sum(agent_eval.logs['stage2_rotate']) / max(len(agent_eval.logs['stage2_rotate']), 1)
+            stage2_recoveries = sum(agent_eval.logs['stage2_recoveries']) / max(len(agent_eval.logs['stage2_recoveries']), 1)
 
             write_to_record_file(
-                "\nstage %.4f %.4f %.4f" % (
-                    stage1_step, stage2_step, stage2_rotate),
+                "\n%s sample_count %d validation_time_seconds %.2f "
+                "stage %.4f %.4f %.4f stage2_recoveries %.4f" % (
+                    env_name, len(pred_results), time.time() - split_started,
+                    stage1_step, stage2_step, stage2_rotate, stage2_recoveries),
                 record_file
             )
             loss_str += "\n%s " % env_name
