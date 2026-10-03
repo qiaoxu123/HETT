@@ -827,4 +827,5 @@ class NavCMTAgent:
                      ]
         for param in all_tuple:
             recover_state(*param)
-        return states['vln_model']['epoch'] - 1
+        # save() stores the number of completed epochs; resume at that index.
+        return states['vln_model']['epoch']
