@@ -221,12 +221,15 @@ def train(args, train_env, val_envs, rank=-1):
             continue
 
         if default_gpu:
+            # Preserve the completed epoch even if reporting or validation fails.
+            agent.save(idx, os.path.join(GOAL_PREDICTOR_CHECKPOINT_DIR, "latest"))
             ml_loss = sum(agent.logs['IL_loss']) / max(len(agent.logs['IL_loss']), 1)
             heatmap_loss = sum(agent.logs['heatmap_loss']) / max(len(agent.logs['heatmap_loss']), 1)
             write_to_record_file(
                 "\nEPOCH_TIMING epoch=%d train_seconds=%.2f train_samples=%d train_batches=%d heatmap_loss=%.6f" % (
                     idx, epoch_train_seconds, train_env.size(),
-                    len(loader), heatmap_loss,
+                    (train_env.size() + args.batch_size - 1) // args.batch_size,
+                    heatmap_loss,
                 ), record_file
             )
 
@@ -255,7 +258,6 @@ def train(args, train_env, val_envs, rank=-1):
             # Run validation
             loss_str = "\nepoch {}".format(idx)
 
-            agent.save(idx, os.path.join(GOAL_PREDICTOR_CHECKPOINT_DIR, "latest"))
             agent_class_eval = NavCMTAgent
             agent_eval = agent_class_eval(args, rank=rank, allow_ngpus=False)
             print("Loaded the listener model at epoch %d from %s" % \
