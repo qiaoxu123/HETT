@@ -83,3 +83,17 @@ Only after Gates A-C pass, connect B_t/Top-K to navigation and report SR, OSR, S
 ## First experiment
 
 Recommended first run: 1-2 epochs, batch size 16, bf16. The first question is only whether language + static landmark structure can produce a useful B_0 whose Top-K covers the true goal region.
+
+The independent offline entry point is:
+
+    python scripts/train_static_belief.py \
+      --data-root data \
+      --output runs/static_belief \
+      --epochs 2 \
+      --batch-size 16
+
+It uses a fixed five-channel architecture for all ablations and zeroes unavailable
+inputs, so parameter count stays constant. The variants are `instruction`,
+`global`, `referenced`, and `start_pose`. It never constructs the navigation
+environment, RGB/depth observations, ET stages, or a controller. Development code
+explicitly rejects `test_unseen`.
