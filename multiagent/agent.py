@@ -21,6 +21,7 @@ from torchvision import transforms
 # from r2r.agent_cmt import Seq2SeqCMTAgent
 from multiagent.actions import Action
 from multiagent.defaultpaths import GOAL_PREDICTOR_CHECKPOINT_DIR
+from multiagent.landmark_multimodal_map import LandmarkMultimodalMap
 from multiagent.models.dark_net import Darknet
 from multiagent.models.CLIP import CLIP
 # from direction.models.ddppo.resenet_encoders import TorchVisionResNet50
@@ -174,6 +175,20 @@ class NavCMTAgent:
 
         self.default_gpu = is_default_gpu(self.args)
         self.rank = rank
+
+        # Optional landmark-centric semantic map. It lives outside the trainable
+        # backbone so the existing baseline is unchanged unless explicitly enabled.
+        self.landmark_semantic_map = None
+        if self.args.use_landmark_map:
+            self.landmark_semantic_map = LandmarkMultimodalMap.load(
+                self.args.landmark_multimodal_cache
+            )
+            if self.default_gpu:
+                print(
+                    "Loaded landmark multimodal map:",
+                    self.args.landmark_multimodal_cache,
+                    "records=", len(self.landmark_semantic_map.records),
+                )
 
         # Models
 
@@ -413,6 +428,23 @@ class NavCMTAgent:
         attention_mask = encoding['attention_mask'].cuda()
         lang_features, linear_cls, cls_hidden = self.lang_model(input_ids, attention_mask)
 
+        landmark_prior = None
+        landmark_retrieved = [[] for _ in range(batch_size)]
+        if self.landmark_semantic_map is not None:
+            landmark_prior_np, landmark_retrieved = (
+                self.landmark_semantic_map.build_batch_prior(
+                    [ob['instruction'] for ob in obs],
+                    [ob['map_name'] for ob in obs],
+                    grid_size=self.args.grid_size,
+                    topk=self.args.landmark_topk,
+                    sigma=self.args.landmark_prior_sigma,
+                )
+            )
+            landmark_prior = torch.from_numpy(landmark_prior_np).to(
+                device=lang_features.device,
+                dtype=lang_features.dtype,
+            )
+
         # lang_features --> 768
         # linear_cls --> 49 (used to attend to img features)
         # c_0 = cls_hidden
@@ -464,6 +496,14 @@ class NavCMTAgent:
             traj[i]['referenced_landmark_count'] = int(
                 landmark_anchor_mask[i].sum().item()
             )
+            traj[i]['landmark_retrieval'] = [
+                {
+                    'landmark_id': int(record.landmark_id),
+                    'name': record.name,
+                    'score': float(score),
+                }
+                for record, score in landmark_retrieved[i]
+            ]
         # print(np.array([len(ob['trajectory']) for ob in obs]))
 
         # Initialization the finishing status
@@ -567,6 +607,15 @@ class NavCMTAgent:
                 centroids=input['centroids'],
                 lang_cls=input['lang_cls']
             )
+
+            # Landmark retrieval affects only Stage-1 coarse localization.
+            # Stage-2 and the trainable HETT backbone remain unchanged.
+            if landmark_prior is not None:
+                pred_logits = (
+                    pred_logits
+                    + self.args.landmark_prior_alpha
+                    * landmark_prior.to(dtype=pred_logits.dtype)
+                )
 
             # Stage-1 spatial belief: convert 49 grid logits into a 7x7 heatmap.
             heatmap_probs = torch.softmax(pred_logits, dim=1)
