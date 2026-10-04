@@ -79,6 +79,10 @@ def main():
             'visual-attributes-candidate-verification',
             'visual-attributes-best-seed',
             'visual-attributes-sam',
+            'scene-grounding-template', 'scene-grounding-dataset',
+            'scene-grounding-evidence', 'scene-grounding-distance',
+            'scene-grounding-oracle', 'scene-grounding-matcher',
+            'scene-grounding-hard-negatives', 'scene-grounding-belief-update',
         ),
         default='train-eval',
     )
@@ -328,6 +332,60 @@ def main():
                 '--representations', 'crop', 'sam_masked', '--epochs', '30',
             ]),
         ])
+    elif args.phase == 'scene-grounding-template':
+        phases.append(('scene_template_census', [
+            args.python, 'scripts/analyze_scene_templates.py',
+            '--data-root', str((source / 'data').resolve()),
+            '--output', str((run / 'artifacts').resolve()),
+        ]))
+    elif args.phase == 'scene-grounding-dataset':
+        phases.append(('scene_dataset', [
+            args.python, 'scripts/build_scene_grounding_dataset.py',
+            '--data-root', str((source / 'data').resolve()),
+            '--output', str((run / 'artifacts').resolve()), *args.variant_arg,
+        ]))
+    elif args.phase == 'scene-grounding-evidence':
+        if args.dataset_root is None or args.attribute_checkpoint is None:
+            parser.error('--dataset-root and --attribute-checkpoint are required for scene evidence')
+        phases.append(('scene_evidence', [
+            args.python, 'scripts/extract_scene_evidence.py',
+            '--dataset', str(args.dataset_root.resolve()),
+            '--checkpoint', str(args.attribute_checkpoint.resolve()),
+            '--output', str((run / 'artifacts').resolve()), *args.variant_arg,
+        ]))
+    elif args.phase == 'scene-grounding-distance':
+        if args.dataset_root is None or args.feature_file is None:
+            parser.error('--dataset-root and --feature-file (evidence directory) are required')
+        phases.append(('scene_distance_curve', [
+            args.python, 'scripts/evaluate_scene_distance_curve.py',
+            '--dataset', str(args.dataset_root.resolve()),
+            '--evidence', str(args.feature_file.resolve()),
+            '--output', str((run / 'artifacts').resolve()),
+        ]))
+    elif args.phase == 'scene-grounding-oracle':
+        if args.b0_cache_root is None:
+            parser.error('--b0-cache-root is required for scene oracle')
+        phases.append(('scene_oracle', [
+            args.python, 'scripts/evaluate_scene_oracle.py',
+            '--data-root', str((source / 'data').resolve()),
+            '--b0-cache-root', str(args.b0_cache_root.resolve()),
+            '--output', str((run / 'artifacts').resolve()),
+        ]))
+    elif args.phase == 'scene-grounding-matcher':
+        if args.feature_file is None:
+            parser.error('--feature-file must point to Phase-4 metrics.json')
+        phases.append(('scene_matcher_gate', [args.python, 'scripts/train_scene_matcher.py',
+            '--gate-metrics', str(args.feature_file.resolve()), '--output', str((run / 'artifacts').resolve())]))
+    elif args.phase == 'scene-grounding-hard-negatives':
+        if args.feature_file is None:
+            parser.error('--feature-file must point to Phase-4 metrics.json')
+        phases.append(('scene_hard_negatives', [args.python, 'scripts/evaluate_scene_hard_negatives.py',
+            '--distance-metrics', str(args.feature_file.resolve()), '--output', str((run / 'artifacts').resolve())]))
+    elif args.phase == 'scene-grounding-belief-update':
+        if args.feature_file is None:
+            parser.error('--feature-file must point to Phase-4 metrics.json')
+        phases.append(('scene_belief_gate', [args.python, 'scripts/evaluate_scene_belief_update.py',
+            '--gate-metrics', str(args.feature_file.resolve()), '--output', str((run / 'artifacts').resolve())]))
     else:
         if args.phase in ('train', 'train-eval'):
             phases.append(('training', _command(args.python, 'train', args.checkpoint, args.variant_arg)))
@@ -336,7 +394,12 @@ def main():
             phases.append(('evaluation', _command(args.python, 'eval', checkpoint, args.variant_arg)))
     _json(run / 'commands.json', {name: command for name, command in phases})
 
-    cpu_only = False
+    cpu_only = args.phase in {
+        'scene-grounding-template', 'scene-grounding-dataset',
+        'scene-grounding-distance', 'scene-grounding-oracle',
+        'scene-grounding-matcher', 'scene-grounding-hard-negatives',
+        'scene-grounding-belief-update',
+    }
     lock_path = run / 'cpu-only.lock' if cpu_only else args.lock_file
     lock_path.parent.mkdir(parents=True, exist_ok=True)
     with lock_path.open('w') as lock:
@@ -357,6 +420,10 @@ def main():
                         'visual-attributes-view-ablation', 'visual-attributes-isolation-ablation',
                         'visual-attributes-multiview', 'visual-attributes-candidate-verification',
                         'visual-attributes-best-seed', 'visual-attributes-sam',
+                        'scene-grounding-template', 'scene-grounding-dataset',
+                        'scene-grounding-evidence', 'scene-grounding-distance',
+                        'scene-grounding-oracle', 'scene-grounding-matcher',
+                        'scene-grounding-hard-negatives', 'scene-grounding-belief-update',
                     ) else source / 'multiagent'),
                     env=environment,
                     stdout=log,
