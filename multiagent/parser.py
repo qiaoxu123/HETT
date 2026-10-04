@@ -132,6 +132,18 @@ def parse_args():
     parser.add_argument('--disable_referenced_landmark_mask', action='store_true', default=False)
     parser.add_argument('--disable_referenced_landmark_centroids', action='store_true', default=False)
     parser.add_argument('--max_referenced_landmarks', type=int, default=8)
+    parser.add_argument('--use_landmark_map', '--use_landmark_multimodal_map',
+                        action='store_true', default=False,
+                        help='Fuse text-retrieved landmark prior into the Stage-1 heatmap')
+    parser.add_argument('--landmark_multimodal_cache', type=str,
+                        default='../data/cityrefer/landmark_multimodal_map.json',
+                        help='JSON cache built by build_landmark_multimodal_map.py')
+    parser.add_argument('--landmark_prior_alpha', type=float, default=1.0,
+                        help='Additive weight of the landmark prior on Stage-1 logits')
+    parser.add_argument('--landmark_topk', type=int, default=5,
+                        help='Number of text-retrieved landmarks used for the prior')
+    parser.add_argument('--landmark_prior_sigma', type=float, default=0.8,
+                        help='Gaussian sigma in grid cells when scattering landmark scores')
     parser.add_argument('--max_depth', type=float, default=200.)
     parser.add_argument('--altitude', type=float, default=50)
     parser.add_argument('--ablate', type=str, choices=['rgb', 'depth', 'tracking', 'landmark', 'gsam', ''], default='')
