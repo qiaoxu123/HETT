@@ -35,7 +35,7 @@ def _sha256(path):
 def _snapshot(run):
     target = run / 'source'
     target.mkdir()
-    for directory in ('multiagent', 'scripts', 'tests', 'docs'):
+    for directory in ('multiagent', 'scripts', 'tests', 'docs', 'analysis'):
         if not (ROOT / directory).exists():
             continue
         shutil.copytree(
@@ -68,10 +68,29 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--run-dir', required=True, type=Path)
     parser.add_argument('--python', required=True)
-    parser.add_argument('--phase', choices=('train', 'eval', 'train-eval', 'static-belief'), default='train-eval')
+    parser.add_argument(
+        '--phase',
+        choices=(
+            'train', 'eval', 'train-eval', 'static-belief',
+            'visual-attributes-phase1', 'visual-attributes-handcrafted',
+            'visual-attributes-frozen', 'visual-attributes-zeroshot',
+            'visual-attributes-finetune', 'visual-attributes-view-ablation',
+            'visual-attributes-isolation-ablation', 'visual-attributes-multiview',
+            'visual-attributes-candidate-verification',
+            'visual-attributes-best-seed',
+            'visual-attributes-sam',
+        ),
+        default='train-eval',
+    )
     parser.add_argument('--dataset-root', type=Path, help='required for --phase grounding')
     parser.add_argument('--pointcloud-root', type=Path, help='required for --phase pointcloud-viewer')
+    parser.add_argument('--feature-file', type=Path)
+    parser.add_argument('--attribute-checkpoint', type=Path)
+    parser.add_argument('--b0-cache-root', type=Path)
+    parser.add_argument('--sam-source', type=Path)
+    parser.add_argument('--sam-checkpoint', type=Path)
     parser.add_argument('--checkpoint')
+    parser.add_argument('--pythonpath', help='optional isolated dependency directory')
     parser.add_argument('--variant-arg', action='append', default=[])
     parser.add_argument(
         '--lock-file',
@@ -120,6 +139,12 @@ def main():
         TRANSFORMERS_OFFLINE='1',
         HETT_CHECKPOINT_DIR=str(checkpoint_dir),
     )
+    if args.pythonpath:
+        prior_pythonpath = environment.get('PYTHONPATH')
+        environment['PYTHONPATH'] = (
+            args.pythonpath if not prior_pythonpath
+            else f'{args.pythonpath}:{prior_pythonpath}'
+        )
     phases = []
     if args.phase == 'static-belief':
         phases.append((
@@ -128,6 +153,181 @@ def main():
              '--data-root', str((source / 'data').resolve()),
              '--output', str((run / 'artifacts').resolve()), *args.variant_arg],
         ))
+    elif args.phase == 'visual-attributes-phase1':
+        dataset = (run / 'artifacts' / 'dataset').resolve()
+        phases.extend([
+            ('attribute_census', [args.python, 'analysis/visual_attribute_census.py',
+                                  '--data-root', str((source / 'data').resolve()),
+                                  '--output', str((run / 'artifacts' / 'census').resolve())]),
+            ('attribute_dataset', [args.python, 'scripts/build_visual_attribute_dataset.py',
+                                   '--data-root', str((source / 'data').resolve()), '--output', str(dataset)]),
+            ('attribute_handcrafted', [args.python, 'scripts/train_visual_attributes.py',
+                                       '--dataset', str(dataset),
+                                       '--output', str((run / 'artifacts' / 'handcrafted').resolve()),
+                                       *args.variant_arg]),
+        ])
+    elif args.phase == 'visual-attributes-handcrafted':
+        if args.dataset_root is None:
+            parser.error('--dataset-root is required for --phase visual-attributes-handcrafted')
+        phases.append((
+            'attribute_handcrafted',
+            [args.python, 'scripts/train_visual_attributes.py',
+             '--dataset', str(args.dataset_root.resolve()),
+             '--output', str((run / 'artifacts' / 'handcrafted').resolve()),
+             *args.variant_arg],
+        ))
+    elif args.phase == 'visual-attributes-frozen':
+        if args.dataset_root is None:
+            parser.error('--dataset-root is required for --phase visual-attributes-frozen')
+        dataset = args.dataset_root.resolve()
+        encoder_batches = [('darknet', 128), ('dinov2', 64), ('siglip', 48), ('siglip2', 24)]
+        for encoder, batch_size in encoder_batches:
+            feature_file = (run / 'artifacts' / 'features' / f'{encoder}_crop.pt').resolve()
+            probe_dir = (run / 'artifacts' / 'probes' / encoder).resolve()
+            phases.extend([
+                (f'extract_{encoder}', [
+                    args.python, 'scripts/extract_visual_attribute_features.py',
+                    '--dataset', str(dataset), '--output', str(feature_file),
+                    '--encoder', encoder, '--representations', 'crop',
+                    '--batch-size', str(batch_size),
+                ]),
+                (f'probe_{encoder}', [
+                    args.python, 'scripts/train_visual_attributes.py',
+                    '--dataset', str(dataset), '--output', str(probe_dir),
+                    '--feature-file', str(feature_file), '--representations', 'crop',
+                    '--epochs', '30', *args.variant_arg,
+                ]),
+            ])
+        for encoder in ('siglip', 'siglip2'):
+            model_name = ('google/siglip-base-patch16-224' if encoder == 'siglip'
+                          else 'google/siglip2-base-patch16-256')
+            phases.append((f'zeroshot_{encoder}', [
+                args.python, 'scripts/evaluate_visual_attributes.py',
+                '--dataset', str(dataset),
+                '--output', str((run / 'artifacts' / 'zeroshot' / encoder).resolve()),
+                '--model-name', model_name, '--representation', 'crop',
+            ]))
+    elif args.phase == 'visual-attributes-zeroshot':
+        if args.dataset_root is None:
+            parser.error('--dataset-root is required for --phase visual-attributes-zeroshot')
+        for encoder, model_name in (
+            ('siglip', 'google/siglip-base-patch16-224'),
+            ('siglip2', 'google/siglip2-base-patch16-256'),
+        ):
+            phases.append((f'zeroshot_{encoder}', [
+                args.python, 'scripts/evaluate_visual_attributes.py',
+                '--dataset', str(args.dataset_root.resolve()),
+                '--output', str((run / 'artifacts' / 'zeroshot' / encoder).resolve()),
+                '--model-name', model_name, '--representation', 'crop',
+            ]))
+    elif args.phase == 'visual-attributes-finetune':
+        if args.dataset_root is None:
+            parser.error('--dataset-root is required for --phase visual-attributes-finetune')
+        for encoder, model_name, batch_size in (
+            ('siglip', 'google/siglip-base-patch16-224', 32),
+            ('siglip2', 'google/siglip2-base-patch16-256', 24),
+        ):
+            phases.append((f'finetune_{encoder}', [
+                args.python, 'scripts/train_visual_attribute_finetune.py',
+                '--dataset', str(args.dataset_root.resolve()),
+                '--output', str((run / 'artifacts' / encoder).resolve()),
+                '--model-name', model_name, '--representation', 'crop',
+                '--batch-size', str(batch_size), '--epochs', '3',
+                '--unfreeze-blocks', '1', *args.variant_arg,
+            ]))
+    elif args.phase == 'visual-attributes-view-ablation':
+        dataset = (run / 'artifacts' / 'dataset').resolve()
+        feature_file = (run / 'artifacts' / 'features' / 'siglip2_crop.pt').resolve()
+        phases.extend([
+            ('attribute_view_dataset', [
+                args.python, 'scripts/build_visual_attribute_dataset.py',
+                '--data-root', str((source / 'data').resolve()), '--output', str(dataset),
+                '--heights', '20', '40', '80', '140', '--distances', '10', '30', '60', '100',
+            ]),
+            ('extract_siglip2', [
+                args.python, 'scripts/extract_visual_attribute_features.py',
+                '--dataset', str(dataset), '--output', str(feature_file), '--encoder', 'siglip2',
+                '--representations', 'crop', '--batch-size', '24',
+            ]),
+            ('probe_siglip2', [
+                args.python, 'scripts/train_visual_attributes.py', '--dataset', str(dataset),
+                '--output', str((run / 'artifacts' / 'probe').resolve()),
+                '--feature-file', str(feature_file), '--representations', 'crop', '--epochs', '30',
+            ]),
+        ])
+    elif args.phase == 'visual-attributes-isolation-ablation':
+        if args.dataset_root is None:
+            parser.error('--dataset-root is required for --phase visual-attributes-isolation-ablation')
+        dataset = args.dataset_root.resolve()
+        feature_file = (run / 'artifacts' / 'features' / 'siglip2_all.pt').resolve()
+        phases.extend([
+            ('extract_siglip2', [
+                args.python, 'scripts/extract_visual_attribute_features.py', '--dataset', str(dataset),
+                '--output', str(feature_file), '--encoder', 'siglip2',
+                '--representations', 'whole', 'crop', 'masked', '--batch-size', '24',
+            ]),
+            ('probe_siglip2', [
+                args.python, 'scripts/train_visual_attributes.py', '--dataset', str(dataset),
+                '--output', str((run / 'artifacts' / 'probe').resolve()), '--feature-file', str(feature_file),
+                '--representations', 'whole', 'crop', 'masked', '--epochs', '30',
+            ]),
+        ])
+        if args.sam_source is not None and args.sam_checkpoint is not None:
+            sam_features = (run / 'artifacts' / 'features' / 'siglip2_sam.pt').resolve()
+            phases.extend([
+                ('extract_sam_siglip2', [
+                    args.python, 'scripts/extract_sam_attribute_features.py', '--dataset', str(dataset),
+                    '--output', str(sam_features), '--sam-source', str(args.sam_source.resolve()),
+                    '--sam-checkpoint', str(args.sam_checkpoint.resolve()),
+                ]),
+                ('probe_sam_siglip2', [
+                    args.python, 'scripts/train_visual_attributes.py', '--dataset', str(dataset),
+                    '--output', str((run / 'artifacts' / 'probe_sam').resolve()),
+                    '--feature-file', str(sam_features), '--representations', 'sam_masked', '--epochs', '30',
+                ]),
+            ])
+    elif args.phase == 'visual-attributes-multiview':
+        if args.dataset_root is None or args.feature_file is None:
+            parser.error('--dataset-root and --feature-file are required for --phase visual-attributes-multiview')
+        phases.append(('multiview_probe', [
+            args.python, 'scripts/train_visual_attributes.py', '--dataset', str(args.dataset_root.resolve()),
+            '--output', str((run / 'artifacts').resolve()), '--feature-file', str(args.feature_file.resolve()),
+            '--representations', 'crop', '--epochs', '30', *args.variant_arg,
+        ]))
+    elif args.phase == 'visual-attributes-candidate-verification':
+        if args.attribute_checkpoint is None or args.b0_cache_root is None:
+            parser.error('--attribute-checkpoint and --b0-cache-root are required for candidate verification')
+        phases.append(('candidate_verification', [
+            args.python, 'scripts/evaluate_candidate_verification.py',
+            '--data-root', str((source / 'data').resolve()), '--output', str((run / 'artifacts').resolve()),
+            '--checkpoint', str(args.attribute_checkpoint.resolve()),
+            '--b0-cache-root', str(args.b0_cache_root.resolve()), *args.variant_arg,
+        ]))
+    elif args.phase == 'visual-attributes-best-seed':
+        if args.dataset_root is None:
+            parser.error('--dataset-root is required for --phase visual-attributes-best-seed')
+        phases.append(('finetune_siglip2', [
+            args.python, 'scripts/train_visual_attribute_finetune.py',
+            '--dataset', str(args.dataset_root.resolve()), '--output', str((run / 'artifacts').resolve()),
+            '--model-name', 'google/siglip2-base-patch16-256', '--representation', 'crop',
+            '--batch-size', '24', '--epochs', '3', '--unfreeze-blocks', '1', *args.variant_arg,
+        ]))
+    elif args.phase == 'visual-attributes-sam':
+        if args.dataset_root is None or args.sam_source is None or args.sam_checkpoint is None:
+            parser.error('--dataset-root, --sam-source, and --sam-checkpoint are required for --phase visual-attributes-sam')
+        feature_file = (run / 'artifacts' / 'features' / 'siglip2_sam.pt').resolve()
+        phases.extend([
+            ('extract_sam_siglip2', [
+                args.python, 'scripts/extract_sam_attribute_features.py', '--dataset', str(args.dataset_root.resolve()),
+                '--output', str(feature_file), '--sam-source', str(args.sam_source.resolve()),
+                '--sam-checkpoint', str(args.sam_checkpoint.resolve()),
+            ]),
+            ('probe_sam_siglip2', [
+                args.python, 'scripts/train_visual_attributes.py', '--dataset', str(args.dataset_root.resolve()),
+                '--output', str((run / 'artifacts' / 'probe').resolve()), '--feature-file', str(feature_file),
+                '--representations', 'crop', 'sam_masked', '--epochs', '30',
+            ]),
+        ])
     else:
         if args.phase in ('train', 'train-eval'):
             phases.append(('training', _command(args.python, 'train', args.checkpoint, args.variant_arg)))
@@ -150,7 +350,14 @@ def main():
             with (run / f'{name}.log').open('w') as log:
                 process = subprocess.Popen(
                     command,
-                    cwd=source if args.phase == 'static-belief' else source / 'multiagent',
+                    cwd=(source if args.phase in (
+                        'static-belief', 'visual-attributes-phase1',
+                        'visual-attributes-handcrafted', 'visual-attributes-frozen',
+                        'visual-attributes-zeroshot', 'visual-attributes-finetune',
+                        'visual-attributes-view-ablation', 'visual-attributes-isolation-ablation',
+                        'visual-attributes-multiview', 'visual-attributes-candidate-verification',
+                        'visual-attributes-best-seed', 'visual-attributes-sam',
+                    ) else source / 'multiagent'),
                     env=environment,
                     stdout=log,
                     stderr=subprocess.STDOUT,

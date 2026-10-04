@@ -1,0 +1,1036 @@
+{
+  "scope": [
+    "train_seen",
+    "val_seen",
+    "val_unseen"
+  ],
+  "splits": {
+    "train_seen": {
+      "instructions": 21878,
+      "visual_attribute_ge1": 21858,
+      "visual_attribute_ge1_rate": 0.9990858396562757,
+      "visual_attribute_ge2": 21629,
+      "visual_attribute_ge2_rate": 0.9886187037206327,
+      "attribute_count_histogram": {
+        "0": 20,
+        "1": 229,
+        "2": 1124,
+        "3": 2567,
+        "4": 4201,
+        "5": 4482,
+        "6": 3493,
+        "7": 2896,
+        "8": 1502,
+        "9": 775,
+        "10": 371,
+        "11": 143,
+        "12": 46,
+        "13": 22,
+        "14": 5,
+        "15": 2
+      },
+      "attribute_counts": {
+        "color": {
+          "gray": 8371,
+          "white": 8080,
+          "black": 5488,
+          "blue": 4871,
+          "red": 3740,
+          "brown": 3470,
+          "dark": 1997,
+          "light": 1262,
+          "green": 1226,
+          "yellow": 598,
+          "bright": 211
+        },
+        "size": {
+          "large": 2430,
+          "long": 1521,
+          "small": 1357,
+          "short": 262,
+          "narrow": 164,
+          "tall": 113,
+          "wide": 12
+        },
+        "context": {
+          "road": 13493,
+          "parking_lot": 6821,
+          "vegetation": 2079,
+          "intersection": 1336,
+          "grass": 771,
+          "bridge": 401,
+          "field": 173,
+          "river": 128,
+          "railway": 72,
+          "water": 51,
+          "open_area": 17,
+          "crossing": 16,
+          "sports_field": 10
+        },
+        "semantic": {
+          "car": 13147,
+          "building": 12668,
+          "parking": 6173,
+          "house": 3216,
+          "college": 1175,
+          "church": 950,
+          "ground": 746,
+          "library": 401,
+          "school": 370,
+          "tower": 46,
+          "office": 34,
+          "hospital": 1
+        },
+        "roof": {
+          "roof": 4506,
+          "flat_roof": 55,
+          "pitched_roof": 14
+        },
+        "spatial_relation": {
+          "near": 5307,
+          "right": 5105,
+          "behind": 4862,
+          "front": 4853,
+          "left": 4681,
+          "between": 4089,
+          "across": 2254,
+          "along": 1271,
+          "opposite": 451,
+          "before": 96,
+          "past": 63,
+          "after": 56
+        },
+        "count_ordinal": {
+          "one": 3448,
+          "two": 2359,
+          "second": 1225,
+          "third": 962,
+          "nearest": 846,
+          "first": 824,
+          "three": 547,
+          "multiple": 220,
+          "farthest": 122
+        },
+        "shape": {
+          "rectangular": 685,
+          "square": 471,
+          "l_shaped": 230,
+          "round": 226,
+          "courtyard": 146,
+          "u_shaped": 31,
+          "irregular": 2
+        }
+      },
+      "category_combinations": {
+        "color+context+semantic": 9107,
+        "color+context+roof+semantic": 2499,
+        "color+context+semantic+size": 2380,
+        "color+semantic": 1819,
+        "context+semantic": 1246,
+        "color+context+roof+semantic+size": 714,
+        "color+roof+semantic": 474,
+        "color+semantic+size": 456,
+        "color+context+semantic+shape": 417,
+        "context+semantic+size": 400,
+        "semantic": 221,
+        "color+context+roof+semantic+shape": 208,
+        "context+semantic+shape": 205,
+        "color+context": 164,
+        "color+semantic+shape": 154,
+        "color+context+semantic+shape+size": 145,
+        "color+context+roof+semantic+shape+size": 138,
+        "color+roof+semantic+size": 135,
+        "context": 115,
+        "semantic+size": 90,
+        "context+semantic+shape+size": 72,
+        "color+roof+semantic+shape": 70,
+        "context+roof+semantic": 69,
+        "semantic+shape": 60,
+        "color+semantic+shape+size": 53,
+        "color+context+size": 46,
+        "context+size": 46,
+        "color+context+roof": 40,
+        "color": 35,
+        "context+roof+semantic+size": 31,
+        "color+roof+semantic+shape+size": 30,
+        "roof+semantic": 29,
+        "semantic+shape+size": 27,
+        "color+context+shape": 19,
+        "context+shape": 17,
+        "roof+semantic+size": 14,
+        "color+size": 13,
+        "color+roof": 12,
+        "context+roof+semantic+shape+size": 12,
+        "context+shape+size": 11,
+        "shape": 8,
+        "color+context+roof+size": 7,
+        "color+shape+size": 7,
+        "color+context+shape+size": 6,
+        "roof+semantic+shape": 6,
+        "roof+semantic+shape+size": 6,
+        "color+shape": 6,
+        "size": 5,
+        "context+roof+semantic+shape": 4,
+        "color+context+roof+shape": 2,
+        "shape+size": 2,
+        "color+context+roof+shape+size": 2,
+        "color+roof+size": 1,
+        "color+roof+shape+size": 1,
+        "context+roof": 1,
+        "roof": 1
+      }
+    },
+    "val_seen": {
+      "instructions": 2470,
+      "visual_attribute_ge1": 2468,
+      "visual_attribute_ge1_rate": 0.9991902834008097,
+      "visual_attribute_ge2": 2442,
+      "visual_attribute_ge2_rate": 0.988663967611336,
+      "attribute_count_histogram": {
+        "0": 2,
+        "1": 26,
+        "2": 106,
+        "3": 260,
+        "4": 487,
+        "5": 519,
+        "6": 413,
+        "7": 328,
+        "8": 178,
+        "9": 91,
+        "10": 38,
+        "11": 16,
+        "12": 6
+      },
+      "attribute_counts": {
+        "color": {
+          "gray": 997,
+          "white": 904,
+          "black": 586,
+          "red": 468,
+          "blue": 458,
+          "brown": 423,
+          "dark": 243,
+          "green": 132,
+          "light": 122,
+          "yellow": 67,
+          "bright": 13
+        },
+        "context": {
+          "road": 1616,
+          "parking_lot": 751,
+          "vegetation": 235,
+          "intersection": 137,
+          "grass": 92,
+          "bridge": 46,
+          "field": 17,
+          "river": 10,
+          "railway": 5,
+          "open_area": 5,
+          "water": 2
+        },
+        "spatial_relation": {
+          "near": 622,
+          "right": 563,
+          "front": 560,
+          "left": 526,
+          "behind": 485,
+          "between": 472,
+          "across": 296,
+          "along": 138,
+          "opposite": 49,
+          "before": 20,
+          "past": 7,
+          "after": 5
+        },
+        "semantic": {
+          "building": 1472,
+          "car": 1429,
+          "parking": 678,
+          "house": 423,
+          "college": 131,
+          "church": 111,
+          "ground": 86,
+          "library": 64,
+          "school": 55,
+          "tower": 2
+        },
+        "size": {
+          "large": 267,
+          "long": 160,
+          "small": 122,
+          "short": 28,
+          "tall": 16,
+          "narrow": 15,
+          "wide": 2
+        },
+        "roof": {
+          "roof": 588,
+          "flat_roof": 9,
+          "pitched_roof": 1
+        },
+        "count_ordinal": {
+          "one": 400,
+          "two": 261,
+          "second": 144,
+          "third": 118,
+          "nearest": 86,
+          "first": 82,
+          "three": 66,
+          "multiple": 24,
+          "farthest": 20
+        },
+        "shape": {
+          "rectangular": 81,
+          "square": 65,
+          "l_shaped": 29,
+          "round": 24,
+          "courtyard": 16,
+          "u_shaped": 2,
+          "elongated": 1
+        }
+      },
+      "category_combinations": {
+        "color+context+semantic": 1035,
+        "color+context+roof+semantic": 372,
+        "color+context+semantic+size": 249,
+        "color+semantic": 166,
+        "context+semantic": 121,
+        "color+context+roof+semantic+size": 73,
+        "context+semantic+size": 50,
+        "color+context+semantic+shape": 47,
+        "color+semantic+size": 38,
+        "semantic": 37,
+        "color+roof+semantic": 37,
+        "color+context+roof+semantic+shape": 33,
+        "context+semantic+shape": 27,
+        "color+context+semantic+shape+size": 18,
+        "color+context+roof+semantic+shape+size": 17,
+        "color+roof+semantic+size": 16,
+        "color+context": 15,
+        "color+semantic+shape": 13,
+        "semantic+shape": 11,
+        "context+semantic+shape+size": 11,
+        "context+roof+semantic": 8,
+        "color+semantic+shape+size": 8,
+        "semantic+size": 8,
+        "context": 7,
+        "color+roof+semantic+shape": 7,
+        "context+size": 6,
+        "color+context+roof": 5,
+        "context+roof+semantic+size": 5,
+        "color+context+size": 4,
+        "roof+semantic": 4,
+        "color+roof+semantic+shape+size": 3,
+        "semantic+shape+size": 3,
+        "color+context+shape": 2,
+        "context+shape": 2,
+        "context+roof+semantic+shape+size": 2,
+        "color+roof": 1,
+        "shape": 1,
+        "roof": 1,
+        "context+roof+semantic+shape": 1,
+        "color+context+roof+size": 1,
+        "color+roof+shape+size": 1,
+        "roof+semantic+shape": 1,
+        "color+context+shape+size": 1
+      }
+    },
+    "val_unseen": {
+      "instructions": 2697,
+      "visual_attribute_ge1": 2695,
+      "visual_attribute_ge1_rate": 0.9992584352984798,
+      "visual_attribute_ge2": 2644,
+      "visual_attribute_ge2_rate": 0.9803485354097144,
+      "attribute_count_histogram": {
+        "0": 2,
+        "1": 51,
+        "2": 196,
+        "3": 365,
+        "4": 558,
+        "5": 523,
+        "6": 409,
+        "7": 273,
+        "8": 166,
+        "9": 97,
+        "10": 38,
+        "11": 13,
+        "12": 4,
+        "13": 1,
+        "15": 1
+      },
+      "attribute_counts": {
+        "color": {
+          "white": 984,
+          "gray": 855,
+          "black": 585,
+          "blue": 519,
+          "brown": 510,
+          "red": 495,
+          "green": 216,
+          "dark": 176,
+          "light": 112,
+          "yellow": 49,
+          "bright": 17
+        },
+        "roof": {
+          "roof": 706,
+          "flat_roof": 7,
+          "pitched_roof": 2
+        },
+        "context": {
+          "road": 1553,
+          "parking_lot": 579,
+          "vegetation": 301,
+          "grass": 186,
+          "intersection": 95,
+          "river": 60,
+          "bridge": 51,
+          "field": 44,
+          "water": 31,
+          "open_area": 5,
+          "sports_field": 2
+        },
+        "spatial_relation": {
+          "front": 700,
+          "near": 685,
+          "right": 520,
+          "left": 475,
+          "between": 469,
+          "behind": 458,
+          "across": 291,
+          "along": 197,
+          "opposite": 51,
+          "after": 9,
+          "before": 8,
+          "past": 5
+        },
+        "semantic": {
+          "building": 1652,
+          "car": 1298,
+          "house": 602,
+          "parking": 490,
+          "library": 180,
+          "ground": 173,
+          "college": 84,
+          "school": 27
+        },
+        "size": {
+          "large": 286,
+          "small": 202,
+          "long": 88,
+          "narrow": 45,
+          "tall": 16,
+          "short": 14,
+          "wide": 4
+        },
+        "count_ordinal": {
+          "two": 288,
+          "one": 286,
+          "second": 99,
+          "third": 66,
+          "three": 56,
+          "first": 49,
+          "nearest": 41,
+          "multiple": 33,
+          "farthest": 12
+        },
+        "shape": {
+          "rectangular": 105,
+          "square": 57,
+          "round": 43,
+          "l_shaped": 28,
+          "courtyard": 11,
+          "u_shaped": 5
+        }
+      },
+      "category_combinations": {
+        "color+context+semantic": 852,
+        "color+context+roof+semantic": 395,
+        "color+semantic": 266,
+        "context+semantic": 215,
+        "color+context+semantic+size": 179,
+        "color+context+roof+semantic+size": 107,
+        "context+semantic+size": 87,
+        "color+roof+semantic": 86,
+        "color+semantic+size": 59,
+        "color+context+semantic+shape": 49,
+        "context": 44,
+        "semantic": 41,
+        "color+context+roof+semantic+shape": 37,
+        "color+roof+semantic+size": 28,
+        "context+semantic+shape": 23,
+        "color+context+semantic+shape+size": 22,
+        "color+context": 20,
+        "color+context+size": 18,
+        "context+semantic+shape+size": 17,
+        "context+size": 16,
+        "color+context+roof+semantic+shape+size": 16,
+        "color+semantic+shape": 16,
+        "color+semantic+shape+size": 14,
+        "semantic+size": 14,
+        "semantic+shape+size": 7,
+        "color+roof+semantic+shape": 6,
+        "color+context+shape": 6,
+        "context+roof+semantic": 6,
+        "color+roof+semantic+shape+size": 5,
+        "roof+semantic": 5,
+        "semantic+shape": 4,
+        "context+roof+semantic+size": 4,
+        "context+shape": 4,
+        "color+context+roof": 3,
+        "color+context+shape+size": 3,
+        "shape": 3,
+        "color+shape": 3,
+        "roof+semantic+size": 3,
+        "color+roof": 2,
+        "roof+semantic+shape": 2,
+        "context+shape+size": 2,
+        "size": 2,
+        "color": 1,
+        "shape+size": 1,
+        "color+shape+size": 1,
+        "context+roof+semantic+shape+size": 1
+      }
+    }
+  },
+  "all": {
+    "instructions": 27045,
+    "visual_attribute_ge1": 27021,
+    "visual_attribute_ge1_rate": 0.9991125901275651,
+    "visual_attribute_ge2": 26715,
+    "visual_attribute_ge2_rate": 0.9877981142540211,
+    "attribute_count_histogram": {
+      "0": 24,
+      "1": 306,
+      "2": 1426,
+      "3": 3192,
+      "4": 5246,
+      "5": 5524,
+      "6": 4315,
+      "7": 3497,
+      "8": 1846,
+      "9": 963,
+      "10": 447,
+      "11": 172,
+      "12": 56,
+      "13": 23,
+      "14": 5,
+      "15": 3
+    },
+    "attribute_counts": {
+      "color": {
+        "gray": 10223,
+        "white": 9968,
+        "black": 6659,
+        "blue": 5848,
+        "red": 4703,
+        "brown": 4403,
+        "dark": 2416,
+        "green": 1574,
+        "light": 1496,
+        "yellow": 714,
+        "bright": 241
+      },
+      "size": {
+        "large": 2983,
+        "long": 1769,
+        "small": 1681,
+        "short": 304,
+        "narrow": 224,
+        "tall": 145,
+        "wide": 18
+      },
+      "context": {
+        "road": 16662,
+        "parking_lot": 8151,
+        "vegetation": 2615,
+        "intersection": 1568,
+        "grass": 1049,
+        "bridge": 498,
+        "field": 234,
+        "river": 198,
+        "water": 84,
+        "railway": 77,
+        "open_area": 27,
+        "crossing": 16,
+        "sports_field": 12
+      },
+      "semantic": {
+        "car": 15874,
+        "building": 15792,
+        "parking": 7341,
+        "house": 4241,
+        "college": 1390,
+        "church": 1061,
+        "ground": 1005,
+        "library": 645,
+        "school": 452,
+        "tower": 48,
+        "office": 34,
+        "hospital": 1
+      },
+      "roof": {
+        "roof": 5800,
+        "flat_roof": 71,
+        "pitched_roof": 17
+      },
+      "spatial_relation": {
+        "near": 6614,
+        "right": 6188,
+        "front": 6113,
+        "behind": 5805,
+        "left": 5682,
+        "between": 5030,
+        "across": 2841,
+        "along": 1606,
+        "opposite": 551,
+        "before": 124,
+        "past": 75,
+        "after": 70
+      },
+      "count_ordinal": {
+        "one": 4134,
+        "two": 2908,
+        "second": 1468,
+        "third": 1146,
+        "nearest": 973,
+        "first": 955,
+        "three": 669,
+        "multiple": 277,
+        "farthest": 154
+      },
+      "shape": {
+        "rectangular": 871,
+        "square": 593,
+        "round": 293,
+        "l_shaped": 287,
+        "courtyard": 173,
+        "u_shaped": 38,
+        "irregular": 2,
+        "elongated": 1
+      }
+    },
+    "category_combinations": {
+      "color+context+semantic": 10994,
+      "color+context+roof+semantic": 3266,
+      "color+context+semantic+size": 2808,
+      "color+semantic": 2251,
+      "context+semantic": 1582,
+      "color+context+roof+semantic+size": 894,
+      "color+roof+semantic": 597,
+      "color+semantic+size": 553,
+      "context+semantic+size": 537,
+      "color+context+semantic+shape": 513,
+      "semantic": 299,
+      "color+context+roof+semantic+shape": 278,
+      "context+semantic+shape": 255,
+      "color+context": 199,
+      "color+context+semantic+shape+size": 185,
+      "color+semantic+shape": 183,
+      "color+roof+semantic+size": 179,
+      "color+context+roof+semantic+shape+size": 171,
+      "context": 166,
+      "semantic+size": 112,
+      "context+semantic+shape+size": 100,
+      "context+roof+semantic": 83,
+      "color+roof+semantic+shape": 83,
+      "color+semantic+shape+size": 75,
+      "semantic+shape": 75,
+      "color+context+size": 68,
+      "context+size": 68,
+      "color+context+roof": 48,
+      "context+roof+semantic+size": 40,
+      "color+roof+semantic+shape+size": 38,
+      "roof+semantic": 38,
+      "semantic+shape+size": 37,
+      "color": 36,
+      "color+context+shape": 27,
+      "context+shape": 23,
+      "roof+semantic+size": 17,
+      "color+roof": 15,
+      "context+roof+semantic+shape+size": 15,
+      "color+size": 13,
+      "context+shape+size": 13,
+      "shape": 12,
+      "color+context+shape+size": 10,
+      "roof+semantic+shape": 9,
+      "color+shape": 9,
+      "color+context+roof+size": 8,
+      "color+shape+size": 8,
+      "size": 7,
+      "roof+semantic+shape+size": 6,
+      "context+roof+semantic+shape": 5,
+      "shape+size": 3,
+      "color+context+roof+shape": 2,
+      "color+context+roof+shape+size": 2,
+      "color+roof+shape+size": 2,
+      "roof": 2,
+      "color+roof+size": 1,
+      "context+roof": 1
+    },
+    "referenced_landmark_count_cooccurrence": {
+      "color:white": {
+        "3": 412,
+        "1": 5972,
+        "4": 35,
+        "2": 3518,
+        "5": 2,
+        "0": 29
+      },
+      "color:blue": {
+        "3": 238,
+        "1": 3495,
+        "2": 2079,
+        "4": 19,
+        "5": 2,
+        "0": 15
+      },
+      "size:large": {
+        "3": 122,
+        "1": 2025,
+        "2": 795,
+        "4": 28,
+        "5": 1,
+        "0": 12
+      },
+      "context:parking_lot": {
+        "3": 221,
+        "4": 38,
+        "1": 5093,
+        "2": 2767,
+        "5": 6,
+        "0": 25,
+        "6": 1
+      },
+      "semantic:building": {
+        "3": 1325,
+        "1": 7565,
+        "2": 6743,
+        "4": 121,
+        "5": 7,
+        "0": 29,
+        "9": 1,
+        "6": 1
+      },
+      "semantic:parking": {
+        "3": 187,
+        "4": 36,
+        "1": 4598,
+        "2": 2493,
+        "5": 4,
+        "0": 23
+      },
+      "color:gray": {
+        "1": 5211,
+        "2": 4430,
+        "3": 505,
+        "4": 45,
+        "0": 30,
+        "5": 2
+      },
+      "color:brown": {
+        "1": 2163,
+        "2": 1859,
+        "3": 330,
+        "4": 35,
+        "0": 15,
+        "5": 1
+      },
+      "color:dark": {
+        "1": 1340,
+        "2": 935,
+        "3": 119,
+        "4": 16,
+        "5": 2,
+        "0": 4
+      },
+      "roof:roof": {
+        "1": 2961,
+        "2": 2283,
+        "4": 49,
+        "3": 480,
+        "0": 24,
+        "5": 3
+      },
+      "context:road": {
+        "1": 6269,
+        "2": 8856,
+        "3": 1387,
+        "4": 120,
+        "5": 5,
+        "0": 25
+      },
+      "semantic:house": {
+        "1": 1792,
+        "2": 2147,
+        "3": 263,
+        "4": 22,
+        "5": 2,
+        "0": 15
+      },
+      "semantic:car": {
+        "1": 9870,
+        "2": 5466,
+        "4": 46,
+        "3": 448,
+        "5": 2,
+        "0": 42
+      },
+      "context:railway": {
+        "1": 68,
+        "2": 9
+      },
+      "semantic:church": {
+        "1": 276,
+        "2": 590,
+        "4": 21,
+        "3": 172,
+        "5": 2
+      },
+      "size:short": {
+        "1": 146,
+        "2": 129,
+        "3": 25,
+        "0": 4
+      },
+      "shape:l_shaped": {
+        "1": 127,
+        "2": 125,
+        "3": 30,
+        "4": 4,
+        "0": 1
+      },
+      "shape:rectangular": {
+        "1": 469,
+        "2": 309,
+        "3": 75,
+        "4": 12,
+        "5": 1,
+        "0": 5
+      },
+      "color:red": {
+        "1": 2694,
+        "2": 1783,
+        "4": 22,
+        "3": 188,
+        "0": 15,
+        "5": 1
+      },
+      "color:black": {
+        "1": 4291,
+        "2": 2138,
+        "3": 189,
+        "4": 15,
+        "0": 26
+      },
+      "color:yellow": {
+        "1": 481,
+        "2": 211,
+        "3": 17,
+        "4": 3,
+        "0": 2
+      },
+      "shape:round": {
+        "4": 4,
+        "3": 14,
+        "2": 102,
+        "1": 173
+      },
+      "context:intersection": {
+        "2": 1445,
+        "3": 53,
+        "1": 60,
+        "4": 10
+      },
+      "color:light": {
+        "2": 549,
+        "1": 845,
+        "3": 87,
+        "4": 8,
+        "0": 7
+      },
+      "shape:square": {
+        "2": 229,
+        "1": 312,
+        "3": 50,
+        "4": 1,
+        "0": 1
+      },
+      "color:bright": {
+        "3": 6,
+        "1": 159,
+        "2": 76
+      },
+      "color:green": {
+        "2": 511,
+        "1": 984,
+        "3": 70,
+        "4": 7,
+        "0": 2
+      },
+      "context:vegetation": {
+        "2": 972,
+        "1": 1478,
+        "3": 139,
+        "4": 14,
+        "0": 12
+      },
+      "size:small": {
+        "1": 931,
+        "2": 631,
+        "3": 99,
+        "4": 13,
+        "5": 1,
+        "0": 6
+      },
+      "size:long": {
+        "2": 326,
+        "1": 1373,
+        "3": 59,
+        "4": 3,
+        "0": 8
+      },
+      "context:grass": {
+        "1": 502,
+        "2": 432,
+        "3": 102,
+        "4": 10,
+        "5": 1,
+        "0": 2
+      },
+      "size:tall": {
+        "1": 76,
+        "3": 14,
+        "2": 54,
+        "4": 1
+      },
+      "context:water": {
+        "1": 51,
+        "2": 31,
+        "3": 1,
+        "0": 1
+      },
+      "roof:flat_roof": {
+        "1": 29,
+        "2": 36,
+        "3": 6
+      },
+      "context:crossing": {
+        "2": 7,
+        "1": 8,
+        "3": 1
+      },
+      "context:river": {
+        "1": 60,
+        "2": 103,
+        "3": 32,
+        "4": 2,
+        "0": 1
+      },
+      "semantic:ground": {
+        "1": 449,
+        "2": 432,
+        "3": 111,
+        "0": 4,
+        "4": 9
+      },
+      "context:open_area": {
+        "1": 13,
+        "2": 9,
+        "4": 1,
+        "3": 3,
+        "0": 1
+      },
+      "size:wide": {
+        "1": 11,
+        "2": 6,
+        "0": 1
+      },
+      "size:narrow": {
+        "1": 113,
+        "2": 100,
+        "3": 10,
+        "0": 1
+      },
+      "semantic:school": {
+        "1": 148,
+        "2": 212,
+        "4": 12,
+        "3": 77,
+        "5": 1,
+        "9": 1,
+        "6": 1
+      },
+      "roof:pitched_roof": {
+        "2": 9,
+        "1": 6,
+        "3": 2
+      },
+      "shape:courtyard": {
+        "2": 70,
+        "1": 79,
+        "3": 20,
+        "4": 4
+      },
+      "context:field": {
+        "1": 126,
+        "2": 76,
+        "3": 29,
+        "0": 1,
+        "4": 2
+      },
+      "context:sports_field": {
+        "1": 11,
+        "2": 1
+      },
+      "context:bridge": {
+        "2": 323,
+        "1": 95,
+        "3": 73,
+        "4": 7
+      },
+      "shape:irregular": {
+        "1": 1,
+        "2": 1
+      },
+      "shape:u_shaped": {
+        "2": 22,
+        "1": 15,
+        "3": 1
+      },
+      "semantic:office": {
+        "2": 13,
+        "1": 15,
+        "3": 5,
+        "4": 1
+      },
+      "semantic:tower": {
+        "2": 23,
+        "1": 16,
+        "3": 7,
+        "4": 2
+      },
+      "semantic:college": {
+        "2": 750,
+        "3": 224,
+        "4": 30,
+        "1": 384,
+        "5": 2
+      },
+      "semantic:library": {
+        "3": 104,
+        "2": 300,
+        "1": 225,
+        "4": 13,
+        "5": 2,
+        "6": 1
+      },
+      "semantic:hospital": {
+        "1": 1
+      },
+      "shape:elongated": {
+        "2": 1
+      }
+    }
+  }
+}
