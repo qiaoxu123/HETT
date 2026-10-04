@@ -83,7 +83,7 @@ def main():
             'scene-grounding-evidence', 'scene-grounding-distance',
             'scene-grounding-oracle', 'scene-grounding-matcher',
             'scene-grounding-hard-negatives', 'scene-grounding-belief-update',
-            'geometry-reasoner', 'geometry-visualize',
+            'geometry-reasoner', 'geometry-visualize', 'spatial-program-reasoner',
         ),
         default='train-eval',
     )
@@ -398,6 +398,11 @@ def main():
         phases.append(('geometry_visualize', [args.python, 'scripts/visualize_geometry_reasoner.py',
             '--data-root', str((source / 'data').resolve()), '--b0-cache-root', str(args.b0_cache_root.resolve()),
             '--metrics', str(args.metrics_file.resolve()), '--output', str((run / 'artifacts').resolve()), *args.variant_arg]))
+    elif args.phase == 'spatial-program-reasoner':
+        if args.b0_cache_root is None: parser.error('--b0-cache-root is required')
+        phases.append(('spatial_program_reasoner', [args.python, 'scripts/evaluate_spatial_program_reasoner.py',
+            '--data-root', str((source / 'data').resolve()), '--b0-cache-root', str(args.b0_cache_root.resolve()),
+            '--output', str((run / 'artifacts').resolve())]))
     else:
         if args.phase in ('train', 'train-eval'):
             phases.append(('training', _command(args.python, 'train', args.checkpoint, args.variant_arg)))
@@ -411,7 +416,7 @@ def main():
         'scene-grounding-distance', 'scene-grounding-oracle',
         'scene-grounding-matcher', 'scene-grounding-hard-negatives',
         'scene-grounding-belief-update',
-        'geometry-reasoner', 'geometry-visualize',
+        'geometry-reasoner', 'geometry-visualize', 'spatial-program-reasoner',
     }
     lock_path = run / 'cpu-only.lock' if cpu_only else args.lock_file
     lock_path.parent.mkdir(parents=True, exist_ok=True)
@@ -437,7 +442,7 @@ def main():
                         'scene-grounding-evidence', 'scene-grounding-distance',
                         'scene-grounding-oracle', 'scene-grounding-matcher',
                         'scene-grounding-hard-negatives', 'scene-grounding-belief-update',
-                        'geometry-reasoner', 'geometry-visualize',
+                        'geometry-reasoner', 'geometry-visualize', 'spatial-program-reasoner',
                     ) else source / 'multiagent'),
                     env=environment,
                     stdout=log,
