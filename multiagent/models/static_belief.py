@@ -8,6 +8,18 @@ import torch
 from torch import nn
 
 
+def static_landmark_channels(nav_map: torch.Tensor) -> torch.Tensor:
+    """Extract immutable global/referenced landmark channels from HETT maps.
+
+    Existing HETT map order is [current_view, explored, global_landmarks,
+    referenced_landmarks]. The first two channels are online state and must not
+    leak into the initial static belief B0.
+    """
+    if nav_map.ndim != 4 or nav_map.shape[1] < 4:
+        raise ValueError("nav_map must have shape [B,>=4,H,W]")
+    return nav_map[:, 2:4]
+
+
 @dataclass(frozen=True)
 class StaticBeliefOutput:
     logits: torch.Tensor
@@ -45,7 +57,7 @@ class StaticBeliefModel(nn.Module):
     def __init__(
         self,
         *,
-        input_channels: int = 4,
+        input_channels: int = 2,
         language_dim: int = 768,
         hidden_dim: int = 256,
         attention_heads: int = 8,
