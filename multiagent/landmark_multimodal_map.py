@@ -73,6 +73,16 @@ class LandmarkMultimodalMap:
                     continue
                 nx = (float(obj.position.x) - bounds.x_min) / map_meters
                 ny = (bounds.y_max - float(obj.position.y)) / map_meters
+                aliases = []
+                for processed in getattr(obj, "processed_descriptions", []):
+                    target_phrase = str(getattr(processed, "target", "")).strip()
+                    if (
+                        target_phrase
+                        and _normalize_text(target_phrase) != _normalize_text(str(obj.name))
+                        and target_phrase not in aliases
+                    ):
+                        aliases.append(target_phrase)
+
                 records.append(
                     LandmarkRecord(
                         map_name=map_name,
@@ -85,6 +95,7 @@ class LandmarkMultimodalMap:
                         ),
                         polygon=[(float(p.x), float(p.y)) for p in obj.contour],
                         object_type=str(obj.object_type),
+                        aliases=aliases,
                     )
                 )
         return cls(records)
