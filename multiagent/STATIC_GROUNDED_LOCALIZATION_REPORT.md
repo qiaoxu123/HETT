@@ -31,7 +31,8 @@ PYTHONPATH=. python -m multiagent.scripts.eval_grounded_static_baselines \
   --output checkpoints/static_localization/geometry_baselines.json
 PYTHONPATH=. python -m multiagent.scripts.train_grounded_static_localizer \
   --data-root /path/to/refined_citynav --rgb-dir /path/to/rgbd \
-  --output-dir checkpoints/static_localization --epochs 15 --batch-size 256 --device cuda:0
+  --output-dir checkpoints/static_localization --epochs 15 --batch-size 256 \
+  --top-altitude 80 --device cuda:0
 ```
 
 The training script saves per-epoch histories and split metrics in `static_localization_report.json`, and one prediction per source row and model variant (64,652 lines total) in `static_predictions.jsonl`. The feature cache and model checkpoints remain local under `checkpoints/`.

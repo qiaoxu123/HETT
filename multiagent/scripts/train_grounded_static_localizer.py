@@ -62,7 +62,7 @@ def encode_texts(texts, device, batch_size=64):
     return encoded, truncation_count
 
 
-def encode_visuals(records, rgb_dir, device, batch_size=24):
+def encode_visuals(records, rgb_dir, device, batch_size=24, top_altitude=80.0):
     """One overhead crop per referenced entity, never at the target location."""
     processor = AutoProcessor.from_pretrained(
         "google/siglip-base-patch16-224", local_files_only=True
@@ -81,7 +81,7 @@ def encode_visuals(records, rgb_dir, device, batch_size=24):
             for record in batch:
                 pose = Pose4D(
                     record.center_xy[0], record.center_xy[1],
-                    GROUND_LEVEL[record.map_name] + 80.0, 0.0,
+                    GROUND_LEVEL[record.map_name] + top_altitude, 0.0,
                 )
                 rgb = cropclient.crop_image(record.map_name, pose, (224, 224), "rgb")
                 images.append(Image.fromarray(rgb))
@@ -105,7 +105,8 @@ def encode_visuals(records, rgb_dir, device, batch_size=24):
     return encoded
 
 
-def build_feature_cache(examples, rgb_dir, device, text_batch_size, visual_batch_size):
+def build_feature_cache(examples, rgb_dir, device, text_batch_size, visual_batch_size,
+                        top_altitude=80.0):
     text_ids = {"": 0}
     texts = [""]
     landmark_ids = {}
@@ -131,7 +132,9 @@ def build_feature_cache(examples, rgb_dir, device, text_batch_size, visual_batch
                 landmarks.append(reference.record)
 
     text_features, truncated = encode_texts(texts, device, text_batch_size)
-    visual_features = encode_visuals(landmarks, rgb_dir, device, visual_batch_size)
+    visual_features = encode_visuals(
+        landmarks, rgb_dir, device, visual_batch_size, top_altitude
+    )
     geometry = torch.zeros((len(landmarks) + 1, 11), dtype=torch.float32)
     positions = torch.zeros((len(landmarks) + 1, 2), dtype=torch.float32)
     landmark_text_indices = torch.zeros(len(landmarks) + 1, dtype=torch.long)
@@ -200,6 +203,7 @@ def build_feature_cache(examples, rgb_dir, device, text_batch_size, visual_batch
         "resolved_counts": [len(example.memory.references) for example in examples],
         "text_truncated": truncated,
         "landmark_count": len(landmarks),
+        "top_altitude": float(top_altitude),
     }
 
 
@@ -313,6 +317,9 @@ def main():
     parser.add_argument("--text-batch-size", type=int, default=64)
     parser.add_argument("--visual-batch-size", type=int, default=24)
     parser.add_argument("--learning-rate", type=float, default=3e-4)
+    parser.add_argument("--top-altitude", type=float, default=30.0)
+    parser.add_argument("--only-visual", action="store_true",
+                        help="Skip the unchanged text+geometry ablation")
     parser.add_argument("--seed", type=int, default=0)
     args = parser.parse_args()
     args.output_dir.mkdir(parents=True, exist_ok=True)
@@ -334,11 +341,13 @@ def main():
     feature_path = args.output_dir / "feature_cache.pt"
     if feature_path.is_file():
         features = torch.load(feature_path, map_location="cpu", weights_only=False)
+        if float(features.get("top_altitude", 80.0)) != args.top_altitude:
+            raise ValueError("Cached visual features use a different top altitude")
         print(f"Loaded cached features: {feature_path}", flush=True)
     else:
         features = build_feature_cache(
             examples, args.rgb_dir, device, args.text_batch_size,
-            args.visual_batch_size,
+            args.visual_batch_size, args.top_altitude,
         )
         torch.save(features, feature_path)
         print(f"Saved cached features: {feature_path}", flush=True)
@@ -346,16 +355,19 @@ def main():
         example.split == split for example in examples
     ) for split in SPLITS):
         raise ValueError("Cached features do not cover the current dataset splits")
+    if features["episode_ids"] != [example.memory.episode_id for example in examples]:
+        raise ValueError("Cached features do not match the current episode ordering")
 
     report = {
         "scope": "32,326 refined CityNav source rows; train_seen labels only for learning",
         "checkpoint_selection": "lowest val_seen median error; unseen splits untouched until final evaluation",
         "oracle_inputs": "processed reference names, canonical instruction and static map records; target IDs excluded from references",
-        "visual_input": "one frozen SigLIP overhead RGB crop centered at each referenced landmark, altitude 80m",
+        "visual_input": "one frozen SigLIP overhead RGB crop centered at each referenced landmark",
         "text_input": "one frozen BERT embedding per unique instruction/target phrase/attribute/landmark name",
         "config": {
             "seed": args.seed, "epochs": args.epochs, "batch_size": args.batch_size,
             "learning_rate": args.learning_rate,
+            "top_altitude_m": args.top_altitude,
             "text_truncated": features["text_truncated"],
             "unique_visual_landmarks": features["landmark_count"],
         },
@@ -363,7 +375,10 @@ def main():
     }
     prediction_path = args.output_dir / "static_predictions.jsonl"
     with prediction_path.open("w") as prediction_file:
-        for variant, use_visual in (("text_geometry", False), ("text_geometry_visual", True)):
+        variants = (("text_geometry_visual", True),) if args.only_visual else (
+            ("text_geometry", False), ("text_geometry_visual", True)
+        )
+        for variant, use_visual in variants:
             model, history = train_variant(features, device, args, use_visual)
             torch.save(model.state_dict(), args.output_dir / f"{variant}_best.pt")
             result = {"history": history, "splits": {}, "subgroups": {}}
