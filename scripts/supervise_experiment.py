@@ -83,6 +83,7 @@ def main():
             'scene-grounding-evidence', 'scene-grounding-distance',
             'scene-grounding-oracle', 'scene-grounding-matcher',
             'scene-grounding-hard-negatives', 'scene-grounding-belief-update',
+            'geometry-reasoner', 'geometry-visualize',
         ),
         default='train-eval',
     )
@@ -93,6 +94,7 @@ def main():
     parser.add_argument('--b0-cache-root', type=Path)
     parser.add_argument('--sam-source', type=Path)
     parser.add_argument('--sam-checkpoint', type=Path)
+    parser.add_argument('--metrics-file', type=Path)
     parser.add_argument('--checkpoint')
     parser.add_argument('--pythonpath', help='optional isolated dependency directory')
     parser.add_argument('--variant-arg', action='append', default=[])
@@ -386,6 +388,16 @@ def main():
             parser.error('--feature-file must point to Phase-4 metrics.json')
         phases.append(('scene_belief_gate', [args.python, 'scripts/evaluate_scene_belief_update.py',
             '--gate-metrics', str(args.feature_file.resolve()), '--output', str((run / 'artifacts').resolve())]))
+    elif args.phase == 'geometry-reasoner':
+        if args.b0_cache_root is None: parser.error('--b0-cache-root is required')
+        phases.append(('geometry_reasoner', [args.python, 'scripts/evaluate_geometry_reasoner.py',
+            '--data-root', str((source / 'data').resolve()), '--b0-cache-root', str(args.b0_cache_root.resolve()),
+            '--output', str((run / 'artifacts').resolve())]))
+    elif args.phase == 'geometry-visualize':
+        if args.b0_cache_root is None or args.metrics_file is None: parser.error('--b0-cache-root and --metrics-file are required')
+        phases.append(('geometry_visualize', [args.python, 'scripts/visualize_geometry_reasoner.py',
+            '--data-root', str((source / 'data').resolve()), '--b0-cache-root', str(args.b0_cache_root.resolve()),
+            '--metrics', str(args.metrics_file.resolve()), '--output', str((run / 'artifacts').resolve()), *args.variant_arg]))
     else:
         if args.phase in ('train', 'train-eval'):
             phases.append(('training', _command(args.python, 'train', args.checkpoint, args.variant_arg)))
@@ -399,6 +411,7 @@ def main():
         'scene-grounding-distance', 'scene-grounding-oracle',
         'scene-grounding-matcher', 'scene-grounding-hard-negatives',
         'scene-grounding-belief-update',
+        'geometry-reasoner', 'geometry-visualize',
     }
     lock_path = run / 'cpu-only.lock' if cpu_only else args.lock_file
     lock_path.parent.mkdir(parents=True, exist_ok=True)
@@ -424,6 +437,7 @@ def main():
                         'scene-grounding-evidence', 'scene-grounding-distance',
                         'scene-grounding-oracle', 'scene-grounding-matcher',
                         'scene-grounding-hard-negatives', 'scene-grounding-belief-update',
+                        'geometry-reasoner', 'geometry-visualize',
                     ) else source / 'multiagent'),
                     env=environment,
                     stdout=log,
