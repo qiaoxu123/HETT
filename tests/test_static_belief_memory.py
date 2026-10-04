@@ -3,20 +3,31 @@ import unittest
 import numpy as np
 import torch
 
-from multiagent.models.static_belief import StaticBeliefModel
+from multiagent.models.static_belief import StaticBeliefModel, static_landmark_channels
 from multiagent.navigation_state import CandidateStatus, NavigationMemory, nms_topk_from_belief
 from multiagent.static_belief_metrics import candidate_coverage, gaussian_field_target
 
 
 class StaticBeliefMemoryTest(unittest.TestCase):
     def test_static_belief_is_normalized(self):
-        model = StaticBeliefModel(input_channels=4, language_dim=32, hidden_dim=32, attention_heads=4)
-        static_map = torch.zeros(2, 4, 224, 224)
+        model = StaticBeliefModel(input_channels=2, language_dim=32, hidden_dim=32, attention_heads=4)
+        static_map = torch.zeros(2, 2, 224, 224)
         language = torch.randn(2, 6, 32)
         mask = torch.ones(2, 6, dtype=torch.bool)
         output = model(static_map, language, mask)
         self.assertEqual(output.probabilities.ndim, 3)
         self.assertTrue(torch.allclose(output.probabilities.sum(dim=(1, 2)), torch.ones(2), atol=1e-5))
+
+    def test_static_channels_exclude_online_tracking(self):
+        nav_map = torch.zeros(1, 4, 8, 8)
+        nav_map[:, 0] = 1.0
+        nav_map[:, 1] = 2.0
+        nav_map[:, 2] = 3.0
+        nav_map[:, 3] = 4.0
+        static_map = static_landmark_channels(nav_map)
+        self.assertEqual(tuple(static_map.shape), (1, 2, 8, 8))
+        self.assertTrue(torch.all(static_map[:, 0] == 3.0))
+        self.assertTrue(torch.all(static_map[:, 1] == 4.0))
 
     def test_nms_returns_separated_topk(self):
         belief = torch.zeros(7, 7)
