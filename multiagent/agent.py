@@ -561,10 +561,12 @@ class NavCMTAgent:
             heatmap_goal_cols = (
                 heatmap_goal_ids % self.args.heatmap_grid_size
             ).float()
+            # Tensor coordinates are [row=y, col=x], while the simulator
+            # consumes normalized world coordinates as (x, y).
             heatmap_goals = torch.stack(
                 (
-                    (heatmap_goal_rows + 0.5) / self.args.heatmap_grid_size,
                     (heatmap_goal_cols + 0.5) / self.args.heatmap_grid_size,
+                    (heatmap_goal_rows + 0.5) / self.args.heatmap_grid_size,
                 ),
                 dim=1,
             )
@@ -664,10 +666,12 @@ class NavCMTAgent:
                 candidate_cols = (
                     heatmap_topk_ids % self.args.heatmap_grid_size
                 ).float()
+                # Convert [row=y, col=x] belief indices back to normalized
+                # world (x, y) before computing metric candidate distances.
                 candidate_xy = torch.stack(
                     (
-                        (candidate_rows + 0.5) / self.args.heatmap_grid_size,
                         (candidate_cols + 0.5) / self.args.heatmap_grid_size,
+                        (candidate_rows + 0.5) / self.args.heatmap_grid_size,
                     ),
                     dim=-1,
                 )
