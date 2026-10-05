@@ -144,21 +144,55 @@ def get_direction(start, end):
     return _angle
 
 
-def build_gaussian_heatmap(target_ids, grid_size, sigma, device):
-    """Build a normalized Gaussian target distribution over the global grid."""
-    target_ids = target_ids.to(device=device, dtype=torch.long)
-    target_rows = torch.div(target_ids, grid_size, rounding_mode='floor').float()
-    target_cols = (target_ids % grid_size).float()
-
-    coords = torch.arange(grid_size, device=device, dtype=torch.float32)
-    grid_rows, grid_cols = torch.meshgrid(coords, coords, indexing='ij')
-    dist_sq = (
-        (grid_rows.unsqueeze(0) - target_rows[:, None, None]) ** 2
-        + (grid_cols.unsqueeze(0) - target_cols[:, None, None]) ** 2
+def build_metric_gaussian_heatmap(
+        normalized_goals, field_size, sigma_m, map_meters, device):
+    """Build a normalized metric Gaussian target over the dense belief field."""
+    goals = torch.as_tensor(
+        normalized_goals, dtype=torch.float32, device=device
+    ).clamp(0.0, 1.0)
+    cell_m = float(map_meters) / float(field_size)
+    coords_m = (
+        torch.arange(field_size, device=device, dtype=torch.float32) + 0.5
+    ) * cell_m
+    grid_rows_m, grid_cols_m = torch.meshgrid(
+        coords_m, coords_m, indexing='ij'
     )
-    heatmap = torch.exp(-dist_sq / (2 * sigma ** 2))
-    heatmap = heatmap / heatmap.sum(dim=(1, 2), keepdim=True).clamp_min(1e-8)
-    return heatmap.view(-1, grid_size ** 2)
+    target_rows_m = goals[:, 0] * float(map_meters)
+    target_cols_m = goals[:, 1] * float(map_meters)
+    dist_sq_m = (
+        (grid_rows_m.unsqueeze(0) - target_rows_m[:, None, None]) ** 2
+        + (grid_cols_m.unsqueeze(0) - target_cols_m[:, None, None]) ** 2
+    )
+    heatmap = torch.exp(-dist_sq_m / (2.0 * float(sigma_m) ** 2))
+    heatmap = heatmap / heatmap.sum(
+        dim=(1, 2), keepdim=True
+    ).clamp_min(1e-8)
+    return heatmap.view(-1, field_size ** 2)
+
+
+def greedy_nms_topk(probabilities, field_size, top_k, kernel_size):
+    """Greedy NMS over a batch of flattened dense belief fields."""
+    if kernel_size < 1 or kernel_size % 2 == 0:
+        raise ValueError("heatmap_nms_kernel must be a positive odd integer")
+    scores = probabilities.reshape(-1, field_size, field_size).clone()
+    batch = scores.shape[0]
+    top_k = min(int(top_k), field_size * field_size)
+    radius = kernel_size // 2
+    rows = torch.arange(field_size, device=scores.device).view(1, -1, 1)
+    cols = torch.arange(field_size, device=scores.device).view(1, 1, -1)
+    selected = []
+    for _ in range(top_k):
+        ids = scores.flatten(1).argmax(dim=1)
+        selected.append(ids)
+        pick_rows = torch.div(ids, field_size, rounding_mode='floor')
+        pick_cols = ids % field_size
+        suppress = (
+            (rows - pick_rows.view(batch, 1, 1)).abs() <= radius
+        ) & (
+            (cols - pick_cols.view(batch, 1, 1)).abs() <= radius
+        )
+        scores = scores.masked_fill(suppress, -torch.inf)
+    return torch.stack(selected, dim=1)
 
 
 class NavCMTAgent:
@@ -550,17 +584,27 @@ class NavCMTAgent:
                 lang_cls=input['lang_cls']
             )
 
-            # Stage-1 spatial belief: convert 49 grid logits into a 7x7 heatmap.
+            # Dense Stage-1 spatial belief: softmax -> greedy NMS Top-K.
             heatmap_probs = torch.softmax(pred_logits, dim=1)
-            heatmap_goal_ids = heatmap_probs.argmax(dim=1)
+            heatmap_topk_ids = greedy_nms_topk(
+                heatmap_probs,
+                self.args.heatmap_grid_size,
+                self.args.heatmap_top_k,
+                self.args.heatmap_nms_kernel,
+            )
+            heatmap_goal_ids = heatmap_topk_ids[:, 0]
             heatmap_goal_rows = torch.div(
-                heatmap_goal_ids, self.args.grid_size, rounding_mode='floor'
+                heatmap_goal_ids,
+                self.args.heatmap_grid_size,
+                rounding_mode='floor',
             ).float()
-            heatmap_goal_cols = (heatmap_goal_ids % self.args.grid_size).float()
+            heatmap_goal_cols = (
+                heatmap_goal_ids % self.args.heatmap_grid_size
+            ).float()
             heatmap_goals = torch.stack(
                 (
-                    (heatmap_goal_rows + 0.5) / self.args.grid_size,
-                    (heatmap_goal_cols + 0.5) / self.args.grid_size,
+                    (heatmap_goal_rows + 0.5) / self.args.heatmap_grid_size,
+                    (heatmap_goal_cols + 0.5) / self.args.heatmap_grid_size,
                 ),
                 dim=1,
             )
@@ -633,10 +677,11 @@ class NavCMTAgent:
                 progress_loss = progress_loss + step_progress_loss
                 goal_predict_loss = goal_predict_loss + step_goal_loss
                 # print(at_direction, gt_direction, ml_loss)
-                gt_heatmap = build_gaussian_heatmap(
-                    gt_target,
-                    self.args.grid_size,
-                    self.args.heatmap_sigma,
+                gt_heatmap = build_metric_gaussian_heatmap(
+                    gt_goal_np,
+                    self.args.heatmap_grid_size,
+                    self.args.heatmap_sigma_m,
+                    self.args.map_meters,
                     pred_logits.device,
                 )
                 per_sample_heatmap_loss = -(
@@ -657,6 +702,9 @@ class NavCMTAgent:
                     traj[i]['progress'].append(float(host_predictions[i, 0]))
                     traj[i]['heatmap_goal_id'].append(int(host_predictions[i, 4]))
                     traj[i]['heatmap_confidence'].append(float(host_predictions[i, 5]))
+                    traj[i]['heatmap_topk_ids'].append(
+                        heatmap_topk_ids[i].detach().cpu().tolist()
+                    )
 
             if self.feedback == 'teacher':
                 # print('teacher', at_goal.shape)
