@@ -92,8 +92,14 @@ def parse_args():
 
     # model
     parser.add_argument('--grid_size', type=int, default=7)
-    parser.add_argument('--heatmap_sigma', type=float, default=0.8,
-                        help='Gaussian sigma (in grid cells) for Stage-1 heatmap supervision')
+    parser.add_argument('--heatmap_grid_size', type=int, default=28,
+                        help='Dense spatial-belief field size')
+    parser.add_argument('--heatmap_sigma_m', type=float, default=20.0,
+                        help='Metric Gaussian sigma in meters for belief supervision')
+    parser.add_argument('--heatmap_top_k', type=int, default=16,
+                        help='Number of NMS belief hypotheses retained per step')
+    parser.add_argument('--heatmap_nms_kernel', type=int, default=3,
+                        help='Odd NMS suppression kernel on the dense belief field')
     parser.add_argument('--heatmap_loss_weight', type=float, default=0.1,
                         help='Weight of the Stage-1 heatmap loss')
     parser.add_argument('--stage1_switch_dist', type=float, default=25.0,
