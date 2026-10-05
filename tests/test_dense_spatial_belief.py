@@ -40,6 +40,37 @@ class DenseSpatialBeliefTest(unittest.TestCase):
         self.assertEqual(tuple(target.shape), (1, 28, 28))
         self.assertAlmostEqual(float(target.sum()), 1.0, places=5)
 
+
+    def test_metric_gaussian_respects_xy_to_row_col_convention(self):
+        field_size = 10
+        goal_xy = torch.tensor([[0.75, 0.25]])
+        target = metric_gaussian_target(
+            goal_xy,
+            field_size=field_size,
+            sigma_m=1.0,
+            map_meters=100.0,
+        )
+        peak_id = int(target.flatten(1).argmax(dim=1).item())
+        peak_row = peak_id // field_size
+        peak_col = peak_id % field_size
+
+        # goal=(x=.75,y=.25) must map near row=y*H, col=x*W.
+        self.assertEqual(peak_row, 2)
+        self.assertEqual(peak_col, 7)
+
+    def test_belief_cell_to_normalized_xy_uses_col_then_row(self):
+        field_size = 10
+        row = torch.tensor([2.0])
+        col = torch.tensor([7.0])
+        xy = torch.stack(
+            (
+                (col + 0.5) / field_size,
+                (row + 0.5) / field_size,
+            ),
+            dim=1,
+        )
+        self.assertTrue(torch.allclose(xy, torch.tensor([[0.75, 0.25]])))
+
     def test_greedy_nms_suppresses_neighboring_peak(self):
         belief = torch.zeros(1, 7, 7)
         belief[0, 1, 1] = 0.50
