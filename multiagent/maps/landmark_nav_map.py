@@ -24,7 +24,14 @@ class LandmarkNavMap(Map):
         super().__init__(map_name, map_shape, map_pixels_per_meter)
 
         self.tracking_map = TrackingMap(map_name, map_shape, map_pixels_per_meter)
-        self.landmark_map = LandmarkMap(map_name, map_shape, map_pixels_per_meter, landmark_names)
+        self.global_landmark_map = LandmarkMap(
+            map_name, map_shape, map_pixels_per_meter, None
+        )
+        self.referenced_landmark_map = LandmarkMap(
+            map_name, map_shape, map_pixels_per_meter, landmark_names
+        )
+        # Backward-compatible alias used by existing visualization code.
+        self.landmark_map = self.referenced_landmark_map
 
     def update_observations(
             self,
@@ -35,7 +42,8 @@ class LandmarkNavMap(Map):
     def to_array(self, dtype=np.float32) -> np.ndarray:
         return np.concatenate([
             self.tracking_map.to_array(dtype),
-            self.landmark_map.to_array(dtype),
+            self.global_landmark_map.to_array(dtype),
+            self.referenced_landmark_map.to_array(dtype),
         ])
 
     @classmethod
@@ -53,14 +61,23 @@ class LandmarkNavMap(Map):
         tracking_maps = tracking_maps[-1]
         assert tracking_maps.shape == (2, *map_shape)
 
-        # landmark maps
-        landmark_map = LandmarkMap(episode.map_name, map_shape, pixels_per_meter,
-                                   episode.target_processed_description.landmarks)
-        landmark_maps = landmark_map.to_array()
-        assert landmark_maps.shape == (1, *map_shape)
+        # static global landmark prior + instruction-referenced landmark mask
+        global_landmark_map = LandmarkMap(
+            episode.map_name, map_shape, pixels_per_meter, None
+        ).to_array()
+        referenced_landmark_map = LandmarkMap(
+            episode.map_name,
+            map_shape,
+            pixels_per_meter,
+            episode.target_processed_description.landmarks,
+        ).to_array()
+        assert global_landmark_map.shape == (1, *map_shape)
+        assert referenced_landmark_map.shape == (1, *map_shape)
 
-        episode_maps = np.concatenate((tracking_maps, landmark_maps), axis=0)
-        assert episode_maps.shape == (3, *map_shape)
+        episode_maps = np.concatenate(
+            (tracking_maps, global_landmark_map, referenced_landmark_map), axis=0
+        )
+        assert episode_maps.shape == (4, *map_shape)
         return episode_maps
         # # tracking map
         # tracking_map = TrackingMap(episode.map_name, map_shape, pixels_per_meter)
@@ -93,15 +110,27 @@ class LandmarkNavMap(Map):
         tracking_maps = np.stack([tracking_map.mark_current_view_area(pose).to_array() for pose in trajectory])
         assert tracking_maps.shape == (len(trajectory), 2, *map_shape)
 
-        # landmark maps
-        landmark_map = LandmarkMap(episode.map_name, map_shape, pixels_per_meter,
-                                   episode.target_processed_description.landmarks)
-        landmark_maps = np.tile(landmark_map.to_array(), (len(trajectory), 1, 1, 1))
-        assert landmark_maps.shape == (len(trajectory), 1, *map_shape)
+        # static global landmark prior + instruction-referenced landmark mask
+        global_landmark_map = LandmarkMap(
+            episode.map_name, map_shape, pixels_per_meter, None
+        ).to_array()
+        referenced_landmark_map = LandmarkMap(
+            episode.map_name,
+            map_shape,
+            pixels_per_meter,
+            episode.target_processed_description.landmarks,
+        ).to_array()
+        global_landmark_maps = np.tile(
+            global_landmark_map, (len(trajectory), 1, 1, 1)
+        )
+        referenced_landmark_maps = np.tile(
+            referenced_landmark_map, (len(trajectory), 1, 1, 1)
+        )
 
-
-        episode_maps = np.concatenate((tracking_maps, landmark_maps), axis=1)
-        assert episode_maps.shape == (len(trajectory), 3, *map_shape)
+        episode_maps = np.concatenate(
+            (tracking_maps, global_landmark_maps, referenced_landmark_maps), axis=1
+        )
+        assert episode_maps.shape == (len(trajectory), 4, *map_shape)
         return episode_maps
 
     @classmethod
