@@ -112,7 +112,7 @@ class LandmarkNavMap(Map):
 
         # static global landmark prior + instruction-referenced landmark mask
         global_landmark_map = LandmarkMap(
-            episode.map_name, map_shape, pixels_per_meter, None
+            episode.map_name, map_shape, pixels_per_meter, None, contour_only=True
         ).to_array()
         referenced_landmark_map = LandmarkMap(
             episode.map_name,
