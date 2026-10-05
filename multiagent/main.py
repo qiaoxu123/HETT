@@ -25,6 +25,33 @@ from torch.utils.data.distributed import DistributedSampler
 from torch.utils.data.dataloader import DataLoader
 
 
+def heatmap_diagnostics_summary(logs, success_radius_m):
+    """Summarize NMS coverage and metric distances over valid GT steps."""
+    count = sum(logs.get('heatmap_diag_count', ()))
+    if count <= 0:
+        return None
+
+    values = [
+        'n_steps=%d' % round(count),
+        'success_radius_m=%.1f' % success_radius_m,
+    ]
+    for k in (1, 4, 8, 16):
+        hits = sum(logs.get('heatmap_coverage_%d_hits' % k, ()))
+        values.append('coverage@%d=%.4f' % (k, hits / count))
+    values.extend((
+        'top1_distance_m=%.3f' % (
+            sum(logs.get('heatmap_top1_distance_sum_m', ())) / count
+        ),
+        'top16_nearest_distance_m=%.3f' % (
+            sum(logs.get('heatmap_top16_nearest_distance_sum_m', ())) / count
+        ),
+        'top16_mean_candidate_distance_m=%.3f' % (
+            sum(logs.get('heatmap_top16_candidate_distance_sum_m', ())) / count
+        ),
+    ))
+    return ' '.join(values)
+
+
 def get_tokenizer(args):
     from transformers import AutoTokenizer
     tokenizer = AutoTokenizer.from_pretrained('/cver/xcding/code/tokenizer_files/bert-base-uncase')
@@ -209,14 +236,27 @@ def train(args, train_env, val_envs, rank=-1):
                 goal_predict_loss = sum(agent.logs['goal_predict_loss']) / max(
                     len(agent.logs['goal_predict_loss']), 1
                 )
+                heatmap_loss = sum(agent.logs['heatmap_loss']) / max(
+                    len(agent.logs['heatmap_loss']), 1
+                )
                 print(
                     "BENCHMARK_EPOCH epoch=%d IL_loss=%.6f direction_loss=%.6f "
-                    "progress_loss=%.6f goal_predict_loss=%.6f" % (
+                    "progress_loss=%.6f goal_predict_loss=%.6f heatmap_loss=%.6f" % (
                         idx, ml_loss, direction_loss, progress_loss,
-                        goal_predict_loss,
+                        goal_predict_loss, heatmap_loss,
                     ),
                     flush=True,
                 )
+                diagnostic_summary = heatmap_diagnostics_summary(
+                    agent.logs, args.success_dist
+                )
+                if diagnostic_summary:
+                    print(
+                        'HEATMAP_DIAGNOSTICS epoch=%d split=train %s' % (
+                            idx, diagnostic_summary,
+                        ),
+                        flush=True,
+                    )
             torch.cuda.empty_cache()
             continue
 
@@ -245,6 +285,16 @@ def train(args, train_env, val_envs, rank=-1):
                     ml_loss, direction_loss, progress_loss, goal_predict_loss),
                 record_file
             )
+            diagnostic_summary = heatmap_diagnostics_summary(
+                agent.logs, args.success_dist
+            )
+            if diagnostic_summary:
+                write_to_record_file(
+                    '\nHEATMAP_DIAGNOSTICS epoch=%d split=train %s' % (
+                        idx, diagnostic_summary,
+                    ),
+                    record_file,
+                )
             stage1_step = sum(agent.logs['stage1_step']) / max(len(agent.logs['stage1_step']), 1)
             stage2_step = sum(agent.logs['stage2_step']) / max(len(agent.logs['stage2_step']), 1)
             stage2_rotate = sum(agent.logs['stage2_rotate']) / max(len(agent.logs['stage2_rotate']), 1)
@@ -271,6 +321,17 @@ def train(args, train_env, val_envs, rank=-1):
                 # Get validation distance from goal under test evaluation conditions
                 agent_eval.test(loader, feedback='student')
                 pred_results = agent_eval.get_results()
+
+                diagnostic_summary = heatmap_diagnostics_summary(
+                    agent_eval.logs, args.success_dist
+                )
+                if diagnostic_summary:
+                    write_to_record_file(
+                        '\nHEATMAP_DIAGNOSTICS epoch=%d split=%s %s' % (
+                            idx, env_name, diagnostic_summary,
+                        ),
+                        record_file,
+                    )
 
                 score_summary, result = env.eval_metrics(pred_results)
                 write_to_record_file(

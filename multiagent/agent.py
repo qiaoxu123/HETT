@@ -445,6 +445,13 @@ class NavCMTAgent:
         progress_loss = 0.
         goal_predict_loss = 0.
         heatmap_loss = torch.tensor(0.).cuda()
+        heatmap_diag_count = torch.zeros((), device='cuda')
+        heatmap_coverage_hits = {
+            k: torch.zeros((), device='cuda') for k in (1, 4, 8, 16)
+        }
+        heatmap_top1_distance_sum = torch.zeros((), device='cuda')
+        heatmap_top16_nearest_distance_sum = torch.zeros((), device='cuda')
+        heatmap_top16_candidate_distance_sum = torch.zeros((), device='cuda')
 
         stage1_step = 0
         teacher_stage1_steps = np.zeros(batch_size, dtype=np.int32)
@@ -643,8 +650,52 @@ class NavCMTAgent:
                 per_sample_heatmap_loss = -(
                     gt_heatmap * F.log_softmax(pred_logits, dim=1)
                 ).sum(dim=1)
-                active_mask = torch.from_numpy((~ended).astype(np.float32)).to(pred_logits.device)
+                active_bool = torch.as_tensor(~ended, device=pred_logits.device)
+                active_mask = active_bool.float()
                 heatmap_loss += (per_sample_heatmap_loss * active_mask).sum()
+
+                # Evaluate the retained NMS proposals against the metric GT.
+                # Coverage uses the same success radius as navigation metrics.
+                candidate_rows = torch.div(
+                    heatmap_topk_ids,
+                    self.args.heatmap_grid_size,
+                    rounding_mode='floor',
+                ).float()
+                candidate_cols = (
+                    heatmap_topk_ids % self.args.heatmap_grid_size
+                ).float()
+                candidate_xy = torch.stack(
+                    (
+                        (candidate_rows + 0.5) / self.args.heatmap_grid_size,
+                        (candidate_cols + 0.5) / self.args.heatmap_grid_size,
+                    ),
+                    dim=-1,
+                )
+                gt_xy = torch.as_tensor(
+                    gt_goal_np, dtype=candidate_xy.dtype, device=candidate_xy.device
+                )
+                candidate_distances_m = torch.linalg.vector_norm(
+                    (candidate_xy - gt_xy.unsqueeze(1)) * self.args.map_meters,
+                    dim=-1,
+                )
+                active_count = active_bool.sum()
+                heatmap_diag_count += active_count
+                for k in (1, 4, 8, 16):
+                    coverage_k = min(k, candidate_distances_m.shape[1])
+                    covered = (
+                        candidate_distances_m[:, :coverage_k].min(dim=1).values
+                        <= self.args.success_dist
+                    )
+                    heatmap_coverage_hits[k] += (covered & active_bool).sum()
+                heatmap_top1_distance_sum += (
+                    candidate_distances_m[:, 0] * active_mask
+                ).sum()
+                heatmap_top16_nearest_distance_sum += (
+                    candidate_distances_m.min(dim=1).values * active_mask
+                ).sum()
+                heatmap_top16_candidate_distance_sum += (
+                    candidate_distances_m.mean(dim=1) * active_mask
+                ).sum()
                 # print(pred_logits.shape)
             # Log the trajectory
             # print(at_direction, gt_direction)
@@ -818,6 +869,26 @@ class NavCMTAgent:
         self.logs['stage2_step'].append(float(stage2_step) / batch_size)
         self.logs['stage2_rotate'].append(float(stage2_rotate) / batch_size)
         self.logs['stage2_recoveries'].append(float(stage2_recoveries) / batch_size)
+
+        diagnostic_values = torch.stack((
+            heatmap_diag_count,
+            *(heatmap_coverage_hits[k] for k in (1, 4, 8, 16)),
+            heatmap_top1_distance_sum,
+            heatmap_top16_nearest_distance_sum,
+            heatmap_top16_candidate_distance_sum,
+        )).detach().cpu().tolist()
+        diagnostic_names = (
+            'heatmap_diag_count',
+            'heatmap_coverage_1_hits',
+            'heatmap_coverage_4_hits',
+            'heatmap_coverage_8_hits',
+            'heatmap_coverage_16_hits',
+            'heatmap_top1_distance_sum_m',
+            'heatmap_top16_nearest_distance_sum_m',
+            'heatmap_top16_candidate_distance_sum_m',
+        )
+        for name, value in zip(diagnostic_names, diagnostic_values):
+            self.logs[name].append(value)
 
         # print('[3]')
         # debug_memory()
