@@ -38,8 +38,9 @@ def metric_gaussian_target(
     grid_rows_m, grid_cols_m = torch.meshgrid(
         coords_m, coords_m, indexing="ij"
     )
-    target_rows_m = goals[:, 0] * float(map_meters)
-    target_cols_m = goals[:, 1] * float(map_meters)
+    # normalized goals are (x, y), while tensor maps are indexed [row=y, col=x].
+    target_rows_m = goals[:, 1] * float(map_meters)
+    target_cols_m = goals[:, 0] * float(map_meters)
     dist_sq_m = (
         (grid_rows_m.unsqueeze(0) - target_rows_m[:, None, None]) ** 2
         + (grid_cols_m.unsqueeze(0) - target_cols_m[:, None, None]) ** 2
