@@ -17,6 +17,7 @@ class LandmarkMap(Map):
         map_shape: Tuple[int, int],
         pixels_per_meter: float,
         landmark_names: Optional[List[str]],
+        contour_only: bool = False,
     ):
         super().__init__(map_name, map_shape, pixels_per_meter)
         if landmark_names is None:
@@ -28,11 +29,21 @@ class LandmarkMap(Map):
 
         self.landmark_map = np.zeros(map_shape, dtype=np.uint8)
         for lm in self.landmarks:
-            self.landmark_map = cv2.fillPoly(
-                img=self.landmark_map ,
-                pts=[np.stack(self.to_rows_cols(lm.contour))[::-1].T],
-                color=1
-            )
+            pixels = np.stack(self.to_rows_cols(lm.contour))[::-1].T
+            if contour_only:
+                self.landmark_map = cv2.polylines(
+                    img=self.landmark_map,
+                    pts=[pixels],
+                    isClosed=True,
+                    color=1,
+                    thickness=1,
+                )
+            else:
+                self.landmark_map = cv2.fillPoly(
+                    img=self.landmark_map,
+                    pts=[pixels],
+                    color=1,
+                )
 
     def get_contours(self):
         contours = []
