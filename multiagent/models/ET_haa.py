@@ -10,6 +10,7 @@ from torch.nn import functional as F
 import numpy as np
 
 from .goal_predictor import MapEncoder
+from .spatial_belief import CompactSpatialBelief
 
 
 def aggregate_history_grid(grid_fts, grid_indices, text_fts, grid_proj, cell_count):
@@ -137,17 +138,16 @@ class ET(nn.Module):
             nn.Dropout(0.2),
             nn.Linear(32, 1),
         )
-        # Minimal SBF-style language conditioning for the heatmap only.
-        # The zero-initialized scalar gate makes the initial forward path
-        # identical to the existing heatmap branch.
-        self.heatmap_candidate_norm = nn.LayerNorm(self.args.demb)
-        self.heatmap_language_norm = nn.LayerNorm(self.args.demb)
-        self.heatmap_lang_gate = nn.Parameter(torch.tensor(0.0))
-
-        self.decoder_2_logits_full = nn.Sequential(
-            nn.Linear(self.args.demb, self.args.demb // 2),
-            nn.ReLU(),
-            nn.Linear(self.args.demb // 2, 1),
+        # Dedicated dense belief field. It consumes the full 4-channel map
+        # [current, explored, global landmarks, referenced landmarks] and
+        # produces a language-conditioned 28x28 spatial belief.
+        self.spatial_belief = CompactSpatialBelief(
+            input_channels=4,
+            field_size=self.args.heatmap_grid_size,
+            hidden_dim=256,
+            language_dim=self.args.demb,
+            attention_heads=8,
+            dropout=0.1,
         )
         self.decoder_2_goal_full = nn.Sequential(
             nn.Linear(self.args.demb, 512),
@@ -174,7 +174,17 @@ class ET(nn.Module):
         output = {}
         emb_lang = inputs["lang"]
 
-        map_feat = self.map_encoder(inputs['maps'])
+        maps = inputs['maps']
+        if maps.shape[1] == 4:
+            # Preserve the legacy ET map path exactly: current view, explored,
+            # referenced landmarks. The new global-landmark channel is used
+            # only by the dense belief branch.
+            legacy_maps = torch.cat((maps[:, :2], maps[:, 3:4]), dim=1)
+        elif maps.shape[1] == 3:
+            legacy_maps = maps
+        else:
+            raise ValueError(f"expected 3 or 4 map channels, got {maps.shape[1]}")
+        map_feat = self.map_encoder(legacy_maps)
 
         emb_candidates = self.candidate_encoder(inputs['candidates']) * emb_lang[:, :1, :]
         # print(torch.isnan(map_feat).any(), torch.isinf(map_feat).any())
@@ -260,32 +270,15 @@ class ET(nn.Module):
 
         progress = self.decoder_2_progress_full(decoder_input)
 
-        # Explicit language-conditioned spatial belief:
-        # each grid cell queries the instruction tokens before heatmap decoding.
-        heatmap_query = self.heatmap_candidate_norm(target_decoder_input)
-        heatmap_language = self.heatmap_language_norm(emb_lang)
-        heatmap_attn_logits = torch.matmul(
-            heatmap_query,
-            heatmap_language.transpose(1, 2),
-        ) / math.sqrt(self.args.demb)
-
-        lang_mask = inputs.get("lang_mask")
-        if lang_mask is not None:
-            heatmap_attn_logits = heatmap_attn_logits.masked_fill(
-                ~lang_mask[:, None, :].bool(),
-                -torch.inf,
-            )
-
-        heatmap_attn = torch.softmax(heatmap_attn_logits, dim=-1)
-        heatmap_lang_context = torch.matmul(heatmap_attn, heatmap_language)
-
-        conditioned_target = (
-            target_decoder_input
-            + torch.tanh(self.heatmap_lang_gate) * heatmap_lang_context
+        # Dense language-conditioned spatial belief. This path is independent
+        # of the legacy 7x7 candidate/history tokens used by the controller.
+        belief = self.spatial_belief(
+            maps,
+            emb_lang,
+            inputs.get("lang_mask"),
         )
+        target_logits = belief.logits.flatten(1)
 
-        # One logit per global grid cell; reshaped to a 2D heatmap in the agent.
-        target_logits = self.decoder_2_logits_full(conditioned_target).squeeze(-1)
         # print(encoder_out_candidates.shape)
 
         # print(direction, progress, goal_logits)
