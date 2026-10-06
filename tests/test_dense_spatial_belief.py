@@ -5,6 +5,7 @@ import torch
 from multiagent.models.spatial_belief import (
     CompactSpatialBelief,
     greedy_nms_topk,
+    local_soft_argmax_xy,
     metric_gaussian_target,
 )
 
@@ -70,6 +71,24 @@ class DenseSpatialBeliefTest(unittest.TestCase):
             dim=1,
         )
         self.assertTrue(torch.allclose(xy, torch.tensor([[0.75, 0.25]])))
+
+
+    def test_local_soft_argmax_refines_inside_selected_mode(self):
+        belief = torch.zeros(1, 5, 5)
+        belief[0, 1, 3] = 0.6
+        belief[0, 1, 4] = 0.3
+        belief[0, 2, 3] = 0.1
+        peak_id = torch.tensor([1 * 5 + 3])
+        xy = local_soft_argmax_xy(belief, peak_id, window_size=3)
+
+        # The refined point should stay near the selected peak, but shift
+        # toward the neighboring probability mass instead of using the
+        # discrete cell center exactly.
+        center_xy = torch.tensor([[(3.5 / 5), (1.5 / 5)]])
+        self.assertGreater(float(xy[0, 0]), float(center_xy[0, 0]))
+        self.assertGreater(float(xy[0, 1]), float(center_xy[0, 1]))
+        self.assertLess(float(xy[0, 0]), 1.0)
+        self.assertLess(float(xy[0, 1]), 1.0)
 
     def test_greedy_nms_suppresses_neighboring_peak(self):
         belief = torch.zeros(1, 7, 7)
