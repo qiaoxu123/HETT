@@ -1,0 +1,77 @@
+{
+  "paths": {
+    "ply_root": "/home/rental/20260922_1/Workspace/DATA/SensatUrban_Dataset/SensatUrban_Dataset/ply",
+    "citynav_dir": "/home/rental/20260922_1/Workspace/DATA/hett/release/refined_citynav/processed_citynav",
+    "cityrefer_dir": "/home/rental/20260922_1/Workspace/DATA/hett/release/refined_citynav/cityrefer",
+    "ortho_dir": "/home/rental/20260922_1/Workspace/DATA/rgbd",
+    "artifact_dir": "artifacts"
+  },
+
+  "diagnostic": {
+    "grid_cell_m": 2.0,
+    "z_search_radius_m": 6.0,
+    "landmark_radii_m": [5.0, 10.0, 20.0],
+    "max_reasonable_altitude_m": 200.0,
+    "landmark_sample_per_map": 60,
+    "max_poses_per_map": 600
+  },
+
+  "transform_search": {
+    "radius_m": 5.0,
+    "scales": [1.0],
+    "coarse_extent_m": 40.0,
+    "coarse_step_m": 8.0,
+    "fine_extent_m": 6.0,
+    "fine_step_m": 1.0,
+    "target_points_per_landmark": 50.0,
+    "landmark_sample_per_map": 24
+  },
+
+  "render": {
+    "width": 512,
+    "height": 512,
+    "hfov_deg": 90.0,
+    "near": 0.5,
+    "far": 400.0,
+    "splat_radius": 0,
+    "lod": [[40.0, 1], [80.0, 2], [150.0, 4], [250.0, 8], [400.0, 16]],
+    "views": {
+      "fpv": 0.0,
+      "fpv_down10": -10.0,
+      "oblique": -30.0,
+      "steep_oblique": -45.0
+    },
+    "primary_view": "fpv",
+    "overlay_views": ["fpv", "oblique"],
+    "context_extent_m": 120.0,
+    "yaw_probe_deltas_deg": [90, 180, 270]
+  },
+
+  "sampling": {
+    "per_split": {"train_seen": 10, "val_seen": 8, "val_unseen": 8},
+    "require_referenced_landmark": true,
+    "max_per_map": 2
+  },
+
+  "quality_gates": {
+    "min_valid_ratio": 0.6,
+    "min_depth_std_m": 0.5,
+    "min_depth_unique": 20,
+    "shift_tolerance_px": 6.0,
+    "continuity_frames": 8
+  },
+
+  "topdown_regression": {
+    "resolution_m": 0.1,
+    "landmark_overlay_count": 10,
+    "maps": ["birmingham_block_0", "cambridge_block_10", "birmingham_block_1"]
+  },
+
+  "vision_probe": {
+    "poses": 100,
+    "model": "google/siglip2-so400m-patch16-512",
+    "top_k": [1, 4],
+    "cache_dir": "/home/rental/20260922_1/Workspace/DATA/rsrefseg2/hf_cache",
+    "local_files_only": true
+  }
+}

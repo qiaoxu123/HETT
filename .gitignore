@@ -215,3 +215,9 @@ __marimo__/
 /reference_baseline/*.txt
 /reference_baseline/*.log
 /reference_baseline/*.log.gz
+
+# SensatUrban FPV rendering experiment: derived data and caches
+#
+# artifacts/ holds multi-GB point-cloud caches and rendered frames, all of it
+# regenerable from the scripts; nothing here belongs in git.
+artifacts/
