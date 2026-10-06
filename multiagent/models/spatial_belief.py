@@ -49,6 +49,47 @@ def metric_gaussian_target(
     return target / target.sum(dim=(1, 2), keepdim=True).clamp_min(1e-8)
 
 
+def local_soft_argmax_xy(
+    probabilities: torch.Tensor,
+    peak_ids: torch.Tensor,
+    *,
+    window_size: int = 3,
+) -> torch.Tensor:
+    """Refine peak cells to continuous normalized world (x, y)."""
+    if probabilities.ndim != 3 or probabilities.shape[1] != probabilities.shape[2]:
+        raise ValueError("probabilities must have shape [B,H,H]")
+    if window_size < 1 or window_size % 2 == 0:
+        raise ValueError("window_size must be a positive odd integer")
+    if peak_ids.ndim != 1 or peak_ids.shape[0] != probabilities.shape[0]:
+        raise ValueError("peak_ids must have shape [B]")
+
+    batch, field_size, _ = probabilities.shape
+    radius = window_size // 2
+    peak_rows = torch.div(peak_ids, field_size, rounding_mode="floor")
+    peak_cols = peak_ids % field_size
+
+    rows = torch.arange(field_size, device=probabilities.device).view(1, -1, 1)
+    cols = torch.arange(field_size, device=probabilities.device).view(1, 1, -1)
+    window = (
+        (rows - peak_rows.view(batch, 1, 1)).abs() <= radius
+    ) & (
+        (cols - peak_cols.view(batch, 1, 1)).abs() <= radius
+    )
+
+    weights = probabilities * window.to(probabilities.dtype)
+    norm = weights.sum(dim=(1, 2), keepdim=True).clamp_min(1e-8)
+    weights = weights / norm
+
+    row_centers = (
+        torch.arange(field_size, device=probabilities.device, dtype=probabilities.dtype)
+        + 0.5
+    ) / field_size
+    col_centers = row_centers
+    y = (weights * row_centers.view(1, -1, 1)).sum(dim=(1, 2))
+    x = (weights * col_centers.view(1, 1, -1)).sum(dim=(1, 2))
+    return torch.stack((x, y), dim=1)
+
+
 def greedy_nms_topk(
     probabilities: torch.Tensor,
     *,
