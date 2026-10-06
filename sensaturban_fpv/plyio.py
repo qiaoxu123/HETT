@@ -468,8 +468,14 @@ class XyGridIndex:
         return starts[keep], ends[keep]
 
     def read_cell_ranges(self, arrays, starts: np.ndarray, ends: np.ndarray,
-                         chunk_points: int = 4_000_000) -> np.ndarray:
+                         chunk_points: int = 4_000_000,
+                         cell_stride: int = 1) -> np.ndarray:
         """Concatenate the points of the given slot ranges into one array.
+
+        ``cell_stride`` keeps every n-th *cell* whole.  It exists for statistics
+        over an entity's points: a 50 m building holds most of a million of them
+        and reading all of it costs more than every other step of the pass put
+        together, while a colour histogram is converged long before that.
 
         One memmap slice per cell; slices are accumulated into a buffer and
         flushed once it holds ``chunk_points`` so the destination is allocated a
@@ -477,6 +483,8 @@ class XyGridIndex:
         """
         if starts.size == 0:
             return np.empty((0,) + arrays.shape[1:], dtype=arrays.dtype)
+        if cell_stride > 1:
+            starts, ends = starts[::cell_stride], ends[::cell_stride]
         out, buf, total = [], [], 0
         for s, e in zip(starts.tolist(), ends.tolist()):
             buf.append(np.asarray(arrays[s:e]))
@@ -489,7 +497,8 @@ class XyGridIndex:
         return out[0] if len(out) == 1 else np.concatenate(out)
 
     def query_box_slots(self, lo, hi, arrays, max_points: int | None = None,
-                        label_sets: tuple | None = None) -> np.ndarray:
+                        label_sets: tuple | None = None,
+                        cell_stride: int = 1) -> np.ndarray:
         """Points of an axis-aligned 3D box, as bucket slots.
 
         The XY rectangle comes from the bucket index; the z filter runs on the
@@ -506,11 +515,13 @@ class XyGridIndex:
         if starts.size == 0:
             return np.empty((0, 3), dtype=arrays.dtype)
         if label_sets is None:
-            pts = self.read_cell_ranges(arrays, starts, ends)
+            pts = self.read_cell_ranges(arrays, starts, ends, cell_stride=cell_stride)
             inside = np.all((pts >= lo[None, :]) & (pts <= hi[None, :]), axis=1)
             pts = pts[inside]
         else:
             labels, keep_values = label_sets
+            if cell_stride > 1:
+                starts, ends = starts[::cell_stride], ends[::cell_stride]
             out = []
             for s, e in zip(starts.tolist(), ends.tolist()):
                 chunk = np.asarray(arrays[s:e])

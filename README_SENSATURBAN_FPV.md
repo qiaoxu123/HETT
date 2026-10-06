@@ -180,3 +180,24 @@ to a pooled component as well puts the learned methods behind a random
 projection of the features they are meant to beat, which produces a negative
 result that has nothing to do with the data.  Two unit tests pin the component
 mean at initialisation and the uniform attention.
+
+### What the feature-sufficiency diagnostic found
+
+See [`FEATURE_SUFFICIENCY_REPORT.md`](FEATURE_SUFFICIENCY_REPORT.md). The short
+version: with the target region correctly masked, the colour and texture of that
+region land at chance (0.104 against 0.10), the instruction parser's relation
+flags land at chance (0.107), and no deployable combination beats the zero-shot
+text cosine on the masked SigLIP feature (0.325). The anchor oracle — knowing
+which entity the language refers to — reaches 0.609, and rescues 64% of the
+Top-4-but-not-Top-1 samples. The bottleneck is anchor grounding, not appearance.
+
+The diagnostic also caught a sampling artefact worth remembering: the candidate
+list is built around the reference, so a relation block measured over *the
+candidate list* scored 0.685 with 3.8k parameters and no scene information. Over
+the whole map the same block scores 0.201.
+
+```bash
+$PY scripts/run_feature_sufficiency_data.py           # ~7 min
+$PY scripts/train_feature_probes.py                   # 23 arms x 3 seeds
+$PY scripts/train_feature_probes.py --hidden 0 --tag linear
+```
