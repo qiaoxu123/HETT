@@ -79,6 +79,7 @@ LEARNED_METHODS = {
 TEXT_VARIANTS = ("phrase", "name")
 HIDDEN = 192
 ATTN_DIM = 64
+PAIR_DIM = 128
 DROPOUT = 0.1
 EPOCHS = 30
 BATCH_SAMPLES = 16
@@ -152,14 +153,29 @@ def load_records(data_dir: Path, split: str, variant: str):
 # --------------------------------------------------------------------------
 
 def make_model(torch, vision_model, dim, components, fusion, shared, geom_dim,
-               geom_mean, geom_std, hidden=HIDDEN, attn=ATTN_DIM, dropout=DROPOUT):
+               geom_mean, geom_std, hidden=HIDDEN, attn=ATTN_DIM, dropout=DROPOUT,
+               pair_dim=PAIR_DIM):
     """The fusion and readout module.
 
-    ``vision_model`` is put in the module's ``__dict__`` rather than assigned,
-    because assigning an ``nn.Module`` to an attribute registers it as a
-    submodule -- and then ``module.parameters()``, which is what the optimizer is
-    built from, would contain all 400M parameters of SigLIP2.  The readout has
-    to stay frozen, and this is what enforces it rather than a comment saying so.
+    Two spaces meet here and the distinction is the whole design.  The pooled
+    components loaded from a sample are SigLIP2 *joint-space* vectors -- they are
+    already the output of the checkpoint's pooling head.  The patch tokens the
+    correspondence pairs are *hidden-space* vectors, the head's input.  So the
+    head is applied exactly once, to the patch fusion, and never again to a
+    component that has already been through it; applying it twice would put the
+    learned methods behind a random projection of the very features they are
+    supposed to beat, which is a defect that looks exactly like a negative
+    result.
+
+    ``vision_model`` is put in the module's ``__dict__`` rather than assigned:
+    assigning an ``nn.Module`` to an attribute registers it as a submodule, and
+    then ``module.parameters()`` -- which is what the optimizer is built from --
+    would contain all 400M parameters of SigLIP2.
+
+    Fusing a convex combination of the joint-space components and adding a
+    zero-initialised residual means the first training step is exactly the mean
+    of the components the method was given, and the attention starts uniform
+    because its query and key projections start at zero.
     """
     nn = torch.nn
 
@@ -170,126 +186,108 @@ def make_model(torch, vision_model, dim, components, fusion, shared, geom_dim,
             self.components = list(components)
             self.fusion = fusion
             self.shared = shared
-            self.use_reverse = False
+            width = attn * (len(components) + (1 if shared else 0))
             self.register_buffer("geom_mean", torch.tensor(geom_mean, dtype=torch.float32))
             self.register_buffer("geom_std", torch.tensor(geom_std, dtype=torch.float32))
-            width = hidden * (len(components) + (1 if shared else 0))
-
-            self.enc = nn.Sequential(nn.Linear(dim, hidden), nn.GELU(),
-                                     nn.Linear(hidden, hidden))
-            self.geom_mlp = nn.Sequential(nn.Linear(geom_dim, hidden), nn.GELU(),
-                                          nn.Linear(hidden, hidden))
             self.drop = nn.Dropout(dropout)
-            if shared:
-                self.pair = nn.Sequential(nn.Linear(4 * hidden, hidden), nn.GELU(),
-                                          nn.Linear(hidden, hidden))
-                nn.init.zeros_(self.pair[-1].weight)
-                nn.init.zeros_(self.pair[-1].bias)
-                self.res = nn.Sequential(nn.Linear(hidden, hidden), nn.GELU(),
-                                         nn.Linear(hidden, hidden))
-                nn.init.zeros_(self.res[-1].weight)
-                nn.init.zeros_(self.res[-1].bias)
+
+            # Score-side projections: a shared low-dimensional view of every
+            # component, and a residual that starts at zero.
+            self.proj = nn.Linear(dim, attn)
+            self.delta = nn.Sequential(nn.Linear(width, attn), nn.GELU(),
+                                       nn.Linear(attn, dim))
+            nn.init.zeros_(self.delta[-1].weight)
+            nn.init.zeros_(self.delta[-1].bias)
+            self.geom_mlp = nn.Sequential(nn.Linear(geom_dim, attn), nn.GELU(),
+                                          nn.Linear(attn, dim))
             if fusion == "attn":
-                # The text is the query; the components are the keys.  Which
-                # component a phrase draws on is therefore learned, and no
+                # The text is the query, the components are the keys, and both
+                # start at zero so the first step weights every component
+                # equally.  Which component a phrase draws on is learned, and no
                 # branch anywhere tests the entity's type.
                 self.wq = nn.Linear(dim, attn)
-                self.wk = nn.Linear(hidden, attn)
-            else:
-                # Same residual shape as the patch fusion: start from the mean of
-                # the encoded components and learn a correction, with the last
-                # layer zeroed so the first step is the mean and nothing else.
-                self.concat_head = nn.Sequential(nn.Linear(width, hidden), nn.GELU(),
-                                                 nn.Linear(hidden, hidden))
-                nn.init.zeros_(self.concat_head[-1].weight)
-                nn.init.zeros_(self.concat_head[-1].bias)
-            self.dec = nn.Linear(hidden, dim)
+                self.wk = nn.Linear(attn, attn)
+                nn.init.zeros_(self.wq.weight), nn.init.zeros_(self.wq.bias)
+                nn.init.zeros_(self.wk.weight), nn.init.zeros_(self.wk.bias)
+            if shared:
+                # Patch fusion lives in hidden space and returns to joint space
+                # through the frozen head, once.
+                self.penc = nn.Linear(dim, pair_dim)
+                self.pair = nn.Sequential(nn.Linear(4 * pair_dim, pair_dim), nn.GELU(),
+                                          nn.Linear(pair_dim, pair_dim))
+                nn.init.zeros_(self.pair[-1].weight)
+                nn.init.zeros_(self.pair[-1].bias)
+                self.pdec = nn.Linear(pair_dim, dim)
 
-        def encode_components(self, arrays, device):
-            cols = []
-            for name in self.components:
-                if name == "geometry":
-                    g = arrays["geometry"]
-                    g = (g - self.geom_mean) / self.geom_std
-                    cols.append(self.geom_mlp(g))
-                else:
-                    cols.append(self.enc(arrays[name]))
+        def pooled_components(self, columns):
+            """Every component as a joint-space vector, in the declared order."""
+            cols = [columns[name] for name in self.components if name != "geometry"]
+            if "geometry" in self.components:
+                g = (columns["geometry"] - self.geom_mean) / self.geom_std
+                cols.append(self.geom_mlp(g))
             return cols
 
         def _pair(self, p, q):
             z = torch.cat([p, q, (p - q).abs(), p * q], dim=-1)
             return 0.5 * (p + q) + self.pair(self.drop(z))
 
-        def pair_fusion(self, inputs):
-            """Fuse paired patches, then pool them into one component.
+        def pair_fusion(self, inputs, reverse=False):
+            """Fuse paired patches and pool them into one joint-space component.
 
             The gather is over correspondence entries, so the weighted mean of
-            the partners has to be taken back in token-row space first and then
-            read out at the entries -- pooling in entry space would average each
-            entry with itself.
+            the partners has to be taken back in token-row space and read out at
+            the entries -- pooling in entry space would average each entry with
+            itself.
             """
-            query = self.enc(inputs.gather(inputs.td_tokens, inputs.corr_td_row))
-            partner_rows, den = scatter_mean(
-                self.enc(inputs.gather(inputs.o_tokens, inputs.corr_o_row)),
-                inputs.corr_td_row, inputs.td_tokens.shape[0], inputs.corr_w)
-            partner = torch_where(den[inputs.corr_td_row], partner_rows[inputs.corr_td_row],
-                                  query)
-            fused = self._pair(query, partner)
-            pooled, _ = scatter_mean(fused, inputs.td_row[inputs.corr_td_row],
-                                     inputs.K)
-            return pooled
-
-        def pair_fusion_reverse(self, inputs):
-            """The same fusion with the views swapped: oblique patches query
-            top-down ones.  Two independent joint readings of one entity are what
-            the cross-view identity loss is built on."""
-            query = self.enc(inputs.gather(inputs.o_tokens, inputs.corr_o_row))
-            partner_rows, den = scatter_mean(
-                self.enc(inputs.gather(inputs.td_tokens, inputs.corr_td_row)),
-                inputs.corr_o_row, inputs.o_tokens.shape[0], inputs.corr_w)
-            partner = torch_where(den[inputs.corr_o_row], partner_rows[inputs.corr_o_row],
-                                  query)
-            fused = self._pair(query, partner)
-            pooled, _ = scatter_mean(fused, inputs.o_row[inputs.corr_o_row], inputs.K)
-            return pooled
-
-        def forward(self, arrays, text, inputs, want_reverse=False):
-            cols = self.encode_components(arrays, arrays["geometry"].device)
-            if self.shared:
-                shared = self.pair_fusion(inputs)
-                cols.append(shared + self.res(shared))
-            stacked = torch.stack(cols, dim=1)                    # (K, M, hidden)
-            # One text row per candidate: a batch mixes samples, and a shared
-            # row would cross every candidate with every instruction.
-            if text.dim() == 1:
-                text = text[None, :].expand(stacked.shape[0], -1)
-            if self.fusion == "attn":
-                q = self.wq(text)                                 # (K, attn)
-                k = self.wk(stacked)                              # (K, M, attn)
-                # One query per candidate rather than per sample: the batches
-                # here mix samples, and the scores have to stay per-candidate.
-                a = torch.softmax(
-                    (k * q[:, None, :]).sum(-1) / np.sqrt(k.shape[-1]), dim=1)
-                agg = (a[..., None] * stacked).sum(dim=1)
+            if reverse:
+                query = self.penc(inputs.gather(inputs.o_tokens, inputs.corr_o_row))
+                partner_rows, den = scatter_mean(
+                    self.penc(inputs.gather(inputs.td_tokens, inputs.corr_td_row)),
+                    inputs.corr_o_row, inputs.o_tokens.shape[0], inputs.corr_w)
+                index = inputs.corr_o_row
+                pool_index = inputs.o_row[inputs.corr_o_row]
             else:
-                agg = stacked.mean(dim=1) + self.concat_head(stacked.flatten(1))
-            token = self.dec(self.drop(agg))
-            joint = l2norm(readout_tokens(self.vision, token))
+                query = self.penc(inputs.gather(inputs.td_tokens, inputs.corr_td_row))
+                partner_rows, den = scatter_mean(
+                    self.penc(inputs.gather(inputs.o_tokens, inputs.corr_o_row)),
+                    inputs.corr_td_row, inputs.td_tokens.shape[0], inputs.corr_w)
+                index = inputs.corr_td_row
+                pool_index = inputs.td_row[inputs.corr_td_row]
+            partner = torch_where(den[index], partner_rows[index], query)
+            fused = self._pair(query, partner)
+            pooled, _ = scatter_mean(fused, pool_index, inputs.K)
+            return readout_tokens(self.vision, self.pdec(pooled))
+
+        def fuse(self, cols, text):
+            stacked = torch.stack(cols, dim=1)                     # (K, M, dim)
+            u = self.proj(stacked)                                 # (K, M, attn)
+            if self.fusion == "attn":
+                q = self.wq(text)                                  # (K, attn)
+                k = self.wk(u)                                     # (K, M, attn)
+                a = torch.softmax(
+                    (k * q[:, None, :]).sum(-1) / np.sqrt(u.shape[-1]), dim=1)
+                base = (a[..., None] * stacked).sum(dim=1)
+            else:
+                base = stacked.mean(dim=1)
+            delta = self.delta(self.drop(u.flatten(1)))
+            return base + delta
+
+        def forward(self, columns, text, inputs, want_reverse=False):
+            cols = self.pooled_components(columns)
+            if self.shared:
+                cols.append(self.pair_fusion(inputs))
+            # One text row per candidate: a batch mixes samples, and a shared row
+            # would cross every candidate with every instruction.
+            if text.dim() == 1:
+                text = text[None, :].expand(cols[0].shape[0], -1)
+            joint = l2norm(self.fuse(cols, text))
             scores = (joint * text).sum(dim=-1)
+
             reverse = None
             if want_reverse and self.shared:
-                rev = self.pair_fusion_reverse(inputs)
-                rev = rev + self.res(rev)
-                agg_r = rev
-                if self.fusion == "attn":
-                    k = self.wk(agg_r[:, None, :])
-                    a = torch.softmax(
-                        (k * q[:, None, :]).sum(-1) / np.sqrt(k.shape[-1]), dim=1)
-                    agg_r = (a * agg_r[:, None, :]).sum(dim=1)
-                else:
-                    agg_r = agg_r + self.concat_head(agg_r)
-                token_r = self.dec(self.drop(agg_r))
-                joint_r = l2norm(readout_tokens(self.vision, token_r))
+                cols_r = self.pooled_components(columns) + [self.pair_fusion(
+                    inputs, reverse=True)]
+                joint_r = l2norm(self.fuse(cols_r, text))
                 reverse = (joint_r * text).sum(dim=-1), joint_r
             return scores, reverse, joint
 

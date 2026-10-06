@@ -986,6 +986,254 @@ is mostly sky; (c) points beyond ~250 m are decimated, which is invisible at
 
 ---
 
+## 8f. 3D-anchored multi-view target entity grounding
+
+§8e ended with a negative result and a diagnosis: score-level fusion could not
+beat the better single view, because *which view is better is a property of the
+map*, and nothing measurable at inference time predicts it.  This round changes
+the unit and the level at which the two views meet.
+
+The unit is a **target entity** of any CityRefer type — a building, a car, a
+wall, a parking area, a piece of street furniture.  The two views meet at the
+level of the entity's own measured 3D points: project one point set through both
+cameras and the pair of patches a point lands on *is* the correspondence.  No
+correspondence is estimated from image content, so a wrong one would be a
+coordinate bug rather than a modelling failure.
+
+Nothing in the pipeline branches on an entity's type.  What varies with type is
+the entity's physical size, and it enters through two size-derived rules and
+nowhere else.
+
+### The entity, and how it is anchored
+
+**Support.** An entity's points are the annotated box intersected with the
+annotated footprint polygon and with the point cloud's own semantic class, and
+that intersection is only the first rung of a recorded ladder: a wider box, then
+a box without the class restriction, then a class-restricted radius around the
+annotated centre, then the nearest points to it.  The rung is returned with every
+entity and reported, because a car whose "support" is really a patch of road must
+not be indistinguishable from one that was localised.  On every entity measured
+here the first rung succeeded.
+
+**Two scales.** A 4.5 m car and an 80 m terrace cannot share a crop.
+`tight` is the entity itself with a 6 m floor, so a vehicle is not asked to have
+an appearance inside a 24 m frame; `context` is 2.5× its extent with a 150 m
+ceiling.  Both views use the same two extents for a given entity, so the entity's
+share of a crop is equal across views by construction.
+
+**Masks.** In the top-down raster a point's pixel is an affine function of its
+world XY, so the mask is a footprint.  In the oblique frame a point counts as
+visible when the pixel it lands on was won by a point inside the entity's own
+box — exact, but it loses points the level-of-detail decimation skipped — or when
+the rendered depth there is farther than the point's range, which recovers them.
+
+### Projection sanity check (before any training)
+
+49 entities measured, aimed poses, grouped by type: 15 buildings, 17 vehicles,
+17 others (walls, street furniture, footpath, road).  Figures in
+`artifacts/entity_grounding/check/`.
+
+| group | n | support rung 1 | correspondence found | median entity patches (tight / context, TD / O) | coherence real | coherence shuffled | real wins |
+|---|---:|---:|---:|---|---:|---:|---:|
+| building | 15 | 15/15 | 100% | 511 / 123 · 435 / 105 | 1.39 | 5.22 | 15/15 |
+| vehicle | 17 | 17/17 | 100% | 290 / 30 · 158 / 24 | 1.02 | 2.34 | 16/17 |
+| other | 17 | 17/17 | 100% | 63 / 20 · 41 / 13 | 0.97 | 2.70 | 12/17 |
+
+The coherence column is the mean patch-grid distance between where a top-down
+patch's correspondence points and where its neighbours' point: projecting one
+point set through two cameras gives a locally smooth map, and a shuffle that
+keeps every weight, every mask and every visited patch destroys it.  For
+vehicles, whose patches are few and whose masks are the ones most likely to be
+wrong, the real pairing wins 16 of 17.
+
+### Samples
+
+Targets are sampled under a per-type-group quota, because the instructions in
+file order are 91% buildings on `train_seen` — a fusion trained there and
+measured on cars would be reporting a distribution shift as a result.
+
+| split | n | building | vehicle | other | median target distance |
+|---|---:|---:|---:|---:|---:|
+| train_seen | 1200 | 540 | 420 | 240 | 149 m |
+| val_seen | 690 | 315 | 245 | 130 | — |
+| val_unseen | 400 | 180 | 140 | 80 | — |
+
+Every choice — the learning rate, the cross-view weight, the epoch, which method
+is "the fusion" — is made on `train_seen` / `val_seen`.  `val_unseen` is read
+once.  All methods are scored on the same candidate sets: an entity the oblique
+view cannot reach stays in the candidate list with an empty oblique mask rather
+than being dropped, so no method sees an easier list than another.
+
+### Methods
+
+Every method ends in the *same* frozen readout: the entity token is pushed
+through SigLIP2's own pooling head as a one-token sequence, L2-normalised, and
+dotted with the same text embedding.  Nothing about the readout differs between
+methods, so a difference in the table is a difference of features.
+
+* `TD_global` / `O_global` — the whole context crop, the §8c/§8d/§8e baseline.
+* `TD_masked` / `O_masked` — the frozen head attending only to the entity's own
+  patches (zero parameters).
+* `TD_tight` / `O_tight` — the same at the entity-sized scale.
+* `ConcatGlobal` / `ConcatMasked` — a small MLP over the two views' pooled
+  features, with a zero-initialised residual on the view mean.
+* `EntityConcat` — the same over all components including geometry.
+* `GeoNoContext` / `GeoAligned` — the main method: the two views' *paired patch
+  tokens* are fused per correspondence entry, and the text is the query in one
+  attention layer over the entity's components.
+* `GeoShuffled` — `GeoAligned` with the pairing permuted inside each entity.  Same
+  weights, same masks, same sparsity, wrong geometry.
+* `GeoAlignedXL` — `GeoAligned` plus a cross-view identity loss, with the weight
+  chosen on `val_seen`.
+
+
+### Readings the round has to produce
+
+Four numbers decide the call, and each has a rule attached so it cannot be
+re-read from the answer:
+
+* **Top-1 on `val_unseen` for the best fusion against the best single view**,
+  both chosen on `val_seen`.  The full held-out table is printed as well — a
+  reader is entitled to see every method's number — but the pass/fail call uses
+  the pair fixed before `val_unseen` was touched.
+* **The four transition counts.**  `TD wrong + O wrong → fusion correct` is the
+  one that cannot be explained by picking a view, because neither view had the
+  answer.
+* **The alignment control.**  `GeoAligned` against `GeoShuffled`: same
+  architecture, same weights-per-epoch schedule, same masks and sparsity, and
+  the pairing permuted inside each entity.  A gain that survives here came from
+  the world coordinates; a gain that does not, did not.
+* **Per group.**  A result that lives in buildings while cars are flat or worse
+  is not a general target-entity result, and the round says so either way.
+
+### Verdict rule, fixed before the held-out split was read
+
+STRONG PASS needs the best entity fusion to beat the best single view by **+5
+absolute Top-1** on `val_unseen`, with MRR, median margin and positive-margin
+ratio all improving, with the geometry-aligned pairing beating its shuffled
+control, and without a large vehicle regression.  WEAK PASS is +2 to +5 with the
+secondary metrics agreeing.  Everything else is FAIL — including a gain that the
+shuffled control matches, which would mean the world coordinates contributed
+nothing and the fusion was fitting something else.
+
+### The table (`phrase`, val_unseen n=400, ten candidates per sample)
+
+`val_seen` chooses both the single view to beat (`TD_tight`, 0.325) and the
+fusion (`GeoAligned`, 0.315).  Those two are then read once on `val_unseen`.
+
+| method | trainable params | Top-1 | Top-4 | MRR | median margin | positive-margin ratio |
+|---|---:|---:|---:|---:|---:|---:|
+| TD_global | 0 | 0.100 | 0.535 | 0.327 | −0.0105 | 0.100 |
+| O_global | 0 | 0.147 | 0.517 | 0.360 | −0.0104 | 0.147 |
+| TD_masked | 0 | 0.320 | 0.757 | 0.521 | −0.0101 | 0.320 |
+| O_masked | 0 | 0.185 | 0.623 | 0.411 | −0.0189 | 0.185 |
+| **TD_tight** (best single) | 0 | **0.320** | 0.720 | 0.522 | −0.0097 | 0.320 |
+| O_tight | 0 | 0.240 | 0.662 | 0.455 | −0.0178 | 0.240 |
+| ConcatGlobal | 233k | 0.215 | 0.662 | 0.431 | −0.0127 | 0.215 |
+| ConcatMasked | 233k | 0.311 | 0.757 | 0.524 | −0.0204 | 0.311 |
+| EntityConcat | 254k | 0.304 | 0.788 | 0.528 | −0.0157 | 0.304 |
+| GeoNoContext | 714k | 0.324 | 0.801 | 0.547 | −0.0247 | 0.324 |
+| **GeoAligned** (best fusion) | 722k | **0.338** | 0.810 | 0.555 | −0.0295 | 0.338 |
+| GeoAlignedXL | 722k | 0.342 | 0.802 | 0.555 | −0.0254 | 0.342 |
+| **GeoShuffled** (control) | 722k | **0.343** | 0.812 | 0.557 | −0.0295 | 0.343 |
+
+**Gain of the best fusion over the best single view: +1.75 points.**
+McNemar on the paired samples: 80 against 84, p = 0.81.  That is not a small
+effect measured imprecisely — it is no effect.  The secondary metrics do not
+improve either: the fusion's median margin is *more* negative than the single
+view's (−0.0295 against −0.0097).
+
+### The alignment control, which is the decisive number
+
+With the same architecture, the same parameter count and the same training
+schedule, the **permuted** pairing scores 0.343 against the real one's 0.338 —
+nine discordant samples one way, fourteen the other, p = 0.40.  Keeping every
+mask, every weight and every visited patch while pairing the *wrong* patches
+costs nothing.  So whatever the 722k-parameter module learned, it was not the
+world-coordinate correspondence, which was the round's entire question.
+
+This control is also the one comparison in the table that no readout choice can
+explain away: the aligned and shuffled variants are the same network, trained
+the same way, differing only in which oblique patch each top-down patch is
+paired with.
+
+### Per entity group, val_unseen
+
+| method | building (n=180) | vehicle (n=140) | other (n=80) |
+|---|---:|---:|---:|
+| TD_tight | 0.217 | **0.471** | 0.287 |
+| O_tight | 0.250 | 0.229 | 0.237 |
+| ConcatMasked | 0.319 | 0.276 | 0.354 |
+| EntityConcat | 0.261 | 0.398 | 0.237 |
+| GeoAligned | 0.248 | 0.469 | 0.308 |
+| GeoShuffled | 0.269 | 0.452 | 0.321 |
+
+Vehicles are the *easy* class here and buildings the hard one — the opposite of
+what the round's design assumed.  The fusion does not move either: vehicles
+0.469 against 0.471, a difference of one sample; buildings +3.1 points, which is
+five samples out of 180.  There is no group where the multi-view machinery pays
+for itself.
+
+### Transitions, val_unseen (GeoAligned against TD_tight + O_tight)
+
+| category | n |
+|---|---:|
+| TD wrong + O wrong → fusion correct | 48 |
+| TD correct + O wrong → fusion correct | 27 |
+| TD wrong + O correct → fusion correct | 36 |
+| either single correct → fusion wrong | 102 |
+| all wrong | 166 |
+
+Forty-eight samples are found by the fusion and by neither view.  That is real
+joint behaviour and it is why the idea is worth having.  But 102 go the other
+way, and the two cancel to the +1.75 points above.  The head is not failing to
+combine the views; it is trading.
+
+### Verdict: FAIL
+
+The pre-registered rule needs +5 points for STRONG PASS and +2 for WEAK, with
+the alignment control positive and no class collapsing.  Measured: +1.75, the
+control *negative* by 0.6 points, secondary metrics worse.  The round's answer
+to its own question is **no**: a 3D-anchored dual-view entity representation
+does not ground better than one masked single view, and the anchoring itself
+contributes nothing measurable.
+
+### The reversal, and a defect found on the way
+
+A pilot on a held-out slice of `train_seen` — 400 training samples, 74 held out —
+gave `GeoAligned` Top-1 0.716 against 0.378 for the best single view, with the
+shuffled control at 0.378.  That is the pattern the round was designed to detect
+and it did not reproduce on unseen maps.  The pilot's held-out half was drawn
+from the same pool of episodes as its training half, so the same landmarks
+recurred on both sides; it measured memorisation of a few maps, not grounding.
+
+The full run then surfaced a real defect in my own implementation, and it is
+worth recording because it manufactured a *different* plausible negative.  The
+pooled components loaded from a sample are already outputs of SigLIP2's pooling
+head, and the module was pushing them through that head a second time.  The
+learned methods therefore began from a random projection of the features they
+were supposed to improve on, and every one of them scored *below* the frozen
+single view (train Top-1 0.6–0.99 against val_seen 0.20–0.26).  With the spaces
+separated — pooled components used as they are, the frozen head applied once, to
+the hidden-space patch fusion, and a zero-initialised residual on the component
+mean so the first step *is* that mean — the same data gives the table above.
+Two unit tests now pin the first step and the uniform attention at
+initialisation, because a defect there is indistinguishable from a finding.
+
+### Limits
+
+* The correspondence is at the *context* scale, one patch pair per 4.7 m cell on
+  a 150 m crop.  Finer than that would need a finer crop, and a finer crop for a
+  large building means more patches than the encoder has.
+* Only one annotated entity per sample exists, so a non-degenerate relation
+  oracle is not available from these annotations; §8g constructs one instead.
+* The `name` variant has 70 `val_seen` and 45 `val_unseen` samples, and on that
+  many the `val_seen` selection picks a single view that then collapses
+  (TD_tight 0.343 → 0.133), which makes its headline gain an artefact of the
+  selection rather than a result.  It is reported and not relied on.
+
+---
+
 ## 10. Limits
 
 These are properties of the data, not defects in the renderer, and none of them

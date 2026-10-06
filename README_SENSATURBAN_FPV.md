@@ -164,3 +164,19 @@ must not be indistinguishable from one that was localised.
 The label cache (`artifacts/cache/*.labels.npy`) is separate from the sorted
 xyz/rgb cache and has its own marker, so adding it does not invalidate indexes
 that already exist — rebuilding those means re-reading multi-gigabyte blocks.
+
+### What the entity round found
+
+`GeoAligned` (3D-anchored patch fusion) reaches Top-1 0.338 on `val_unseen`
+against 0.320 for the best masked single view — +1.75 points, McNemar p = 0.81 —
+and the permuted-pairing control scores 0.343, so the world-coordinate pairing
+adds nothing measurable. See §8f of the report.
+
+One implementation defect is worth knowing about if you extend this code: the
+pooled components stored per sample are already SigLIP2 pooling-head *outputs*,
+while the patch tokens are head *inputs*.  `make_model` keeps those two spaces
+apart and applies the frozen head exactly once, to the patch fusion.  Applying it
+to a pooled component as well puts the learned methods behind a random
+projection of the features they are meant to beat, which produces a negative
+result that has nothing to do with the data.  Two unit tests pin the component
+mean at initialisation and the uniform attention.

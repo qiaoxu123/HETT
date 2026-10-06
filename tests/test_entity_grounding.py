@@ -400,7 +400,7 @@ def test_fusion_gradients_reach_the_pair_module():
     step()
     assert float(module.pair[-1].weight.grad.abs().sum()) > 0
     assert float(module.pair[0].weight.grad.abs().sum()) == 0
-    assert float(module.enc[0].weight.grad.abs().sum()) > 0
+    assert float(module.penc.weight.grad.abs().sum()) > 0
     with torch.no_grad():
         module.pair[-1].weight.add_(module.pair[-1].weight.grad)
     step()
@@ -426,7 +426,16 @@ def test_shuffled_correspondence_changes_the_score_but_not_the_patch_pool():
         Inputs(torch, sample, "cpu", shuffle_seed=7).corr_o_row.numpy()))
 
 
-def test_zero_initialised_residual_starts_at_the_view_mean():
+def test_first_step_is_exactly_the_mean_of_the_components():
+    """The ablation has to begin from the baseline it is supposed to beat.
+
+    The components arrive in SigLIP2's joint space -- they are already pooling
+    head outputs -- so the fused vector is a convex combination of them plus a
+    zero-initialised residual.  If the head were applied a second time, or the
+    residual were not zero at initialisation, the learned methods would start
+    from a random projection of the features they are meant to improve on, and a
+    failure to improve would say nothing about the data.
+    """
     from train_entity_grounding import APPEARANCE, Inputs
 
     sample, dim, K = _synthetic_sample()
@@ -434,13 +443,27 @@ def test_zero_initialised_residual_starts_at_the_view_mean():
     module.eval()
     arrays = {k: torch.from_numpy(sample.arrays[k]) for k in APPEARANCE}
     arrays["geometry"] = torch.from_numpy(sample.arrays["geometry"])
-    # With a zero-initialised second layer the concat head is exactly zero, so
-    # the first step of training is the mean of the encoded views and nothing
-    # else -- the ablation begins from the baseline it has to beat.
     with torch.no_grad():
-        stacked = torch.stack([module.enc(arrays[k]) for k in APPEARANCE]
-                              + [module.geom_mlp((arrays["geometry"]
-                                                  - module.geom_mean)
-                                                 / module.geom_std)], dim=1)
-        delta = module.concat_head(stacked.flatten(1))
-    assert torch.allclose(delta, torch.zeros_like(delta), atol=1e-6)
+        cols = module.pooled_components(arrays)
+        fused = module.fuse(cols, torch.ones(K, dim) / np.sqrt(dim))
+        expected = torch.stack(cols, dim=1).mean(dim=1)
+    assert torch.allclose(fused, expected, atol=1e-5)
+
+
+def test_attention_starts_uniform_so_no_component_is_privileged():
+    from train_entity_grounding import APPEARANCE
+
+    sample, dim, K = _synthetic_sample()
+    module, _ = _build(APPEARANCE + ("geometry",), "attn", False, dim)
+    module.eval()
+    arrays = {k: torch.from_numpy(sample.arrays[k]) for k in APPEARANCE}
+    arrays["geometry"] = torch.from_numpy(sample.arrays["geometry"])
+    with torch.no_grad():
+        cols = module.pooled_components(arrays)
+        stacked = torch.stack(cols, dim=1)
+        u = module.proj(stacked)
+        text = torch.ones(K, dim) / np.sqrt(dim)
+        q = module.wq(text)
+        k = module.wk(u)
+        a = torch.softmax((k * q[:, None, :]).sum(-1) / np.sqrt(u.shape[-1]), dim=1)
+    assert torch.allclose(a, torch.full_like(a, 1.0 / a.shape[1]), atol=1e-6)
