@@ -34,6 +34,14 @@ modified, and nothing was wired into the HETT trunk.
    at 1536, −20.0 at 2048). What it adds is instance appearance — facade,
    colour, storey count — not category evidence. Every margin is still
    negative, so neither view alone separates landmarks well.
+6. **And none of the point-4 conclusion survives a held-out split.** With the
+   operating point, calibration, fusion weights and gate thresholds all chosen
+   on train_seen/val_seen, no fusion of the two views beats the better single
+   view on val_unseen, and the single-view comparison itself reverses: five of
+   six maps favour the oblique view, one favours top-down by 30 points, and that
+   one map carries the tuning splits. See §8e, which also withdraws §8d's
+   "blur the top-down crop" recommendation — that too was a val_unseen-selected
+   result that failed its held-out check.
 
 Details below; §8b and §8c are the two gates.
 
@@ -769,7 +777,122 @@ operating point, since that alone is worth about five points and costs nothing.
 
 ---
 
-## 9. Answers to the brief's questions
+## 8e. Dual-view fusion — and a result that reverses the previous section
+
+### Protocol
+
+`train_seen` (121) and `val_seen` (150) are the tuning splits; `val_unseen` (60)
+is scored once, at the end, with every choice frozen. The manifest
+(`artifacts/fusion/fusion_eval_manifest_v1.json`) fixes split, scene, episode,
+instruction, candidate ids and ordering, and every method below is scored on
+exactly those samples and no others. Fusion is at the score level on the
+candidate set the two views share.
+
+### The fusion table (phrase, val_unseen n=58)
+
+| method | trainable | Top-1 | Top-4 | MRR | median margin | positive-margin ratio |
+|---|---:|---:|---:|---:|---:|---:|
+| TD_OPT (0.10 m/px) | no | 0.207 | 0.793 | 0.468 | −0.0129 | 0.207 |
+| **O2048** | no | **0.397** | **0.845** | **0.591** | −0.0040 | **0.397** |
+| Fixed 0.5 | no | 0.379 | 0.828 | 0.576 | −0.0030 | 0.379 |
+| Best fixed α (0.75) | no | 0.224 | 0.828 | 0.492 | −0.0056 | 0.224 |
+| Rule gate | no | 0.328 | 0.810 | 0.556 | −0.0039 | 0.328 |
+| Rule + quality | no | 0.241 | 0.793 | 0.496 | −0.0050 | 0.241 |
+| Learned gate | 897 | 0.362 | 0.793 | 0.566 | −0.0028 | 0.362 |
+| Oracle per-view | oracle | 0.448 | 0.897 | 0.651 | −0.0013 | 0.448 |
+| Oracle candidate-wise | oracle | 0.276 | 0.810 | 0.512 | −0.0053 | 0.276 |
+
+**Nothing beats the best single view.** The best fusion is plain 0.5/0.5 at
+0.379 against O2048's 0.397 — and the paired test says that difference is noise
+(4 gain, 5 loss, p = 1.00). Every other fusion is worse, and two are
+significantly worse (`O_vs_Fixed_best_0.75` 2/12 p = 0.013;
+`O_vs_Rule_plus_quality` 1/10 p = 0.012).
+
+By the pre-registered criterion this is **FAIL**: the improvement is
+−1.8 points, not the +5 required.
+
+### The reason, and it is not "the views aren't complementary"
+
+Splitting the single-view comparison by map exposes what the aggregate hides:
+
+| map | split | n | top-down Top-1 | oblique Top-1 | Δ |
+|---|---|---:|---:|---:|---:|
+| birmingham_block_4 | train_seen | 40 | **0.525** | 0.225 | **−30.0** |
+| birmingham_block_4 | val_seen | 40 | **0.450** | 0.125 | **−32.5** |
+| birmingham_block_1 | train_seen / val_seen | 39 / 40 | 0.026 / 0.125 | 0.128 / 0.175 | +10.3 / +5.0 |
+| birmingham_block_3 | train_seen / val_seen | 40 / 40 | 0.100 / 0.075 | 0.125 / 0.125 | +2.5 / +5.0 |
+| birmingham_block_7 | val_seen | 30 | 0.333 | 0.467 | +13.3 |
+| birmingham_block_5 | val_unseen | 38 | 0.316 | 0.500 | +18.4 |
+| cambridge_block_10 | val_unseen | 20 | 0.000 | 0.200 | +20.0 |
+
+![view advantage by map](figures/fusion_view_advantage_by_map.png)
+
+**Five of the six maps favour the oblique view; `birmingham_block_4` is the lone
+exception and it is an extreme one.** That single map supplies 80 of the 270
+tuning samples and is absent from `val_unseen`, so it alone decides the
+validation answer. This is why §8d's conclusion did not replicate: the
+tuning split's "top-down is better" is one map's behaviour, not a general one.
+
+### Why the gates cannot fix it
+
+| gate | view-choice accuracy on val_unseen |
+|---|---:|
+| Rule gate | 0.525 (n=40) |
+| Rule + quality | 0.350 |
+| Learned gate | 0.500 |
+
+Chance is 0.50. The language features, the visual-quality features and a fitted
+897-parameter MLP are all at or below it. **Nothing available predicts which view
+will win on a given sample**, which is precisely what a conditional fusion needs
+— and it is why every gate lands between the two single views rather than above
+both.
+
+Two supporting observations:
+
+- **Calibration is irrelevant here.** Raw cosine, per-view z-score and
+  temperature scaling produce identical sweeps, because both views come from the
+  same frozen encoder. Their score *distributions* differ (top-down mean −0.009
+  sd 0.017, oblique mean −0.007 sd 0.016) but the scale does not.
+- **The candidate-wise oracle is lower than the per-view oracle** (0.276 against
+  0.448). Taking the max of the two scores per candidate raises the negatives as
+  often as the target, so that bound does not exist and no candidate-level
+  dynamic fusion can be expected to reach it.
+
+### And the top-down operating point reverses too
+
+`TD_OPT` was chosen on `train_seen`+`val_seen` and came out as **native
+0.10 m/px**:
+
+| top-down GSD | validation Top-1 |
+|---|---:|
+| **0.10 m/px (native)** | **0.230** |
+| 0.15 m/px | 0.193 |
+| 0.20 m/px | 0.163 |
+| 0.30 m/px | 0.133 |
+
+§8d reported that blurring the orthophoto to 0.15–0.21 m/px gained five to seven
+points and called it a free win. **That does not replicate.** It was selected on
+`val_unseen`, with n = 122 on four maps and no held-out check, and on the
+tuning splits the ordering is monotone the other way. The §8d claim is withdrawn
+here; the recommendation that followed from it is not safe to act on.
+
+### Decision: stop
+
+The honest reading is not that a top-down and an oblique view carry the same
+information — §8d's matched-resolution result and the map table above both say
+they do not. It is that **their relative value is a property of the scene, it
+varies from −32 to +20 points across maps, and none of the features available at
+inference time predicts it.** A conditional fusion needs that predictor; without
+one, fusing can only dilute the better view.
+
+So: **C — stop the dual-view fusion direction**, and do not take §8d's
+"resample the top-down crop to 0.15 m/px" recommendation forward either, since it
+was a `val_unseen`-selected result that failed its held-out check.
+
+What would change the answer is not a better fusion architecture but a
+scene-level signal for which view to trust, or a per-map calibration. Neither is
+available this round, and neither was tested here.
+
 
 **1. Are the SensatUrban PLY and the CityNav pose in the same coordinate system?**
 Yes. Same units (metres), same origin, same axis convention, same Z datum.
@@ -820,7 +943,20 @@ down at 44°, so a level view points mostly at sky. The contact sheet at
 side by side, and the named landmark is legible in the oblique45 column.
 
 **10. Is this enough to go on to FPV landmark retrieval?**
-**Yes, as one of two views — not as a replacement for top-down.**
+**Not on this evidence — stop, and re-derive the premise first.**
+
+§8e is the answer to this question and it is negative. With every choice made on
+`train_seen`/`val_seen`, no fusion beats the better single view on `val_unseen`,
+and the single-view comparison that §8c and §8d rest on reverses across maps:
+five of six maps favour the oblique view, `birmingham_block_4` favours top-down
+by 30 points, and that one map carries the tuning splits. Whether the oblique
+view is better is a property of the scene, it ranges from −32 to +20 points, and
+nothing measurable at inference time predicts which way it will go.
+
+The earlier framing (below, retained for the record) is what §8c/§8d supported
+before the held-out check was run. It should not be acted on.
+
+**What §8c and §8d supported before §8e:**
 
 §8d settles the question §8c could not. The +8.9 points there were confounded
 with resolution; with the confound controlled, the oblique view still wins by

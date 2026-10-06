@@ -80,6 +80,20 @@ def build_samples(cfg, objects_by_map, splits, target, min_candidates=4,
         split: citynav.load_split(Path(cfg["paths"]["citynav_dir"]), split)
         for split in splits
     }
+    # Squared distances in plain Python floats.  Sorting the candidate list
+    # with a key that calls np.asarray and np.linalg.norm per comparison costs
+    # minutes per split on train_seen's 22k episodes, times every worker.
+    xyz_of = {
+        map_name: {oid: tuple(float(v) for v in o.position)
+                   for oid, o in objects.items()}
+        for map_name, objects in objects_by_map.items()
+    }
+
+    def dist2(map_name, a_id, b_id):
+        ax, ay, az = xyz_of[map_name][a_id]
+        bx, by, bz = xyz_of[map_name][b_id]
+        return (ax - bx) ** 2 + (ay - by) ** 2 + (az - bz) ** 2
+
     samples, per_map = [], defaultdict(int)
     for split, episodes in episodes_by_split.items():
         for episode in episodes:
@@ -101,10 +115,8 @@ def build_samples(cfg, objects_by_map, splits, target, min_candidates=4,
             n_same = int(round(max_candidates * same_class_quota))
             # Same-class distractors first: a candidate set of obviously
             # different objects would make the task easy for the wrong reason.
-            key = lambda o: np.linalg.norm(  # noqa: E731
-                np.asarray(o.position, float) - np.asarray(ref.position, float))
-            same_class.sort(key=key)
-            other_class.sort(key=key)
+            same_class.sort(key=lambda o: dist2(episode.map_name, o.id, ref.id))
+            other_class.sort(key=lambda o: dist2(episode.map_name, o.id, ref.id))
             candidates = ([ref] + same_class[:n_same] + other_class)[:max_candidates]
             if len(candidates) < min_candidates:
                 continue
@@ -116,7 +128,7 @@ def build_samples(cfg, objects_by_map, splits, target, min_candidates=4,
                 pos = position[step]
                 yaw = float(yaws[step])
                 distance = float(np.linalg.norm(
-                    np.asarray(ref.position, float) - pos))
+                    np.asarray(ref.position, dtype=np.float64) - pos))
                 if not (20.0 <= distance <= 220.0):
                     continue
                 in_view = {}

@@ -117,3 +117,20 @@ $PY scripts/resolution_cases.py --variant phrase
 Note that the workers are CPU-bound and the runtime is dominated by the largest
 blocks: a sample on a 100M-point block reads a ~1.3 GB span per render, four
 times over.
+
+## Dual-view fusion
+
+`run_fusion_data.py` produces candidate-level SigLIP2 scores for both views at
+several top-down ground sample distances across the three splits;
+`analyze_fusion.py` chooses every operating point on `train_seen`/`val_seen` and
+scores `val_unseen` once. The choice discipline is structural, not a convention:
+the selection helpers are only ever handed the validation splits.
+
+```bash
+$PY scripts/run_fusion_data.py --shard 0 --shards 4   # parallelises; resume-safe
+$PY scripts/analyze_fusion.py --variant phrase
+$PY scripts/analyze_fusion.py --variant name
+```
+
+Note the `pgrep -f` trap when chaining these: a wrapper whose own command line
+contains the script path matches itself and waits forever.
