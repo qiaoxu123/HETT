@@ -173,20 +173,26 @@ round's answer lives.
 | method | building (n=180) | vehicle (n=134) | other (n=80) |
 |---|---:|---:|---:|
 | TD_masked (frozen) | 0.278 | 0.464 | 0.163 |
-| Visual (learned) | 0.156 | 0.201 | 0.300 |
-| Appearance | — | — | — |
+| Visual (learned) | 0.106 | 0.201 | 0.225 |
+| Appearance | 0.117 | 0.090 | 0.100 |
 | Geometry | 0.161 | 0.224 | 0.400 |
 | Relation | 0.256 | 0.067 | 0.300 |
+| Semantic | 0.050 | 0.090 | 0.075 |
 | Visual + Geometry | 0.194 | 0.246 | 0.362 |
 | Visual + Relation | 0.206 | 0.194 | 0.362 |
+| Full deployable | 0.228 | 0.172 | 0.250 |
+| Relation ORACLE | 0.617 | 0.418 | 0.675 |
 | **Visual + Relation ORACLE** | **0.756** | 0.373 | 0.675 |
 
 Vehicles are the easy class for the frozen visual feature (0.464) and buildings
-the hard one (0.278).  The structured families do not invert that: relation
-features are near-useless for vehicles (0.067), while the oracle lifts buildings
-from 0.278 to 0.756 — the largest single move anywhere in this round.  So the
-missing information is concentrated in buildings and in the other-class
-entities, and it is anchor information rather than appearance.
+the hard one (0.278).  The structured families do not invert that, and one of
+them behaves oddly: relation features are near-useless for vehicles (0.067,
+below chance for eight classes) while being the best deployable family for
+buildings (0.256).  The oracle lifts buildings from 0.278 to 0.756 — the largest
+single move anywhere in this round — and vehicles only to 0.373, which is *below*
+what the frozen visual feature already reaches for them.  So the missing
+information is concentrated in buildings and in the other-class entities, and it
+is anchor information rather than appearance.
 
 ## View independence
 
