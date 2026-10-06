@@ -176,10 +176,10 @@ def crop_square(image, centre_u, centre_v, side_px, border: str = "replicate"):
     """Crop centred on a pixel, clamped to the image, padded if it runs off.
 
     Kept here as the name the earlier rounds call; the implementation is
-    :func:`sensaturban_fpv.landmark_geometry.crop_square`, so there is one
+    :func:`sensaturban_fpv.entity_geometry.crop_square`, so there is one
     definition of where a crop's edges land.
     """
-    from sensaturban_fpv.landmark_geometry import crop_square as _crop
+    from sensaturban_fpv.entity_geometry import crop_square as _crop
 
     return _crop(image, centre_u, centre_v, side_px, border=border)
 

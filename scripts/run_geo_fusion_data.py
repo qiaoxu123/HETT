@@ -45,7 +45,7 @@ from sensaturban_fpv.config import (  # noqa: E402
 from sensaturban_fpv.fit_coordinate_transform import (  # noqa: E402
     CoordinateTransform, load_transform,
 )
-from sensaturban_fpv.landmark_geometry import (  # noqa: E402
+from sensaturban_fpv.entity_geometry import (  # noqa: E402
     candidate_crops, candidate_geometry, crop_extent_m, landmark_point_set,
     oblique_window, project_point,
 )

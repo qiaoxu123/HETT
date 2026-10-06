@@ -39,7 +39,7 @@ except ImportError:  # pragma: no cover
 from sensaturban_fpv.config import (  # noqa: E402
     artifact_dir, build_map_context, load_config, load_landmarks,
 )
-from sensaturban_fpv.landmark_geometry import (  # noqa: E402
+from sensaturban_fpv.entity_geometry import (  # noqa: E402
     candidate_crops, candidate_geometry, correspondence_coherence,
     draw_mask_overlay, landmark_point_set, oblique_window,
     shuffled_correspondence, topdown_window,

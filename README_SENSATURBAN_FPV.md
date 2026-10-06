@@ -134,3 +134,33 @@ $PY scripts/analyze_fusion.py --variant name
 
 Note the `pgrep -f` trap when chaining these: a wrapper whose own command line
 contains the script path matches itself and waits forever.
+
+## 3D-anchored multi-view target entity grounding
+
+The unit of this round is a target entity of *any* CityRefer type — a building, a
+car, a wall, a parking area, a piece of street furniture.  Its 3D support is
+measured from the point cloud, projected into the top-down raster and the oblique
+frame at two scales, and turned into pooled components (tight appearance, context
+appearance, surroundings, single-view-exclusive patches, measured geometry) plus
+one learned component: the fusion of the two views' patch tokens whose pairing
+came from the world coordinates.  The text is the query in a single attention
+layer over those components, so nothing anywhere branches on an entity's type.
+
+```bash
+$PY -m pytest tests/ -q                              # 103 tests
+$PY scripts/check_entity_projection.py --per-group 20 # is the anchor right for cars too?
+$PY scripts/run_entity_grounding_data.py --shard 0 --shards 4   # parallelises, resume-safe
+$PY scripts/train_entity_grounding.py --variant phrase
+$PY scripts/analyze_entity_grounding.py --variant phrase
+$PY scripts/entity_grounding_cases.py --variant phrase
+```
+
+Entity support comes from a recorded ladder: annotated box, intersected with the
+annotated footprint and with the point cloud's own semantic class, then wider
+boxes, then a radius around the annotated centre.  Which rung was used is
+returned with every entity, because a car whose support is really a patch of road
+must not be indistinguishable from one that was localised.
+
+The label cache (`artifacts/cache/*.labels.npy`) is separate from the sorted
+xyz/rgb cache and has its own marker, so adding it does not invalidate indexes
+that already exist — rebuilding those means re-reading multi-gigabyte blocks.

@@ -359,6 +359,50 @@ class XyGridIndex:
             np.load(rgb_path, mmap_mode="r"),
         )
 
+    @property
+    def labels_path(self) -> Path:
+        name = f"{self.cloud.path.stem}.labels.npy"
+        base = self.cache_dir if self.cache_dir else self.cloud.path.parent
+        return base / f"{name}"
+
+    def ensure_labels(self) -> None:
+        """Materialise the per-point semantic label in bucket order.
+
+        Cached separately from the sorted xyz/rgb pair, with its own marker, so
+        adding it does not invalidate an index that already exists: rebuilding
+        those means a full re-read of a multi-gigabyte block, while this is one
+        pass over a single byte column.
+        """
+        path = self.labels_path
+        n = len(self.cloud)
+        marker = path.with_suffix(".done")
+        expected = 128 + n
+        if path.exists() and marker.exists():
+            try:
+                if int(marker.read_text().strip()) == expected \
+                        and path.stat().st_size >= expected:
+                    return
+            except (ValueError, OSError):
+                pass
+        if self.order is None:
+            raise RuntimeError("build() the index before materialising labels")
+        labels = self.cloud.labels()
+        if labels is None:
+            labels = np.zeros(n, dtype=np.uint8)
+        tmp = path.with_name(f"{path.stem}.tmp{os.getpid()}.npy")
+        out = np.lib.format.open_memmap(tmp, mode="w+", dtype=np.uint8, shape=(n,))
+        for start in range(0, n, 16_000_000):
+            stop = min(start + 16_000_000, n)
+            out[start:stop] = labels[self.order[start:stop].astype(np.int64)]
+        out.flush()
+        del out
+        os.replace(tmp, path)
+        marker.write_text(str(expected) + "\n")
+
+    def sorted_labels(self):
+        self.ensure_labels()
+        return np.load(self.labels_path, mmap_mode="r")
+
     def exact_bounds(self):
         """Exact 3D bounds of the source cloud, from the index rather than a rescan."""
         if self.cloud_lo is None:
@@ -444,23 +488,62 @@ class XyGridIndex:
             out.append(np.concatenate(buf))
         return out[0] if len(out) == 1 else np.concatenate(out)
 
-    def query_box_slots(self, lo, hi, arrays, max_points: int | None = None) -> np.ndarray:
+    def query_box_slots(self, lo, hi, arrays, max_points: int | None = None,
+                        label_sets: tuple | None = None) -> np.ndarray:
         """Points of an axis-aligned 3D box, as bucket slots.
 
         The XY rectangle comes from the bucket index; the z filter runs on the
         gathered points afterwards, because buckets are XY-only.  ``lo``/``hi``
         are 3-vectors.
+
+        ``label_sets`` is ``(labels_array, keep_values)``: when given, only
+        points whose semantic label is in ``keep_values`` survive.  Filtering
+        *before* the point cap matters -- a car's bounding box on a dense block
+        holds tens of thousands of road points, and decimating over the union
+        would leave the object itself under-sampled.
         """
         starts, ends = self.query_rect_cell_ranges(lo[0], lo[1], hi[0], hi[1])
         if starts.size == 0:
             return np.empty((0, 3), dtype=arrays.dtype)
-        pts = self.read_cell_ranges(arrays, starts, ends)
-        inside = np.all((pts >= lo[None, :]) & (pts <= hi[None, :]), axis=1)
-        pts = pts[inside]
+        if label_sets is None:
+            pts = self.read_cell_ranges(arrays, starts, ends)
+            inside = np.all((pts >= lo[None, :]) & (pts <= hi[None, :]), axis=1)
+            pts = pts[inside]
+        else:
+            labels, keep_values = label_sets
+            out = []
+            for s, e in zip(starts.tolist(), ends.tolist()):
+                chunk = np.asarray(arrays[s:e])
+                lab = np.asarray(labels[s:e])
+                inside = np.all((chunk >= lo[None, :]) & (chunk <= hi[None, :]), axis=1)
+                inside &= np.isin(lab, keep_values)
+                if inside.any():
+                    out.append(chunk[inside])
+            pts = (np.concatenate(out) if out
+                   else np.empty((0, 3), dtype=arrays.dtype))
         if max_points is not None and len(pts) > max_points:
             stride = int(np.ceil(len(pts) / max_points))
             pts = pts[::stride]
         return pts
+
+    def query_slots_by_label(self, lo, hi, labels, keep_values, max_points=None):
+        """Bucket slots (not points) inside a box whose label is in ``keep_values``."""
+        starts, ends = self.query_rect_cell_ranges(lo[0], lo[1], hi[0], hi[1])
+        if starts.size == 0:
+            return np.empty(0, dtype=np.int64)
+        out = []
+        for s, e in zip(starts.tolist(), ends.tolist()):
+            lab = np.asarray(labels[s:e])
+            sel = np.flatnonzero(np.isin(lab, keep_values))
+            if sel.size:
+                out.append(sel.astype(np.int64) + s)
+        if not out:
+            return np.empty(0, dtype=np.int64)
+        slots = np.concatenate(out)
+        if max_points is not None and slots.size > max_points:
+            stride = int(np.ceil(slots.size / max_points))
+            slots = slots[::stride]
+        return slots
 
     def cell_distance(self, x: float, y: float, ix0: int, ix1: int,
                       iy0: int, iy1: int) -> np.ndarray:
