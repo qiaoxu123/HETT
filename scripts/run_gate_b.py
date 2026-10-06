@@ -172,20 +172,16 @@ def build_samples(cfg, objects_by_map, splits, target, min_candidates=4,
 # crops
 # --------------------------------------------------------------------------
 
-def crop_square(image, centre_u, centre_v, side_px):
-    """Crop centred on a pixel, clamped to the image, padded if it runs off."""
-    h, w = image.shape[:2]
-    side = int(np.clip(side_px, 16, min(h, w)))
-    half = side // 2
-    cu, cv_ = int(round(centre_u)), int(round(centre_v))
-    c0, r0 = cu - half, cv_ - half
-    c1, r1 = c0 + side, r0 + side
+def crop_square(image, centre_u, centre_v, side_px, border: str = "replicate"):
+    """Crop centred on a pixel, clamped to the image, padded if it runs off.
 
-    pad_l, pad_t = max(0, -c0), max(0, -r0)
-    pad_r, pad_b = max(0, c1 - w), max(0, r1 - h)
-    canvas = cv2.copyMakeBorder(image, pad_t, pad_b, pad_l, pad_r,
-                                cv2.BORDER_REPLICATE)
-    return canvas[r0 + pad_t:r1 + pad_t, c0 + pad_l:c1 + pad_l]
+    Kept here as the name the earlier rounds call; the implementation is
+    :func:`sensaturban_fpv.landmark_geometry.crop_square`, so there is one
+    definition of where a crop's edges land.
+    """
+    from sensaturban_fpv.landmark_geometry import crop_square as _crop
+
+    return _crop(image, centre_u, centre_v, side_px, border=border)
 
 
 def topdown_raster(ortho_dir: Path, map_name: str):

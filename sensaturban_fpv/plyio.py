@@ -396,6 +396,72 @@ class XyGridIndex:
     def query_radius(self, x: float, y: float, radius: float) -> np.ndarray:
         return self.query_rect(x - radius, y - radius, x + radius, y + radius)
 
+    def query_rect_cell_ranges(self, x0: float, y0: float, x1: float, y1: float) -> tuple:
+        """Slot ranges ``(starts, ends)`` of every cell inside the rectangle.
+
+        A rectangle query in the bucket-ordered cache is not a contiguous run of
+        slots -- the cell ids of a rectangle form a wide block, and the slots
+        between two consecutive cells of the rectangle belong to cells outside
+        it.  Returning the per-cell ranges lets a caller read exactly the
+        rectangle's points, one short sequential read per cell, instead of
+        dragging in the block-shaped superset.  For a 50 m building on a 100M
+        point block that is a factor of roughly eight in bytes read.
+        """
+        ix0 = max(int(np.floor((x0 - self.lo[0]) / self.cell)), 0)
+        ix1 = min(int(np.floor((x1 - self.lo[0]) / self.cell)), self.nx - 1)
+        iy0 = max(int(np.floor((y0 - self.lo[1]) / self.cell)), 0)
+        iy1 = min(int(np.floor((y1 - self.lo[1]) / self.cell)), self.ny - 1)
+        if ix0 > ix1 or iy0 > iy1:
+            empty = np.empty(0, dtype=np.int64)
+            return empty, empty
+        cell_ids = (
+            np.arange(ix0, ix1 + 1, dtype=np.int64)[:, None] * self.ny
+            + np.arange(iy0, iy1 + 1, dtype=np.int64)[None, :]
+        ).ravel()
+        starts = self.starts[cell_ids]
+        ends = self.starts[cell_ids + 1]
+        keep = ends > starts
+        return starts[keep], ends[keep]
+
+    def read_cell_ranges(self, arrays, starts: np.ndarray, ends: np.ndarray,
+                         chunk_points: int = 4_000_000) -> np.ndarray:
+        """Concatenate the points of the given slot ranges into one array.
+
+        One memmap slice per cell; slices are accumulated into a buffer and
+        flushed once it holds ``chunk_points`` so the destination is allocated a
+        bounded number of times.
+        """
+        if starts.size == 0:
+            return np.empty((0,) + arrays.shape[1:], dtype=arrays.dtype)
+        out, buf, total = [], [], 0
+        for s, e in zip(starts.tolist(), ends.tolist()):
+            buf.append(np.asarray(arrays[s:e]))
+            total += e - s
+            if total >= chunk_points:
+                out.append(np.concatenate(buf))
+                buf, total = [], 0
+        if buf:
+            out.append(np.concatenate(buf))
+        return out[0] if len(out) == 1 else np.concatenate(out)
+
+    def query_box_slots(self, lo, hi, arrays, max_points: int | None = None) -> np.ndarray:
+        """Points of an axis-aligned 3D box, as bucket slots.
+
+        The XY rectangle comes from the bucket index; the z filter runs on the
+        gathered points afterwards, because buckets are XY-only.  ``lo``/``hi``
+        are 3-vectors.
+        """
+        starts, ends = self.query_rect_cell_ranges(lo[0], lo[1], hi[0], hi[1])
+        if starts.size == 0:
+            return np.empty((0, 3), dtype=arrays.dtype)
+        pts = self.read_cell_ranges(arrays, starts, ends)
+        inside = np.all((pts >= lo[None, :]) & (pts <= hi[None, :]), axis=1)
+        pts = pts[inside]
+        if max_points is not None and len(pts) > max_points:
+            stride = int(np.ceil(len(pts) / max_points))
+            pts = pts[::stride]
+        return pts
+
     def cell_distance(self, x: float, y: float, ix0: int, ix1: int,
                       iy0: int, iy1: int) -> np.ndarray:
         """Distance from ``(x, y)`` to each cell's rectangle, shape (nx, ny).
