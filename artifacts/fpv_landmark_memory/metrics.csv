@@ -1,0 +1,17 @@
+scope,split,view,model,samples,top1,top4,mrr,margin,recall20m,recall40m,formal
+smoke,train_seen,topdown,SigLIP2,2,0.5,0.5,0.5294,-0.0115,0.5,0.5,false
+smoke,train_seen,fpv,SigLIP2,2,0.0,0.0,0.2000,-0.0077,0.0,0.0,false
+smoke,train_seen,oblique30,SigLIP2,2,0.0,0.0,0.2000,-0.0065,0.0,0.0,false
+smoke,train_seen,oblique45,SigLIP2,2,0.0,0.0,0.1417,NaN,0.0,0.0,false
+smoke,val_seen,topdown,SigLIP2,2,1.0,1.0,1.0000,NaN,1.0,1.0,false
+smoke,val_seen,fpv,SigLIP2,2,1.0,1.0,1.0000,NaN,1.0,1.0,false
+smoke,val_seen,oblique30,SigLIP2,2,1.0,1.0,1.0000,NaN,1.0,1.0,false
+smoke,val_seen,oblique45,SigLIP2,2,1.0,1.0,1.0000,NaN,1.0,1.0,false
+smoke,val_unseen,topdown,SigLIP2,2,0.0,0.5,0.1607,-0.0156,0.0,1.0,false
+smoke,val_unseen,fpv,SigLIP2,2,0.0,0.5,0.2813,-Infinity,0.0,0.0,false
+smoke,val_unseen,oblique30,SigLIP2,2,0.0,0.5,0.2813,-Infinity,0.0,0.0,false
+smoke,val_unseen,oblique45,SigLIP2,2,0.0,0.5,0.2813,NaN,0.0,0.0,false
+historical,val_seen,topdown,RSRefSeg2 Frozen GT crop,832,0.6935,0.9038,,,,,false
+historical,val_unseen,topdown,RSRefSeg2 Frozen GT crop,891,0.4736,0.8373,,,,,false
+historical,val_seen,topdown,RSRefSeg2 Prompter-only GT crop,832,0.4844,0.8197,,,,,false
+historical,val_unseen,topdown,RSRefSeg2 Prompter-only GT crop,891,0.4265,0.7722,,,,,false

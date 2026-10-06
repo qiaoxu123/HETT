@@ -1,0 +1,46 @@
+{
+  "experiment": "FPV / Oblique Multi-view Landmark Grounding + Landmark Appearance Memory",
+  "status": "inconclusive_renderer_alignment_gate_failed",
+  "base_commit": "124240e50d72e8c5a706be06d916e1a854158bfc",
+  "splits_read": ["train_seen", "val_seen", "val_unseen"],
+  "test_unseen_read": false,
+  "formal_evaluation_completed": false,
+  "reason": "No cached human FPV was found. Local AirSim rendering at the raw CityNav pose was not aligned to CityRefer geometry: low-detail/near-uniform RGB, one segmentation color, and constant DepthPerspective=1.0. An exploratory translation was not validated and was excluded from evaluation.",
+  "source_counts": {"train_seen": 1940, "val_seen": 832, "val_unseen": 891},
+  "full_render_attempt": {"observations_processed_before_gate_stop": 1400, "unique_fpv_frames_before_gate_stop": 7631, "accepted_as_evaluation_data": false},
+  "renderer_smoke": {
+    "camera": "Drone_1/front_0",
+    "scene": "b1",
+    "split": "train_seen",
+    "altitude_m": 14.03,
+    "raw_pose_rgb_mean": 248.54,
+    "raw_pose_rgb_std": 5.56,
+    "raw_pose_segmentation_unique_colors": 1,
+    "raw_pose_depth_min": 1.0,
+    "raw_pose_depth_max": 1.0,
+    "unvalidated_translation_rgb_std": 45.16,
+    "unvalidated_translation_segmentation_unique_colors": 26,
+    "translation_used_for_metrics": false
+  },
+  "smoke_metrics": {
+    "dataset_samples": 6,
+    "siglip2_rows_per_split": 2,
+    "siglip2_val_unseen_topdown_top1": 0.0,
+    "siglip2_val_unseen_fpv_top1": 0.0,
+    "siglip2_val_unseen_oblique30_top1": 0.0,
+    "siglip2_val_unseen_oblique45_top1": 0.0,
+    "rsrefseg2_frozen_samples": 3,
+    "rsrefseg2_frozen_val_unseen_rows": 0,
+    "rsrefseg2_prompter_samples": 0,
+    "interpretation": "Pipeline smoke only; n is too small and projected positive visibility is not valid ground truth. No formal performance claim."
+  },
+  "models_trained": 0,
+  "trainable_parameters": 0,
+  "topdown_historical_reference": {
+    "source_report": "RSREFSEG2_GROUNDING_REPORT.md",
+    "siglip2_val_unseen_gt_crop_top1": 0.2705,
+    "rsrefseg2_frozen_val_unseen_gt_crop_top1": 0.4736,
+    "rsrefseg2_prompter_val_unseen_gt_crop_top1": 0.4265,
+    "paired_with_new_fpv": false
+  }
+}

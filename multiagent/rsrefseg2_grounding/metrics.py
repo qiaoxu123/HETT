@@ -37,8 +37,13 @@ def aggregate(rows):
     if not rows:return {'samples':0}
     out={'samples':len(rows)}
     for key in ('top1','top4','top8','mrr','margin','recall@20m','recall@40m','localization_distance_m'):
-        values=np.asarray([r[key] for r in rows],float);out[key if key!='localization_distance_m' else 'mean_localization_distance_m']=float(np.nanmean(values))
-    out['median_localization_distance_m']=float(np.median([r['localization_distance_m'] for r in rows]));return out
+        values=np.asarray([r[key] for r in rows],float)
+        out[key if key!='localization_distance_m' else 'mean_localization_distance_m']=float(np.nanmean(values)) if np.isfinite(values).any() else float('nan')
+    distances=np.asarray([r['localization_distance_m'] for r in rows],float)
+    out['median_localization_distance_m']=float(np.nanmedian(distances)) if np.isfinite(distances).any() else float('nan')
+    if any('no_match' in row for row in rows):
+        out['no_match_rate']=float(np.mean([float(row.get('no_match',0)) for row in rows]))
+    return out
 
 def soft_localization_loss(logits,target):
     logits=F.interpolate(logits,size=(28,28),mode='bilinear',align_corners=False).flatten(1);target=F.interpolate(target.float(),size=(28,28),mode='area').flatten(1);target=target/target.sum(1,keepdim=True).clamp_min(1e-6);return -(target*F.log_softmax(logits,dim=1)).sum(1).mean()

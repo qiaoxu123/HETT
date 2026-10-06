@@ -1,0 +1,27 @@
+{
+  "experiment_branch": "2027-CVPR/fpv-landmark-appearance-memory",
+  "base_branch": "2027-CVPR/rsrefseg2-grounding-diagnostic",
+  "base_commit": "124240e50d72e8c5a706be06d916e1a854158bfc",
+  "source_dataset": "/mnt/windows-data/hett-rsrefseg2/dataset_v1",
+  "source_dataset_splits_read": ["train_seen", "val_seen", "val_unseen"],
+  "test_unseen_read": false,
+  "cached_human_fpv_found": false,
+  "renderer": {
+    "binary": "/home/ubuntu5/AirVLN/AirVLN_ws/ENVs/env_1/env_1/LinuxNoEditor/AirVLN.sh",
+    "scene_code_smoke": "b1",
+    "camera": "Drone_1/front_0",
+    "settings": "/home/ubuntu5/AirVLN/AirVLN_ws/AirVLN/airsim_plugin/settings/1/settings.json",
+    "settings_sha256": "d5465a0337eba323242e7b4766bae67a3a09d3dbd287a63a60c4d337995c5097",
+    "coordinate_registration": "failed / unresolved",
+    "depth_status": "DepthPerspective returned constant 1.0 in smoke"
+  },
+  "pretrained_weights": {
+    "siglip2": "google/siglip2-base-patch16-256 (HF cache at /mnt/windows-data/hett-rsrefseg2/hf-cache)",
+    "rsrefseg2_official_checkpoint": "/mnt/windows-data/hett-rsrefseg2/external/refsegrs.pth",
+    "rsrefseg2_official_sha256": "6018af204120cf14e7555ff067f6fa4a921eba084c33be308bc65bc540f826ee",
+    "prompter_only_checkpoint_available_but_not_formally_run": "/mnt/windows-data/hett-rsrefseg2/runs/fixedpad_experiment_b_prompter_s0/artifacts/best.pt",
+    "prompter_only_sha256": "621ad635d7e186d49c0cbb14cb21c09229505b30c5f3f66d9dd5c061723c93d1"
+  },
+  "training": {"performed": false, "trainable_parameters": 0},
+  "formal_evaluation": {"completed": false, "reason": "data-quality gate failed before full view/memory evaluation"}
+}

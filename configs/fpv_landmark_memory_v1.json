@@ -1,0 +1,32 @@
+{
+  "experiment": "FPV / Oblique Multi-view Landmark Grounding + Landmark Appearance Memory",
+  "base_commit": "124240e50d72e8c5a706be06d916e1a854158bfc",
+  "splits": ["train_seen", "val_seen", "val_unseen"],
+  "test_unseen_read": false,
+  "rgb_sources": {
+    "topdown": "Existing teacher-trajectory orthophoto crop cache",
+    "fpv": "AirSim front_0, CityNav Unreal map, camera pitch 0 degrees, exact sampled Pose5D x/y/z/yaw",
+    "oblique30": "Same position/yaw, camera pitch -30 degrees",
+    "oblique45": "Same position/yaw, camera pitch -45 degrees"
+  },
+  "candidate_set": "Fixed CityRefer candidate list from RSRefSeg2 dataset_v1; identical across views per observation",
+  "reference_crop": "CityRefer contour + dimension projected by pinhole camera model; diagnostic crop only",
+  "depth": "AirSim DepthPerspective requested; smoke returned constant 1.0, marked unavailable",
+  "memory": {
+    "max_observations_per_landmark": 5,
+    "history_raw_trajectory_offsets": [0, 1, 3, 5, 7, 9, 11],
+    "aggregation": ["mean similarity", "max similarity", "fixed quality weighted similarity"],
+    "quality": "visible fraction * sqrt(clipped pixel area) * view-angle factor / (1 + distance/100m)"
+  },
+  "models": [
+    {"name": "google/siglip2-base-patch16-256", "trainable": false},
+    {"name": "RSRefSeg2 Frozen", "trainable": false},
+    {"name": "RSRefSeg2 Prompter-only checkpoint", "trainable": false, "checkpoint": "/mnt/windows-data/hett-rsrefseg2/runs/fixedpad_experiment_b_prompter_s0/artifacts/best.pt"}
+  ],
+  "ground_truth_policy": "No reference mask or target location enters model inputs; object geometry is used only to render candidate crop labels and calculate diagnostic visibility.",
+  "known_limitations": [
+    "No cached human first-person frames found in released CityNav data.",
+    "No valid depth/occlusion response in AirSim smoke test.",
+    "Projected landmark crops are geometry-based estimates, not pixel-accurate GT segmentation."
+  ]
+}
