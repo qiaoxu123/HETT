@@ -100,6 +100,8 @@ def parse_args():
                         help='Number of NMS belief hypotheses retained per step')
     parser.add_argument('--heatmap_nms_kernel', type=int, default=3,
                         help='Odd NMS suppression kernel on the dense belief field')
+    parser.add_argument('--heatmap_local_window', type=int, default=3,
+                        help='Odd local window for soft-argmax refinement around Top-1')
     parser.add_argument('--heatmap_loss_weight', type=float, default=0.1,
                         help='Weight of the Stage-1 heatmap loss')
     parser.add_argument('--stage1_switch_dist', type=float, default=25.0,
