@@ -81,7 +81,7 @@ HIDDEN = 192
 ATTN_DIM = 64
 DROPOUT = 0.1
 EPOCHS = 30
-BATCH_SAMPLES = 4
+BATCH_SAMPLES = 16
 SEEDS = (0, 1, 2)
 
 
@@ -259,17 +259,23 @@ def make_model(torch, vision_model, dim, components, fusion, shared, geom_dim,
                 shared = self.pair_fusion(inputs)
                 cols.append(shared + self.res(shared))
             stacked = torch.stack(cols, dim=1)                    # (K, M, hidden)
+            # One text row per candidate: a batch mixes samples, and a shared
+            # row would cross every candidate with every instruction.
+            if text.dim() == 1:
+                text = text[None, :].expand(stacked.shape[0], -1)
             if self.fusion == "attn":
-                q = self.wq(text)                                 # (attn,)
+                q = self.wq(text)                                 # (K, attn)
                 k = self.wk(stacked)                              # (K, M, attn)
+                # One query per candidate rather than per sample: the batches
+                # here mix samples, and the scores have to stay per-candidate.
                 a = torch.softmax(
-                    (k @ q) / np.sqrt(k.shape[-1]), dim=1)         # (K, M)
+                    (k * q[:, None, :]).sum(-1) / np.sqrt(k.shape[-1]), dim=1)
                 agg = (a[..., None] * stacked).sum(dim=1)
             else:
                 agg = stacked.mean(dim=1) + self.concat_head(stacked.flatten(1))
             token = self.dec(self.drop(agg))
             joint = l2norm(readout_tokens(self.vision, token))
-            scores = joint @ text
+            scores = (joint * text).sum(dim=-1)
             reverse = None
             if want_reverse and self.shared:
                 rev = self.pair_fusion_reverse(inputs)
@@ -277,13 +283,14 @@ def make_model(torch, vision_model, dim, components, fusion, shared, geom_dim,
                 agg_r = rev
                 if self.fusion == "attn":
                     k = self.wk(agg_r[:, None, :])
-                    a = torch.softmax((k @ q) / np.sqrt(k.shape[-1]), dim=1)
+                    a = torch.softmax(
+                        (k * q[:, None, :]).sum(-1) / np.sqrt(k.shape[-1]), dim=1)
                     agg_r = (a * agg_r[:, None, :]).sum(dim=1)
                 else:
                     agg_r = agg_r + self.concat_head(agg_r)
                 token_r = self.dec(self.drop(agg_r))
                 joint_r = l2norm(readout_tokens(self.vision, token_r))
-                reverse = joint_r @ text, joint_r
+                reverse = (joint_r * text).sum(dim=-1), joint_r
             return scores, reverse, joint
 
     return EntityGrounding()
@@ -308,12 +315,58 @@ def scatter_mean(src, index, n, weights=None):
     return acc / den.clamp_min(1e-6)[:, None], den
 
 
+class BatchInputs:
+    """Several samples' pairing tensors concatenated into one flat batch.
+
+    Fusion over one sample at a time is dominated by kernel launch rather than
+    arithmetic -- a sample contributes a few thousand rows of width 1152 to a
+    GPU that wants tens of thousands -- and the training loop revisits every
+    sample every epoch.  Concatenating the samples with row and candidate
+    offsets turns that into a handful of large, well-shaped operations, and the
+    per-sample losses are then read off the segments of the resulting score
+    vector.
+    """
+
+    def __init__(self, torch, parts, device):
+        parts = list(parts)
+        td_off, o_off, k_off = [], [], []
+        td_total = o_total = k_total = 0
+        for part in parts:
+            td_off.append(td_total)
+            o_off.append(o_total)
+            k_off.append(k_total)
+            td_total += part.td_tokens.shape[0]
+            o_total += part.o_tokens.shape[0]
+            k_total += part.K
+
+        self.K = k_total
+        self.segments = []
+        for part, to, oo, ko in zip(parts, td_off, o_off, k_off):
+            self.segments.append((ko, ko + part.K, part.target_index + ko,
+                                  part.coverage))
+        self.td_tokens = torch.cat([p.td_tokens for p in parts], dim=0)
+        self.o_tokens = torch.cat([p.o_tokens for p in parts], dim=0)
+        self.td_row = torch.cat([p.td_row + ko for p, ko in zip(parts, k_off)])
+        self.o_row = torch.cat([p.o_row + ko for p, ko in zip(parts, k_off)])
+        self.corr_td_row = torch.cat([p.corr_td_row + to
+                                      for p, to in zip(parts, td_off)])
+        self.corr_o_row = torch.cat([p.corr_o_row + oo
+                                     for p, oo in zip(parts, o_off)])
+        self.corr_w = torch.cat([p.corr_w for p in parts])
+        self.coverage = float(np.mean([p.coverage for p in parts]))
+        self.size = len(parts)
+
+    def gather(self, tokens, index):
+        return tokens[index].float()
+
+
 class Inputs:
     """Per-sample pairing tensors, cached on the device."""
 
     def __init__(self, torch, sample, device, shuffle_seed=None):
         a = sample.arrays
         self.K = len(a["entity_ids"])
+        self.target_index = sample.target_index
         self.td_tokens = to_device(torch, a["td_tokens"], device, torch.float16)
         self.o_tokens = to_device(torch, a["oblique_tokens"], device, torch.float16)
         self.td_row = to_device(torch, a["td_row"], device, torch.int64)
@@ -334,6 +387,40 @@ class Inputs:
 
 def to_device(torch, array, device, dtype):
     return torch.from_numpy(np.ascontiguousarray(array)).to(device=device, dtype=dtype)
+
+# Every frozen component a method could ask for, cached on the device once per
+# sample.  Re-uploading them is the training loop's real cost -- a sample's
+# patch tokens are a few megabytes and every epoch would move them again -- and
+# holding the whole set costs about a megabyte per sample.
+ALL_FEATURES = ("td_tight_masked", "oblique_tight_masked", "td_context_masked",
+                "oblique_context_masked", "td_context_background",
+                "oblique_context_background", "td_exclusive", "oblique_exclusive",
+                "td_context_global", "oblique_context_global", "geometry")
+_FEATURE_CACHE: dict = {}
+_TEXT_CACHE: dict = {}
+
+
+def cached_features(torch, sample, device):
+    if sample.key not in _FEATURE_CACHE:
+        _FEATURE_CACHE[sample.key] = {
+            k: to_device(torch, sample.arrays[k], device, torch.float32)
+            for k in ALL_FEATURES}
+    return _FEATURE_CACHE[sample.key]
+
+
+def cached_text(torch, sample, device, variant):
+    key = (sample.key, variant)
+    if key not in _TEXT_CACHE:
+        row = to_device(torch, sample.arrays[f"text_{variant}"], device, torch.float32)
+        _TEXT_CACHE[key] = row[None, :].expand(len(sample.entity_ids), -1).contiguous()
+    return _TEXT_CACHE[key]
+
+
+def batch_tensors(torch, chunk, device, variant, wanted):
+    columns = {k: torch.cat([cached_features(torch, s, device)[k] for s in chunk],
+                            dim=0) for k in wanted}
+    text = torch.cat([cached_text(torch, s, device, variant) for s in chunk], dim=0)
+    return columns, text
 
 
 def permute_correspondence(corr_o_row, corr_cand, seed):
@@ -442,19 +529,7 @@ def train_method(torch, vision_model, device, name, train_samples, val_samples,
     opt = torch.optim.AdamW(params + [logit_scale], lr=lr, weight_decay=1e-4)
     n_params = sum(p.numel() for p in params)
 
-    def text_of(sample, device=device):
-        return to_device(torch, sample.arrays[f"text_{args.variant}"], device,
-                         torch.float32)
-
-    def device_arrays(sample):
-        a = sample.arrays
-        out = {}
-        for key in ("geometry", *spec["components"]):
-            if key == "geometry":
-                continue
-            out[key] = to_device(torch, a[key], device, torch.float32)
-        out["geometry"] = to_device(torch, a["geometry"], device, torch.float32)
-        return out
+    wanted = sorted(set(spec["components"]) | {"geometry"})
 
     def run_pass(samples, train: bool):
         module.train(train)
@@ -462,32 +537,29 @@ def train_method(torch, vision_model, device, name, train_samples, val_samples,
         entries, total, count = [], 0.0, 0
         for start in range(0, len(order), BATCH_SAMPLES):
             chunk = [samples[i] for i in order[start:start + BATCH_SAMPLES]]
+            inputs = BatchInputs(torch, [get_inputs(torch, s, device, shuffle_seed,
+                                                    cache) for s in chunk], device)
+            columns, text = batch_tensors(torch, chunk, device, args.variant, wanted)
             if train:
                 opt.zero_grad(set_to_none=True)
+            scores, reverse, joint = module(columns, text, inputs,
+                                            want_reverse=spec.get("reverse", False))
             loss = 0.0
-            for sample in chunk:
-                text = text_of(sample)
-                inputs = get_inputs(torch, sample, device, shuffle_seed, cache)
-                scores, reverse, joint = module(device_arrays(sample), text, inputs,
-                                                want_reverse=spec.get("reverse", False))
-                target = torch.tensor([sample.target_index], device=device)
+            for a, b, target, _ in inputs.segments:
                 loss = loss + torch.nn.functional.cross_entropy(
-                    (logit_scale.exp() * scores)[None, :], target)
+                    (logit_scale.exp() * scores[a:b])[None, :],
+                    torch.tensor([target - a], device=device))
                 if reverse is not None:
                     rev_scores, joint_rev = reverse
                     loss = loss + torch.nn.functional.cross_entropy(
-                        (logit_scale.exp() * rev_scores)[None, :], target)
+                        (logit_scale.exp() * rev_scores[a:b])[None, :],
+                        torch.tensor([target - a], device=device))
                     if cross_weight > 0:
-                        logits = joint @ joint_rev.T * logit_scale.exp()
-                        labels = torch.arange(joint.shape[0], device=device)
+                        logits = joint[a:b] @ joint_rev[a:b].T * logit_scale.exp()
+                        labels = torch.arange(b - a, device=device)
                         loss = loss + cross_weight * 0.5 * (
                             torch.nn.functional.cross_entropy(logits, labels)
                             + torch.nn.functional.cross_entropy(logits.T, labels))
-                if not train:
-                    entry = rank_metrics(scores.detach().cpu().numpy(),
-                                         sample.target_index)
-                    entry["coverage"] = inputs.coverage
-                    entries.append(entry)
             loss = loss / len(chunk)
             if train:
                 loss.backward()
@@ -495,6 +567,12 @@ def train_method(torch, vision_model, device, name, train_samples, val_samples,
                 opt.step()
             total += float(loss.detach()) * len(chunk)
             count += len(chunk)
+            if not train:
+                flat = scores.detach().cpu().numpy()
+                for a, b, target, coverage in inputs.segments:
+                    entry = rank_metrics(flat[a:b], target - a)
+                    entry["coverage"] = coverage
+                    entries.append(entry)
         return total / max(count, 1), (aggregate(entries) if not train else None)
 
     history, best = [], None
@@ -519,24 +597,25 @@ def train_method(torch, vision_model, device, name, train_samples, val_samples,
 
 
 def score_samples(torch, device, module, spec, samples, args, cache,
-                  shuffle_seed=None):
+                  shuffle_seed=None, batch=BATCH_SAMPLES * 4):
+    """Score every sample, batched the same way the training pass is."""
     module.eval()
     entries = []
     with torch.no_grad():
-        for sample in samples:
-            text = to_device(torch, sample.arrays[f"text_{args.variant}"], device,
-                             torch.float32)
-            arrays = {}
-            for key in spec["components"]:
-                arrays[key] = to_device(torch, sample.arrays[key], device,
-                                        torch.float32)
-            arrays["geometry"] = to_device(torch, sample.arrays["geometry"], device,
-                                           torch.float32)
-            inputs = get_inputs(torch, sample, device, shuffle_seed, cache)
-            scores, _, _ = module(arrays, text, inputs, want_reverse=False)
-            entry = rank_metrics(scores.detach().cpu().numpy(), sample.target_index)
-            entry["key"] = sample.key
-            entries.append(entry)
+        for start in range(0, len(samples), batch):
+            chunk = samples[start:start + batch]
+            inputs = BatchInputs(torch, [get_inputs(torch, s, device, shuffle_seed,
+                                                    cache) for s in chunk], device)
+            wanted = sorted(set(spec["components"]) | {"geometry"})
+            columns, text = batch_tensors(torch, chunk, device, args.variant, wanted)
+            scores, _, _ = module(columns, text, inputs, want_reverse=False)
+            flat = scores.detach().cpu().numpy()
+            # Segments are built in the order the samples were handed in, so the
+            # key travels alongside the slice rather than through the tensor.
+            for sample, (a, b, target, _) in zip(chunk, inputs.segments):
+                entry = rank_metrics(flat[a:b], target - a)
+                entry["key"] = sample.key
+                entries.append(entry)
     return entries
 
 

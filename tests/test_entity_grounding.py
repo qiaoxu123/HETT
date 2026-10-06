@@ -329,6 +329,7 @@ def _synthetic_sample(dim=16, K=6, n_td=24, n_o=30, n_corr=40):
     sample = _Sample()
     sample.arrays = arrays
     sample.key = "synthetic"
+    sample.target_index = 3
     return sample, dim, K
 
 

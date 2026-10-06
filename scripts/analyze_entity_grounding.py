@@ -271,12 +271,16 @@ def main() -> None:
 
     val_seen, val_unseen = summarise("val_seen"), summarise("val_unseen")
 
-    # Selection happens on val_seen, never on the held-out split.
-    single_names = [n for n in frozen]
+    # Selection happens on val_seen, never on the held-out split.  The shuffled
+    # correspondence is declared a control rather than a candidate here -- which
+    # rows are methods and which are controls is a statement about the design,
+    # not a choice made after seeing a number.
+    single_names = list(frozen)
+    candidates = [n for n in learned if "Shuffle" not in n]
     best_single = max(single_names, key=lambda n: (val_seen[n]["overall"]["top1"],
                                                    val_seen[n]["overall"]["mrr"]))
-    best_fusion = max(learned, key=lambda n: (val_seen[n]["overall"]["top1"],
-                                              val_seen[n]["overall"]["mrr"]))
+    best_fusion = max(candidates, key=lambda n: (val_seen[n]["overall"]["top1"],
+                                                 val_seen[n]["overall"]["mrr"]))
     td_ref = max([n for n in frozen if VIEW_OF.get(n) == "TD"],
                  key=lambda n: val_seen[n]["overall"]["top1"])
     o_ref = max([n for n in frozen if VIEW_OF.get(n) == "O"],
