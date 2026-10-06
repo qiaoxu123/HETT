@@ -82,3 +82,17 @@ read — see the report.
 - `render.splat_radius` is kept at 0 for the artifacts the gates judge, so the
   measured coverage is the raw coverage. Enhanced renders are written alongside
   the raw ones and never replace them.
+
+## Pushing from this host
+
+`/etc/gitconfig` rewrites `https://github.com/` to a `ghfast.top` proxy that
+wants its own credentials, and there is no sudo to change it.  Push directly
+instead, letting `gh` supply the token:
+
+```bash
+GIT_CONFIG_NOSYSTEM=1 git -c credential.helper='!gh auth git-credential' \
+  push https://github.com/qiaoxu123/HETT.git HEAD
+```
+
+The branch was pushed to `qiaoxu123/HETT` because the original `origin`
+(`qiaoxu123/2027-CVPR`) no longer exists.
