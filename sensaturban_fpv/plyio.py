@@ -483,16 +483,21 @@ class XyGridIndex:
     def read_sorted(self, arrays, slots: np.ndarray) -> np.ndarray:
         """Gather ``slots`` from bucket-ordered arrays, reading one span.
 
-        ``slots`` is ascending (see :meth:`query_radius_positions`), so the whole
-        range they span is read sequentially and the selection then happens in
-        RAM.  Indexing a memmap with an integer array is a per-element gather
-        even when the indices ascend, and it dominated rendering: tens of
-        seconds per frame against roughly one for the span read.
+        The whole range from the smallest to the largest slot is read
+        sequentially and the selection then happens in RAM.  Indexing a memmap
+        with an integer array is a per-element gather, and it dominated
+        rendering: tens of seconds per frame against roughly one for the span
+        read.
+
+        The result is correct for slots in any order.  The read is cheap only
+        when they are clustered, which they are for both callers -- a radius
+        query returns an ascending run, and a rendered frame's pixels address a
+        spatially coherent region.
         """
         if slots.size == 0:
             return np.empty((0,) + arrays.shape[1:], dtype=arrays.dtype)
-        lo = int(slots[0])
-        hi = int(slots[-1]) + 1
+        lo = int(slots.min())
+        hi = int(slots.max()) + 1
         span = np.array(arrays[lo:hi])
         return span[slots - lo]
 

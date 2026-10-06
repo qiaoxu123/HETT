@@ -96,3 +96,24 @@ GIT_CONFIG_NOSYSTEM=1 git -c credential.helper='!gh auth git-credential' \
 
 The branch was pushed to `qiaoxu123/HETT` because the original `origin`
 (`qiaoxu123/2027-CVPR`) no longer exists.
+
+## Resolution-controlled viewpoint test
+
+`run_resolution_control.py` re-measures the Gate B paired samples with the
+resolution confound controlled — the oblique view at 512/1024/1536/2048 px, and
+the top-down crop degraded to 0.2 / 0.3 m/px and, per sample, to the ground
+sample distance the oblique view has at that landmark's range. Every source uses
+the same physical crop extent, so the landmark's share of the crop is equal by
+construction.
+
+```bash
+$PY scripts/run_resolution_control.py                  # long; --shard i --shards n parallelises
+$PY scripts/merge_resolution_shards.py                 # de-duplicates the shards
+$PY scripts/analyze_resolution_control.py --variant phrase
+$PY scripts/analyze_resolution_control.py --variant name
+$PY scripts/resolution_cases.py --variant phrase
+```
+
+Note that the workers are CPU-bound and the runtime is dominated by the largest
+blocks: a sample on a 100M-point block reads a ~1.3 GB span per render, four
+times over.

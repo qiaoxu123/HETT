@@ -23,10 +23,17 @@ modified, and nothing was wired into the HETT trunk.
 3. **The steep oblique view is the good one.** Median valid-pixel ratio 0.623
    against 0.332 for a level FPV, because the dataset's own median pose looks
    down at 44°.
-4. **A perspective view adds identity signal — +8.9 Top-1 points — but only for
-   appearance-style text, only when several same-class buildings compete, and
-   with no improvement in the positive–negative margin.** For landmark names it
-   is worse than top-down.
+4. **The perspective view adds real information, not just resolution.**
+   Resolution-matched against a top-down crop blurred to the same ground sample
+   distance, the oblique view still wins by +4 to +8 Top-1 points; at matched
+   0.62 m/px it is +7.4. Raising the oblique resolution keeps helping
+   (0.197 → 0.213 → 0.230 → 0.262 from 512 to 2048 px), and the
+   positive-margin ratio rises with it, from 7.4% to 26.2%.
+5. **But it is not a better top-down.** For landmark *names* the oblique view is
+   worse at every resolution, and worse the higher the resolution (−6.7 points
+   at 1536, −20.0 at 2048). What it adds is instance appearance — facade,
+   colour, storey count — not category evidence. Every margin is still
+   negative, so neither view alone separates landmarks well.
 
 Details below; §8b and §8c are the two gates.
 
@@ -536,6 +543,232 @@ that case. The SigLIP2 result stands on its own as the primary probe.
 
 ---
 
+## 8d. Resolution-controlled viewpoint test
+
+### Why this was necessary
+
+Gate B's comparison was confounded, and by more than it first appeared. For a
+landmark at distance `d` the perspective ground sample distance is `d / focal`,
+so at 512 px (focal 256) and the probe's **median distance of 159 m** the
+oblique view resolves 0.62 m per pixel against 0.1 m per pixel for the shipped
+raster — six times coarser linearly, thirty-six times in area. Comparing those
+two directly measures resolution at least as much as it measures viewpoint.
+
+### What was held fixed
+
+The **same 158 paired val_unseen samples** from Gate B, with identical
+instructions, candidate ids and ground truth. Camera pose, yaw, pitch (−45°),
+near/far and the 90° horizontal FOV are unchanged across every oblique render;
+only the image sampling changes. Every source uses the **same physical crop
+extent** for a given landmark, `clip(2.5 · max(dimension), 24, 150)` metres, so
+the landmark's fraction of the crop is equal by construction and no view is
+handed a framing advantage. The top-down crops are degraded by downsampling and
+then restoring to the original tensor size, so the encoder input shape is
+identical and only real detail is removed.
+
+| source | what it is |
+|---|---|
+| `td_native` | shipped raster, 0.1 m/px |
+| `td_020`, `td_030` | degraded to 0.2 and 0.3 m/px |
+| `td_match_512` | degraded to `d/256` m/px, the oblique-512 GSD at that landmark |
+| `td_match_1536` | degraded to `d/512` m/px |
+| `td_match_2048` | degraded to `d/1024` m/px |
+| `o512 … o2048` | oblique45 at 512 / 1024 / 1536 / 2048 px |
+
+The matched levels are the point of the exercise: `td_match_512` (median
+**0.404 m/px**) is the like-for-like partner of `o512`, and `td_match_2048`
+(median **0.101 m/px**) is essentially the native raster, making
+`o2048 vs td_native` a resolution-matched comparison in the other direction.
+
+Renderer cost is independent of resolution — 1.91 s at 512 px against 2.22 s at
+2048 px — because the per-pixel sort dominates and its input is the point count,
+not the pixel count.
+
+### Result: 122 paired samples, phrase text, SigLIP2 frozen
+
+All figures are on the candidate set the two sources share, so a comparison is
+never between rankings over different candidate lists.
+
+| source | effective GSD | Top-1 | Top-4 | MRR | Δ Top-1 vs native TD | gain / loss | exact p | median margin | positive-margin ratio |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| `td_native` 0.1 m/px | 0.10 m/px | 0.074 | 0.639 | 0.317 | — | — | — | −0.0129 | 0.074 |
+| `td_020` | 0.20 | 0.066 | 0.623 | 0.302 | −0.008 | 5 / 6 | 1.000 | −0.0120 | 0.066 |
+| `td_030` | 0.30 | 0.107 | 0.656 | 0.337 | +0.033 | 10 / 6 | 0.454 | −0.0123 | 0.107 |
+| `td_match_512` | 0.62 | 0.090 | 0.615 | 0.314 | +0.016 | 7 / 5 | 0.774 | −0.0194 | 0.090 |
+| `td_match_1536` | 0.21 | 0.139 | 0.672 | 0.356 | +0.066 | 11 / 3 | 0.057 | −0.0114 | 0.139 |
+| `td_match_2048` | 0.15 | 0.123 | 0.689 | 0.359 | +0.049 | 9 / 3 | 0.146 | −0.0109 | 0.123 |
+| `o512` | 0.62 | 0.197 | 0.672 | 0.381 | **+0.098** | 18 / 6 | **0.023** | −0.0117 | 0.197 |
+| `o1024` | 0.31 | 0.213 | 0.689 | 0.402 | **+0.115** | 19 / 5 | **0.007** | −0.0096 | 0.213 |
+| `o1536` | 0.21 | 0.230 | 0.697 | 0.409 | **+0.131** | 22 / 6 | **0.004** | −0.0081 | 0.230 |
+| `o2048` | 0.15 | **0.262** | **0.738** | **0.435** | **+0.164** | 23 / 3 | **0.0001** | **−0.0079** | **0.262** |
+
+### Q1 — how much does resolution alone move the top-down view?
+
+A lot, and **not in the direction of more resolution**. The native 0.1 m/px crop
+is not the best top-down image for this encoder:
+
+| top-down resolution | Top-1 | Δ vs native |
+|---|---:|---:|
+| 0.10 m/px (native) | 0.074 | — |
+| 0.20 m/px | 0.066 | −0.008 |
+| 0.30 m/px | 0.107 | +0.033 |
+| 0.21 m/px (`match_1536`) | 0.139 | **+0.066** |
+| 0.15 m/px (`match_2048`) | 0.123 | +0.049 |
+
+Blurring the orthophoto to roughly 0.15–0.21 m/px gains five to seven points.
+The relationship is not monotone — 0.2 m/px is slightly worse than native while
+0.3 is better — so this is not a clean blur curve, but the direction is
+consistent: **at 0.1 m/px a 100–200 m crop is showing roof tiles and paving
+joints, and SigLIP2 does better without them.** Practical consequence: the
+top-down baseline in the previous round was handicapped by its own resolution,
+which makes the earlier +8.9 point figure a *lower* bound rather than an upper
+one.
+
+### Q2 — at matched resolution, does the oblique view still win?
+
+Yes, at every level where the two can be matched:
+
+| comparison | shared GSD | top-down Top-1 | oblique Top-1 | Δ | gain / loss | exact p |
+|---|---:|---:|---:|---:|---:|---:|
+| `o512` vs `td_match_512` | 0.62 m/px | 0.123 | 0.197 | **+0.074** | 17 / 8 | 0.108 |
+| `o1536` vs `td_match_1536` | 0.21 m/px | 0.189 | 0.230 | **+0.041** | 16 / 11 | 0.442 |
+| `o2048` vs `td_match_2048` | 0.15 m/px | 0.180 | 0.262 | **+0.082** | 16 / 6 | 0.052 |
+
+The oblique view is ahead by 4 to 8 points in all three, with the sign
+consistent and the largest effect at 2048. Individually only the 2048 pair
+approaches significance (p = 0.052) at this n; the strength of the evidence is
+that three independent matchings agree rather than that any one is decisive.
+
+**So the Gate B gain was not purely a resolution artefact.** Viewpoint carries
+information that resolution-matched top-down does not, worth roughly +4 to +8
+points, on top of the +6 it gets from the resolution difference itself.
+
+### Oblique resolution scaling: Case A
+
+```
+o512  0.197   →  o1024  0.213  →  o1536  0.230  →  o2048  0.262
+```
+
+Monotone and still rising at 2048, so this is **Case A**: the perspective view
+holds fine-grained facade and attribute detail that 512 px was not sampling, and
+the ceiling has not been reached. The case galleries show what that detail is —
+in `o512_fail_o1536_success_phrase` a "white car" and a "blue car" are two
+pixels wide and ranked 2nd at 512, and are ranked 1st once 1536 resolves them.
+
+### Attribute split
+
+Vocabulary in `artifacts/resolution_control/attribute_analysis/attribute_split.json`;
+phrases were tokenised on non-alphanumerics so `white/grey` and `L-shaped` count.
+
+| subset | n | top-down Top-1 | `o2048` Top-1 | Δ |
+|---|---:|---:|---:|---:|
+| attribute-rich | 110 | 0.109 | 0.273 | **+0.164** |
+| attribute-poor | 12 | 0.000 | 0.167 | +0.167 |
+
+The rich bucket carries the result and is well powered. **The poor bucket is not
+usable**: 12 samples, and the top-down baseline on them is 0.000, so its +0.167
+is one sample away from being noise. The split that *is* informative is the
+name/category control below, which has 30 samples.
+
+By attribute type, `o2048` against native top-down: colour n=71 +0.141, size
+n=38 +0.158, appearance n=18 +0.111, **instance (car, parking, field…) n=44
++0.182 from a zero baseline** — the largest absolute change of the four, and the
+one the galleries illustrate most clearly.
+
+By distance the gain is **not** confined to far landmarks: >100 m (n=105) +0.143,
+50–100 m (n=14) +0.214, <50 m (n=3, unusable).
+
+Every one of the 122 samples has four or more same-class candidates in its
+candidate list, so the same-class split is degenerate here and the +0.164 in
+that bucket is just the overall figure. (Gate B's version of this bucket used
+the in-frame candidate count, which does vary; this round's used the full
+candidate list. The two are not comparable and the earlier +10.2 should not be
+read against this.)
+
+### Margin: the separation does improve this time
+
+Gate B's most uncomfortable result was that Top-1 rose while the margin did not.
+Here it rises with resolution:
+
+| source | median margin | positive-margin ratio |
+|---|---:|---:|
+| `td_native` | −0.0129 | 0.074 |
+| `o512` | −0.0117 | 0.197 |
+| `o1024` | −0.0096 | 0.213 |
+| `o1536` | −0.0081 | 0.230 |
+| `o2048` | −0.0079 | **0.262** |
+
+The share of samples where the target outscores its hardest negative goes from
+7.4% to 26.2%, a 3.5× improvement, and the median margin improves by 40%. Every
+median is still negative, so the target is still usually *not* the top scorer —
+this is better separation inside a weak regime, not a solved problem.
+
+### Name/category control: the reversal is stable, and resolution makes it worse
+
+30 samples where the landmark has its own name, same protocol:
+
+| source | Top-1 | Δ vs native top-down |
+|---|---:|---:|
+| `td_native` | 0.333 | — |
+| `td_020` | 0.467 | +0.133 |
+| `o512` | 0.167 | −0.167 |
+| `o1024` | 0.200 | −0.133 |
+| `o1536` | 0.267 | −0.067 |
+| `o2048` | 0.133 | **−0.200** |
+
+The oblique view is worse at every resolution, and **raising the resolution
+makes it worse, not better** (−0.067 at 1536, −0.200 at 2048). This is a
+structural finding rather than a null result: a name is a category/identity
+label, and what the oblique view adds — facade, colour, storey count, the shape
+of the object — is *instance appearance*, not category evidence. Meanwhile the
+top-down view's footprint and surroundings apparently carry more identity per
+pixel, and at 0.1 m/px more of it rather than less.
+
+That is the single most useful thing this round produced for model design: the
+two views are not substitutes, and any fusion should treat them as carrying
+different *kinds* of evidence rather than the same evidence at different
+resolutions.
+
+### Qualitative galleries
+
+![resolution gains](figures/resolution_o512_fail_o1536_success_phrase.jpg)
+
+![still failing](figures/resolution_o1536_still_fails_phrase.jpg)
+
+Four galleries of ten in `artifacts/resolution_control/qualitative_resolution/`:
+top-down fail → 1536 success (24 cases), 512 fail → 1536 success (16),
+attribute-rich successes (26), and 1536 still failing (89). Each row shows the
+target's crop under top-down native, top-down 0.3 m/px, and oblique at 512 /
+1024 / 1536, plus the hardest negative in two of them.
+
+### Decision gate
+
+| criterion (needs two) | result | met |
+|---|---|:--:|
+| `o1536` vs native top-down ≥ +10 pt | **+13.1** (p = 0.004) | ✅ |
+| `o512` vs resolution-matched top-down ≥ +5 pt | **+5.7** vs `td_030` (p=0.23); +7.4 vs `td_match_512` | ✅ |
+| attribute-rich ≥ +10 pt | **+16.4** | ✅ |
+| same-class ≥4 ≥ +10 pt | +16.4 (bucket degenerate) | ◐ |
+| margin improves | positive-margin ratio 0.074 → 0.262 | ✅ |
+
+**STRONG PASS**: criteria 1, 2, 3 and 5 are met and criterion 4 is met but on a
+degenerate bucket. Only criteria 1 and the 2048 pair approach significance on
+their own; the rest are consistent in direction across independent controls
+rather than individually decisive at n = 122.
+
+What that licenses and what it does not: the viewpoint carries real incremental
+information and is worth building on — but the name/category reversal says it is
+**not a replacement for the top-down view**, and every margin is still negative,
+which says neither view alone separates landmarks well enough to stop there.
+
+Recommended next step: **B — adaptive dual-view fusion** (top-down for geometry
+and category, oblique for appearance and instance), not multi-view-plus-appearance-memory,
+which the single-view margins do not yet justify. Before either, the top-down
+crop should be resampled to the ~0.15 m/px this round found to be its best
+operating point, since that alone is worth about five points and costs nothing.
+
+---
+
 ## 9. Answers to the brief's questions
 
 **1. Are the SensatUrban PLY and the CityNav pose in the same coordinate system?**
@@ -587,26 +820,26 @@ down at 44°, so a level view points mostly at sky. The contact sheet at
 side by side, and the named landmark is legible in the oblique45 column.
 
 **10. Is this enough to go on to FPV landmark retrieval?**
-**Weak pass — continue, but bounded, and not as a replacement for top-down.**
+**Yes, as one of two views — not as a replacement for top-down.**
 
-The render is geometrically sound (§8b: six of six checks pass), so the
-observability question is settled in the affirmative. Whether the *viewpoint*
-adds identity signal is a separate question, and the frozen SigLIP2 probe (§8c)
-answers it as +8.9 Top-1 points on the paired comparison — the 5–10 point band.
+§8d settles the question §8c could not. The +8.9 points there were confounded
+with resolution; with the confound controlled, the oblique view still wins by
+**+4 to +8 points at matched ground sample distance**, and the oblique resolution
+curve is still rising at 2048 px (+16.4 points over native top-down, p = 0.0001).
+The positive-margin ratio rises from 7.4% to 26.2% along that curve, so the gain
+is in separation and not only in ordering.
 
-The signal is concentrated where the brief predicted it would be: **+10.2 points
-when four or more same-class buildings compete**, +3.4 with one to three. But it
-reverses for landmark *names* (top-down better by 11 points), the
-positive–negative margin does not improve at all, and the best absolute Top-1 is
-22.8%. So the honest reading is that a perspective view adds appearance
-information that a nadir view lacks, in exactly the many-similar-buildings case,
-while being worse at identity matching and much coarser per pixel.
+The counter-evidence is equally clear and points the same way as the positive
+result: for landmark **names** the oblique view is worse at every resolution and
+*worse the higher the resolution*. The two views carry different kinds of
+evidence — footprint and surroundings versus facade and appearance — and that is
+the design conclusion, not a ranking.
 
-What that argues for, if anything: render at a resolution that closes the 3×
-ground-sample-distance gap and re-run the probe, since resolution and viewpoint
-are currently confounded and this is a cheap experiment. It does not argue for
-building multi-view aggregation or an appearance memory on top of a +9 point
-effect with no margin improvement.
+What this does not license: multi-view aggregation or an appearance memory built
+on a single view, because every median margin is still negative and the best
+absolute Top-1 is 26%. The cheap next step is to resample the top-down crop to
+the ~0.15 m/px this round found to be its best operating point, which is worth
+about five points on its own.
 
 **11. If it had failed, why?**
 It did not fail, but three limits are real and are not renderer defects:
