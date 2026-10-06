@@ -25,7 +25,7 @@ from multiagent.models.dark_net import Darknet
 from multiagent.models.CLIP import CLIP
 # from direction.models.ddppo.resenet_encoders import TorchVisionResNet50
 from multiagent.models.goal_predictor import GoalPredictor, MapEncoder
-from multiagent.models.spatial_belief import metric_gaussian_target, greedy_nms_topk
+from multiagent.models.spatial_belief import metric_gaussian_target, greedy_nms_topk, local_soft_argmax_xy
 from multiagent.observation import cropclient
 from multiagent.space import Pose4D, Point2D, Point3D
 from multiagent.teacher.algorithm.lookahead import lookahead_discrete_action
@@ -450,6 +450,7 @@ class NavCMTAgent:
             k: torch.zeros((), device='cuda') for k in (1, 4, 8, 16)
         }
         heatmap_top1_distance_sum = torch.zeros((), device='cuda')
+        heatmap_refined_top1_distance_sum = torch.zeros((), device='cuda')
         heatmap_top16_nearest_distance_sum = torch.zeros((), device='cuda')
         heatmap_top16_candidate_distance_sum = torch.zeros((), device='cuda')
 
@@ -475,6 +476,14 @@ class NavCMTAgent:
         stage1_ended = np.array([False] * batch_size)
         stage2_recover_count = np.zeros(batch_size, dtype=np.int32)
         stage2_recoveries = 0
+        stage2_entry_count = 0
+        stage2_entry_gt_distance_sum = 0.0
+        stage2_entry_gt_bins = {
+            'le20': 0,
+            '20_30': 0,
+            '30_40': 0,
+            'gt40': 0,
+        }
 
         for t in range(self.args.max_action_len):
 
@@ -561,14 +570,17 @@ class NavCMTAgent:
             heatmap_goal_cols = (
                 heatmap_goal_ids % self.args.heatmap_grid_size
             ).float()
-            # Tensor coordinates are [row=y, col=x], while the simulator
-            # consumes normalized world coordinates as (x, y).
-            heatmap_goals = torch.stack(
-                (
-                    (heatmap_goal_cols + 0.5) / self.args.heatmap_grid_size,
-                    (heatmap_goal_rows + 0.5) / self.args.heatmap_grid_size,
+            # Refine the Top-1 cell to a continuous coordinate using only its
+            # local probability mass; this preserves the selected mode while
+            # avoiding a hard jump to the cell center.
+            heatmap_goals = local_soft_argmax_xy(
+                heatmap_probs.reshape(
+                    -1,
+                    self.args.heatmap_grid_size,
+                    self.args.heatmap_grid_size,
                 ),
-                dim=1,
+                heatmap_goal_ids,
+                window_size=self.args.heatmap_local_window,
             )
 
             input['grid_fts'] = torch.cat((input['grid_fts'], grid_ft), dim=1)
@@ -694,6 +706,13 @@ class NavCMTAgent:
                 heatmap_top1_distance_sum += (
                     candidate_distances_m[:, 0] * active_mask
                 ).sum()
+                refined_top1_distance_m = torch.linalg.vector_norm(
+                    (heatmap_goals - gt_xy) * self.args.map_meters,
+                    dim=-1,
+                )
+                heatmap_refined_top1_distance_sum += (
+                    refined_top1_distance_m * active_mask
+                ).sum()
                 heatmap_top16_nearest_distance_sum += (
                     candidate_distances_m.min(dim=1).values * active_mask
                 ).sum()
@@ -793,6 +812,18 @@ class NavCMTAgent:
                         traj[i]['stage1_trajectory'].append(poses[i])
 
                 elif abs(a_t[i]) < np.pi / 12:
+                    if not stage1_ended[i]:
+                        gt_entry_dist = poses[i].xy.dist_to(ob['goal'])
+                        stage2_entry_count += 1
+                        stage2_entry_gt_distance_sum += float(gt_entry_dist)
+                        if gt_entry_dist <= 20:
+                            stage2_entry_gt_bins['le20'] += 1
+                        elif gt_entry_dist <= 30:
+                            stage2_entry_gt_bins['20_30'] += 1
+                        elif gt_entry_dist <= 40:
+                            stage2_entry_gt_bins['30_40'] += 1
+                        else:
+                            stage2_entry_gt_bins['gt40'] += 1
                     stage1_ended[i] = True
                     stage2_step += 1
                     poses[i] = _moved_pose(poses[i], *Action(5, 0, 0))
@@ -801,6 +832,18 @@ class NavCMTAgent:
                     if not ended[i]:
                         traj[i]['stage2_trajectory'].append(poses[i])
                 else:
+                    if not stage1_ended[i]:
+                        gt_entry_dist = poses[i].xy.dist_to(ob['goal'])
+                        stage2_entry_count += 1
+                        stage2_entry_gt_distance_sum += float(gt_entry_dist)
+                        if gt_entry_dist <= 20:
+                            stage2_entry_gt_bins['le20'] += 1
+                        elif gt_entry_dist <= 30:
+                            stage2_entry_gt_bins['20_30'] += 1
+                        elif gt_entry_dist <= 40:
+                            stage2_entry_gt_bins['30_40'] += 1
+                        else:
+                            stage2_entry_gt_bins['gt40'] += 1
                     stage1_ended[i] = True
                     stage2_rotate += 1
                     poses[i] = _moved_pose(poses[i], *Action(0, a_t[i], 0))
@@ -873,11 +916,16 @@ class NavCMTAgent:
         self.logs['stage2_step'].append(float(stage2_step) / batch_size)
         self.logs['stage2_rotate'].append(float(stage2_rotate) / batch_size)
         self.logs['stage2_recoveries'].append(float(stage2_recoveries) / batch_size)
+        self.logs['stage2_entry_count'].append(float(stage2_entry_count))
+        self.logs['stage2_entry_gt_distance_sum_m'].append(float(stage2_entry_gt_distance_sum))
+        for key, value in stage2_entry_gt_bins.items():
+            self.logs[f'stage2_entry_gt_{key}'].append(float(value))
 
         diagnostic_values = torch.stack((
             heatmap_diag_count,
             *(heatmap_coverage_hits[k] for k in (1, 4, 8, 16)),
             heatmap_top1_distance_sum,
+            heatmap_refined_top1_distance_sum,
             heatmap_top16_nearest_distance_sum,
             heatmap_top16_candidate_distance_sum,
         )).detach().cpu().tolist()
@@ -888,6 +936,7 @@ class NavCMTAgent:
             'heatmap_coverage_8_hits',
             'heatmap_coverage_16_hits',
             'heatmap_top1_distance_sum_m',
+            'heatmap_refined_top1_distance_sum_m',
             'heatmap_top16_nearest_distance_sum_m',
             'heatmap_top16_candidate_distance_sum_m',
         )
