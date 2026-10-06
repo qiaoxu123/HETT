@@ -83,6 +83,7 @@ def main():
             'scene-grounding-evidence', 'scene-grounding-distance',
             'scene-grounding-oracle', 'scene-grounding-matcher',
             'scene-grounding-hard-negatives', 'scene-grounding-belief-update',
+            'rsrefseg2-train', 'rsrefseg2-eval',
         ),
         default='train-eval',
     )
@@ -93,6 +94,10 @@ def main():
     parser.add_argument('--b0-cache-root', type=Path)
     parser.add_argument('--sam-source', type=Path)
     parser.add_argument('--sam-checkpoint', type=Path)
+    parser.add_argument('--official-root', type=Path)
+    parser.add_argument('--official-checkpoint', type=Path)
+    parser.add_argument('--rsref-mode', choices=('prompter', 'vision_lora'))
+    parser.add_argument('--rsref-method', choices=('rsref', 'siglip', 'oracle'))
     parser.add_argument('--checkpoint')
     parser.add_argument('--pythonpath', help='optional isolated dependency directory')
     parser.add_argument('--variant-arg', action='append', default=[])
@@ -386,6 +391,21 @@ def main():
             parser.error('--feature-file must point to Phase-4 metrics.json')
         phases.append(('scene_belief_gate', [args.python, 'scripts/evaluate_scene_belief_update.py',
             '--gate-metrics', str(args.feature_file.resolve()), '--output', str((run / 'artifacts').resolve())]))
+    elif args.phase == 'rsrefseg2-train':
+        if not all((args.dataset_root, args.official_root, args.official_checkpoint, args.rsref_mode)):
+            parser.error('--dataset-root --official-root --official-checkpoint --rsref-mode are required')
+        phases.append(('rsrefseg2_train', [args.python, 'scripts/train_rsrefseg2_grounding.py',
+            '--dataset', str(args.dataset_root.resolve()), '--output', str((run/'artifacts').resolve()),
+            '--official-root', str(args.official_root.resolve()), '--official-checkpoint', str(args.official_checkpoint.resolve()),
+            '--mode', args.rsref_mode, *args.variant_arg]))
+    elif args.phase == 'rsrefseg2-eval':
+        if not all((args.dataset_root, args.official_root, args.official_checkpoint, args.rsref_method)):
+            parser.error('--dataset-root --official-root --official-checkpoint --rsref-method are required')
+        command=[args.python, 'scripts/evaluate_rsrefseg2_grounding.py','--dataset',str(args.dataset_root.resolve()),
+            '--output',str((run/'artifacts').resolve()),'--official-root',str(args.official_root.resolve()),
+            '--official-checkpoint',str(args.official_checkpoint.resolve()),'--method',args.rsref_method]
+        if args.checkpoint:command += ['--adapted-checkpoint',str(Path(args.checkpoint).resolve())]
+        phases.append(('rsrefseg2_eval',command+args.variant_arg))
     else:
         if args.phase in ('train', 'train-eval'):
             phases.append(('training', _command(args.python, 'train', args.checkpoint, args.variant_arg)))
@@ -424,6 +444,7 @@ def main():
                         'scene-grounding-evidence', 'scene-grounding-distance',
                         'scene-grounding-oracle', 'scene-grounding-matcher',
                         'scene-grounding-hard-negatives', 'scene-grounding-belief-update',
+                        'rsrefseg2-train', 'rsrefseg2-eval',
                     ) else source / 'multiagent'),
                     env=environment,
                     stdout=log,

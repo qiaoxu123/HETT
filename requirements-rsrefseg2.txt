@@ -1,0 +1,9 @@
+# Install into an isolated target directory and pass it with --pythonpath.
+# Do not replace the HETT environment's torch/CUDA packages.
+accelerate==1.2.1
+einops==0.8.1
+huggingface-hub==0.33.4
+peft==0.14.0
+safetensors==0.4.5
+tokenizers==0.21.2
+transformers==4.53.1
