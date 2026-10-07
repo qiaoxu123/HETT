@@ -303,3 +303,32 @@ $PY scripts/train_relation_teacher.py          # ~5 min
 $PY scripts/run_deepseek_parse.py              # needs DEEPSEEK_API_KEY
 $PY scripts/eval_graph_grounding.py
 ```
+
+### Ontology-covered subset: is the graph worth anything where the language fits?
+
+See
+[`ONTOLOGY_COVERED_SUBSET_REPORT.md`](ONTOLOGY_COVERED_SUBSET_REPORT.md).
+
+Last round measured the language-conditioned graph at 0.1008 against a distance
+prior's 0.1176 and could not say whether that was coverage or whether the mapping
+was formal. This round separates them by restricting to the 138 of 400
+instructions whose every *spatial* relation maps, and then to the 55 of those
+whose anchors each resolve to exactly one node.
+
+**Neither explanation is the answer.** On the cleanest subset the graph scores
+0.0545 against the prior's 0.1273 — it loses, and it is *worst* where the binding
+is cleanest. The ambiguous subset scores 0.2174, the graph's best result in this
+project, so ambiguity is not what suppresses it. And the relation is
+demonstrably read: correct relation −0.60 against opposite −41.53 on the true
+target, 23 wins of 32, p = 0.020.
+
+That is §18's middle case — **relation used, no incremental value**. The graph's
+one clear win is on `near` (0.1273 against 0.0909), which is the relation a
+distance prior *is*; it loses on `along_road` (44 samples) and `between` (34).
+On the covered subset the graph-versus-shuffled comparison is p = 0.359 where on
+the full 238 it was p = 0.005, so last round's significant advantage does not
+survive restriction to the samples whose language is inside the ontology.
+
+```bash
+$PY scripts/eval_ontology_subset.py      # ~3 min, no training
+```
