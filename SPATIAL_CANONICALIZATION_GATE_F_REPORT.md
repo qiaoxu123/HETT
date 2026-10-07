@@ -166,7 +166,7 @@ Frame ambiguity and language semantics instability are the dominant failures. Th
 
 ## Interpretation
 
-- Behind/front and left/right show val_seen-to-val_unseen sign flips in key contexts; no stable common reference frame is established.
+- Behind/front selected frames flip sign on val_unseen. Left/right remain weak and do not pass their opposite or shuffled-relation controls; no reliable common reference frame is established.
 - On-road association has evidence above chance, but the road program family does not establish the full cross-relation gate. Off/along use a separately sampled candidate protocol.
 - True ternary between does not beat the old pairwise interpretation on val_unseen. Its shuffled-second control is weaker, which shows the second anchor carries information without establishing the chosen ternary score as best.
 - F3 gains over F0 need to be read by covered and uncovered relation separately; unsupported F0 words are neutral by definition.
