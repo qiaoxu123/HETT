@@ -72,14 +72,18 @@ def zscore(v):
     return np.zeros_like(v) if s < 1e-9 else (v - v.mean()) / s
 
 
-def anchor_nodes(record, graph):
-    """The graph nodes a parsed anchor could denote, regions first."""
+def anchor_nodes(anchor, graph):
+    """The graph nodes *one* parsed anchor could denote, regions first.
+
+    Takes a single anchor record, not the whole parse: an earlier version passed
+    the record and looked for its ``anchors`` key inside one anchor, found
+    nothing, and reported zero anchors bound while the parse statistics said 608.
+    """
     nodes = []
-    for a in record.get("anchors", []) or []:
-        for node_id in list(a.get("regions", [])) + list(a.get("instances", [])):
-            node = graph.by_id.get(node_id)
-            if node is not None:
-                nodes.append(node)
+    for node_id in list(anchor.get("regions", [])) + list(anchor.get("instances", [])):
+        node = graph.by_id.get(node_id)
+        if node is not None:
+            nodes.append(node)
     return nodes
 
 
@@ -112,6 +116,18 @@ def score_sample(torch, teacher, vocab, graph, candidates, anchors, pairs,
     n = len(candidates)
     if not pairs or not anchors:
         return None
+    # A "between" sentence names two anchors and the parser reports the factor
+    # as a symmetric pair of between-relations, one per anchor.  Read against a
+    # single anchor the between columns are all zero, which is what the first
+    # version did for 73% of the covered samples -- it scored a relation whose
+    # features it had thrown away.  Here each member of the pair is read with
+    # the other as its second anchor.
+    between_idx = sorted({i for n, i in pairs if n == "between"})
+    second_for = {}
+    if len(between_idx) == 2:
+        second_for = {between_idx[0]: between_idx[1],
+                      between_idx[1]: between_idx[0]}
+
     columns = []
     for name, index in pairs:
         if arm == "shuffled_relation":
@@ -119,9 +135,16 @@ def score_sample(torch, teacher, vocab, graph, candidates, anchors, pairs,
         nodes = list(anchors.get(index, []))
         if not nodes:
             continue
+        partner = None
+        if name == "between" and index in second_for:
+            others = anchors.get(second_for[index], [])
+            if others:
+                partner = others[0]
         rel_id = vocab.get(name, 0)
         ctx = EdgeContext(road_regions=graph.regions,
-                          road_members=graph.context.road_members)
+                          road_members=graph.context.road_members,
+                          second_anchor=(None if partner is None
+                                         else np.asarray(partner.center[:2])))
         geom = np.stack([edge_vector(node, c, ctx)
                          for node in nodes for c in candidates])
         with torch.no_grad():
@@ -232,21 +255,38 @@ def main() -> None:
                 continue
             row = rank_metrics(np.asarray(scores, dtype=np.float64),
                                r["target_index"])
+            row["key"] = r["key"]
             out.append(row)
         return out
 
-    results, per_arm_rows = {}, {}
-    for arm in ARMS:
-        per_arm_rows[arm] = {s: run(s, arm, np.random.default_rng(0))
-                             for s in SPLITS}
-        results[arm] = {s: aggregate(per_arm_rows[arm][s]) for s in SPLITS}
+    # Every arm is scored on the same samples: the intersection of those where
+    # all of them are defined.  An arm that silently drops the samples it cannot
+    # handle would otherwise be compared against a different question -- the
+    # language arm covers fewer samples than the distance prior, and the two
+    # numbers would not be about the same thing.
+    raw_rows = {arm: {s: run(s, arm, np.random.default_rng(0)) for s in SPLITS}
+                for arm in ARMS}
+    common = {s: set.intersection(*[{r["key"] for r in raw_rows[a][s]}
+                                    for a in ARMS]) for s in SPLITS}
+    per_arm_rows = {arm: {s: [r for r in raw_rows[arm][s]
+                              if r["key"] in common[s]] for s in SPLITS}
+                    for arm in ARMS}
+    coverage["scored_by_every_arm"] = {s: len(common[s]) for s in SPLITS}
+    results = {arm: {s: aggregate(per_arm_rows[arm][s]) for s in SPLITS}
+               for arm in ARMS}
 
+    # val_seen is parsed only if a parse file exists for it; the gate is decided
+    # on val_unseen, which section 8 reserves for final testing.
     print(f"\n{'arm':22s} {'val_seen':>9s} {'unseen':>9s} {'top4':>7s} {'mrr':>7s}")
     for arm in results:
         r = results[arm]["val_unseen"]
-        print(f"{arm:22s} {results[arm]['val_seen']['top1']:9.4f} "
-              f"{r['top1']:9.4f} {r.get('top4', 0):7.4f} {r.get('mrr', 0):7.4f}",
-              flush=True)
+        vs = results[arm]["val_seen"]
+        shown = f"{vs['top1']:9.4f}" if vs.get("n") else f"{'-':>9s}"
+        if not r.get("n"):
+            print(f"{arm:22s} {shown} {'(no samples)':>9s}", flush=True)
+            continue
+        print(f"{arm:22s} {shown} {r['top1']:9.4f} {r.get('top4', 0):7.4f} "
+              f"{r.get('mrr', 0):7.4f}", flush=True)
 
     gate = {}
     if per_arm_rows["deepseek_graph"]["val_unseen"] and \
