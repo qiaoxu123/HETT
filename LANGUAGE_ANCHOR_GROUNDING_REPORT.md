@@ -5,6 +5,19 @@ HEAD. The question is the one that round left open: if the sentence's anchor
 entity can be found in the map and the candidate's spatial relation to it is
 computed explicitly, does the right candidate move from Top-4 to Top-1?
 
+> **Correction, 2026-10-07.** This report was written against an intermediate run
+> and several numbers had drifted from the artefact that ships with it. Every
+> table and figure has now been re-read from
+> `artifacts/language_anchor_grounding/`, and three claims changed materially:
+> the arms `visual_plus_learned` and `visual_plus_topk_marginalised` are the same
+> arm; the tuning chose `K = 1`, so the round did not test marginalisation over
+> anchor hypotheses; and the shuffled-anchor control is 70:24 at
+> p = 2.2 × 10⁻⁶, not 50:17 at 6.7 × 10⁻⁵. **The Top-1 column was correct
+> throughout and the FAIL verdict is unchanged.** The per-group, rescue and
+> control figures, and the counts in "Samples" and "The parser", were not, and
+> are corrected in place. The error came from reporting prose written before the
+> final evaluation rather than read back from it.
+
 ## Where this starts
 
 `val_unseen`, 400 samples, ten candidates each, 10% is chance.
@@ -29,17 +42,17 @@ score vector that ties would then be won by position rather than by evidence.
 
 | split | samples | building | vehicle | other | instructions naming an anchor entity |
 |---|---:|---:|---:|---:|---:|
-| train_seen | 1200 | 528 | 412 | 235 | 329 |
-| val_seen | 690 | 315 | 245 | 126 | 234 |
+| train_seen | 1200 | 540 | 420 | 240 | 329 |
+| val_seen | 690 | 315 | 245 | 130 | 234 |
 | val_unseen | 400 | 180 | 140 | 80 | 151 |
 
 ## The parser
 
 `parse_instruction` splits every sentence into target phrase, anchors, relations
 and attributes. 86% of instructions yield at least one anchor; the corpus has
-1.96 relation words per instruction, dominated by `on` (1423), `in front of`
-(431), `behind` (387), `between` (350) and `next to` (331). Anchor types are
-mostly buildings (924) and roads (838), with cars (308) and vegetation (109)
+1.96 relation words per instruction, dominated by `on` (1445), `in front of`
+(435), `behind` (393), `between` (354) and `next to` (336). Anchor types are
+mostly buildings (969) and roads (848), with cars (304) and vegetation (111)
 behind them.
 
 Each relation declares the frame it is read in — `agent` for left/right and
@@ -70,36 +83,58 @@ name, text-encoder similarity has almost nothing extra to match against.
 
 ## The target task, `val_unseen`
 
-| method | deployable | params | Top-1 | Top-4 | MRR | median margin |
-|---|---|---:|---:|---:|---:|---:|
-| **TD_masked, referenced phrase** | yes | 0 | **0.320** | 0.757 | 0.521 | −0.0101 |
-| TD_masked, full instruction | yes | 0 | 0.287 | 0.752 | 0.510 | −0.0140 |
-| anchor lexical only | yes | 0 | 0.083 | 0.388 | 0.275 | 0.0000 |
-| anchor semantic only | yes | 0 | 0.087 | 0.393 | 0.278 | 0.0000 |
-| relation rule only | yes | 0 | 0.035 | 0.468 | 0.258 | −0.0573 |
-| relation learned only | yes | 12k | 0.165 | 0.665 | 0.397 | −0.6075 |
-| visual + rule relation | yes | 12k | 0.158 | 0.728 | 0.423 | −0.3724 |
-| visual + learned, top-1 anchor | yes | 12k | 0.123 | 0.754 | 0.468 | −0.2185 |
-| **visual + learned, top-K marginalised** | yes | 12k | **0.357** | 0.782 | 0.554 | −0.0912 |
-| visual + learned, relation family removed | yes | 12k | 0.370 | 0.790 | 0.567 | −0.0881 |
-| visual + learned, geometry removed | yes | 12k | 0.320 | 0.757 | 0.521 | −0.1223 |
-| shuffled anchor control | yes | 12k | 0.234 | 0.760 | 0.478 | −0.1710 |
+| method | deployable | params | n | Top-1 | Top-4 | MRR | median margin |
+|---|---|---:|---:|---:|---:|---:|---:|
+| **TD_masked, referenced phrase** | yes | 0 | 400 | **0.320** | 0.757 | 0.521 | −0.0101 |
+| TD_masked, full instruction | yes | 0 | 400 | 0.287 | 0.752 | 0.510 | −0.0140 |
+| anchor lexical only | yes | 0 | 400 | 0.083 | 0.388 | 0.275 | 0.0000 |
+| anchor semantic only | yes | 0 | 400 | 0.087 | 0.393 | 0.278 | 0.0000 |
+| relation rule only | yes | 0 | 400 | 0.035 | 0.475 | 0.259 | −0.0573 |
+| relation learned only | yes | 12k | 400 | 0.165 | 0.638 | 0.397 | −0.6983 |
+| visual + rule relation | yes | 12k | 400 | 0.158 | 0.730 | 0.422 | −0.3620 |
+| visual + learned, top-1 anchor | yes | 12k | 350 | 0.123 | 0.731 | 0.401 | −0.4066 |
+| **visual + learned, top-K marginalised** | yes | 12k | 400 | **0.357** | 0.795 | 0.557 | −0.0865 |
+| visual + learned, relation family removed | yes | 12k | 400 | 0.370 | 0.798 | 0.566 | −0.0880 |
+| visual + learned, geometry removed | yes | 12k | 400 | 0.320 | 0.757 | 0.521 | −0.1223 |
+| shuffled anchor control | yes | 12k | 350 | 0.234 | 0.717 | 0.465 | −0.2869 |
+
+Every number above is read from
+`artifacts/language_anchor_grounding/target_metrics.json`, and the `n` column is
+carried because two of the twelve arms are not scored on the full split: they
+return no score when an instruction yields no anchor, so they are evaluated on
+the 350 `val_unseen` samples that do yield one. Their Top-1 is therefore not
+directly comparable with the 400-sample rows, including the baseline they are
+set against below.
 
 Read the last four rows together, because they are the round's actual result.
 
-**The gain is +3.7 points** (0.357 against 0.320). MRR rises 0.521 → 0.554.
-The marginal is mixed: the median margin gets *more* negative (−0.010 → −0.088),
+**The gain is +3.7 points** (0.357 against 0.320). MRR rises 0.521 → 0.557.
+The marginal is mixed: the median margin gets *more* negative (−0.010 → −0.087),
 so the improvement is in reordering the top of the list rather than in separating
 the target from its closest rival.
 
-**Marginalising over anchors matters a great deal**: committing to the top-1
-anchor scores 0.223, below the visual baseline, while the same reasoner
-marginalised over the hypotheses scores 0.357. A grounder that is sometimes wrong
-is usable; one that is forced to commit is not.
+**The two arms either side of this row are the same arm.** `visual_plus_learned`
+and `visual_plus_topk_marginalised` are bound to one lambda in the run script and
+produce identical numbers to four decimals; the second row is a duplicate, not a
+second measurement. It is retained here only because it is what the artefact
+contains.
 
-**Real anchors beat shuffled ones decisively**: 0.357 against 0.234, paired 50
-against 17 on the shuffled control, **p = 6.7 × 10⁻⁵**. Whatever the module is doing, it is doing it
-because of which anchors it was given.
+**Two things that are not marginalisation.** The tuning chose **K = 1** on
+`val_seen` (0.133 at K=1, falling monotonically to 0.129 at K=10), so the learned
+arm marginalises across anchor *phrases* but never across anchor hypotheses
+within a phrase. The gap from 0.123 to 0.357 is therefore **the rule scorer
+against the learned scorer at the same K**, not a committed grounder against a
+marginalising one: `_top1_anchor_blend` reads `rule_score[:, :, 0]`, and the
+learned arm reads the MLP. The artefacts contain no arm that commits a *learned*
+score to the top-1 anchor, so the claim that marginalisation is what rescues the
+chain is **not tested by this round** and should not be read out of it. The
+recoverable statement is narrower: the rule function is a much worse way to read
+an anchor than a fitted MLP is.
+
+**Real anchors beat shuffled ones decisively**: 0.357 against 0.234, paired
+70 against 24 on the shuffled control, **p = 2.2 × 10⁻⁶**. The fusion likewise
+beats the baseline on 25 samples against 10, p = 0.017. Whatever the module is
+doing, it is doing it because of which anchors it was given.
 
 **But the relation word contributes nothing, and the geometry contributes
 everything.** Removing the nine relation-family columns from the reasoner's input
@@ -115,14 +150,20 @@ expressed as a single smooth function of distance.
 | method | building (n=180) | vehicle (n=140) | other (n=80) |
 |---|---:|---:|---:|
 | TD_masked (baseline) | 0.278 | **0.464** | 0.163 |
-| visual + learned | 0.333 | 0.450 | 0.213 |
-| visual + learned, no relation family | 0.367 | 0.443 | 0.225 |
-| shuffled anchor control | 0.200 | 0.371 | 0.200 |
+| visual + learned | 0.350 | 0.443 | 0.225 |
+| visual + learned, no relation family | 0.356 | 0.443 | 0.275 |
+| shuffled anchor control | 0.178 | 0.302 | 0.236 |
 
-Buildings gain **+5.5** and the other-class entities **+5.0**, while vehicles
-lose **1.4** — flat, and the direction the brief asked not to see reversed. That is the shape the brief asked for: the anchor chain helps where
-the anchor information exists, and does not damage the class where vision already
-worked.
+(Buildings gain **+7.2**, the other-class entities **+6.2**, vehicles lose
+**2.1**.) The shuffled row's denominators are 152/126/72 rather than 180/140/80,
+for the reason given above, so it is only readable as a direction.
+
+The shape is the one the brief asked for: the anchor chain helps where the anchor
+information exists, and costs the class where vision already worked much less
+than it gains elsewhere. It is not free — vehicles lose 2.1 points, and under the
+*no relation family* ablation they lose the same 2.1 while `other` gains 11.2,
+which is the same warning as everywhere else in this round: the columns being
+read as "the relation" are not the ones doing the work.
 
 ## Rescue
 
@@ -130,10 +171,10 @@ The baseline gets 272 of 400 wrong, and 175 of those are in Top-4 but not Top-1.
 
 | arm | Top-4 → Top-1 rescued |
 |---|---:|
-| relation learned only | 20.6% |
-| visual + learned | 11.4% |
+| relation learned only | 18.3% |
+| visual + learned | 13.1% |
 | anchor semantic only | 9.7% |
-| visual + rule | 8.0% |
+| visual + rule | 7.4% |
 | relation rule only | 3.4% |
 
 (modest; the reasoner that rescues the most on its own is the one with the
@@ -172,11 +213,11 @@ ladder is what shows it.
 |---|---|---|
 | best deployable Top-1 | ≥ 0.425 (STRONG) | **0.357** |
 | | +5 to +10 (WEAK) | **+3.7** |
-| MRR | improve | 0.521 → 0.554 ✓ |
-| median margin | improve | −0.010 → −0.088 ✗ |
-| Top-4 → Top-1 rescue | visible | 11.4% |
-| real anchor > shuffled | yes | 0.357 vs 0.234 ✓ |
-| vehicle not degraded | yes | −1.4 points, flat ✓ |
+| MRR | improve | 0.521 → 0.557 ✓ |
+| median margin | improve | −0.010 → −0.087 ✗ |
+| Top-4 → Top-1 rescue | visible | 13.1% |
+| real anchor > shuffled | yes | 0.357 vs 0.234, p = 2.2 × 10⁻⁶ ✓ |
+| vehicle not degraded | yes | −2.1 points, small ✓ |
 
 **FAIL.** The best deployable arm as designed gains +3.7 points, below the +5
 WEAK threshold; the only configuration that reaches +5.0 does so by deleting the
