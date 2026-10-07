@@ -65,10 +65,16 @@ cases at all. The number that does matter is ambiguity:
 | samples containing such a name | 1254 (54.8%) |
 | mean candidate entities per sample | 3.54 |
 
-The shared names are roads. `aldridge road` is 180 separate segments, `wellington
-road` 103, `birchfield road` and `aston lane` 88 each. So binding here is
-disambiguation, not matching — which is why every score marginalises over the
-anchor set with a `logsumexp` rather than committing to one entity.
+The shared names are roads, and a road is annotated as many small segments
+carrying one name: the largest group in a block is 15 segments, and the median
+ambiguous phrase resolves to 3 entities. So binding here is disambiguation, not
+matching — which is why every score marginalises over the anchor set with a
+`logsumexp` rather than committing to one entity.
+
+(An earlier version of this report said `aldridge road` was 180 separate
+segments. That was a sample count misread as an entity count; the true maximum
+for that name is 9. Corrected in `REFERENCE_BINDING_AUDIT_V2.md`, which carries
+the reasoning.)
 
 **49.3% of samples name two or more references** (1159 name one, 981 name two,
 132 name three, 16 name four, 1 names five).

@@ -247,9 +247,9 @@ separation lands between 0.46 and 0.56.
 Two structural facts about the input are worth keeping. `object_ids` is the
 **target**, not a reference set — one entry in all 27,045 records, always at a
 `target_position` — so it cannot be used as an anchor set. And landmark names are
-heavily shared: 41.6% of anchor phrases name more than one entity, `aldridge
-road` alone being 180 segments, so binding here is disambiguation rather than
-matching.
+heavily shared: 41.6% of anchor phrases name more than one entity, the largest
+single group being 15 road segments sharing one name, so binding here is
+disambiguation rather than matching.
 
 The gate fails and, per the brief, no visual fusion was run: a fusion number on
 top of a reasoner that cannot rank the target given the right anchor would

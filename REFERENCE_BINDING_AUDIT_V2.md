@@ -123,10 +123,20 @@ Binding is nearly always *possible* and rarely *unique*.
 | mean candidate entities per sample | 3.54 |
 
 The one-to-many names are roads. A road is stored as many segments that all
-carry the same name: `aldridge road` is 180 separate entities, `wellington road`
-103, `birchfield road` and `aston lane` 88 each. So "the building on Aldridge
-Road" does not name one anchor, it names 180, and the binding problem in this
-corpus is **which segment**, not **which name**.
+carry the same name. In a block the largest such group is **15** segments
+(`walsall road`, birmingham_block_5); `aldridge road` reaches 9 and
+`wellington road` 3. So "the building on Aldridge Road" names several anchors
+rather than one, and the binding problem is **which segment**, not **which
+name**.
+
+An earlier version of this audit gave 180, 103 and 88 for those three names.
+Those figures were counts of *samples* in which the name was ambiguous, taken
+from a table whose rows were samples; they are not entity counts and overstate
+the group size by up to twentyfold. The correct per-block maxima are in
+`artifacts/spatial_graph/road_region_audit.json`. The conclusion is unchanged --
+a name still resolves to a set rather than to an entity, mean 4.01 and median 3
+entities per ambiguous bind, maximum 18 -- but the numbers quoted for it were
+wrong and are corrected here.
 
 That reframes what a reference binder has to do here. It is not a semantic
 matching problem — a text encoder has almost nothing to add when 99.6% of names
