@@ -44,6 +44,12 @@ ANCHOR_KINDS = (NodeKind.BUILDING, NodeKind.LANDMARK, NodeKind.ROAD_REGION)
 NEIGHBOUR_RADIUS_M = 250.0
 MAX_TARGETS_PER_ANCHOR = 40
 MAX_NEGATIVES = 8
+# The between pass is the expensive one: each (second anchor, target)
+# pair needs a full edge vector, and every edge vector costs two polygon
+# distances. Capping the targets it reads keeps the relation represented
+# without letting it dominate generation; the gate's per-relation table
+# shows whether the cap cost it anything.
+MAX_BETWEEN_TARGETS = 24
 DISTANCE_BAND = (0.5, 2.0)
 MIN_EXAMPLES_PER_RELATION = 20
 
@@ -275,7 +281,7 @@ def _second_anchors(graph, anchor, target, pairs, rng, limit=3):
     return out[:limit]
 
 
-def _between_second_anchors(graph, anchor, rng, limit=4):
+def _between_second_anchors(graph, anchor, rng, limit=2):
     """Named anchors worth reading a between-factor against.
 
     Chosen by geometry -- other named entities at a between-able separation --
@@ -344,7 +350,7 @@ def build_block_examples(graph, thresholds, rng, split: str,
         if with_between:
             examples.extend(_between_examples(
                 graph, anchor, thresholds, rng, split,
-                [t for t, _ in bundle["targets"]]))
+                [t for t, _ in bundle["targets"]], bundle["road"]))
     return examples
 
 
@@ -363,7 +369,7 @@ def _matched(negatives, target, facts, rng):
     return hard[:MAX_NEGATIVES]
 
 
-def _between_examples(graph, anchor, thresholds, rng, split, targets):
+def _between_examples(graph, anchor, thresholds, rng, split, targets, road=None):
     """Between examples for one anchor, one second anchor at a time.
 
     ``targets`` is the anchor's already-sampled neighbour list rather than the
@@ -373,10 +379,13 @@ def _between_examples(graph, anchor, thresholds, rng, split, targets):
     out = []
     for second in _between_second_anchors(graph, anchor, rng):
         readings = []
-        for target in targets:
+        for target in targets[:MAX_BETWEEN_TARGETS]:
             if target.node_id in (anchor.node_id, second.node_id):
                 continue
-            facts = pair_facts(graph, anchor, target, second=second)
+            # ``road`` is threaded through rather than re-derived: _road_for
+            # walks every region and every member, and calling it once per
+            # target made this pass the dominant cost of the whole generation.
+            facts = pair_facts(graph, anchor, target, road=road, second=second)
             t, perp, span = between_frame(anchor, second, target)
             margin = margin_from_facts("between", facts, thresholds,
                                        (t, perp, span))
