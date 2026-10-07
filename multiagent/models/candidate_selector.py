@@ -1,9 +1,9 @@
-"""Independent visual evidence selector for dense heatmap candidates.
+"""Semantic-geometric selector for dense HETT heatmap candidates.
 
-The selector deliberately does not consume heatmap scores, referenced-landmark
-masks, or ground-truth target information. Heatmap/SBF remains a proposal
-mechanism; this module only asks whether currently observed RGB evidence can
-discriminate among the proposed spatial hypotheses.
+Heatmap/SBF is proposal-only.  The selector never consumes heatmap scores or
+GT target information.  It ranks already-proposed candidates from independent
+candidate-specific RGB evidence, instruction tokens, referenced-landmark text,
+and explicit metric geometry.
 """
 
 from __future__ import annotations
@@ -36,6 +36,27 @@ def heatmap_ids_to_normalized_xy(
     )
 
 
+def relative_geometry(
+    origin_xy: torch.Tensor,
+    destination_xy: torch.Tensor,
+) -> torch.Tensor:
+    """Return normalized [dx,dy,d,sin(beta),cos(beta)].
+
+    HETT candidate and landmark coordinates are already normalized by the same
+    map extent, so this is equivalent to the SBFNav world-coordinate geometry
+    divided by map scale.
+    """
+    delta = destination_xy - origin_xy
+    distance = torch.linalg.vector_norm(delta, dim=-1, keepdim=True)
+    safe_distance = distance.clamp_min(torch.finfo(delta.dtype).eps)
+    sin_beta = delta[..., 1:2] / safe_distance
+    cos_beta = delta[..., 0:1] / safe_distance
+    zero = distance <= torch.finfo(delta.dtype).eps
+    sin_beta = torch.where(zero, torch.zeros_like(sin_beta), sin_beta)
+    cos_beta = torch.where(zero, torch.ones_like(cos_beta), cos_beta)
+    return torch.cat((delta, distance, sin_beta, cos_beta), dim=-1)
+
+
 def sample_candidate_features_from_current_view(
     frame_features: torch.Tensor,
     candidate_xy: torch.Tensor,
@@ -46,16 +67,7 @@ def sample_candidate_features_from_current_view(
     *,
     map_meters: float,
 ) -> tuple[torch.Tensor, torch.Tensor]:
-    """Sample candidate-specific visual evidence from the current 7x7 feature map.
-
-    CityNav normalized coordinates use x increasing east and normalized y
-    increasing south, while world y increases north. The RGB crop is oriented
-    with image top = agent forward and image left = agent left.
-
-    Returns:
-        candidate_features: [B,K,C]
-        visible_mask: [B,K], true only for candidates inside the current view.
-    """
+    """Sample candidate-specific visual evidence from the current 7x7 feature map."""
     if frame_features.ndim == 3:
         batch, channels, flattened = frame_features.shape
         side = int(round(flattened ** 0.5))
@@ -86,7 +98,7 @@ def sample_candidate_features_from_current_view(
 
     delta = candidate_xy - agent_xy[:, None, :]
     world_dx = delta[..., 0] * float(map_meters)
-    # normalized y increases downward/south, opposite to world +y.
+    # normalized y increases south, opposite to world +y.
     world_dy = -delta[..., 1] * float(map_meters)
 
     front = world_dx * cos_yaw + world_dy * sin_yaw
@@ -115,7 +127,17 @@ def sample_candidate_features_from_current_view(
 
 
 class CandidateVisualSelector(nn.Module):
-    """Candidate RGB-language matcher independent of the heatmap proposal score."""
+    """SBF-style semantic-geometric candidate selector for HETT Top-K modes.
+
+    Candidate score is computed from:
+      * accumulated candidate-specific RGB evidence;
+      * full instruction tokens;
+      * candidate-to-agent explicit geometry;
+      * candidate-to-referenced-landmark explicit geometry;
+      * referenced-landmark BERT features.
+
+    There is intentionally no heatmap-score input path.
+    """
 
     def __init__(
         self,
@@ -123,12 +145,17 @@ class CandidateVisualSelector(nn.Module):
         visual_dim: int = 512,
         language_dim: int = 768,
         hidden_dim: int = 256,
+        layers: int = 2,
         attention_heads: int = 8,
         dropout: float = 0.1,
+        use_geometry: bool = True,
+        use_landmark_text: bool = True,
     ):
         super().__init__()
         if hidden_dim % attention_heads:
             raise ValueError("hidden_dim must be divisible by attention_heads")
+        if layers < 1:
+            raise ValueError("layers must be positive")
         self.visual_projection = nn.Sequential(
             nn.Linear(visual_dim, hidden_dim),
             nn.LayerNorm(hidden_dim),
@@ -137,49 +164,116 @@ class CandidateVisualSelector(nn.Module):
             nn.Linear(language_dim, hidden_dim),
             nn.LayerNorm(hidden_dim),
         )
-        self.query_norm = nn.LayerNorm(hidden_dim)
-        self.cross_attention = nn.MultiheadAttention(
-            hidden_dim,
-            attention_heads,
+        self.landmark_projection = nn.Sequential(
+            nn.Linear(language_dim, hidden_dim),
+            nn.LayerNorm(hidden_dim),
+        )
+        self.geometry_projection = nn.Sequential(
+            nn.Linear(5, hidden_dim),
+            nn.LayerNorm(hidden_dim),
+        )
+        layer = nn.TransformerEncoderLayer(
+            d_model=hidden_dim,
+            nhead=attention_heads,
+            dim_feedforward=hidden_dim * 4,
             dropout=dropout,
+            activation="gelu",
             batch_first=True,
+            norm_first=True,
         )
-        self.output_norm = nn.LayerNorm(hidden_dim)
-        self.score = nn.Sequential(
-            nn.Linear(hidden_dim, hidden_dim),
-            nn.GELU(),
-            nn.Dropout(dropout),
-            nn.Linear(hidden_dim, 1),
-        )
+        self.transformer = nn.TransformerEncoder(layer, num_layers=layers)
+        self.scr = nn.Parameter(torch.empty(hidden_dim))
+        nn.init.normal_(self.scr, std=0.02)
+        self.score = nn.Linear(hidden_dim, 1)
+        self.use_geometry = bool(use_geometry)
+        self.use_landmark_text = bool(use_landmark_text)
 
     def forward(
         self,
         candidate_visual: torch.Tensor,
         language_tokens: torch.Tensor,
+        candidate_xy: torch.Tensor,
+        agent_xy: torch.Tensor,
+        landmark_name_features: torch.Tensor,
+        landmark_xy: torch.Tensor,
+        landmark_mask: torch.Tensor,
         language_mask: torch.Tensor | None = None,
     ) -> torch.Tensor:
         if candidate_visual.ndim != 3:
             raise ValueError("candidate_visual must have shape [B,K,D]")
         if language_tokens.ndim != 3:
             raise ValueError("language_tokens must have shape [B,L,D]")
-        visual = self.visual_projection(candidate_visual)
-        language = self.language_projection(language_tokens)
+        batch, candidates, _ = candidate_visual.shape
+        if candidate_xy.shape != (batch, candidates, 2):
+            raise ValueError("candidate_xy shape mismatch")
+        if agent_xy.shape != (batch, 2):
+            raise ValueError("agent_xy shape mismatch")
+        if landmark_name_features.ndim != 3:
+            raise ValueError("landmark_name_features must have shape [B,M,D]")
+        landmark_count = landmark_name_features.shape[1]
+        if landmark_xy.shape != (batch, landmark_count, 2):
+            raise ValueError("landmark_xy shape mismatch")
+        if landmark_mask.shape != (batch, landmark_count):
+            raise ValueError("landmark_mask shape mismatch")
+        if language_mask is None:
+            language_mask = torch.ones(
+                language_tokens.shape[:2], dtype=torch.bool, device=language_tokens.device
+            )
+        elif language_mask.shape != language_tokens.shape[:2]:
+            raise ValueError("language_mask shape mismatch")
 
-        key_padding_mask = None
-        if language_mask is not None:
-            if language_mask.shape != language_tokens.shape[:2]:
-                raise ValueError("language_mask shape mismatch")
-            key_padding_mask = ~language_mask.bool()
-
-        attended, _ = self.cross_attention(
-            query=self.query_norm(visual),
-            key=language,
-            value=language,
-            key_padding_mask=key_padding_mask,
-            need_weights=False,
+        visual_token = self.visual_projection(candidate_visual).reshape(
+            batch * candidates, 1, -1
         )
-        fused = self.output_norm(visual + attended)
-        return self.score(fused).squeeze(-1)
+
+        agent_geometry = relative_geometry(
+            agent_xy[:, None, :], candidate_xy
+        )
+        if not self.use_geometry:
+            agent_geometry = torch.zeros_like(agent_geometry)
+        agent_token = self.geometry_projection(agent_geometry).reshape(
+            batch * candidates, 1, -1
+        )
+
+        instruction = self.language_projection(language_tokens)
+        instruction = instruction[:, None].expand(-1, candidates, -1, -1)
+        instruction = instruction.reshape(
+            batch * candidates, language_tokens.shape[1], -1
+        )
+
+        # Match SBFNav convention: geometry is from referenced landmark to candidate.
+        landmarks = landmark_xy[:, None].expand(-1, candidates, -1, -1)
+        candidate_origins = candidate_xy[:, :, None].expand(
+            -1, -1, landmark_count, -1
+        )
+        landmark_geometry = relative_geometry(landmarks, candidate_origins)
+        if not self.use_geometry:
+            landmark_geometry = torch.zeros_like(landmark_geometry)
+        landmark_token = self.geometry_projection(landmark_geometry)
+        if self.use_landmark_text:
+            names = self.landmark_projection(landmark_name_features)
+            landmark_token = landmark_token + names[:, None]
+        landmark_token = landmark_token.reshape(
+            batch * candidates, landmark_count, -1
+        )
+
+        scr = self.scr.view(1, 1, -1).expand(batch * candidates, -1, -1)
+        tokens = torch.cat(
+            (scr, visual_token, agent_token, instruction, landmark_token),
+            dim=1,
+        )
+
+        fixed_mask = torch.zeros((batch, 3), dtype=torch.bool, device=tokens.device)
+        padding = torch.cat(
+            (fixed_mask, ~language_mask.bool(), ~landmark_mask.bool()),
+            dim=1,
+        )
+        padding = padding[:, None].expand(-1, candidates, -1)
+        padding = padding.reshape(batch * candidates, -1)
+
+        encoded = self.transformer(tokens, src_key_padding_mask=padding)
+        logits = self.score(encoded[:, 0]).reshape(batch, candidates)
+        return logits
 
 
 def _masked_logits(
@@ -189,7 +283,6 @@ def _masked_logits(
     if logits.shape != visible_mask.shape:
         raise ValueError("logits and visible_mask shape mismatch")
     mask = visible_mask.bool()
-    # Keep softmax numerically defined when no hypothesis is currently visible.
     safe_mask = mask.clone()
     no_visible = ~safe_mask.any(dim=1)
     if no_visible.any():
@@ -217,7 +310,7 @@ def select_candidate_with_abstention(
     min_confidence: float = 0.55,
     min_margin: float = 0.10,
 ) -> CandidateSelectionDecision:
-    """Use visual ranking only when evidence is sufficiently discriminative."""
+    """Use selector ranking only when evidence is sufficiently discriminative."""
     if raw_top1_ids.ndim != 1:
         raise ValueError("raw_top1_ids must have shape [B]")
     if candidate_ids.shape != selector_logits.shape or candidate_ids.shape != visible_mask.shape:
@@ -234,10 +327,11 @@ def select_candidate_with_abstention(
         dim=1,
     )
     confidence = top_values[:, 0]
-    if top_values.shape[1] == 1:
-        margin = confidence
-    else:
-        margin = top_values[:, 0] - top_values[:, 1]
+    margin = (
+        confidence
+        if top_values.shape[1] == 1
+        else top_values[:, 0] - top_values[:, 1]
+    )
     selected_rank = top_indices[:, 0]
     selected_ids = candidate_ids.gather(1, selected_rank[:, None]).squeeze(1)
     visible_count = visible_mask.sum(dim=1)
@@ -279,7 +373,7 @@ def candidate_ranking_loss(
     list_weight: float = 0.5,
     min_visible_candidates: int = 2,
 ) -> CandidateRankingLoss:
-    """Train Top-1 discrimination only when a good visible candidate exists."""
+    """Train Top-1 discrimination only when a good evidenced candidate exists."""
     if selector_logits.shape != candidate_distances_m.shape:
         raise ValueError("logits and distances shape mismatch")
     if selector_logits.shape != visible_mask.shape:
