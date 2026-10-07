@@ -109,8 +109,14 @@ def parse_args():
     parser.add_argument('--candidate_selector_top_k', type=int, default=8,
                         help='Number of heatmap hypotheses exposed to the visual selector')
     parser.add_argument('--candidate_selector_hidden_dim', type=int, default=256)
+    parser.add_argument('--candidate_selector_layers', type=int, default=2,
+                        help='Transformer layers in the semantic-geometric selector')
     parser.add_argument('--candidate_selector_heads', type=int, default=8)
     parser.add_argument('--candidate_selector_dropout', type=float, default=0.1)
+    parser.add_argument('--candidate_selector_no_geometry', action='store_true', default=False,
+                        help='Ablate candidate-agent and candidate-landmark geometry')
+    parser.add_argument('--candidate_selector_no_landmark_text', action='store_true', default=False,
+                        help='Ablate referenced-landmark name embeddings while keeping geometry')
     parser.add_argument('--candidate_selector_min_visible', type=int, default=2,
                         help='Minimum simultaneously visible hypotheses before selector may override heatmap Top-1')
     parser.add_argument('--candidate_selector_min_confidence', type=float, default=0.55,
