@@ -8,7 +8,7 @@ contour, bbox corners) has exactly one definition in the tree.
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path
 
@@ -33,7 +33,16 @@ class Episode:
     trajectory: np.ndarray        # (T, 6) -> x, y, z, dx, dy, dz
     marker_positions: np.ndarray  # (M, 3)
     target_positions: np.ndarray  # (K, 3)
-    object_ids: list
+    object_ids: list              # the *target* ids -- see below
+    ann_ids: list = field(default_factory=list)
+
+    # ``object_ids`` is the target, not a reference set.  Every record in the
+    # three splits has exactly one, and it always names an object at one of
+    # ``target_positions``; upstream agrees (``MTurkTrajectory.object_id``
+    # returns ``object_ids[0]`` and ``generate.py`` builds the Episode from
+    # ``objects[map][object_id]``).  ``ann_ids`` indexes that object's
+    # ``descriptions``/``processed_descriptions``, which is where the
+    # instruction's anchor *names* live.
 
     @property
     def poses(self) -> np.ndarray:
@@ -112,6 +121,7 @@ def _load_split_episodes(path_str: str) -> tuple:
                 marker_positions=_as_array(r.get("marker_positions"), 3),
                 target_positions=_as_array(r.get("target_positions"), 3),
                 object_ids=normalise_object_ids(r.get("object_ids", [])),
+                ann_ids=[int(a) for a in r.get("ann_ids", [])],
             )
         )
     return tuple(episodes)
