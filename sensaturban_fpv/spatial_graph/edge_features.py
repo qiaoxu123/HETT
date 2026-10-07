@@ -53,6 +53,19 @@ EDGE_FEATURES = (
     ("anchor_minor_coord", 100.0),
     ("agent_ahead", 100.0),
     ("agent_lateral", 100.0),
+    # The "between" frame.  A between-relation is a ternary factor -- target
+    # against two anchors -- so the edge vector carries the projection onto the
+    # anchor-to-anchor segment and the perpendicular offset from it.  They are
+    # zero when the caller supplies no second anchor, which is why the relation
+    # definitions, not the features, are what decide whether "between" is even
+    # applicable to a pair.
+    ("between_t", 1.0),
+    ("between_perp", 100.0),
+    ("between_span", 200.0),
+    # Whether the straight line from the anchor to the target crosses the road
+    # region, which is what "across the road from" asserts and what a
+    # same-side/opposite-side pair of columns cannot express alone.
+    ("crosses_road", 1.0),
 )
 # A node with no road frame at all gets this distance rather than infinity:
 # an infinity would propagate through log1p into the feature vector and take the
@@ -67,7 +80,8 @@ def name_of(index: int) -> str:
     return EDGE_FEATURES[index][0]
 
 
-def _polygon(footprint):
+def polygon_of(footprint):
+    """Shapely polygon for a footprint, repaired, or None if degenerate."""
     from shapely.geometry import Polygon
     if footprint.shape[0] < 3:
         return None
@@ -80,7 +94,7 @@ def _polygon(footprint):
 
 def footprint_distance(a, b) -> float:
     """Nearest distance between two footprints, or between centres if degenerate."""
-    pa, pb = _polygon(a.footprint), _polygon(b.footprint)
+    pa, pb = polygon_of(a.footprint), polygon_of(b.footprint)
     if pa is None or pb is None:
         return float(np.linalg.norm(a.center[:2] - b.center[:2]))
     try:
@@ -91,7 +105,7 @@ def footprint_distance(a, b) -> float:
 
 def footprint_overlap(a, b) -> tuple:
     """(intersection over smaller area, one contains the other)."""
-    pa, pb = _polygon(a.footprint), _polygon(b.footprint)
+    pa, pb = polygon_of(a.footprint), polygon_of(b.footprint)
     if pa is None or pb is None:
         return 0.0, 0.0
     try:
@@ -133,7 +147,7 @@ def road_frame(node, region, members) -> RoadFrame:
     pt = Point(float(node.center[0]), float(node.center[1]))
     best = None
     for seg in members:
-        poly = _polygon(seg.footprint)
+        poly = polygon_of(seg.footprint)
         if poly is None:
             continue
         d = float(pt.distance(poly))
@@ -166,13 +180,18 @@ class EdgeContext:
     """Everything an edge needs that is not one of its two endpoints."""
 
     def __init__(self, road_regions=None, road_members=None, agent_xy=None,
-                 agent_yaw=0.0, nearest_road=None):
+                 agent_yaw=0.0, nearest_road=None, second_anchor=None,
+                 cross_road=None):
         self.road_regions = road_regions or []
         self.road_members = road_members or {}
         self.agent_xy = (np.zeros(2) if agent_xy is None
                          else np.asarray(agent_xy, dtype=np.float64)[:2])
         self.agent_yaw = float(agent_yaw)
         self.nearest_road = nearest_road or {}
+        # The optional second anchor that makes a "between" factor, and the road
+        # region whose crossing decides "across the road".
+        self.second_anchor = second_anchor
+        self.cross_road = cross_road
 
 
 def edge_vector(a, b, ctx: EdgeContext = None) -> np.ndarray:
@@ -226,6 +245,33 @@ def edge_vector(a, b, ctx: EdgeContext = None) -> np.ndarray:
             same_side = float(np.sign(chosen.side) == np.sign(b_side))
             opposite_side = float(np.sign(chosen.side) != np.sign(b_side))
 
+    between_t = 0.0
+    between_perp = 0.0
+    between_span = 0.0
+    if ctx.second_anchor is not None:
+        second = np.asarray(ctx.second_anchor, dtype=np.float64)[:2]
+        first = a.center[:2]
+        span = second - first
+        length = float(np.linalg.norm(span))
+        if length > 1e-6:
+            t = float((b.center[:2] - first) @ span) / (length ** 2)
+            perp = float(np.linalg.norm((b.center[:2] - first) - t * span))
+            between_t, between_perp, between_span = t, perp, length
+
+    crosses = 0.0
+    if ctx.cross_road is not None and ctx.cross_road[0] is not None:
+        from shapely.geometry import LineString
+        region_members = ctx.cross_road[1]
+        try:
+            line = LineString([tuple(a.center[:2]), tuple(b.center[:2])])
+            for seg in region_members:
+                poly = polygon_of(seg.footprint)
+                if poly is not None and line.intersects(poly):
+                    crosses = 1.0
+                    break
+        except Exception:
+            crosses = 0.0
+
     raw = np.array([
         delta[0], delta[1], delta[2],
         np.log1p(centre_d), centre_d,
@@ -242,5 +288,7 @@ def edge_vector(a, b, ctx: EdgeContext = None) -> np.ndarray:
         float(xy @ major), float(xy @ minor),
         float(xy @ heading),
         float(xy @ right),
+        between_t, between_perp, between_span,
+        crosses,
     ], dtype=np.float64)
     return (raw / _SCALE).astype(np.float32)
