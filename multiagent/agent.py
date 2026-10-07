@@ -26,6 +26,12 @@ from multiagent.models.CLIP import CLIP
 # from direction.models.ddppo.resenet_encoders import TorchVisionResNet50
 from multiagent.models.goal_predictor import GoalPredictor, MapEncoder
 from multiagent.models.spatial_belief import metric_gaussian_target, greedy_nms_topk, local_soft_argmax_xy
+from multiagent.models.candidate_selector import (
+    candidate_ranking_loss,
+    heatmap_ids_to_normalized_xy,
+    select_candidate_with_abstention,
+)
+from multiagent.mapdata import GROUND_LEVEL
 from multiagent.observation import cropclient
 from multiagent.space import Pose4D, Point2D, Point3D
 from multiagent.teacher.algorithm.lookahead import lookahead_discrete_action
@@ -181,30 +187,50 @@ class NavCMTAgent:
 
         # create the et model
         self.vln_model = ET(self.args).cuda()
+
+        # Optional diagnostic training mode: keep the already-trained HETT
+        # heatmap/controller/backbones fixed and optimize only the new visual
+        # candidate discriminator. This prevents a randomly initialized
+        # selector from changing the proposal distribution while it learns.
+        if (
+            getattr(self.args, 'candidate_selector', False)
+            and getattr(self.args, 'candidate_selector_freeze_base', False)
+        ):
+            for parameter in self.lang_model.parameters():
+                parameter.requires_grad = False
+            for parameter in self.vision_model.parameters():
+                parameter.requires_grad = False
+            for name, parameter in self.vln_model.named_parameters():
+                parameter.requires_grad = name.startswith('candidate_visual_selector.')
         # self.map_encoder = MapEncoder(240)
         # self.goal_predictpr = GoalPredictor(240, 7)
         self.progress_regression = nn.MSELoss(reduction='sum')
 
         if self.args.world_size > 1 and allow_ngpus:
-            self.lang_model = DDP(self.lang_model, broadcast_buffers=False, find_unused_parameters=True,
-                                  device_ids=[self.args.local_rank], output_device=self.args.local_rank)
-            self.vision_model = DDP(self.vision_model, broadcast_buffers=False, find_unused_parameters=True,
-                                    device_ids=[self.args.local_rank], output_device=self.args.local_rank)
-            self.vln_model = DDP(self.vln_model, broadcast_buffers=False, find_unused_parameters=True,
-                                 device_ids=[self.args.local_rank], output_device=self.args.local_rank)
+            def maybe_wrap_ddp(model):
+                if not any(parameter.requires_grad for parameter in model.parameters()):
+                    return model
+                return DDP(
+                    model,
+                    broadcast_buffers=False,
+                    find_unused_parameters=True,
+                    device_ids=[self.args.local_rank],
+                    output_device=self.args.local_rank,
+                )
 
-            # self.lang_model = nn.DataParallel(self.lang_model).cuda()
-            # self.vision_model = nn.DataParallel(self.vision_model).cuda()
-            # self.vln_model = nn.DataParallel(self.vln_model).cuda()
-            self.lang_model_without_ddp = self.lang_model.module
-            self.vision_model_without_ddp = self.vision_model.module
-            self.vln_model_without_ddp = self.vln_model.module
+            self.lang_model = maybe_wrap_ddp(self.lang_model)
+            self.vision_model = maybe_wrap_ddp(self.vision_model)
+            self.vln_model = maybe_wrap_ddp(self.vln_model)
 
-
-        else:
-            self.lang_model_without_ddp = self.lang_model
-            self.vision_model_without_ddp = self.vision_model
-            self.vln_model_without_ddp = self.vln_model
+        self.lang_model_without_ddp = (
+            self.lang_model.module if isinstance(self.lang_model, DDP) else self.lang_model
+        )
+        self.vision_model_without_ddp = (
+            self.vision_model.module if isinstance(self.vision_model, DDP) else self.vision_model
+        )
+        self.vln_model_without_ddp = (
+            self.vln_model.module if isinstance(self.vln_model, DDP) else self.vln_model
+        )
 
         # self.vln_model = ViT_LSTM(
         #     self.args, 
@@ -213,12 +239,16 @@ class NavCMTAgent:
         # optimizer        
         assert args.optim in ("adam", "adamW")
         OptimizerClass = torch.optim.Adam if args.optim == "adam" else torch.optim.AdamW
-        self.et_optimizer = OptimizerClass(filter(lambda p: p.requires_grad, self.vln_model.parameters()),
-                                           lr=args.learning_rate)
-        self.lang_model_optimizer = OptimizerClass(filter(lambda p: p.requires_grad, self.lang_model.parameters()),
-                                                   lr=self.args.learning_rate)
-        self.vision_model_optimizer = OptimizerClass(filter(lambda p: p.requires_grad, self.vision_model.parameters()),
-                                                     lr=self.args.learning_rate)
+
+        def make_optimizer(model):
+            parameters = [p for p in model.parameters() if p.requires_grad]
+            if not parameters:
+                return None
+            return OptimizerClass(parameters, lr=self.args.learning_rate)
+
+        self.et_optimizer = make_optimizer(self.vln_model)
+        self.lang_model_optimizer = make_optimizer(self.lang_model)
+        self.vision_model_optimizer = make_optimizer(self.vision_model)
         self.optimizers = (self.et_optimizer, self.lang_model_optimizer, self.vision_model_optimizer)
         # self.optimizers = (self.et_optimizer, self.lang_model_optimizer)
 
@@ -310,9 +340,18 @@ class NavCMTAgent:
         ''' Train for a given number of epochs '''
         self.feedback = feedback
 
-        self.lang_model.train()
-        self.vln_model.train()
-        self.vision_model.train()
+        if (
+            getattr(self.args, 'candidate_selector', False)
+            and getattr(self.args, 'candidate_selector_freeze_base', False)
+        ):
+            self.lang_model.eval()
+            self.vision_model.eval()
+            self.vln_model.eval()
+            self.vln_model_without_ddp.candidate_visual_selector.train()
+        else:
+            self.lang_model.train()
+            self.vln_model.train()
+            self.vision_model.train()
 
         self.losses = []
         for epoch in range(1, n_epochs + 1):
@@ -326,9 +365,13 @@ class NavCMTAgent:
                 # if idx >= 100:
                 #     break
                 # train_loop_start_time = time.time()
-                self.lang_model_optimizer.zero_grad(set_to_none=True)
-                self.vision_model_optimizer.zero_grad(set_to_none=True)
-                self.et_optimizer.zero_grad(set_to_none=True)
+                for optimizer in (
+                    self.lang_model_optimizer,
+                    self.vision_model_optimizer,
+                    self.et_optimizer,
+                ):
+                    if optimizer is not None:
+                        optimizer.zero_grad(set_to_none=True)
                 self.loss = 0
 
                 if feedback == 'teacher':
@@ -354,9 +397,13 @@ class NavCMTAgent:
 
                 torch.nn.utils.clip_grad_norm_(self.vln_model.parameters(), 40.)
 
-                self.lang_model_optimizer.step()
-                self.vision_model_optimizer.step()
-                self.et_optimizer.step()
+                for optimizer in (
+                    self.lang_model_optimizer,
+                    self.vision_model_optimizer,
+                    self.et_optimizer,
+                ):
+                    if optimizer is not None:
+                        optimizer.step()
                 # print("---------- One iter takes %s seconds ---" % (time.time() - train_loop_start_time))
 
                 if self.default_gpu:
@@ -378,7 +425,8 @@ class NavCMTAgent:
         self.losses = []
         for model, optimizer in zip(self.models, self.optimizers):
             model.train()
-            optimizer.zero_grad()
+            if optimizer is not None:
+                optimizer.zero_grad()
 
     def rollout(self, train_ml=None, visualize=False):
 
@@ -454,6 +502,23 @@ class NavCMTAgent:
         heatmap_top16_nearest_distance_sum = torch.zeros((), device='cuda')
         heatmap_top16_candidate_distance_sum = torch.zeros((), device='cuda')
 
+        candidate_selector_loss = torch.zeros((), device='cuda')
+        candidate_selector_hard_loss = torch.zeros((), device='cuda')
+        candidate_selector_list_loss = torch.zeros((), device='cuda')
+        candidate_selector_train_eligible = torch.zeros((), device='cuda')
+        candidate_selector_decision_count = torch.zeros((), device='cuda')
+        candidate_selector_trigger_count = torch.zeros((), device='cuda')
+        candidate_selector_change_count = torch.zeros((), device='cuda')
+        candidate_selector_rescue_count = torch.zeros((), device='cuda')
+        candidate_selector_regression_count = torch.zeros((), device='cuda')
+        candidate_selector_visible_sum = torch.zeros((), device='cuda')
+        candidate_selector_selected_distance_sum = torch.zeros((), device='cuda')
+        candidate_selector_eval_eligible = torch.zeros((), device='cuda')
+        candidate_selector_visual_top1_hits = torch.zeros((), device='cuda')
+        candidate_selector_raw_top1_hits = torch.zeros((), device='cuda')
+        candidate_selector_visual_distance_sum = torch.zeros((), device='cuda')
+        candidate_selector_raw_distance_sum = torch.zeros((), device='cuda')
+
         stage1_step = 0
         teacher_stage1_steps = np.zeros(batch_size, dtype=np.int32)
         stage2_step = 0
@@ -472,6 +537,14 @@ class NavCMTAgent:
             'lang_cls': linear_cls,
             'map_fts': torch.zeros(batch_size, 0, 512, 49).cuda(),
         }
+        if getattr(self.args, 'candidate_selector', False):
+            selector_cells = self.args.heatmap_grid_size ** 2
+            input['candidate_visual_memory'] = torch.zeros(
+                batch_size, selector_cells, 512, device='cuda'
+            )
+            input['candidate_visual_count'] = torch.zeros(
+                batch_size, selector_cells, device='cuda'
+            )
 
         stage1_ended = np.array([False] * batch_size)
         stage2_recover_count = np.zeros(batch_size, dtype=np.int32)
@@ -536,7 +609,31 @@ class NavCMTAgent:
 
 
 
-            pred_direction, pred_progress, pred_goals, pred_logits, grid_ft = self.vln_model(
+            view_radius_m = torch.as_tensor(
+                [
+                    max(
+                        1.0,
+                        float(ob['pose'].z) - float(GROUND_LEVEL[ob['map_name']]),
+                    )
+                    for ob in obs
+                ],
+                dtype=torch.float32,
+                device='cuda',
+            )
+
+            (
+                pred_direction,
+                pred_progress,
+                pred_goals,
+                pred_logits,
+                grid_ft,
+                selector_candidate_ids,
+                selector_logits,
+                selector_visible,
+                selector_candidate_xy,
+                selector_current_visual,
+                selector_current_visible,
+            ) = self.vln_model(
                 directions=input['directions'],
                 frames=input['frames'],
                 lenths=input['lenths'],
@@ -547,8 +644,41 @@ class NavCMTAgent:
                 lang_mask=input['lang_mask'],
                 candidates=input['candidates'],
                 centroids=input['centroids'],
-                lang_cls=input['lang_cls']
+                lang_cls=input['lang_cls'],
+                view_radius_m=view_radius_m,
+                **(
+                    {
+                        'candidate_visual_memory': input['candidate_visual_memory'],
+                        'candidate_visual_count': input['candidate_visual_count'],
+                    }
+                    if getattr(self.args, 'candidate_selector', False)
+                    else {}
+                ),
             )
+
+            # Store only actually observed candidate-specific RGB evidence.
+            # The memory is keyed by 28x28 heatmap cell and detached across
+            # navigation steps; unobserved hypotheses never receive image data.
+            if selector_current_visual is not None:
+                memory_index = selector_candidate_ids.unsqueeze(-1).expand(
+                    -1, -1, selector_current_visual.shape[-1]
+                )
+                observed_visual = (
+                    selector_current_visual.detach()
+                    * selector_current_visible.unsqueeze(-1).to(
+                        selector_current_visual.dtype
+                    )
+                )
+                input['candidate_visual_memory'].scatter_add_(
+                    1, memory_index, observed_visual
+                )
+                input['candidate_visual_count'].scatter_add_(
+                    1,
+                    selector_candidate_ids,
+                    selector_current_visible.to(
+                        input['candidate_visual_count'].dtype
+                    ),
+                )
 
             # Dense Stage-1 spatial belief: softmax -> greedy NMS Top-K.
             heatmap_probs = torch.softmax(pred_logits, dim=1)
@@ -561,18 +691,47 @@ class NavCMTAgent:
                 top_k=self.args.heatmap_top_k,
                 kernel_size=self.args.heatmap_nms_kernel,
             )
-            heatmap_goal_ids = heatmap_topk_ids[:, 0]
-            heatmap_goal_rows = torch.div(
-                heatmap_goal_ids,
-                self.args.heatmap_grid_size,
-                rounding_mode='floor',
-            ).float()
-            heatmap_goal_cols = (
-                heatmap_goal_ids % self.args.heatmap_grid_size
-            ).float()
-            # Refine the Top-1 cell to a continuous coordinate using only its
-            # local probability mass; this preserves the selected mode while
-            # avoiding a hard jump to the cell center.
+            raw_heatmap_goal_ids = heatmap_topk_ids[:, 0]
+            heatmap_goal_ids = raw_heatmap_goal_ids
+            selector_decision = None
+            selector_applied = torch.zeros(
+                batch_size, dtype=torch.bool, device=pred_logits.device
+            )
+            if (
+                getattr(self.args, 'candidate_selector', False)
+                and selector_logits is not None
+            ):
+                selector_decision = select_candidate_with_abstention(
+                    raw_heatmap_goal_ids,
+                    selector_candidate_ids,
+                    selector_logits,
+                    selector_visible,
+                    min_visible_candidates=self.args.candidate_selector_min_visible,
+                    min_confidence=self.args.candidate_selector_min_confidence,
+                    min_margin=self.args.candidate_selector_min_margin,
+                )
+                # Never let a randomly initialized/learning selector alter
+                # student training trajectories. It is trained from GT only
+                # and becomes an inference-time discriminator after rollout.
+                if self.feedback == 'student' and train_ml is None:
+                    selector_applied = selector_decision.triggered
+                    heatmap_goal_ids = torch.where(
+                        selector_applied,
+                        selector_decision.chosen_ids,
+                        raw_heatmap_goal_ids,
+                    )
+
+            # Keep a raw-heatmap refinement for apples-to-apples diagnostics,
+            # then refine the actually selected mode for navigation.
+            raw_heatmap_goals = local_soft_argmax_xy(
+                heatmap_probs.reshape(
+                    -1,
+                    self.args.heatmap_grid_size,
+                    self.args.heatmap_grid_size,
+                ),
+                raw_heatmap_goal_ids,
+                window_size=self.args.heatmap_local_window,
+            )
             heatmap_goals = local_soft_argmax_xy(
                 heatmap_probs.reshape(
                     -1,
@@ -603,6 +762,19 @@ class NavCMTAgent:
             ), dim=1).detach().cpu().numpy()
             pred_progress_t = host_predictions[:, 0]
             at_direction = host_predictions[:, 1]
+            selector_host = None
+            if selector_decision is not None:
+                selector_host = torch.stack(
+                    (
+                        selector_decision.confidence,
+                        selector_decision.margin,
+                        selector_decision.visible_count.to(torch.float32),
+                        selector_applied.to(torch.float32),
+                        heatmap_goal_ids.to(torch.float32),
+                        raw_heatmap_goal_ids.to(torch.float32),
+                    ),
+                    dim=1,
+                ).detach().cpu().numpy()
             # for i in range(len(a_t_next_pos_ratio)):
             #     max_of_a_t_next_pos_i = max(abs(a_t_next_pos_ratio[i][0]), abs(a_t_next_pos_ratio[i][1]), 1)
             #     a_t_next_pos_ratio[i][0] /= max_of_a_t_next_pos_i
@@ -707,12 +879,113 @@ class NavCMTAgent:
                     candidate_distances_m[:, 0] * active_mask
                 ).sum()
                 refined_top1_distance_m = torch.linalg.vector_norm(
-                    (heatmap_goals - gt_xy) * self.args.map_meters,
+                    (raw_heatmap_goals - gt_xy) * self.args.map_meters,
                     dim=-1,
                 )
                 heatmap_refined_top1_distance_sum += (
                     refined_top1_distance_m * active_mask
                 ).sum()
+
+                if (
+                    getattr(self.args, 'candidate_selector', False)
+                    and selector_logits is not None
+                ):
+                    selector_distances_m = torch.linalg.vector_norm(
+                        (
+                            selector_candidate_xy
+                            - gt_xy.unsqueeze(1).to(selector_candidate_xy)
+                        ) * self.args.map_meters,
+                        dim=-1,
+                    )
+                    ranking = candidate_ranking_loss(
+                        selector_logits,
+                        selector_distances_m,
+                        selector_visible,
+                        active_bool,
+                        good_radius_m=self.args.candidate_selector_good_radius_m,
+                        list_temperature_m=self.args.candidate_selector_list_temperature_m,
+                        list_weight=self.args.candidate_selector_list_weight,
+                        min_visible_candidates=self.args.candidate_selector_min_visible,
+                    )
+                    candidate_selector_loss = (
+                        candidate_selector_loss + ranking.total
+                    )
+                    candidate_selector_hard_loss = (
+                        candidate_selector_hard_loss + ranking.hard
+                    )
+                    candidate_selector_list_loss = (
+                        candidate_selector_list_loss + ranking.listwise
+                    )
+                    candidate_selector_train_eligible += ranking.eligible_count
+
+                    # GT is used only for diagnostics/training supervision.
+                    # Compare visual Top-1 and raw heatmap Top-1 on exactly the
+                    # same steps where the visible candidate set contains a
+                    # supervised good hypothesis.
+                    selector_pred_distance_m = selector_distances_m.gather(
+                        1, selector_decision.selected_rank[:, None]
+                    ).squeeze(1)
+                    eligible_eval = ranking.eligible_mask
+                    raw_distance_m = candidate_distances_m[:, 0]
+                    candidate_selector_eval_eligible += eligible_eval.sum()
+                    candidate_selector_visual_top1_hits += (
+                        eligible_eval
+                        & (selector_pred_distance_m <= self.args.success_dist)
+                    ).sum()
+                    candidate_selector_raw_top1_hits += (
+                        eligible_eval
+                        & (raw_distance_m <= self.args.success_dist)
+                    ).sum()
+                    candidate_selector_visual_distance_sum += (
+                        selector_pred_distance_m
+                        * eligible_eval.to(selector_pred_distance_m)
+                    ).sum()
+                    candidate_selector_raw_distance_sum += (
+                        raw_distance_m * eligible_eval.to(raw_distance_m)
+                    ).sum()
+
+                    decision_mask = (
+                        active_bool
+                        & (
+                            selector_decision.visible_count
+                            >= self.args.candidate_selector_min_visible
+                        )
+                    )
+                    candidate_selector_decision_count += decision_mask.sum()
+                    candidate_selector_visible_sum += (
+                        selector_decision.visible_count.to(active_mask)
+                        * decision_mask.to(active_mask)
+                    ).sum()
+                    applied_active = selector_applied & active_bool
+                    candidate_selector_trigger_count += applied_active.sum()
+                    changed = (
+                        applied_active
+                        & (heatmap_goal_ids != raw_heatmap_goal_ids)
+                    )
+                    candidate_selector_change_count += changed.sum()
+
+                    selected_xy = heatmap_ids_to_normalized_xy(
+                        heatmap_goal_ids[:, None],
+                        field_size=self.args.heatmap_grid_size,
+                    ).squeeze(1).to(gt_xy)
+                    selected_distance_m = torch.linalg.vector_norm(
+                        (selected_xy - gt_xy) * self.args.map_meters,
+                        dim=-1,
+                    )
+                    candidate_selector_selected_distance_sum += (
+                        selected_distance_m * applied_active.to(selected_distance_m)
+                    ).sum()
+                    candidate_selector_rescue_count += (
+                        changed
+                        & (raw_distance_m > self.args.success_dist)
+                        & (selected_distance_m <= self.args.success_dist)
+                    ).sum()
+                    candidate_selector_regression_count += (
+                        changed
+                        & (raw_distance_m <= self.args.success_dist)
+                        & (selected_distance_m > self.args.success_dist)
+                    ).sum()
+
                 heatmap_top16_nearest_distance_sum += (
                     candidate_distances_m.min(dim=1).values * active_mask
                 ).sum()
@@ -731,7 +1004,23 @@ class NavCMTAgent:
                         traj[i]['gt_goal'].append(gt_goal[i])
                     traj[i]['progress'].append(float(host_predictions[i, 0]))
                     traj[i]['heatmap_goal_id'].append(int(host_predictions[i, 4]))
+                    traj[i]['heatmap_raw_goal_id'].append(
+                        int(raw_heatmap_goal_ids[i].detach().cpu())
+                    )
                     traj[i]['heatmap_confidence'].append(float(host_predictions[i, 5]))
+                    if selector_host is not None:
+                        traj[i]['candidate_selector_confidence'].append(
+                            float(selector_host[i, 0])
+                        )
+                        traj[i]['candidate_selector_margin'].append(
+                            float(selector_host[i, 1])
+                        )
+                        traj[i]['candidate_selector_visible'].append(
+                            int(selector_host[i, 2])
+                        )
+                        traj[i]['candidate_selector_applied'].append(
+                            bool(selector_host[i, 3])
+                        )
                     traj[i]['heatmap_topk_ids'].append(
                         heatmap_topk_ids[i].detach().cpu().tolist()
                     )
@@ -893,7 +1182,13 @@ class NavCMTAgent:
         if train_ml is not None:
             # print(ml_loss)
             # ml_loss = direction_loss + progress_loss
-            ml_loss = 1 * direction_loss + 0.1 * progress_loss + 2 * goal_predict_loss + self.args.heatmap_loss_weight * heatmap_loss
+            ml_loss = (
+                1 * direction_loss
+                + 0.1 * progress_loss
+                + 2 * goal_predict_loss
+                + self.args.heatmap_loss_weight * heatmap_loss
+                + self.args.candidate_selector_loss_weight * candidate_selector_loss
+            )
             # ml_loss = progress_loss + goal_predict_loss
             self.loss += ml_loss * train_ml / batch_size
 
@@ -903,6 +1198,15 @@ class NavCMTAgent:
             self.logs['progress_loss'].append((progress_loss * train_ml / batch_size).item())
             self.logs['goal_predict_loss'].append((goal_predict_loss * train_ml / batch_size).item())
             self.logs['heatmap_loss'].append((heatmap_loss * train_ml / batch_size).item())
+            self.logs['candidate_selector_loss'].append(
+                (candidate_selector_loss * train_ml / batch_size).item()
+            )
+            self.logs['candidate_selector_hard_loss'].append(
+                (candidate_selector_hard_loss * train_ml / batch_size).item()
+            )
+            self.logs['candidate_selector_list_loss'].append(
+                (candidate_selector_list_loss * train_ml / batch_size).item()
+            )
             self.logs['IL_loss'].append((ml_loss * train_ml / batch_size).item())
 
         if type(self.loss) is int:  # For safety, it will be activated if no losses are added
@@ -943,6 +1247,39 @@ class NavCMTAgent:
         for name, value in zip(diagnostic_names, diagnostic_values):
             self.logs[name].append(value)
 
+        selector_values = torch.stack((
+            candidate_selector_train_eligible,
+            candidate_selector_decision_count,
+            candidate_selector_trigger_count,
+            candidate_selector_change_count,
+            candidate_selector_rescue_count,
+            candidate_selector_regression_count,
+            candidate_selector_visible_sum,
+            candidate_selector_selected_distance_sum,
+            candidate_selector_eval_eligible,
+            candidate_selector_visual_top1_hits,
+            candidate_selector_raw_top1_hits,
+            candidate_selector_visual_distance_sum,
+            candidate_selector_raw_distance_sum,
+        )).detach().cpu().tolist()
+        selector_names = (
+            'candidate_selector_train_eligible',
+            'candidate_selector_decision_count',
+            'candidate_selector_trigger_count',
+            'candidate_selector_change_count',
+            'candidate_selector_rescue_count',
+            'candidate_selector_regression_count',
+            'candidate_selector_visible_sum',
+            'candidate_selector_selected_distance_sum_m',
+            'candidate_selector_eval_eligible',
+            'candidate_selector_visual_top1_hits',
+            'candidate_selector_raw_top1_hits',
+            'candidate_selector_visual_distance_sum_m',
+            'candidate_selector_raw_distance_sum_m',
+        )
+        for name, value in zip(selector_names, selector_values):
+            self.logs[name].append(value)
+
         # print('[3]')
         # debug_memory()
         # print()
@@ -970,7 +1307,7 @@ class NavCMTAgent:
             states[name] = {
                 'epoch': epoch + 1,
                 'state_dict': model.state_dict(),
-                'optimizer': optimizer.state_dict(),
+                'optimizer': None if optimizer is None else optimizer.state_dict(),
             }
 
         all_tuple = [("lang_model", self.lang_model_without_ddp, self.lang_model_optimizer),
@@ -999,7 +1336,11 @@ class NavCMTAgent:
                 state_dict = {k: v for k, v in states[name]['state_dict'].items() if k in model_keys}
             state.update(state_dict)
             model.load_state_dict(state)
-            if self.args.resume_optimizer:
+            if (
+                self.args.resume_optimizer
+                and optimizer is not None
+                and states[name].get('optimizer') is not None
+            ):
                 optimizer.load_state_dict(states[name]['optimizer'])
 
             def count_parameters(mo):

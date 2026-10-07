@@ -10,7 +10,12 @@ from torch.nn import functional as F
 import numpy as np
 
 from .goal_predictor import MapEncoder
-from .spatial_belief import CompactSpatialBelief
+from .spatial_belief import CompactSpatialBelief, greedy_nms_topk
+from .candidate_selector import (
+    CandidateVisualSelector,
+    heatmap_ids_to_normalized_xy,
+    sample_candidate_features_from_current_view,
+)
 
 
 def aggregate_history_grid(grid_fts, grid_indices, text_fts, grid_proj, cell_count):
@@ -166,6 +171,20 @@ class ET(nn.Module):
         self.text_proj = nn.Linear(768, 768)
         self.grid_proj = nn.Linear(768, 768)
 
+        # Optional Top-K discriminator. It is intentionally independent of the
+        # heatmap score and referenced-landmark map. The only candidate-specific
+        # evidence is what is actually visible in the current RGB feature map,
+        # conditioned on the instruction tokens.
+        self.candidate_visual_selector = None
+        if getattr(self.args, "candidate_selector", False):
+            self.candidate_visual_selector = CandidateVisualSelector(
+                visual_dim=512,
+                language_dim=self.args.demb,
+                hidden_dim=self.args.candidate_selector_hidden_dim,
+                attention_heads=self.args.candidate_selector_heads,
+                dropout=self.args.candidate_selector_dropout,
+            )
+
     def forward(self, **inputs):
         """
         forward the model for multiple time-steps (used for training)
@@ -279,8 +298,97 @@ class ET(nn.Module):
         )
         target_logits = belief.logits.flatten(1)
 
-        # print(encoder_out_candidates.shape)
+        selector_candidate_ids = None
+        selector_logits = None
+        selector_visible = None
+        selector_candidate_xy = None
+        selector_current_visual = None
+        selector_current_visible = None
+        if self.candidate_visual_selector is not None:
+            selector_k = min(
+                int(self.args.candidate_selector_top_k),
+                int(self.args.heatmap_top_k),
+            )
+            selector_candidate_ids = greedy_nms_topk(
+                belief.probabilities,
+                top_k=selector_k,
+                kernel_size=self.args.heatmap_nms_kernel,
+            )
+            selector_candidate_xy = heatmap_ids_to_normalized_xy(
+                selector_candidate_ids,
+                field_size=self.args.heatmap_grid_size,
+            )
 
-        # print(direction, progress, goal_logits)
+            current_direction = inputs["directions"][:, -1]
+            if "view_radius_m" not in inputs:
+                raise ValueError(
+                    "view_radius_m is required when candidate_selector is enabled"
+                )
+            current_frame_map = im_feature[:, -1]
+            selector_current_visual, selector_current_visible = (
+                sample_candidate_features_from_current_view(
+                    current_frame_map,
+                    selector_candidate_xy,
+                    current_direction[:, 2:4],
+                    current_direction[:, 0],
+                    current_direction[:, 1],
+                    inputs["view_radius_m"],
+                    map_meters=self.args.map_meters,
+                )
+            )
 
-        return direction, progress, pred_goals, target_logits, emb_frames + emb_directions
+            if (
+                "candidate_visual_memory" not in inputs
+                or "candidate_visual_count" not in inputs
+            ):
+                raise ValueError(
+                    "candidate visual memory is required when selector is enabled"
+                )
+            memory = inputs["candidate_visual_memory"]
+            memory_count = inputs["candidate_visual_count"]
+            expected_cells = self.args.heatmap_grid_size ** 2
+            if memory.shape != (batch_size, expected_cells, 512):
+                raise ValueError("candidate_visual_memory shape mismatch")
+            if memory_count.shape != (batch_size, expected_cells):
+                raise ValueError("candidate_visual_count shape mismatch")
+
+            gather_index = selector_candidate_ids.unsqueeze(-1).expand(-1, -1, 512)
+            historical_sum = memory.gather(1, gather_index)
+            historical_count = memory_count.gather(1, selector_candidate_ids)
+            evidence_sum = historical_sum + (
+                selector_current_visual
+                * selector_current_visible.unsqueeze(-1).to(
+                    selector_current_visual.dtype
+                )
+            )
+            evidence_count = (
+                historical_count
+                + selector_current_visible.to(historical_count.dtype)
+            )
+            selector_visible = evidence_count > 0
+            candidate_visual = evidence_sum / evidence_count.clamp_min(
+                1.0
+            ).unsqueeze(-1)
+
+            selector_logits = self.candidate_visual_selector(
+                candidate_visual,
+                emb_lang,
+                inputs.get("lang_mask"),
+            )
+
+        # Candidate selector outputs are diagnostics/selection evidence only.
+        # The heatmap logits remain unchanged and the selector never receives
+        # heatmap probabilities or landmark-mask values.
+        return (
+            direction,
+            progress,
+            pred_goals,
+            target_logits,
+            emb_frames + emb_directions,
+            selector_candidate_ids,
+            selector_logits,
+            selector_visible,
+            selector_candidate_xy,
+            selector_current_visual,
+            selector_current_visible,
+        )

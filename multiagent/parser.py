@@ -104,6 +104,26 @@ def parse_args():
                         help='Odd local window for soft-argmax refinement around Top-1')
     parser.add_argument('--heatmap_loss_weight', type=float, default=0.1,
                         help='Weight of the Stage-1 heatmap loss')
+    parser.add_argument('--candidate_selector', action='store_true', default=False,
+                        help='Enable independent RGB-language reranking of heatmap Top-K candidates')
+    parser.add_argument('--candidate_selector_top_k', type=int, default=8,
+                        help='Number of heatmap hypotheses exposed to the visual selector')
+    parser.add_argument('--candidate_selector_hidden_dim', type=int, default=256)
+    parser.add_argument('--candidate_selector_heads', type=int, default=8)
+    parser.add_argument('--candidate_selector_dropout', type=float, default=0.1)
+    parser.add_argument('--candidate_selector_min_visible', type=int, default=2,
+                        help='Minimum simultaneously visible hypotheses before selector may override heatmap Top-1')
+    parser.add_argument('--candidate_selector_min_confidence', type=float, default=0.55,
+                        help='Minimum selector softmax confidence required for inference override')
+    parser.add_argument('--candidate_selector_min_margin', type=float, default=0.10,
+                        help='Minimum selector Top1-Top2 probability margin required for inference override')
+    parser.add_argument('--candidate_selector_good_radius_m', type=float, default=20.0,
+                        help='Nearest-candidate radius required before applying selector supervision')
+    parser.add_argument('--candidate_selector_list_temperature_m', type=float, default=20.0)
+    parser.add_argument('--candidate_selector_list_weight', type=float, default=0.5)
+    parser.add_argument('--candidate_selector_loss_weight', type=float, default=0.2)
+    parser.add_argument('--candidate_selector_freeze_base', action='store_true', default=False,
+                        help='Freeze HETT language/vision/base policy and train only the new candidate selector')
     parser.add_argument('--stage1_switch_dist', type=float, default=25.0,
                         help='Distance in meters for switching from coarse Stage 1 to fine Stage 2')
     parser.add_argument('--stage2_recover_dist', type=float, default=40.0,

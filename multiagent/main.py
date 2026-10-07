@@ -52,6 +52,56 @@ def heatmap_diagnostics_summary(logs, success_radius_m):
     return ' '.join(values)
 
 
+def candidate_selector_diagnostics_summary(logs):
+    """Summarize independent RGB-language Top-K discrimination."""
+    decisions = sum(logs.get('candidate_selector_decision_count', ()))
+    triggers = sum(logs.get('candidate_selector_trigger_count', ()))
+    changes = sum(logs.get('candidate_selector_change_count', ()))
+    rescues = sum(logs.get('candidate_selector_rescue_count', ()))
+    regressions = sum(logs.get('candidate_selector_regression_count', ()))
+    eligible = sum(logs.get('candidate_selector_train_eligible', ()))
+    visible_sum = sum(logs.get('candidate_selector_visible_sum', ()))
+    selected_distance_sum = sum(
+        logs.get('candidate_selector_selected_distance_sum_m', ())
+    )
+    eval_eligible = sum(logs.get('candidate_selector_eval_eligible', ()))
+    visual_hits = sum(logs.get('candidate_selector_visual_top1_hits', ()))
+    raw_hits = sum(logs.get('candidate_selector_raw_top1_hits', ()))
+    visual_distance = sum(
+        logs.get('candidate_selector_visual_distance_sum_m', ())
+    )
+    raw_distance = sum(
+        logs.get('candidate_selector_raw_distance_sum_m', ())
+    )
+    if decisions <= 0 and eligible <= 0 and triggers <= 0 and eval_eligible <= 0:
+        return None
+
+    values = [
+        'train_eligible=%d' % round(eligible),
+        'decision_steps=%d' % round(decisions),
+        'trigger=%d' % round(triggers),
+        'changes=%d' % round(changes),
+        'rescue=%d' % round(rescues),
+        'regression=%d' % round(regressions),
+        'net_rescue=%d' % round(rescues - regressions),
+    ]
+    if eval_eligible > 0:
+        values.extend((
+            'matched_n=%d' % round(eval_eligible),
+            'visual_top1@20=%.4f' % (visual_hits / eval_eligible),
+            'raw_top1@20=%.4f' % (raw_hits / eval_eligible),
+            'visual_dist=%.3f' % (visual_distance / eval_eligible),
+            'raw_dist=%.3f' % (raw_distance / eval_eligible),
+        ))
+    if decisions > 0:
+        values.append('mean_visible=%.3f' % (visible_sum / decisions))
+    if triggers > 0:
+        values.append(
+            'selected_distance_m=%.3f' % (selected_distance_sum / triggers)
+        )
+    return ' '.join(values)
+
+
 def get_tokenizer(args):
     from transformers import AutoTokenizer
     tokenizer = AutoTokenizer.from_pretrained('/cver/xcding/code/tokenizer_files/bert-base-uncase')
@@ -257,6 +307,14 @@ def train(args, train_env, val_envs, rank=-1):
                         ),
                         flush=True,
                     )
+                selector_summary = candidate_selector_diagnostics_summary(agent.logs)
+                if selector_summary:
+                    print(
+                        'CANDIDATE_SELECTOR epoch=%d split=train %s' % (
+                            idx, selector_summary,
+                        ),
+                        flush=True,
+                    )
             torch.cuda.empty_cache()
             continue
 
@@ -295,6 +353,14 @@ def train(args, train_env, val_envs, rank=-1):
                     ),
                     record_file,
                 )
+            selector_summary = candidate_selector_diagnostics_summary(agent.logs)
+            if selector_summary:
+                write_to_record_file(
+                    '\nCANDIDATE_SELECTOR epoch=%d split=train %s' % (
+                        idx, selector_summary,
+                    ),
+                    record_file,
+                )
             stage1_step = sum(agent.logs['stage1_step']) / max(len(agent.logs['stage1_step']), 1)
             stage2_step = sum(agent.logs['stage2_step']) / max(len(agent.logs['stage2_step']), 1)
             stage2_rotate = sum(agent.logs['stage2_rotate']) / max(len(agent.logs['stage2_rotate']), 1)
@@ -329,6 +395,16 @@ def train(args, train_env, val_envs, rank=-1):
                     write_to_record_file(
                         '\nHEATMAP_DIAGNOSTICS epoch=%d split=%s %s' % (
                             idx, env_name, diagnostic_summary,
+                        ),
+                        record_file,
+                    )
+                selector_summary = candidate_selector_diagnostics_summary(
+                    agent_eval.logs
+                )
+                if selector_summary:
+                    write_to_record_file(
+                        '\nCANDIDATE_SELECTOR epoch=%d split=%s %s' % (
+                            idx, env_name, selector_summary,
                         ),
                         record_file,
                     )
