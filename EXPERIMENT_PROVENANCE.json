@@ -1,0 +1,26 @@
+{
+  "experiment": "Visual Goal Abstraction / Minimal Sufficient Visual Template",
+  "branch": "2027-CVPR/visual-goal-abstraction",
+  "base_commit": "56a271a",
+  "base_branch": "codex/fpv-goal-approach-dataset",
+  "created": "2026-10-07",
+  "splits_opened": ["val_seen", "val_unseen"],
+  "test_unseen_opened": false,
+  "template_build": {
+    "command": "python scripts/build_visual_goal_dataset.py --splits val_seen val_unseen --max-per-split 100 --output runs/visual_goal_abstraction_v1_complete",
+    "episodes_per_split": 100,
+    "scales_m": [40, 80, 120],
+    "template_count": 600,
+    "view": "north-up orthophoto",
+    "query_images_used": false
+  },
+  "full_rgb_gate": {
+    "status": "blocked_invalid_or_unavailable_query_rgb",
+    "reason": "No calibrated real trajectory query manifest; existing partial AirSim cache has unresolved map registration",
+    "metrics": null
+  },
+  "training": false,
+  "navigation_rollouts": false,
+  "gpu_inference": false,
+  "renderer": "No UAV renderer used for query images; candidate 2.5-D renderer explicitly excluded"
+}
