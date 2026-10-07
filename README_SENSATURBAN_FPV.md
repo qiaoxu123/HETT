@@ -201,3 +201,23 @@ $PY scripts/run_feature_sufficiency_data.py           # ~7 min
 $PY scripts/train_feature_probes.py                   # 23 arms x 3 seeds
 $PY scripts/train_feature_probes.py --hidden 0 --tag linear
 ```
+
+### Language anchor grounding
+
+See [`LANGUAGE_ANCHOR_GROUNDING_REPORT.md`](LANGUAGE_ANCHOR_GROUNDING_REPORT.md).
+The parser splits instruction into target / anchors / relations / attributes
+(86% yield an anchor; 1.96 relation words per instruction), and 36% of samples
+name an entity in their own block. The deployable chain — ground the anchors,
+score candidates by their relation to them, fuse with the masked visual score —
+reaches 0.357 against the 0.320 baseline, **+3.7 points: FAIL** by the round's
+own threshold, and the reason is specific: removing the relation word from the
+reasoner's input *raises* the score to 0.370, while removing the geometry drops
+it to exactly the baseline. The gain is a proximity prior, not relation
+reasoning, and the oracle ladder inverts — handing the reasoner the true anchor
+scores worse than the predicted one — which localises the failure to the
+relation reasoner.
+
+```bash
+$PY scripts/run_anchor_grounding_data.py    # ~50 s
+$PY scripts/train_anchor_grounding.py       # ~5 min
+```
