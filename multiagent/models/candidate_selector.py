@@ -107,13 +107,15 @@ def sample_candidate_features_from_current_view(
     # grid_sample coordinates: x=-1 left, +1 right; y=-1 top, +1 bottom.
     grid_x = -left / radius
     grid_y = -front / radius
+    # Allow for float32 rounding at the exact view boundary (e.g. 0.6 - 0.5).
+    boundary_tolerance = 1e-5
     visible = (
         torch.isfinite(grid_x)
         & torch.isfinite(grid_y)
-        & (grid_x.abs() <= 1.0)
-        & (grid_y.abs() <= 1.0)
+        & (grid_x.abs() <= 1.0 + boundary_tolerance)
+        & (grid_y.abs() <= 1.0 + boundary_tolerance)
     )
-    grid = torch.stack((grid_x, grid_y), dim=-1).unsqueeze(2)
+    grid = torch.stack((grid_x, grid_y), dim=-1).clamp(-1.0, 1.0).unsqueeze(2)
     sampled = F.grid_sample(
         frame_features,
         grid,

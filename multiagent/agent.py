@@ -1439,4 +1439,6 @@ class NavCMTAgent:
                      ]
         for param in all_tuple:
             recover_state(*param)
-        return states['vln_model']['epoch'] - 1
+        # save() stores epoch + 1, which is the next zero-based loop index.
+        # Returning epoch - 1 would repeat the last completed epoch on resume.
+        return states['vln_model']['epoch']
