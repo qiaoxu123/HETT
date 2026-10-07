@@ -1,0 +1,19 @@
+#!/usr/bin/env python3
+import json
+from pathlib import Path
+R=Path(__file__).resolve().parents[1];A=R/'artifacts/spatial_semantic_canonicalization'
+a=json.loads((A/'language_audit.json').read_text());p=json.loads((A/'program_induction.json').read_text())['records'];c=json.loads((A/'parser_consistency.json').read_text())
+lines=['# CityNav spatial lexicon (diagnostic draft)','','Probabilities are exploratory weights from train_seen and val_seen only. The sampled geometry file does not support the road, route, final approach, or ternary programs, so these are not validated lexicon entries.','',
+'| Phrase | Anchor type | n train / val seen / val unseen | Best supported program | val seen AUC | val unseen AUC | Reliability |','|---|---|---:|---|---:|---:|---:|']
+for r in sorted(p,key=lambda x:-x['n_val_seen']):
+    lines.append(f"| {r['phrase']} | {r['anchor_type']} | {r['n_train']} / {r['n_val_seen']} / {r['n_val_unseen']} | {r['best_program']} | {r['val_seen_auc']:.3f} | {r['val_unseen_auc']:.3f} | {r['reliability']:.2f} |" if r['val_unseen_auc'] is not None else f"| {r['phrase']} | {r['anchor_type']} | {r['n_train']} / {r['n_val_seen']} / {r['n_val_unseen']} | {r['best_program']} | {r['val_seen_auc']:.3f} | — | {r['reliability']:.2f} |")
+(A/'counterfactual_results.json').write_text(json.dumps({'tested':['left/right sign reversal','between center versus outside','road versus building hypothesis set'],'not_tested':['north/south','east/west','front/behind on real samples','near/far on real samples','between versus near on real samples'],'status':'partial'},indent=2))
+(R/'CITYNAV_SPATIAL_LEXICON.md').write_text('\n'.join(lines)+'\n')
+report=['# Spatial semantic canonicalization report','','## Status','','Gate F: **FAIL / unestablished**. The current diagnostic cannot establish a stable language-to-geometry gain. Visual fusion should not start.','','## Corpus and parser',f"- Raw episodes: {a['episodes']:,}; matched phrase occurrences: {a['phrase_total']:,}; distinct matched phrases: {len(a['phrases'])}.",'- Short prepositions, especially `on` and `in`, include lexical false positives. Anchor types in the full corpus audit are inferred from text only.',f"- DeepSeek consistency check: {c['n']} instructions, two ontology orders each; valid JSON A/B: {c['success_a']:.1%}/{c['success_b']:.1%}; exact agreement: {c['exact_consistency']:.1%}; UNKNOWN rate: {c['unknown_rate']:.1%}.",'','## Geometry diagnostic','','The existing 2,290 sampled rows contain global, agent and anchor projections, plus center distance. They omit road geometry and full trajectories. The diagnostic chooses the nearest named anchor using the GT target solely for offline evaluation. These numbers cannot be used as deployable scores.','',
+'| Phrase | Anchor type | n val seen | Best available program | val seen AUC | val unseen AUC |','|---|---|---:|---|---:|---:|']
+for r in sorted(p,key=lambda x:-x['n_val_seen'])[:20]:
+    u='—' if r['val_unseen_auc'] is None else f"{r['val_unseen_auc']:.3f}"
+    report.append(f"| {r['phrase']} | {r['anchor_type']} | {r['n_val_seen']} | {r['best_program']} | {r['val_seen_auc']:.3f} | {u} |")
+report+=['','## Missing evidence','','- Full DeepSeek parsing of all instructions; the 27 instruction consistency sample is insufficient for corpus parse success.','- True ternary between, road association/across/along, route and final approach evaluation.','- O0–O4 comparison, correct versus shuffled/opposite, paired p-values, reliability calibration, candidate-order invariance.','- Therefore no supported answer yet to whether final approach is useful or probabilistic canonicalization beats the old ontology.','',
+'## Next step','','Extend the diagnostic rows with trajectory windows and explicit named road/anchor geometry, then rerun train_seen fitting, val_seen selection and sealed val_unseen reporting.']
+(R/'SPATIAL_SEMANTIC_CANONICALIZATION_REPORT.md').write_text('\n'.join(report)+'\n')

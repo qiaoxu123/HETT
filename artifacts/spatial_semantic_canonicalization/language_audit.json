@@ -1,0 +1,707 @@
+{
+  "episodes": 27045,
+  "episodes_with_relation": 26028,
+  "phrase_total": 66832,
+  "splits": {
+    "train_seen": {
+      "off": 2308,
+      "in front of": 4079,
+      "behind": 4781,
+      "close to": 191,
+      "on": 13880,
+      "across": 2269,
+      "next to": 3082,
+      "beside": 731,
+      "in": 11825,
+      "near": 1903,
+      "perpendicular to": 71,
+      "to the right of": 1201,
+      "along": 1270,
+      "between": 4290,
+      "bordered by": 52,
+      "to the left of": 1053,
+      "south of": 210,
+      "surrounded by": 134,
+      "connected to": 155,
+      "left of": 284,
+      "right of": 309,
+      "north of": 251,
+      "parallel to": 42,
+      "front of": 90,
+      "west of": 15,
+      "far from": 9,
+      "east of": 1
+    },
+    "val_seen": {
+      "on": 1634,
+      "to the left of": 143,
+      "in front of": 483,
+      "along": 137,
+      "across": 297,
+      "in": 1229,
+      "to the right of": 133,
+      "between": 499,
+      "off": 276,
+      "near": 232,
+      "behind": 470,
+      "next to": 339,
+      "beside": 86,
+      "south of": 17,
+      "right of": 25,
+      "close to": 20,
+      "left of": 24,
+      "front of": 9,
+      "connected to": 16,
+      "west of": 1,
+      "parallel to": 6,
+      "perpendicular to": 8,
+      "surrounded by": 19,
+      "north of": 24,
+      "bordered by": 6
+    },
+    "val_unseen": {
+      "on": 1537,
+      "across": 286,
+      "off": 355,
+      "in": 941,
+      "next to": 434,
+      "between": 511,
+      "to the left of": 161,
+      "front of": 22,
+      "left of": 41,
+      "beside": 91,
+      "connected to": 23,
+      "near": 204,
+      "behind": 437,
+      "in front of": 596,
+      "to the right of": 166,
+      "along": 197,
+      "north of": 47,
+      "surrounded by": 40,
+      "right of": 47,
+      "close to": 26,
+      "south of": 31,
+      "bordered by": 10,
+      "east of": 1,
+      "parallel to": 2,
+      "perpendicular to": 6,
+      "far from": 1
+    }
+  },
+  "phrases": {
+    "off": {
+      "count": 2939,
+      "anchor_types": {
+        "unknown": 955,
+        "road": 1959,
+        "building": 25
+      },
+      "target_types": {
+        "building": 1099,
+        "unknown": 1821,
+        "road": 19
+      },
+      "multi_anchor_rate": 0.9649540660088466,
+      "road_anchor_rate": 0.6665532494045594,
+      "building_anchor_rate": 0.008506294658046955,
+      "contexts": [
+        "The gray car that is 5th from the left in the top row of cars in the brown parking lot off of Wellington Road, in front of a gray and white building.",
+        "The gray car that is 4th from the left in the top row of cars in the brown parking lot off of Wellington Road, in front of a gray and white building.",
+        "The gray car that is 1st from the left in the front row of cars in the brown parking lot off of Wellington Road, in front of a gray and white building.",
+        "A white car that's partially cut off by the edge of the map, next to a brown house with a brown roof and that is missing it's front wall and that is also partially cut off by the edge of the map, off Grosvenor Road beside a large dirt plot",
+        "Multiple buildings, one four-story white building with a light blue roof that is partially cut off by the edge of the map, and a large gray structure with a gray roof next to it that's also cut off by the edge of the map that is behind the "
+      ]
+    },
+    "in front of": {
+      "count": 5158,
+      "anchor_types": {
+        "unknown": 3055,
+        "building": 1894,
+        "road": 209
+      },
+      "target_types": {
+        "building": 1375,
+        "road": 244,
+        "unknown": 3539
+      },
+      "multi_anchor_rate": 0.9398991857309035,
+      "road_anchor_rate": 0.04051958123303606,
+      "building_anchor_rate": 0.3671965878247383,
+      "contexts": [
+        "The gray car that is 5th from the left in the top row of cars in the brown parking lot off of Wellington Road, in front of a gray and white building.",
+        "This is a blue car and it is parked in front of a building with a gray roof and a rectangular white space in front of it. In front of this building is another building with a brown roof, the building with a brown roof is on the side of the ",
+        "The gray car that is 4th from the left in the top row of cars in the brown parking lot off of Wellington Road, in front of a gray and white building.",
+        "The gray car that is 1st from the left in the front row of cars in the brown parking lot off of Wellington Road, in front of a gray and white building.",
+        "A gray car in front of the second building on The Broadway. The house it's in front of is separate with a gray section of roofing and has a white car in front of it."
+      ]
+    },
+    "behind": {
+      "count": 5688,
+      "anchor_types": {
+        "building": 2279,
+        "unknown": 2932,
+        "road": 477
+      },
+      "target_types": {
+        "building": 1129,
+        "unknown": 4435,
+        "road": 124
+      },
+      "multi_anchor_rate": 0.9356540084388185,
+      "road_anchor_rate": 0.08386075949367089,
+      "building_anchor_rate": 0.40066807313642755,
+      "contexts": [
+        "The red car that is 2nd from the left in the 20th row of cars in the large parking lot behind the One Stop Building, when viewed aerially with the long side of the One Stop Building to the right.",
+        "The blue car that is 4th from the right in the 12th row of cars in the large parking lot behind the One Stop Building, when viewed aerially with the long side of the One Stop Building to the right.",
+        "The gray car that is 7th from the left in the 6th row of cars in the large parking lot behind the One Stop Building, when viewed aerially with the long side of the One Stop Building to the right.",
+        "The black car that is 6th from the left in the 9th row of cars in the large parking lot behind the One Stop Building, when viewed aerially with the long side of the One Stop Building to the right.",
+        "The black car that is 1st from the left in the 19th row of cars in the large parking lot behind the One Stop Building, when viewed aerially with the long side of the One Stop Building to the right."
+      ]
+    },
+    "close to": {
+      "count": 237,
+      "anchor_types": {
+        "building": 67,
+        "road": 70,
+        "unknown": 100
+      },
+      "target_types": {
+        "building": 58,
+        "unknown": 176,
+        "road": 3
+      },
+      "multi_anchor_rate": 0.9451476793248945,
+      "road_anchor_rate": 0.29535864978902954,
+      "building_anchor_rate": 0.28270042194092826,
+      "contexts": [
+        "A big building with grey roof situated behind the St Teresa of the Child Jesus Catholic Church. A blue car and a grey car is parked close to the building. The railway track is behind the building.",
+        "This is part of the building. this building section is the part of the Nike Factory Store building that is close to the One Stop building.",
+        "A black car parked in front of a building with a silver car parked at its right side. close to the road named wellington road.",
+        "A black car that is next to a white car at the large store on Wellington Road close to Willmore Road. It has an empty parking spot next to it.",
+        "This is a black car parked in the parking space of a warehouse-like structure on Wellington Road. The car is parked very close to the street. On its left is a red car and on its right is a gray car."
+      ]
+    },
+    "on": {
+      "count": 17051,
+      "anchor_types": {
+        "road": 9084,
+        "unknown": 7175,
+        "building": 792
+      },
+      "target_types": {
+        "building": 6817,
+        "unknown": 9900,
+        "road": 334
+      },
+      "multi_anchor_rate": 0.9245205559791214,
+      "road_anchor_rate": 0.5327546771450354,
+      "building_anchor_rate": 0.046448888628232946,
+      "contexts": [
+        "In the One Stop parking lot, from the perspective of the long side of the building on the left and the short side at the top and the first row of cars being at the bottom and the first column on the left, ignoring the single column parked a",
+        "The red car in the fourth section of two row sections of parking lot spaces, counting from the bottom, and with the One Stop building found on the left. The red car is somewhat on the left side of the row, by the One Stop building, It is on",
+        "The black car in the fourth lane, with the One Stop building on the left and counting from the bottom. It is on the left side of the bottom row, with an empty space on the left, a bright blue car above, and on the dark blue car on the left ",
+        "this is the white car, it's on the side of the one-story, white-roofed building with a green stripe on the roof, on the side of Aston Lane. This white car has two blue huts/structures on one side and another one-story barn with a white roof",
+        "The brown house on Aldridge Road that is 4 houses to the left of the only gray house on Aldridge Road with a bright blue car in its driveway."
+      ]
+    },
+    "across": {
+      "count": 2852,
+      "anchor_types": {
+        "road": 1010,
+        "building": 693,
+        "unknown": 1149
+      },
+      "target_types": {
+        "building": 1179,
+        "unknown": 1579,
+        "road": 94
+      },
+      "multi_anchor_rate": 0.9242636746143057,
+      "road_anchor_rate": 0.3541374474053296,
+      "building_anchor_rate": 0.24298737727910238,
+      "contexts": [
+        "The gray building on Aston Lane that is across from the NT Wholesale Cash & Carry.",
+        "The gray building on Trumpington Street across from the Pitt Building.",
+        "A white van next to a black car, with a dark blue van across from it, in the parking lot of the St Teresa's court building, across from the One-Stop building",
+        "Partially visible light blue car, one Leslie Road near a yellow marking on the street, across from the brown and white multi-unit housing complex, directly across the unit that has a white wall",
+        "The black car on Leslie Road that is across from the black car that is 9 cars ahead of the only purple car on Leslie Road."
+      ]
+    },
+    "next to": {
+      "count": 3855,
+      "anchor_types": {
+        "building": 1283,
+        "unknown": 2340,
+        "road": 232
+      },
+      "target_types": {
+        "building": 1351,
+        "unknown": 2437,
+        "road": 67
+      },
+      "multi_anchor_rate": 0.9343709468223087,
+      "road_anchor_rate": 0.06018158236057069,
+      "building_anchor_rate": 0.33281452658884564,
+      "contexts": [
+        "A red car next to a multi-colored White and Blue Van, with a green dumpster beside it next to a street marking that says emergency vehicles only, in the parking lot of the St Teresa's court building next to the railroad",
+        "This is a gray car, the parking area next to it is empty, there is a network next to this space. The parking area on the other side is also empty, next to this gap, there is a white car and a pedestrian road. These cars are in the parking a",
+        "this is a dark gray car and it is in the parking lot at the side of Birchfield Road. it is one of 4 cars standing perpendicular to the road in this parking lot, right on the side of the road. The first of the 4 cars standing perpendicular t",
+        "The black car that is parked next to the white car, orange car is next to the white, orange car is next to the blue building, the black car is on the end of the Wellington Road, across is the Leslie Road.",
+        "It's the blue car next to the gray car next to the black car next to the barrier on the left as you enter the parking lot from Holford Drive. There is a red hatchback car to the left of this car."
+      ]
+    },
+    "beside": {
+      "count": 908,
+      "anchor_types": {
+        "unknown": 635,
+        "building": 236,
+        "road": 37
+      },
+      "target_types": {
+        "building": 297,
+        "unknown": 589,
+        "road": 22
+      },
+      "multi_anchor_rate": 0.9394273127753304,
+      "road_anchor_rate": 0.040748898678414094,
+      "building_anchor_rate": 0.2599118942731278,
+      "contexts": [
+        "A car in the parking lot beside the end of the water Bin Brook. It is in the outermost row it is white and there is an empty parking space beside it and a maroon car beside that on one side and a red car beside the other empty space on the ",
+        "A black car parked in the parking lot beside the Perry Barr bus Depot building. It is the the second car and in the second parking spot in the lane, the spot on the other side of it and behind it are empty as well as the spot behind the spo",
+        "A red vehicle parked at an angle pulled up to a shed behind St. Teresa's Court. There is a black vehicle in front of the shed beside it and a white vehicle beside the shed to the other side.",
+        "This is a black car directly beside the entrance to the back parking lot of the One Stop, There is a dull blue car parked beside it, and a low wall on the other side.",
+        "A red vehicle parked beside a white van beside the green trash bin next to St. Teresa's court."
+      ]
+    },
+    "in": {
+      "count": 13995,
+      "anchor_types": {
+        "unknown": 10875,
+        "building": 2093,
+        "road": 1027
+      },
+      "target_types": {
+        "building": 1559,
+        "road": 187,
+        "unknown": 12249
+      },
+      "multi_anchor_rate": 0.947695605573419,
+      "road_anchor_rate": 0.07338335119685602,
+      "building_anchor_rate": 0.14955341193283314,
+      "contexts": [
+        "The red car that is 2nd from the left in the 20th row of cars in the large parking lot behind the One Stop Building, when viewed aerially with the long side of the One Stop Building to the right.",
+        "The blue car that is 4th from the right in the 12th row of cars in the large parking lot behind the One Stop Building, when viewed aerially with the long side of the One Stop Building to the right.",
+        "The gray car that is 7th from the left in the 6th row of cars in the large parking lot behind the One Stop Building, when viewed aerially with the long side of the One Stop Building to the right.",
+        "The black car that is 6th from the left in the 9th row of cars in the large parking lot behind the One Stop Building, when viewed aerially with the long side of the One Stop Building to the right.",
+        "The gray car that is 5th from the left in the top row of cars in the brown parking lot off of Wellington Road, in front of a gray and white building."
+      ]
+    },
+    "near": {
+      "count": 2339,
+      "anchor_types": {
+        "unknown": 1322,
+        "road": 559,
+        "building": 458
+      },
+      "target_types": {
+        "building": 467,
+        "unknown": 1836,
+        "road": 36
+      },
+      "multi_anchor_rate": 0.9551090209491235,
+      "road_anchor_rate": 0.23899102180418982,
+      "building_anchor_rate": 0.19581017528858485,
+      "contexts": [
+        "This is a small patch of land near the tennis court located near Queen's Road. It is pretty close to the forest of trees near the tennis court.",
+        "A gray car that has a white car behind it near the corner of Willmore Road and Wellington Road, across from a multi housing unit near the section that is painted Orange",
+        "Blue car parked near the three white cars on the left pavement of Leslie road. It is near the building.",
+        "A dark blue car, next to a partially visible gray car near a bus lane, in front of a multi-colored red, purple, blue, Brown, beige in white building with a gray roof near the edge of the map off willmore Road",
+        "And gray car that has a black car behind it, near the edge of the map, that is also near the corner of Canterbury Road and Bayswater Road"
+      ]
+    },
+    "perpendicular to": {
+      "count": 85,
+      "anchor_types": {
+        "road": 21,
+        "unknown": 38,
+        "building": 26
+      },
+      "target_types": {
+        "unknown": 37,
+        "building": 45,
+        "road": 3
+      },
+      "multi_anchor_rate": 0.7529411764705882,
+      "road_anchor_rate": 0.24705882352941178,
+      "building_anchor_rate": 0.3058823529411765,
+      "contexts": [
+        "this is a dark gray car and it is in the parking lot at the side of Birchfield Road. it is one of 4 cars standing perpendicular to the road in this parking lot, right on the side of the road. The first of the 4 cars standing perpendicular t",
+        "Two different buildings are marked here. One of these buildings has beige walls, a flat roof and green spaces on the roof. this building is on thompson's lane road and around the corner, behind it is maltings yard road. The other building, ",
+        "Perpendicular to Wellington Road and at the end of a string of houses with red roofs, this smaller, square buildinghas a gray roof and is adjacent to St Teresa of the Child Jesus Catholic Church.",
+        "The smaller of the two black cars parked perpendicular to the only red car in the parking area outside the St. Theresa of the Child Jesus Catholic Church.",
+        "With the One Stop building on the left, it is the silver car parked in the first column, counting from the bottom. The column is perpendicular to the majority of the parked cars. There's a black car with white spots in the roof above the ca"
+      ]
+    },
+    "to the right of": {
+      "count": 1500,
+      "anchor_types": {
+        "building": 536,
+        "unknown": 579,
+        "road": 385
+      },
+      "target_types": {
+        "building": 760,
+        "road": 38,
+        "unknown": 702
+      },
+      "multi_anchor_rate": 0.9273333333333333,
+      "road_anchor_rate": 0.25666666666666665,
+      "building_anchor_rate": 0.35733333333333334,
+      "contexts": [
+        "The gray house on Regent Street that is 2 houses to the right of the gray house facing St Andrews College.",
+        "The gray house on Maids Causeway that is 6 houses to the right of the gray house at the intersection with Fitzroy Lane.",
+        "The gray house on Priory Road that is 5 houses to the right of the Cellarer's Chequer.",
+        "The brown house on Wellington Road that is 2 houses to the right of the St. Teresa of the Child Jesus Catholic Church.",
+        "The brown house on Wellington Road that is 10 houses to the right of the St. Teresa of the Child Jesus Catholic Church."
+      ]
+    },
+    "along": {
+      "count": 1604,
+      "anchor_types": {
+        "road": 1357,
+        "unknown": 225,
+        "building": 22
+      },
+      "target_types": {
+        "building": 771,
+        "road": 43,
+        "unknown": 790
+      },
+      "multi_anchor_rate": 0.8834164588528678,
+      "road_anchor_rate": 0.8460099750623441,
+      "building_anchor_rate": 0.01371571072319202,
+      "contexts": [
+        "The white car that is 4th from the left in the front row of cars in the parking lot behind the long row of green trees along Wellington Road.",
+        "The brown house that is 2nd from the left in the row of brown houses behind the long row of green trees along Wellington Road.",
+        "The black car that is 8th from the left in the front row of cars in the parking lot behind the long row of green trees along Wellington Road.",
+        "The red car that is 1st from the left in the front row of cars in the parking lot behind the long row of green trees along Wellington Road.",
+        "The blue car that is 7th from the left in the front row of cars in the parking lot behind the row of trees along Wellington Road, in front of red houses."
+      ]
+    },
+    "between": {
+      "count": 5300,
+      "anchor_types": {
+        "unknown": 3597,
+        "road": 546,
+        "building": 1157
+      },
+      "target_types": {
+        "unknown": 4396,
+        "building": 851,
+        "road": 53
+      },
+      "multi_anchor_rate": 1.0,
+      "road_anchor_rate": 0.1030188679245283,
+      "building_anchor_rate": 0.21830188679245283,
+      "contexts": [
+        "One black car in between another black car and the white car on Wilmore Road that is in between a side yard with a black pool in it and an open area between a brown home with a gray roof and a white home with a gray roof",
+        "A black car in between two white cars, that is also in between two light blue cars on a dirt lot in between the Camden house and the Emmanuel College Library, off Camden Court near the corner of the map",
+        "A light blue car in between a black car and a partially visible white car, in between two brown and dark brown houses with brown roofs, in between the genetics building and the botany building off the Avenue",
+        "A black car in between a gray car and a partially visible white car with two empty spaces in between these three cars, in the parking lot of the St Teresa's court building near the edge of the map",
+        "A silver car in between a white car and a red car, with a silver car behind it with the tree in between them, in the fourth row from the top in the parking Lot of the One-Stop building near the edge of the building"
+      ]
+    },
+    "bordered by": {
+      "count": 68,
+      "anchor_types": {
+        "road": 12,
+        "unknown": 47,
+        "building": 9
+      },
+      "target_types": {
+        "unknown": 61,
+        "building": 6,
+        "road": 1
+      },
+      "multi_anchor_rate": 0.6764705882352942,
+      "road_anchor_rate": 0.17647058823529413,
+      "building_anchor_rate": 0.1323529411764706,
+      "contexts": [
+        "The white car that is 3rd from the left in the 4th row of cars in the triangular parking lot bordered by the Perry Barr footpath, when viewed aerially with the longest row on top.",
+        "The black car that is 2nd from the right in the 2nd row of cars in the triangular parking lot bordered by the Perry Barr footpath, when viewed aerially with the longest row on top.",
+        "The row of gray houses on Wellington Road, bordered by Leslie Road and Willmore Road.",
+        "The blue car that is 3rd from the left in the 5th row of cars in the triangular parking lot bordered by the Perry Barr footpath, when viewed aerially with the longest row on top",
+        "The blue car that is 3rd from the left in the 5th row of cars in the triangular parking lot bordered by the Perry Barr footpath, when viewed aerially with the longest row on top."
+      ]
+    },
+    "to the left of": {
+      "count": 1357,
+      "anchor_types": {
+        "road": 391,
+        "unknown": 458,
+        "building": 508
+      },
+      "target_types": {
+        "building": 771,
+        "unknown": 563,
+        "road": 23
+      },
+      "multi_anchor_rate": 0.9285187914517318,
+      "road_anchor_rate": 0.288135593220339,
+      "building_anchor_rate": 0.3743551952837141,
+      "contexts": [
+        "The gray house on Chesterton Road that is 2 houses to the left of Marino Place.",
+        "The gray house on Willmore Road that is 2 houses to the left of the gray house at the intersection with Wellington Road.",
+        "The gold car at the back of the parking lot to the left of the St. Teresa of the Child Jesus Catholic Church.",
+        "The white car parked against the brown house on The Broadway that is 5 houses to the left of the gray building at the intersection with Birchfield Road.",
+        "The gray house on Aldridge Road that is 1 house to the left of the Park Hotel."
+      ]
+    },
+    "south of": {
+      "count": 258,
+      "anchor_types": {
+        "road": 51,
+        "unknown": 128,
+        "building": 79
+      },
+      "target_types": {
+        "unknown": 228,
+        "road": 4,
+        "building": 26
+      },
+      "multi_anchor_rate": 0.9806201550387597,
+      "road_anchor_rate": 0.19767441860465115,
+      "building_anchor_rate": 0.3062015503875969,
+      "contexts": [
+        "South of Celine Grove and to the left of St Teresa's Court,it is a white car, fifth car south of a tree.",
+        "this is the white car and it is south of Aston Lane on the corner of Aston Lane/Wellhead Lane. south of this car another black car is partially visible.",
+        "White car to the right of the white rectangular building with green stripes on the roof, south of Aston Lane. There are two blue containers to the south of this car.",
+        "In the parking lot south of Holford Drive, this dark gray car is parked to the left of the row of cars directly south of West Midlands Police Custody Suite.",
+        "this building is at the corner of Trumpington Street and Kings Lane and south of the St Catharine's College Library building. south of this building is the oval green ground."
+      ]
+    },
+    "surrounded by": {
+      "count": 193,
+      "anchor_types": {
+        "unknown": 146,
+        "road": 24,
+        "building": 23
+      },
+      "target_types": {
+        "building": 69,
+        "unknown": 119,
+        "road": 5
+      },
+      "multi_anchor_rate": 0.8082901554404145,
+      "road_anchor_rate": 0.12435233160621761,
+      "building_anchor_rate": 0.11917098445595854,
+      "contexts": [
+        "A building that is on Grosvenor Road. It is on the edge of the land and surrounded by trees.",
+        "The grey car in the parking lot near Nike Factory Store, in the fourth lane from The Food Warehouse, surrounded by white, blue, grey cars and across to the first on the third lane.",
+        "This is a building with a blue roof located on the block surrounded by Burton Wood Drive, Livingstone Road, and Birchfield Road. There is almost the same building across the street from this building.",
+        "The building on Penhurst Avenue that is surrounded by grass and has a pathway in front of it.",
+        "This is a white car parked in front of the large building surrounded by Thornbury Road, Canterbury Road and Birchfield Road. The car is about to merge into Birchfield Road."
+      ]
+    },
+    "connected to": {
+      "count": 194,
+      "anchor_types": {
+        "building": 85,
+        "road": 44,
+        "unknown": 65
+      },
+      "target_types": {
+        "building": 132,
+        "unknown": 59,
+        "road": 3
+      },
+      "multi_anchor_rate": 0.8865979381443299,
+      "road_anchor_rate": 0.2268041237113402,
+      "building_anchor_rate": 0.4381443298969072,
+      "contexts": [
+        "A section of a beige and brown building with a brown roof, that is connected to several buildings of the same color and size, that houses a oval grass-filled within it, that is also connected to the Corpus Christi college chapel, off free s",
+        "Two buildings red-lined, a brown building with a gray roof that is connected to the 17 Mill Lane building, a dark brown building with a dark gray roof next to it, and a set of smaller buildings behind it with gray roofs connected to the 16 ",
+        "A brown building with a white and brown roof connected to a smaller Brown building with a gray roof that is also connected to the hall building that houses a square field of grass that's been divided into two pieces on that to the map next ",
+        "Buildings, a brown and beige building with a brown roof that is connected to the old College office on the left, that is cut off by the edge of the map, and that is also connected to the Trinity college chapel on the right off All Saints' P",
+        "Right section of a three-story brown house with a gray roof connected to another three-story beige home that is also connected to the Hawks Club off Portugal Street"
+      ]
+    },
+    "left of": {
+      "count": 349,
+      "anchor_types": {
+        "unknown": 172,
+        "road": 83,
+        "building": 94
+      },
+      "target_types": {
+        "building": 138,
+        "unknown": 192,
+        "road": 19
+      },
+      "multi_anchor_rate": 0.9111747851002865,
+      "road_anchor_rate": 0.23782234957020057,
+      "building_anchor_rate": 0.2693409742120344,
+      "contexts": [
+        "The left end building found left of the Wolfson Building, It is also left of the Wolfson North building and has the Blue Boar common room to the bottom left of it.",
+        "With the One Stop building on the left of the huge parking lot, it is a white and black car in the fifth row, counting from the bottom. There's a similar black and white car to the left of it and a normal black car to the right of it. There",
+        "The dull blue-grey car with a white car above it. Both are left of the building shaped somewhat like a sideways H. The building is on the left of the intersection of Birchfield Road below and Willmore Road on the right. The building has 4 s",
+        "The parking spot to the top left of the One Stop building, there's PA road on the left of it going down and to the right.",
+        "The white car above a half sized grey car, both left of Wellington Road. To the upper right of the cars is Leslie Road and they have three cars parked left of them as well."
+      ]
+    },
+    "right of": {
+      "count": 381,
+      "anchor_types": {
+        "unknown": 168,
+        "road": 117,
+        "building": 96
+      },
+      "target_types": {
+        "building": 146,
+        "unknown": 199,
+        "road": 36
+      },
+      "multi_anchor_rate": 0.910761154855643,
+      "road_anchor_rate": 0.30708661417322836,
+      "building_anchor_rate": 0.25196850393700787,
+      "contexts": [
+        "The ground found above the Magdalene College Chapel building and right of the Benson Hall building. It is above the largest tree right of the Chapel building and right of the top of the Benson Hall building.",
+        "The building fifth from the very right of Wallsall Road, it is to the north side of the road. It has a white and dark brown roof unlike the buildings right of it with normal brown roofs. The building just right of it has a red car parked in",
+        "With the One Stop building on the left of the huge parking lot, it is a dark grey car in the twelfth row, counting from the bottom. There's empty space to the left and right of the car and a empty space below it. There's a black car and a l",
+        "Counting from the bottom, it is the fifth section of cars parked in two rows, found to the right of the One Stop building. It is a red car parked on the lower row and slightly right of the middle. It has an empty space directly above, and t",
+        "The middle buildings found above the ADC Theatre building, left of the Pearce Hotel building and right of the vertical Jesus Lane road. There's some ground to the left and right of the buildings."
+      ]
+    },
+    "north of": {
+      "count": 322,
+      "anchor_types": {
+        "building": 69,
+        "unknown": 190,
+        "road": 63
+      },
+      "target_types": {
+        "unknown": 287,
+        "building": 34,
+        "road": 1
+      },
+      "multi_anchor_rate": 0.9720496894409938,
+      "road_anchor_rate": 0.1956521739130435,
+      "building_anchor_rate": 0.21428571428571427,
+      "contexts": [
+        "South and right of Celine Grove and to the north of St Teresa's Court, these two gray cars are north of a tree.",
+        "On the left of Birchfield Road near The Broadway and north of Perry Barr Carpets, this gray car is first car north of a red car.",
+        "In the parking lot north of Holford Drive, this dark blue car is parked in the left side of the long middle row of cars,fifth to the north of a green square object.",
+        "this is a white car. It is in the parking lot north of Holford Drive, to the right of the middle double parking row. To the north of this car is a white car, to the south is a car with a gray and black roof.",
+        "In the parking lot north of Holford Drive, this dark blue car is in the far upper right, north of West Midlands Police Custody Suite."
+      ]
+    },
+    "parallel to": {
+      "count": 50,
+      "anchor_types": {
+        "unknown": 16,
+        "building": 18,
+        "road": 16
+      },
+      "target_types": {
+        "unknown": 27,
+        "road": 3,
+        "building": 20
+      },
+      "multi_anchor_rate": 0.84,
+      "road_anchor_rate": 0.32,
+      "building_anchor_rate": 0.36,
+      "contexts": [
+        "this is a tall building with a roof of 3 sections and is parallel to the maids causeway road. this building is the second building from the corner of fair street and maids causeway. the first building on the corner is a lower and longer bui",
+        "Dark blue car, parked parallel to a patch of grass, in a small parking lot near St. Teresa of the Child Jesus Catholic Church.",
+        "The black car parked next to a light blue car in front of a building off Wellington Road. The blue car is is parallel to the red roof building.",
+        "this is a silver car and it is in the parking lot behind the NT Wholesale Cash & Cary building. 4 of the cars in this parking lot are parked diagonally against the wall of the building. this car is parked at the head of this parking row but",
+        "The white car off of Wellington Road that is parallel to the grayish light blue car in front of the long red building."
+      ]
+    },
+    "front of": {
+      "count": 121,
+      "anchor_types": {
+        "building": 53,
+        "unknown": 59,
+        "road": 9
+      },
+      "target_types": {
+        "unknown": 82,
+        "road": 9,
+        "building": 30
+      },
+      "multi_anchor_rate": 0.9173553719008265,
+      "road_anchor_rate": 0.0743801652892562,
+      "building_anchor_rate": 0.4380165289256198,
+      "contexts": [
+        "A white and brown building with a white side and a gray roof about half way down Alpha Road. There is moss on the front of it and a green and blue trash bin to side of the front. No vehciles are parked directly in front of it but there is a",
+        "A car parked in a square shaped parking area at the front of a building with white roof along the wellington road. A white car parked at its left side and no car parked at its right.",
+        "One gray car in between a black car and another black car that has a red car with a black top next to that car, off Wellington Road front of a six multi-unit building with gray roofs that's connected to another building that has four units ",
+        "The red car at the front of the One Stop building that is two spaces away from a square white building and a crosswalk.",
+        "A white car parked in the parking area of the building One stop, it is parked at the left side of the second lane with another white car parked at its right side, there is no car parked at the left side and the front of it."
+      ]
+    },
+    "west of": {
+      "count": 16,
+      "anchor_types": {
+        "building": 5,
+        "unknown": 9,
+        "road": 2
+      },
+      "target_types": {
+        "unknown": 14,
+        "building": 1,
+        "road": 1
+      },
+      "multi_anchor_rate": 0.875,
+      "road_anchor_rate": 0.125,
+      "building_anchor_rate": 0.3125,
+      "contexts": [
+        "this is a blue car and it is in the parking lot of the One Stop building. this car is in the 4th parking row west of The Food Warehouse and is the 2nd car from the north. There is a black car to the north of this car and a white car to the ",
+        "this is a white car and it is in the parking lot of the One Stop building. this car is in the 9th park row west of The Food Warehouse and is the 7th car from the north. The parking spaces to the north and south of this car are empty.",
+        "this is a black car and it is in the parking lot of the One Stop building. this car is in the 14th parking row west of The Food Warehouse and is the 1st car from the south. To the north of this car is another black car, to the south there i",
+        "The red car parked just west of the Full Circle Events building.",
+        "A white car in the 8th lane to the west of the Food Warehouse. There is a red car parked in front of it and nothing behind it."
+      ]
+    },
+    "far from": {
+      "count": 10,
+      "anchor_types": {
+        "unknown": 6,
+        "road": 3,
+        "building": 1
+      },
+      "target_types": {
+        "unknown": 7,
+        "building": 3
+      },
+      "multi_anchor_rate": 1.0,
+      "road_anchor_rate": 0.3,
+      "building_anchor_rate": 0.1,
+      "contexts": [
+        "The white car that parked on the empty space on the Gosvenor Road. It is not far from the two white van.",
+        "this is a black car and it is on the side of the Aston Lane road with another black car next to it. these cars are between the Jobcentre Plus building and the road. In front of this building, there is a bus stop/container by the roadside. t",
+        "A black car and a red car, that are mixed together to form one car, in the far left lane on Holford Drive, not far from Aldridge Road, with three more red cars behind it and beside them a white semi trailer with a red target on the side of ",
+        "this is green space. this area is one of the two areas located on the corner of the old library building and the building behind the bridge of sighs. this area is the one far from the old library building.",
+        "this is a single storey building with a black roof. this building is in a triangular garden at the end of Grove Lane. this building is in the corner of the garden, far from the big greenhouse."
+      ]
+    },
+    "east of": {
+      "count": 2,
+      "anchor_types": {
+        "building": 1,
+        "unknown": 1
+      },
+      "target_types": {
+        "unknown": 2
+      },
+      "multi_anchor_rate": 1.0,
+      "road_anchor_rate": 0.0,
+      "building_anchor_rate": 0.5,
+      "contexts": [
+        "this parking area is north of the Keynes House building and east of the Cambridge Judge Business School building.",
+        "The ground that is behind the Pepys Library building and east of the Master's Lodge."
+      ]
+    }
+  }
+}

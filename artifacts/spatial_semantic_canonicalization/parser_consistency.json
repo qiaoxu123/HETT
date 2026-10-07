@@ -1,0 +1,1855 @@
+{
+  "n": 27,
+  "success_a": 1.0,
+  "success_b": 1.0,
+  "exact_consistency": 0.4444444444444444,
+  "unknown_rate": 0.037037037037037035,
+  "records": [
+    {
+      "phrase": "off",
+      "instruction": "A beige and brown house with a dark gray roof cut off by the edge of the map with a white car in front of it off Grosvenor Road",
+      "prompt_a": {
+        "target_phrase": "A beige and brown house with a dark gray roof cut off by the edge of the map with a white car in front of it off Grosvenor Road",
+        "clauses": [
+          {
+            "raw_phrase": "cut off by the edge of the map",
+            "anchor_phrase": "edge of the map",
+            "semantic_family": "CONTAINMENT",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.8
+          },
+          {
+            "raw_phrase": "in front of it",
+            "anchor_phrase": "it",
+            "semantic_family": "VIEW_DEPENDENT_DIRECTION",
+            "arity": 1,
+            "view_dependency": "required",
+            "confidence": 0.7
+          },
+          {
+            "raw_phrase": "off Grosvenor Road",
+            "anchor_phrase": "Grosvenor Road",
+            "semantic_family": "ROAD_ASSOCIATION",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.9
+          }
+        ]
+      },
+      "prompt_b": {
+        "target_phrase": "A beige and brown house with a dark gray roof cut off by the edge of the map with a white car in front of it off Grosvenor Road",
+        "clauses": [
+          {
+            "raw_phrase": "cut off by the edge of the map",
+            "anchor_phrase": "edge of the map",
+            "semantic_family": "CONTAINMENT",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.8
+          },
+          {
+            "raw_phrase": "in front of it",
+            "anchor_phrase": "it",
+            "semantic_family": "VIEW_DEPENDENT_DIRECTION",
+            "arity": 1,
+            "view_dependency": "required",
+            "confidence": 0.7
+          },
+          {
+            "raw_phrase": "off Grosvenor Road",
+            "anchor_phrase": "Grosvenor Road",
+            "semantic_family": "ROAD_ASSOCIATION",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.8
+          }
+        ]
+      },
+      "valid_a": true,
+      "valid_b": true,
+      "exact": true,
+      "error": null
+    },
+    {
+      "phrase": "in front of",
+      "instruction": "A beige and brown house with a dark gray roof cut off by the edge of the map with a white car in front of it off Grosvenor Road",
+      "prompt_a": {
+        "target_phrase": "A beige and brown house with a dark gray roof cut off by the edge of the map with a white car in front of it off Grosvenor Road",
+        "clauses": [
+          {
+            "raw_phrase": "cut off by the edge of the map",
+            "anchor_phrase": "edge of the map",
+            "semantic_family": "CONTAINMENT",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.8
+          },
+          {
+            "raw_phrase": "in front of it",
+            "anchor_phrase": "it",
+            "semantic_family": "VIEW_DEPENDENT_DIRECTION",
+            "arity": 1,
+            "view_dependency": "required",
+            "confidence": 0.7
+          },
+          {
+            "raw_phrase": "off Grosvenor Road",
+            "anchor_phrase": "Grosvenor Road",
+            "semantic_family": "ROAD_ASSOCIATION",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.9
+          }
+        ]
+      },
+      "prompt_b": {
+        "target_phrase": "A beige and brown house with a dark gray roof cut off by the edge of the map with a white car in front of it off Grosvenor Road",
+        "clauses": [
+          {
+            "raw_phrase": "cut off by the edge of the map",
+            "anchor_phrase": "edge of the map",
+            "semantic_family": "CONTAINMENT",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.8
+          },
+          {
+            "raw_phrase": "in front of it",
+            "anchor_phrase": "it",
+            "semantic_family": "VIEW_DEPENDENT_DIRECTION",
+            "arity": 1,
+            "view_dependency": "required",
+            "confidence": 0.7
+          },
+          {
+            "raw_phrase": "off Grosvenor Road",
+            "anchor_phrase": "Grosvenor Road",
+            "semantic_family": "ROAD_ASSOCIATION",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.8
+          }
+        ]
+      },
+      "valid_a": true,
+      "valid_b": true,
+      "exact": true,
+      "error": null
+    },
+    {
+      "phrase": "behind",
+      "instruction": "A big building with grey roof situated behind the St Teresa of the Child Jesus Catholic Church. A blue car and a grey car is parked close to the building. The railway track is behind the building.",
+      "prompt_a": {
+        "target_phrase": "building",
+        "clauses": [
+          {
+            "raw_phrase": "behind the St Teresa of the Child Jesus Catholic Church",
+            "anchor_phrase": "St Teresa of the Child Jesus Catholic Church",
+            "semantic_family": "VIEW_DEPENDENT_DIRECTION",
+            "arity": 1,
+            "view_dependency": "required",
+            "confidence": 0.9
+          },
+          {
+            "raw_phrase": "close to the building",
+            "anchor_phrase": "building",
+            "semantic_family": "PROXIMITY",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.9
+          },
+          {
+            "raw_phrase": "behind the building",
+            "anchor_phrase": "building",
+            "semantic_family": "VIEW_DEPENDENT_DIRECTION",
+            "arity": 1,
+            "view_dependency": "required",
+            "confidence": 0.9
+          }
+        ]
+      },
+      "prompt_b": {
+        "target_phrase": "A big building with grey roof",
+        "clauses": [
+          {
+            "raw_phrase": "situated behind the St Teresa of the Child Jesus Catholic Church",
+            "anchor_phrase": "St Teresa of the Child Jesus Catholic Church",
+            "semantic_family": "VIEW_DEPENDENT_DIRECTION",
+            "arity": 1,
+            "view_dependency": "required",
+            "confidence": 0.9
+          },
+          {
+            "raw_phrase": "parked close to the building",
+            "anchor_phrase": "the building",
+            "semantic_family": "PROXIMITY",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.9
+          },
+          {
+            "raw_phrase": "behind the building",
+            "anchor_phrase": "the building",
+            "semantic_family": "VIEW_DEPENDENT_DIRECTION",
+            "arity": 1,
+            "view_dependency": "required",
+            "confidence": 0.9
+          }
+        ]
+      },
+      "valid_a": true,
+      "valid_b": true,
+      "exact": false,
+      "error": null
+    },
+    {
+      "phrase": "close to",
+      "instruction": "A big building with grey roof situated behind the St Teresa of the Child Jesus Catholic Church. A blue car and a grey car is parked close to the building. The railway track is behind the building.",
+      "prompt_a": {
+        "target_phrase": "building",
+        "clauses": [
+          {
+            "raw_phrase": "behind the St Teresa of the Child Jesus Catholic Church",
+            "anchor_phrase": "St Teresa of the Child Jesus Catholic Church",
+            "semantic_family": "VIEW_DEPENDENT_DIRECTION",
+            "arity": 1,
+            "view_dependency": "required",
+            "confidence": 0.9
+          },
+          {
+            "raw_phrase": "close to the building",
+            "anchor_phrase": "building",
+            "semantic_family": "PROXIMITY",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.9
+          },
+          {
+            "raw_phrase": "behind the building",
+            "anchor_phrase": "building",
+            "semantic_family": "VIEW_DEPENDENT_DIRECTION",
+            "arity": 1,
+            "view_dependency": "required",
+            "confidence": 0.9
+          }
+        ]
+      },
+      "prompt_b": {
+        "target_phrase": "A big building with grey roof",
+        "clauses": [
+          {
+            "raw_phrase": "situated behind the St Teresa of the Child Jesus Catholic Church",
+            "anchor_phrase": "St Teresa of the Child Jesus Catholic Church",
+            "semantic_family": "VIEW_DEPENDENT_DIRECTION",
+            "arity": 1,
+            "view_dependency": "required",
+            "confidence": 0.9
+          },
+          {
+            "raw_phrase": "parked close to the building",
+            "anchor_phrase": "the building",
+            "semantic_family": "PROXIMITY",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.9
+          },
+          {
+            "raw_phrase": "behind the building",
+            "anchor_phrase": "the building",
+            "semantic_family": "VIEW_DEPENDENT_DIRECTION",
+            "arity": 1,
+            "view_dependency": "required",
+            "confidence": 0.9
+          }
+        ]
+      },
+      "valid_a": true,
+      "valid_b": true,
+      "exact": false,
+      "error": null
+    },
+    {
+      "phrase": "on",
+      "instruction": "The large building with a gray roof that is on the short street behind the St Teresa of the Child Jesus Catholic Church that looks like a warehouse.",
+      "prompt_a": {
+        "target_phrase": "The large building with a gray roof",
+        "clauses": [
+          {
+            "raw_phrase": "on the short street",
+            "anchor_phrase": "the short street",
+            "semantic_family": "ROAD_ASSOCIATION",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.9
+          },
+          {
+            "raw_phrase": "behind the St Teresa of the Child Jesus Catholic Church",
+            "anchor_phrase": "the St Teresa of the Child Jesus Catholic Church",
+            "semantic_family": "GLOBAL_DIRECTION",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.9
+          },
+          {
+            "raw_phrase": "that looks like a warehouse",
+            "anchor_phrase": "a warehouse",
+            "semantic_family": "UNKNOWN",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.5
+          }
+        ]
+      },
+      "prompt_b": {
+        "target_phrase": "The large building with a gray roof",
+        "clauses": [
+          {
+            "raw_phrase": "on the short street",
+            "anchor_phrase": "the short street",
+            "semantic_family": "ROAD_ASSOCIATION",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.9
+          },
+          {
+            "raw_phrase": "behind the St Teresa of the Child Jesus Catholic Church",
+            "anchor_phrase": "the St Teresa of the Child Jesus Catholic Church",
+            "semantic_family": "VIEW_DEPENDENT_DIRECTION",
+            "arity": 1,
+            "view_dependency": "required",
+            "confidence": 0.8
+          },
+          {
+            "raw_phrase": "that looks like a warehouse",
+            "anchor_phrase": "UNKNOWN",
+            "semantic_family": "UNKNOWN",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.5
+          }
+        ]
+      },
+      "valid_a": true,
+      "valid_b": true,
+      "exact": false,
+      "error": null
+    },
+    {
+      "phrase": "across",
+      "instruction": "The building is L-shaped and directly across the train tracks and road from the gym.",
+      "prompt_a": {
+        "target_phrase": "The building",
+        "clauses": [
+          {
+            "raw_phrase": "directly across the train tracks and road from the gym",
+            "anchor_phrase": "the gym",
+            "semantic_family": "ROAD_ACROSS",
+            "arity": 2,
+            "view_dependency": "none",
+            "confidence": 0.9
+          }
+        ]
+      },
+      "prompt_b": {
+        "target_phrase": "The building",
+        "clauses": [
+          {
+            "raw_phrase": "directly across the train tracks and road from the gym",
+            "anchor_phrase": "the gym",
+            "semantic_family": "ROAD_ACROSS",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.9
+          }
+        ]
+      },
+      "valid_a": true,
+      "valid_b": true,
+      "exact": false,
+      "error": null
+    },
+    {
+      "phrase": "next to",
+      "instruction": "Two buildings, a one floor Brown building with a gray roof next to a taller brown and white building with a gray roof and a skylight on the corner of the map off Leslie Road",
+      "prompt_a": {
+        "target_phrase": "Two buildings, a one floor Brown building with a gray roof next to a taller brown and white building with a gray roof and a skylight on the corner of the map off Leslie Road",
+        "clauses": [
+          {
+            "raw_phrase": "next to a taller brown and white building with a gray roof and a skylight",
+            "anchor_phrase": "a taller brown and white building with a gray roof and a skylight",
+            "semantic_family": "PROXIMITY",
+            "arity": 2,
+            "view_dependency": "none",
+            "confidence": 0.95
+          },
+          {
+            "raw_phrase": "on the corner of the map",
+            "anchor_phrase": "the map",
+            "semantic_family": "CONTAINMENT",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.9
+          },
+          {
+            "raw_phrase": "off Leslie Road",
+            "anchor_phrase": "Leslie Road",
+            "semantic_family": "ROAD_ASSOCIATION",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.85
+          }
+        ]
+      },
+      "prompt_b": {
+        "target_phrase": "Two buildings, a one floor Brown building with a gray roof next to a taller brown and white building with a gray roof and a skylight on the corner of the map off Leslie Road",
+        "clauses": [
+          {
+            "raw_phrase": "next to a taller brown and white building with a gray roof and a skylight",
+            "anchor_phrase": "a taller brown and white building with a gray roof and a skylight",
+            "semantic_family": "PROXIMITY",
+            "arity": 2,
+            "view_dependency": "none",
+            "confidence": 0.9
+          },
+          {
+            "raw_phrase": "on the corner of the map",
+            "anchor_phrase": "the map",
+            "semantic_family": "TOPOLOGICAL_ASSOCIATION",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.8
+          },
+          {
+            "raw_phrase": "off Leslie Road",
+            "anchor_phrase": "Leslie Road",
+            "semantic_family": "ROAD_ASSOCIATION",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.9
+          }
+        ]
+      },
+      "valid_a": true,
+      "valid_b": true,
+      "exact": false,
+      "error": null
+    },
+    {
+      "phrase": "beside",
+      "instruction": "The large building on Wellington Rd / Grosvenor Rd that has a parking lot beside it and a white box in the backyard in front of the Full Circle Events & Exhibition Ltd building.",
+      "prompt_a": {
+        "target_phrase": "The large building on Wellington Rd / Grosvenor Rd that has a parking lot beside it and a white box in the backyard in front of the Full Circle Events & Exhibition Ltd building",
+        "clauses": [
+          {
+            "raw_phrase": "on Wellington Rd / Grosvenor Rd",
+            "anchor_phrase": "Wellington Rd / Grosvenor Rd",
+            "semantic_family": "ROAD_ASSOCIATION",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.9
+          },
+          {
+            "raw_phrase": "beside it",
+            "anchor_phrase": "it",
+            "semantic_family": "PROXIMITY",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.8
+          },
+          {
+            "raw_phrase": "in the backyard",
+            "anchor_phrase": "the large building",
+            "semantic_family": "CONTAINMENT",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.7
+          },
+          {
+            "raw_phrase": "in front of the Full Circle Events & Exhibition Ltd building",
+            "anchor_phrase": "the Full Circle Events & Exhibition Ltd building",
+            "semantic_family": "VIEW_DEPENDENT_DIRECTION",
+            "arity": 1,
+            "view_dependency": "required",
+            "confidence": 0.8
+          }
+        ]
+      },
+      "prompt_b": {
+        "target_phrase": "The large building on Wellington Rd / Grosvenor Rd that has a parking lot beside it and a white box in the backyard in front of the Full Circle Events & Exhibition Ltd building",
+        "clauses": [
+          {
+            "raw_phrase": "on Wellington Rd / Grosvenor Rd",
+            "anchor_phrase": "Wellington Rd / Grosvenor Rd",
+            "semantic_family": "ROAD_ASSOCIATION",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.9
+          },
+          {
+            "raw_phrase": "beside it",
+            "anchor_phrase": "it",
+            "semantic_family": "PROXIMITY",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.8
+          },
+          {
+            "raw_phrase": "in the backyard",
+            "anchor_phrase": "the large building",
+            "semantic_family": "CONTAINMENT",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.7
+          },
+          {
+            "raw_phrase": "in front of the Full Circle Events & Exhibition Ltd building",
+            "anchor_phrase": "the Full Circle Events & Exhibition Ltd building",
+            "semantic_family": "VIEW_DEPENDENT_DIRECTION",
+            "arity": 1,
+            "view_dependency": "required",
+            "confidence": 0.8
+          }
+        ]
+      },
+      "valid_a": true,
+      "valid_b": true,
+      "exact": true,
+      "error": null
+    },
+    {
+      "phrase": "in",
+      "instruction": "The large building on Wellington Rd / Grosvenor Rd that has a parking lot beside it and a white box in the backyard in front of the Full Circle Events & Exhibition Ltd building.",
+      "prompt_a": {
+        "target_phrase": "The large building on Wellington Rd / Grosvenor Rd that has a parking lot beside it and a white box in the backyard in front of the Full Circle Events & Exhibition Ltd building",
+        "clauses": [
+          {
+            "raw_phrase": "on Wellington Rd / Grosvenor Rd",
+            "anchor_phrase": "Wellington Rd / Grosvenor Rd",
+            "semantic_family": "ROAD_ASSOCIATION",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.9
+          },
+          {
+            "raw_phrase": "beside it",
+            "anchor_phrase": "it",
+            "semantic_family": "PROXIMITY",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.8
+          },
+          {
+            "raw_phrase": "in the backyard",
+            "anchor_phrase": "the large building",
+            "semantic_family": "CONTAINMENT",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.7
+          },
+          {
+            "raw_phrase": "in front of the Full Circle Events & Exhibition Ltd building",
+            "anchor_phrase": "the Full Circle Events & Exhibition Ltd building",
+            "semantic_family": "VIEW_DEPENDENT_DIRECTION",
+            "arity": 1,
+            "view_dependency": "required",
+            "confidence": 0.8
+          }
+        ]
+      },
+      "prompt_b": {
+        "target_phrase": "The large building on Wellington Rd / Grosvenor Rd that has a parking lot beside it and a white box in the backyard in front of the Full Circle Events & Exhibition Ltd building",
+        "clauses": [
+          {
+            "raw_phrase": "on Wellington Rd / Grosvenor Rd",
+            "anchor_phrase": "Wellington Rd / Grosvenor Rd",
+            "semantic_family": "ROAD_ASSOCIATION",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.9
+          },
+          {
+            "raw_phrase": "beside it",
+            "anchor_phrase": "it",
+            "semantic_family": "PROXIMITY",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.8
+          },
+          {
+            "raw_phrase": "in the backyard",
+            "anchor_phrase": "the large building",
+            "semantic_family": "CONTAINMENT",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.7
+          },
+          {
+            "raw_phrase": "in front of the Full Circle Events & Exhibition Ltd building",
+            "anchor_phrase": "the Full Circle Events & Exhibition Ltd building",
+            "semantic_family": "VIEW_DEPENDENT_DIRECTION",
+            "arity": 1,
+            "view_dependency": "required",
+            "confidence": 0.8
+          }
+        ]
+      },
+      "valid_a": true,
+      "valid_b": true,
+      "exact": true,
+      "error": null
+    },
+    {
+      "phrase": "near",
+      "instruction": "This is a building located on Wellington Rd/ Grosvenor Rd. Near it is a parking space with about a dozen cars in it.",
+      "prompt_a": {
+        "target_phrase": "building",
+        "clauses": [
+          {
+            "raw_phrase": "on Wellington Rd/ Grosvenor Rd",
+            "anchor_phrase": "Wellington Rd/ Grosvenor Rd",
+            "semantic_family": "ROAD_ASSOCIATION",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.9
+          },
+          {
+            "raw_phrase": "Near it",
+            "anchor_phrase": "building",
+            "semantic_family": "PROXIMITY",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.9
+          }
+        ]
+      },
+      "prompt_b": {
+        "target_phrase": "building",
+        "clauses": [
+          {
+            "raw_phrase": "located on Wellington Rd/ Grosvenor Rd",
+            "anchor_phrase": "Wellington Rd/ Grosvenor Rd",
+            "semantic_family": "ROAD_ASSOCIATION",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.9
+          },
+          {
+            "raw_phrase": "Near it",
+            "anchor_phrase": "building",
+            "semantic_family": "PROXIMITY",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.9
+          }
+        ]
+      },
+      "valid_a": true,
+      "valid_b": true,
+      "exact": false,
+      "error": null
+    },
+    {
+      "phrase": "perpendicular to",
+      "instruction": "Perpendicular to Wellington Road and at the end of a string of houses with red roofs, this smaller, square buildinghas a gray roof and is adjacent to St Teresa of the Child Jesus Catholic Church.",
+      "prompt_a": {
+        "target_phrase": "this smaller, square building",
+        "clauses": [
+          {
+            "raw_phrase": "Perpendicular to Wellington Road",
+            "anchor_phrase": "Wellington Road",
+            "semantic_family": "ALIGNMENT",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.9
+          },
+          {
+            "raw_phrase": "at the end of a string of houses with red roofs",
+            "anchor_phrase": "a string of houses with red roofs",
+            "semantic_family": "TOPOLOGICAL_ASSOCIATION",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.8
+          },
+          {
+            "raw_phrase": "adjacent to St Teresa of the Child Jesus Catholic Church",
+            "anchor_phrase": "St Teresa of the Child Jesus Catholic Church",
+            "semantic_family": "PROXIMITY",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.95
+          }
+        ]
+      },
+      "prompt_b": {
+        "target_phrase": "this smaller, square building",
+        "clauses": [
+          {
+            "raw_phrase": "Perpendicular to Wellington Road",
+            "anchor_phrase": "Wellington Road",
+            "semantic_family": "ALIGNMENT",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.9
+          },
+          {
+            "raw_phrase": "at the end of a string of houses with red roofs",
+            "anchor_phrase": "a string of houses with red roofs",
+            "semantic_family": "TOPOLOGICAL_ASSOCIATION",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.8
+          },
+          {
+            "raw_phrase": "adjacent to St Teresa of the Child Jesus Catholic Church",
+            "anchor_phrase": "St Teresa of the Child Jesus Catholic Church",
+            "semantic_family": "PROXIMITY",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.9
+          }
+        ]
+      },
+      "valid_a": true,
+      "valid_b": true,
+      "exact": true,
+      "error": null
+    },
+    {
+      "phrase": "to the right of",
+      "instruction": "The gray house on Wellington Road to the right of the St. Teresa of the Child Jesus Catholic Church.",
+      "prompt_a": {
+        "target_phrase": "The gray house on Wellington Road",
+        "clauses": [
+          {
+            "raw_phrase": "to the right of the St. Teresa of the Child Jesus Catholic Church",
+            "anchor_phrase": "St. Teresa of the Child Jesus Catholic Church",
+            "semantic_family": "VIEW_DEPENDENT_DIRECTION",
+            "arity": 1,
+            "view_dependency": "required",
+            "confidence": 0.9
+          }
+        ]
+      },
+      "prompt_b": {
+        "target_phrase": "The gray house on Wellington Road",
+        "clauses": [
+          {
+            "raw_phrase": "on Wellington Road",
+            "anchor_phrase": "Wellington Road",
+            "semantic_family": "ROAD_ASSOCIATION",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.9
+          },
+          {
+            "raw_phrase": "to the right of the St. Teresa of the Child Jesus Catholic Church",
+            "anchor_phrase": "St. Teresa of the Child Jesus Catholic Church",
+            "semantic_family": "VIEW_DEPENDENT_DIRECTION",
+            "arity": 1,
+            "view_dependency": "required",
+            "confidence": 0.9
+          }
+        ]
+      },
+      "valid_a": true,
+      "valid_b": true,
+      "exact": false,
+      "error": null
+    },
+    {
+      "phrase": "along",
+      "instruction": "The first building from the St. Teresa of the child Jesus Catholic Church along Wellington road/Grosvenor road.",
+      "prompt_a": {
+        "target_phrase": "The first building from the St. Teresa of the child Jesus Catholic Church along Wellington road/Grosvenor road",
+        "clauses": [
+          {
+            "raw_phrase": "from the St. Teresa of the child Jesus Catholic Church",
+            "anchor_phrase": "St. Teresa of the child Jesus Catholic Church",
+            "semantic_family": "PROXIMITY",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.8
+          },
+          {
+            "raw_phrase": "along Wellington road/Grosvenor road",
+            "anchor_phrase": "Wellington road/Grosvenor road",
+            "semantic_family": "ROAD_ALONG",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.9
+          }
+        ]
+      },
+      "prompt_b": {
+        "target_phrase": "The first building from the St. Teresa of the child Jesus Catholic Church along Wellington road/Grosvenor road",
+        "clauses": [
+          {
+            "raw_phrase": "from the St. Teresa of the child Jesus Catholic Church",
+            "anchor_phrase": "St. Teresa of the child Jesus Catholic Church",
+            "semantic_family": "DISTANCE",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.7
+          },
+          {
+            "raw_phrase": "along Wellington road/Grosvenor road",
+            "anchor_phrase": "Wellington road/Grosvenor road",
+            "semantic_family": "ROAD_ALONG",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.8
+          }
+        ]
+      },
+      "valid_a": true,
+      "valid_b": true,
+      "exact": false,
+      "error": null
+    },
+    {
+      "phrase": "between",
+      "instruction": "The whole section of buildings beside the and including the bright orange buildings on Wellington street between Leslie and Willmore.",
+      "prompt_a": {
+        "target_phrase": "The whole section of buildings beside the and including the bright orange buildings on Wellington street",
+        "clauses": [
+          {
+            "raw_phrase": "beside the bright orange buildings",
+            "anchor_phrase": "the bright orange buildings",
+            "semantic_family": "PROXIMITY",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.9
+          },
+          {
+            "raw_phrase": "including the bright orange buildings",
+            "anchor_phrase": "the bright orange buildings",
+            "semantic_family": "CONTAINMENT",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.9
+          },
+          {
+            "raw_phrase": "on Wellington street",
+            "anchor_phrase": "Wellington street",
+            "semantic_family": "ROAD_ASSOCIATION",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.9
+          },
+          {
+            "raw_phrase": "between Leslie and Willmore",
+            "anchor_phrase": "Leslie and Willmore",
+            "semantic_family": "BETWEEN",
+            "arity": 2,
+            "view_dependency": "none",
+            "confidence": 0.9
+          }
+        ]
+      },
+      "prompt_b": {
+        "target_phrase": "buildings beside the and including the bright orange buildings on Wellington street between Leslie and Willmore",
+        "clauses": [
+          {
+            "raw_phrase": "beside the bright orange buildings",
+            "anchor_phrase": "bright orange buildings",
+            "semantic_family": "PROXIMITY",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.8
+          },
+          {
+            "raw_phrase": "including the bright orange buildings",
+            "anchor_phrase": "bright orange buildings",
+            "semantic_family": "CONTAINMENT",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.7
+          },
+          {
+            "raw_phrase": "on Wellington street",
+            "anchor_phrase": "Wellington street",
+            "semantic_family": "ROAD_ASSOCIATION",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.9
+          },
+          {
+            "raw_phrase": "between Leslie and Willmore",
+            "anchor_phrase": "Leslie and Willmore",
+            "semantic_family": "BETWEEN",
+            "arity": 2,
+            "view_dependency": "none",
+            "confidence": 0.9
+          }
+        ]
+      },
+      "valid_a": true,
+      "valid_b": true,
+      "exact": false,
+      "error": null
+    },
+    {
+      "phrase": "bordered by",
+      "instruction": "The row of gray houses on Wellington Road, bordered by Leslie Road and Willmore Road.",
+      "prompt_a": {
+        "target_phrase": "The row of gray houses on Wellington Road",
+        "clauses": [
+          {
+            "raw_phrase": "on Wellington Road",
+            "anchor_phrase": "Wellington Road",
+            "semantic_family": "ROAD_ASSOCIATION",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.9
+          },
+          {
+            "raw_phrase": "bordered by Leslie Road and Willmore Road",
+            "anchor_phrase": "Leslie Road and Willmore Road",
+            "semantic_family": "BETWEEN",
+            "arity": 2,
+            "view_dependency": "none",
+            "confidence": 0.8
+          }
+        ]
+      },
+      "prompt_b": {
+        "target_phrase": "row of gray houses on Wellington Road",
+        "clauses": [
+          {
+            "raw_phrase": "on Wellington Road",
+            "anchor_phrase": "Wellington Road",
+            "semantic_family": "ROAD_ASSOCIATION",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.9
+          },
+          {
+            "raw_phrase": "bordered by Leslie Road and Willmore Road",
+            "anchor_phrase": "Leslie Road and Willmore Road",
+            "semantic_family": "BETWEEN",
+            "arity": 2,
+            "view_dependency": "none",
+            "confidence": 0.8
+          }
+        ]
+      },
+      "valid_a": true,
+      "valid_b": true,
+      "exact": false,
+      "error": null
+    },
+    {
+      "phrase": "to the left of",
+      "instruction": "The gray house on Willmore Road that is 2 houses to the left of the gray house at the intersection with Wellington Road.",
+      "prompt_a": {
+        "target_phrase": "The gray house on Willmore Road that is 2 houses to the left of the gray house at the intersection with Wellington Road",
+        "clauses": [
+          {
+            "raw_phrase": "on Willmore Road",
+            "anchor_phrase": "Willmore Road",
+            "semantic_family": "ROAD_ASSOCIATION",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.95
+          },
+          {
+            "raw_phrase": "2 houses to the left of the gray house at the intersection with Wellington Road",
+            "anchor_phrase": "the gray house at the intersection with Wellington Road",
+            "semantic_family": "DISTANCE",
+            "arity": 2,
+            "view_dependency": "required",
+            "confidence": 0.8
+          },
+          {
+            "raw_phrase": "at the intersection with Wellington Road",
+            "anchor_phrase": "Wellington Road",
+            "semantic_family": "ROAD_ASSOCIATION",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.9
+          }
+        ]
+      },
+      "prompt_b": {
+        "target_phrase": "The gray house on Willmore Road that is 2 houses to the left of the gray house at the intersection with Wellington Road",
+        "clauses": [
+          {
+            "raw_phrase": "on Willmore Road",
+            "anchor_phrase": "Willmore Road",
+            "semantic_family": "ROAD_ASSOCIATION",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.95
+          },
+          {
+            "raw_phrase": "2 houses to the left of the gray house at the intersection with Wellington Road",
+            "anchor_phrase": "the gray house at the intersection with Wellington Road",
+            "semantic_family": "VIEW_DEPENDENT_DIRECTION",
+            "arity": 2,
+            "view_dependency": "required",
+            "confidence": 0.9
+          },
+          {
+            "raw_phrase": "at the intersection with Wellington Road",
+            "anchor_phrase": "Wellington Road",
+            "semantic_family": "ROAD_ASSOCIATION",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.9
+          }
+        ]
+      },
+      "valid_a": true,
+      "valid_b": true,
+      "exact": false,
+      "error": null
+    },
+    {
+      "phrase": "south of",
+      "instruction": "On Wellington Road south of Willmore Road near Celine Grove, this building with a gray roof is far to the left of Full Circle Events & Exhibitions Ltd and has a red car to its left.",
+      "prompt_a": {
+        "target_phrase": "this building with a gray roof",
+        "clauses": [
+          {
+            "raw_phrase": "On Wellington Road south of Willmore Road near Celine Grove",
+            "anchor_phrase": "Wellington Road",
+            "semantic_family": "ROAD_ASSOCIATION",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.9
+          },
+          {
+            "raw_phrase": "south of Willmore Road",
+            "anchor_phrase": "Willmore Road",
+            "semantic_family": "GLOBAL_DIRECTION",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.9
+          },
+          {
+            "raw_phrase": "near Celine Grove",
+            "anchor_phrase": "Celine Grove",
+            "semantic_family": "PROXIMITY",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.9
+          },
+          {
+            "raw_phrase": "far to the left of Full Circle Events & Exhibitions Ltd",
+            "anchor_phrase": "Full Circle Events & Exhibitions Ltd",
+            "semantic_family": "VIEW_DEPENDENT_DIRECTION",
+            "arity": 1,
+            "view_dependency": "required",
+            "confidence": 0.9
+          },
+          {
+            "raw_phrase": "has a red car to its left",
+            "anchor_phrase": "this building with a gray roof",
+            "semantic_family": "VIEW_DEPENDENT_DIRECTION",
+            "arity": 1,
+            "view_dependency": "required",
+            "confidence": 0.9
+          }
+        ]
+      },
+      "prompt_b": {
+        "target_phrase": "this building with a gray roof",
+        "clauses": [
+          {
+            "raw_phrase": "On Wellington Road south of Willmore Road near Celine Grove",
+            "anchor_phrase": "Wellington Road",
+            "semantic_family": "ROAD_ASSOCIATION",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.9
+          },
+          {
+            "raw_phrase": "south of Willmore Road",
+            "anchor_phrase": "Willmore Road",
+            "semantic_family": "GLOBAL_DIRECTION",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.9
+          },
+          {
+            "raw_phrase": "near Celine Grove",
+            "anchor_phrase": "Celine Grove",
+            "semantic_family": "PROXIMITY",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.9
+          },
+          {
+            "raw_phrase": "far to the left of Full Circle Events & Exhibitions Ltd",
+            "anchor_phrase": "Full Circle Events & Exhibitions Ltd",
+            "semantic_family": "VIEW_DEPENDENT_DIRECTION",
+            "arity": 1,
+            "view_dependency": "required",
+            "confidence": 0.9
+          },
+          {
+            "raw_phrase": "has a red car to its left",
+            "anchor_phrase": "this building with a gray roof",
+            "semantic_family": "VIEW_DEPENDENT_DIRECTION",
+            "arity": 1,
+            "view_dependency": "required",
+            "confidence": 0.9
+          }
+        ]
+      },
+      "valid_a": true,
+      "valid_b": true,
+      "exact": true,
+      "error": null
+    },
+    {
+      "phrase": "surrounded by",
+      "instruction": "A building that is on Grosvenor Road. It is on the edge of the land and surrounded by trees.",
+      "prompt_a": {
+        "target_phrase": "A building",
+        "clauses": [
+          {
+            "raw_phrase": "on Grosvenor Road",
+            "anchor_phrase": "Grosvenor Road",
+            "semantic_family": "ROAD_ASSOCIATION",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.9
+          },
+          {
+            "raw_phrase": "on the edge of the land",
+            "anchor_phrase": "the land",
+            "semantic_family": "TOPOLOGICAL_ASSOCIATION",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.8
+          },
+          {
+            "raw_phrase": "surrounded by trees",
+            "anchor_phrase": "trees",
+            "semantic_family": "CONTAINMENT",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.7
+          }
+        ]
+      },
+      "prompt_b": {
+        "target_phrase": "A building",
+        "clauses": [
+          {
+            "raw_phrase": "on Grosvenor Road",
+            "anchor_phrase": "Grosvenor Road",
+            "semantic_family": "ROAD_ASSOCIATION",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.9
+          },
+          {
+            "raw_phrase": "on the edge of the land",
+            "anchor_phrase": "the land",
+            "semantic_family": "TOPOLOGICAL_ASSOCIATION",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.8
+          },
+          {
+            "raw_phrase": "surrounded by trees",
+            "anchor_phrase": "trees",
+            "semantic_family": "CONTAINMENT",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.7
+          }
+        ]
+      },
+      "valid_a": true,
+      "valid_b": true,
+      "exact": true,
+      "error": null
+    },
+    {
+      "phrase": "connected to",
+      "instruction": "A rectangular Brown Gray Building, with two gray roofs, connected to a smaller gray building with a white roof, and next to four rectangular equal sized areas with vegetation on them off Wellington Road",
+      "prompt_a": {
+        "target_phrase": "rectangular Brown Gray Building",
+        "clauses": [
+          {
+            "raw_phrase": "connected to a smaller gray building with a white roof",
+            "anchor_phrase": "smaller gray building with a white roof",
+            "semantic_family": "TOPOLOGICAL_ASSOCIATION",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.9
+          },
+          {
+            "raw_phrase": "next to four rectangular equal sized areas with vegetation on them",
+            "anchor_phrase": "four rectangular equal sized areas with vegetation on them",
+            "semantic_family": "PROXIMITY",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.9
+          },
+          {
+            "raw_phrase": "off Wellington Road",
+            "anchor_phrase": "Wellington Road",
+            "semantic_family": "ROAD_ASSOCIATION",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.9
+          }
+        ]
+      },
+      "prompt_b": {
+        "target_phrase": "A rectangular Brown Gray Building, with two gray roofs, connected to a smaller gray building with a white roof, and next to four rectangular equal sized areas with vegetation on them off Wellington Road",
+        "clauses": [
+          {
+            "raw_phrase": "with two gray roofs",
+            "anchor_phrase": "A rectangular Brown Gray Building",
+            "semantic_family": "CONTAINMENT",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.9
+          },
+          {
+            "raw_phrase": "connected to a smaller gray building with a white roof",
+            "anchor_phrase": "A rectangular Brown Gray Building",
+            "semantic_family": "TOPOLOGICAL_ASSOCIATION",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.9
+          },
+          {
+            "raw_phrase": "next to four rectangular equal sized areas with vegetation on them",
+            "anchor_phrase": "A rectangular Brown Gray Building",
+            "semantic_family": "PROXIMITY",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.9
+          },
+          {
+            "raw_phrase": "off Wellington Road",
+            "anchor_phrase": "four rectangular equal sized areas with vegetation on them",
+            "semantic_family": "ROAD_ASSOCIATION",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.8
+          }
+        ]
+      },
+      "valid_a": true,
+      "valid_b": true,
+      "exact": false,
+      "error": null
+    },
+    {
+      "phrase": "left of",
+      "instruction": "The brown house at the left of the row of brown houses with a parking lot behind the long row of green trees along Wellington Road.",
+      "prompt_a": {
+        "target_phrase": "The brown house at the left of the row of brown houses with a parking lot behind the long row of green trees along Wellington Road",
+        "clauses": [
+          {
+            "raw_phrase": "at the left of the row of brown houses",
+            "anchor_phrase": "the row of brown houses",
+            "semantic_family": "VIEW_DEPENDENT_DIRECTION",
+            "arity": 1,
+            "view_dependency": "required",
+            "confidence": 0.9
+          },
+          {
+            "raw_phrase": "with a parking lot behind the long row of green trees",
+            "anchor_phrase": "the long row of green trees",
+            "semantic_family": "VIEW_DEPENDENT_DIRECTION",
+            "arity": 1,
+            "view_dependency": "required",
+            "confidence": 0.9
+          },
+          {
+            "raw_phrase": "along Wellington Road",
+            "anchor_phrase": "Wellington Road",
+            "semantic_family": "ROAD_ALONG",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.95
+          }
+        ]
+      },
+      "prompt_b": {
+        "target_phrase": "The brown house at the left of the row of brown houses with a parking lot behind the long row of green trees along Wellington Road",
+        "clauses": [
+          {
+            "raw_phrase": "at the left of the row of brown houses",
+            "anchor_phrase": "the row of brown houses",
+            "semantic_family": "VIEW_DEPENDENT_DIRECTION",
+            "arity": 1,
+            "view_dependency": "required",
+            "confidence": 0.9
+          },
+          {
+            "raw_phrase": "with a parking lot behind the long row of green trees",
+            "anchor_phrase": "the long row of green trees",
+            "semantic_family": "TOPOLOGICAL_ASSOCIATION",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.8
+          },
+          {
+            "raw_phrase": "along Wellington Road",
+            "anchor_phrase": "Wellington Road",
+            "semantic_family": "ROAD_ALONG",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.9
+          }
+        ]
+      },
+      "valid_a": true,
+      "valid_b": true,
+      "exact": false,
+      "error": null
+    },
+    {
+      "phrase": "right of",
+      "instruction": "Right side of a multicolored brown and white building but they gray roof, with a cement driveway, that's beside a street marking that reads slow, with a house on the right of it that has a red car in its driveway off Wellington Road",
+      "prompt_a": {
+        "target_phrase": "Right side of a multicolored brown and white building but they gray roof, with a cement driveway, that's beside a street marking that reads slow, with a house on the right of it that has a red car in its driveway off Wellington Road",
+        "clauses": [
+          {
+            "raw_phrase": "Right side of a multicolored brown and white building but they gray roof",
+            "anchor_phrase": "a multicolored brown and white building but they gray roof",
+            "semantic_family": "VIEW_DEPENDENT_DIRECTION",
+            "arity": 1,
+            "view_dependency": "required",
+            "confidence": 0.9
+          },
+          {
+            "raw_phrase": "with a cement driveway",
+            "anchor_phrase": "a multicolored brown and white building but they gray roof",
+            "semantic_family": "TOPOLOGICAL_ASSOCIATION",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.8
+          },
+          {
+            "raw_phrase": "that's beside a street marking that reads slow",
+            "anchor_phrase": "a cement driveway",
+            "semantic_family": "PROXIMITY",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.9
+          },
+          {
+            "raw_phrase": "with a house on the right of it",
+            "anchor_phrase": "a street marking that reads slow",
+            "semantic_family": "VIEW_DEPENDENT_DIRECTION",
+            "arity": 1,
+            "view_dependency": "required",
+            "confidence": 0.9
+          },
+          {
+            "raw_phrase": "that has a red car in its driveway",
+            "anchor_phrase": "a house",
+            "semantic_family": "CONTAINMENT",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.9
+          },
+          {
+            "raw_phrase": "off Wellington Road",
+            "anchor_phrase": "a red car in its driveway",
+            "semantic_family": "ROAD_ASSOCIATION",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.8
+          }
+        ]
+      },
+      "prompt_b": {
+        "target_phrase": "Right side of a multicolored brown and white building but they gray roof, with a cement driveway, that's beside a street marking that reads slow, with a house on the right of it that has a red car in its driveway off Wellington Road",
+        "clauses": [
+          {
+            "raw_phrase": "Right side of a multicolored brown and white building but they gray roof",
+            "anchor_phrase": "a multicolored brown and white building but they gray roof",
+            "semantic_family": "VIEW_DEPENDENT_DIRECTION",
+            "arity": 1,
+            "view_dependency": "required",
+            "confidence": 0.9
+          },
+          {
+            "raw_phrase": "with a cement driveway",
+            "anchor_phrase": "a multicolored brown and white building but they gray roof",
+            "semantic_family": "TOPOLOGICAL_ASSOCIATION",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.8
+          },
+          {
+            "raw_phrase": "that's beside a street marking that reads slow",
+            "anchor_phrase": "a cement driveway",
+            "semantic_family": "PROXIMITY",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.9
+          },
+          {
+            "raw_phrase": "with a house on the right of it",
+            "anchor_phrase": "a street marking that reads slow",
+            "semantic_family": "VIEW_DEPENDENT_DIRECTION",
+            "arity": 1,
+            "view_dependency": "required",
+            "confidence": 0.9
+          },
+          {
+            "raw_phrase": "that has a red car in its driveway",
+            "anchor_phrase": "a house",
+            "semantic_family": "CONTAINMENT",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.9
+          },
+          {
+            "raw_phrase": "off Wellington Road",
+            "anchor_phrase": "a red car in its driveway",
+            "semantic_family": "ROAD_ASSOCIATION",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.8
+          }
+        ]
+      },
+      "valid_a": true,
+      "valid_b": true,
+      "exact": true,
+      "error": null
+    },
+    {
+      "phrase": "north of",
+      "instruction": "North of St. Teresa of the Child Jesus Catholic Church and to the left of Fill Circle Events & Exhibitions Ltd, this yellow car is in the far bottom right of the parking lot.",
+      "prompt_a": {
+        "target_phrase": "this yellow car",
+        "clauses": [
+          {
+            "raw_phrase": "North of St. Teresa of the Child Jesus Catholic Church",
+            "anchor_phrase": "St. Teresa of the Child Jesus Catholic Church",
+            "semantic_family": "GLOBAL_DIRECTION",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.95
+          },
+          {
+            "raw_phrase": "to the left of Fill Circle Events & Exhibitions Ltd",
+            "anchor_phrase": "Fill Circle Events & Exhibitions Ltd",
+            "semantic_family": "VIEW_DEPENDENT_DIRECTION",
+            "arity": 1,
+            "view_dependency": "required",
+            "confidence": 0.9
+          },
+          {
+            "raw_phrase": "in the far bottom right of the parking lot",
+            "anchor_phrase": "the parking lot",
+            "semantic_family": "CONTAINMENT",
+            "arity": 1,
+            "view_dependency": "required",
+            "confidence": 0.85
+          }
+        ]
+      },
+      "prompt_b": {
+        "target_phrase": "this yellow car",
+        "clauses": [
+          {
+            "raw_phrase": "North of St. Teresa of the Child Jesus Catholic Church",
+            "anchor_phrase": "St. Teresa of the Child Jesus Catholic Church",
+            "semantic_family": "GLOBAL_DIRECTION",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.95
+          },
+          {
+            "raw_phrase": "to the left of Fill Circle Events & Exhibitions Ltd",
+            "anchor_phrase": "Fill Circle Events & Exhibitions Ltd",
+            "semantic_family": "VIEW_DEPENDENT_DIRECTION",
+            "arity": 1,
+            "view_dependency": "required",
+            "confidence": 0.95
+          },
+          {
+            "raw_phrase": "in the far bottom right of the parking lot",
+            "anchor_phrase": "the parking lot",
+            "semantic_family": "CONTAINMENT",
+            "arity": 1,
+            "view_dependency": "required",
+            "confidence": 0.9
+          }
+        ]
+      },
+      "valid_a": true,
+      "valid_b": true,
+      "exact": true,
+      "error": null
+    },
+    {
+      "phrase": "parallel to",
+      "instruction": "Dark blue car, parked parallel to a patch of grass, in a small parking lot near St. Teresa of the Child Jesus Catholic Church.",
+      "prompt_a": {
+        "target_phrase": "Dark blue car",
+        "clauses": [
+          {
+            "raw_phrase": "parked parallel to a patch of grass",
+            "anchor_phrase": "a patch of grass",
+            "semantic_family": "ALIGNMENT",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.9
+          },
+          {
+            "raw_phrase": "in a small parking lot",
+            "anchor_phrase": "a small parking lot",
+            "semantic_family": "CONTAINMENT",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.9
+          },
+          {
+            "raw_phrase": "near St. Teresa of the Child Jesus Catholic Church",
+            "anchor_phrase": "St. Teresa of the Child Jesus Catholic Church",
+            "semantic_family": "PROXIMITY",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.9
+          }
+        ]
+      },
+      "prompt_b": {
+        "target_phrase": "Dark blue car",
+        "clauses": [
+          {
+            "raw_phrase": "parked parallel to a patch of grass",
+            "anchor_phrase": "a patch of grass",
+            "semantic_family": "ALIGNMENT",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.9
+          },
+          {
+            "raw_phrase": "in a small parking lot",
+            "anchor_phrase": "a small parking lot",
+            "semantic_family": "CONTAINMENT",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.9
+          },
+          {
+            "raw_phrase": "near St. Teresa of the Child Jesus Catholic Church",
+            "anchor_phrase": "St. Teresa of the Child Jesus Catholic Church",
+            "semantic_family": "PROXIMITY",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.9
+          }
+        ]
+      },
+      "valid_a": true,
+      "valid_b": true,
+      "exact": true,
+      "error": null
+    },
+    {
+      "phrase": "front of",
+      "instruction": "A car parked in a square shaped parking area at the front of a building with white roof along the wellington road. A white car parked at its left side and no car parked at its right.",
+      "prompt_a": {
+        "target_phrase": "A car",
+        "clauses": [
+          {
+            "raw_phrase": "in a square shaped parking area",
+            "anchor_phrase": "a square shaped parking area",
+            "semantic_family": "CONTAINMENT",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.95
+          },
+          {
+            "raw_phrase": "at the front of a building with white roof",
+            "anchor_phrase": "a building with white roof",
+            "semantic_family": "TOPOLOGICAL_ASSOCIATION",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.9
+          },
+          {
+            "raw_phrase": "along the wellington road",
+            "anchor_phrase": "the wellington road",
+            "semantic_family": "ROAD_ALONG",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.95
+          },
+          {
+            "raw_phrase": "at its left side",
+            "anchor_phrase": "its",
+            "semantic_family": "VIEW_DEPENDENT_DIRECTION",
+            "arity": 1,
+            "view_dependency": "required",
+            "confidence": 0.9
+          },
+          {
+            "raw_phrase": "at its right",
+            "anchor_phrase": "its",
+            "semantic_family": "VIEW_DEPENDENT_DIRECTION",
+            "arity": 1,
+            "view_dependency": "required",
+            "confidence": 0.9
+          }
+        ]
+      },
+      "prompt_b": {
+        "target_phrase": "A car parked in a square shaped parking area at the front of a building with white roof along the wellington road",
+        "clauses": [
+          {
+            "raw_phrase": "in a square shaped parking area",
+            "anchor_phrase": "a square shaped parking area",
+            "semantic_family": "CONTAINMENT",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.9
+          },
+          {
+            "raw_phrase": "at the front of a building with white roof",
+            "anchor_phrase": "a building with white roof",
+            "semantic_family": "VIEW_DEPENDENT_DIRECTION",
+            "arity": 1,
+            "view_dependency": "required",
+            "confidence": 0.8
+          },
+          {
+            "raw_phrase": "along the wellington road",
+            "anchor_phrase": "the wellington road",
+            "semantic_family": "ROAD_ALONG",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.9
+          },
+          {
+            "raw_phrase": "at its left side",
+            "anchor_phrase": "its",
+            "semantic_family": "VIEW_DEPENDENT_DIRECTION",
+            "arity": 1,
+            "view_dependency": "required",
+            "confidence": 0.8
+          },
+          {
+            "raw_phrase": "at its right",
+            "anchor_phrase": "its",
+            "semantic_family": "VIEW_DEPENDENT_DIRECTION",
+            "arity": 1,
+            "view_dependency": "required",
+            "confidence": 0.8
+          }
+        ]
+      },
+      "valid_a": true,
+      "valid_b": true,
+      "exact": false,
+      "error": null
+    },
+    {
+      "phrase": "west of",
+      "instruction": "this is a blue car and it is in the parking lot of the One Stop building. this car is in the 4th parking row west of The Food Warehouse and is the 2nd car from the north. There is a black car to the north of this car and a white car to the south.",
+      "prompt_a": {
+        "target_phrase": "this car",
+        "clauses": [
+          {
+            "raw_phrase": "in the parking lot of the One Stop building",
+            "anchor_phrase": "the One Stop building",
+            "semantic_family": "CONTAINMENT",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.9
+          },
+          {
+            "raw_phrase": "in the 4th parking row west of The Food Warehouse",
+            "anchor_phrase": "The Food Warehouse",
+            "semantic_family": "GLOBAL_DIRECTION",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.8
+          },
+          {
+            "raw_phrase": "the 2nd car from the north",
+            "anchor_phrase": "the north",
+            "semantic_family": "GLOBAL_DIRECTION",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.7
+          },
+          {
+            "raw_phrase": "to the north of this car",
+            "anchor_phrase": "this car",
+            "semantic_family": "GLOBAL_DIRECTION",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.9
+          },
+          {
+            "raw_phrase": "to the south",
+            "anchor_phrase": "this car",
+            "semantic_family": "GLOBAL_DIRECTION",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.9
+          }
+        ]
+      },
+      "prompt_b": {
+        "target_phrase": "this car",
+        "clauses": [
+          {
+            "raw_phrase": "in the parking lot of the One Stop building",
+            "anchor_phrase": "the One Stop building",
+            "semantic_family": "CONTAINMENT",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.95
+          },
+          {
+            "raw_phrase": "in the 4th parking row west of The Food Warehouse",
+            "anchor_phrase": "The Food Warehouse",
+            "semantic_family": "ALIGNMENT",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.9
+          },
+          {
+            "raw_phrase": "the 2nd car from the north",
+            "anchor_phrase": "the north",
+            "semantic_family": "GLOBAL_DIRECTION",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.9
+          },
+          {
+            "raw_phrase": "to the north of this car",
+            "anchor_phrase": "this car",
+            "semantic_family": "GLOBAL_DIRECTION",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.95
+          },
+          {
+            "raw_phrase": "to the south",
+            "anchor_phrase": "this car",
+            "semantic_family": "GLOBAL_DIRECTION",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.95
+          }
+        ]
+      },
+      "valid_a": true,
+      "valid_b": true,
+      "exact": false,
+      "error": null
+    },
+    {
+      "phrase": "far from",
+      "instruction": "The white car that parked on the empty space on the Gosvenor Road. It is not far from the two white van.",
+      "prompt_a": {
+        "target_phrase": "the white car",
+        "clauses": [
+          {
+            "raw_phrase": "parked on the empty space on the Gosvenor Road",
+            "anchor_phrase": "the empty space on the Gosvenor Road",
+            "semantic_family": "CONTAINMENT",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.8
+          },
+          {
+            "raw_phrase": "not far from the two white van",
+            "anchor_phrase": "the two white van",
+            "semantic_family": "PROXIMITY",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.9
+          }
+        ]
+      },
+      "prompt_b": {
+        "target_phrase": "the white car",
+        "clauses": [
+          {
+            "raw_phrase": "parked on the empty space on the Gosvenor Road",
+            "anchor_phrase": "the empty space on the Gosvenor Road",
+            "semantic_family": "CONTAINMENT",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.7
+          },
+          {
+            "raw_phrase": "not far from the two white van",
+            "anchor_phrase": "the two white van",
+            "semantic_family": "PROXIMITY",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.8
+          }
+        ]
+      },
+      "valid_a": true,
+      "valid_b": true,
+      "exact": true,
+      "error": null
+    },
+    {
+      "phrase": "east of",
+      "instruction": "this parking area is north of the Keynes House building and east of the Cambridge Judge Business School building.",
+      "prompt_a": {
+        "target_phrase": "this parking area",
+        "clauses": [
+          {
+            "raw_phrase": "north of the Keynes House building",
+            "anchor_phrase": "the Keynes House building",
+            "semantic_family": "GLOBAL_DIRECTION",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.95
+          },
+          {
+            "raw_phrase": "east of the Cambridge Judge Business School building",
+            "anchor_phrase": "the Cambridge Judge Business School building",
+            "semantic_family": "GLOBAL_DIRECTION",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.95
+          }
+        ]
+      },
+      "prompt_b": {
+        "target_phrase": "this parking area",
+        "clauses": [
+          {
+            "raw_phrase": "north of the Keynes House building",
+            "anchor_phrase": "the Keynes House building",
+            "semantic_family": "GLOBAL_DIRECTION",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.95
+          },
+          {
+            "raw_phrase": "east of the Cambridge Judge Business School building",
+            "anchor_phrase": "the Cambridge Judge Business School building",
+            "semantic_family": "GLOBAL_DIRECTION",
+            "arity": 1,
+            "view_dependency": "none",
+            "confidence": 0.95
+          }
+        ]
+      },
+      "valid_a": true,
+      "valid_b": true,
+      "exact": true,
+      "error": null
+    }
+  ]
+}

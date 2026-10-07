@@ -1,0 +1,15 @@
+{
+  "tested": [
+    "left/right sign reversal",
+    "between center versus outside",
+    "road versus building hypothesis set"
+  ],
+  "not_tested": [
+    "north/south",
+    "east/west",
+    "front/behind on real samples",
+    "near/far on real samples",
+    "between versus near on real samples"
+  ],
+  "status": "partial"
+}

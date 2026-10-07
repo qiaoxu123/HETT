@@ -1,0 +1,443 @@
+{
+  "records": [
+    {
+      "phrase": "behind",
+      "anchor_type": "building",
+      "n_train": 32,
+      "n_val_seen": 12,
+      "n_val_unseen": 24,
+      "best_program": "BEHIND_CURRENT_AGENT",
+      "val_seen_auc": 0.6031746031746031,
+      "val_unseen_auc": 0.5833333333333334,
+      "reliability": 0.0,
+      "probabilities": {
+        "BEHIND_CURRENT_AGENT": 0.24342101222852788,
+        "BEHIND_GLOBAL": 0.1848637179143896,
+        "BEHIND_START_AGENT": 0.24342101222852788,
+        "BEHIND_ANCHOR": 0.14322410342302636,
+        "UNKNOWN": 0.18507015420552822
+      },
+      "train_auc": {
+        "BEHIND_CURRENT_AGENT": 0.5338541666666667,
+        "BEHIND_GLOBAL": 0.4518229166666667,
+        "BEHIND_START_AGENT": 0.5338541666666667,
+        "BEHIND_ANCHOR": 0.4769965277777778
+      },
+      "val_seen_program_auc": {
+        "BEHIND_CURRENT_AGENT": 0.6031746031746031,
+        "BEHIND_GLOBAL": 0.5476190476190476,
+        "BEHIND_START_AGENT": 0.6031746031746031,
+        "BEHIND_ANCHOR": 0.3948412698412698
+      },
+      "val_unseen_program_auc": {
+        "BEHIND_GLOBAL": 0.5370370370370371,
+        "BEHIND_START_AGENT": 0.5833333333333334,
+        "BEHIND_CURRENT_AGENT": 0.5833333333333334,
+        "BEHIND_ANCHOR": 0.4791666666666667
+      }
+    },
+    {
+      "phrase": "behind",
+      "anchor_type": "road",
+      "n_train": 15,
+      "n_val_seen": 2,
+      "n_val_unseen": 10,
+      "best_program": "BEHIND_CURRENT_AGENT",
+      "val_seen_auc": 0.5,
+      "val_unseen_auc": 0.5402777777777777,
+      "reliability": 0.0,
+      "probabilities": {
+        "BEHIND_CURRENT_AGENT": 0.19597471305311084,
+        "BEHIND_GLOBAL": 0.17569093084954718,
+        "BEHIND_START_AGENT": 0.19597471305311084,
+        "BEHIND_ANCHOR": 0.1960784308136189,
+        "UNKNOWN": 0.2362812122306122
+      },
+      "train_auc": {
+        "BEHIND_CURRENT_AGENT": 0.40648148148148144,
+        "BEHIND_GLOBAL": 0.5185185185185185,
+        "BEHIND_START_AGENT": 0.40648148148148144,
+        "BEHIND_ANCHOR": 0.49007936507936506
+      },
+      "val_seen_program_auc": {
+        "BEHIND_CURRENT_AGENT": 0.5,
+        "BEHIND_GLOBAL": 0.3333333333333333,
+        "BEHIND_START_AGENT": 0.5,
+        "BEHIND_ANCHOR": 0.41666666666666663
+      },
+      "val_unseen_program_auc": {
+        "BEHIND_GLOBAL": 0.5444444444444445,
+        "BEHIND_START_AGENT": 0.5402777777777777,
+        "BEHIND_CURRENT_AGENT": 0.5402777777777777,
+        "BEHIND_ANCHOR": 0.6722222222222223
+      }
+    },
+    {
+      "phrase": "behind",
+      "anchor_type": "unknown",
+      "n_train": 42,
+      "n_val_seen": 28,
+      "n_val_unseen": 11,
+      "best_program": "BEHIND_CURRENT_AGENT",
+      "val_seen_auc": 0.4986536281179138,
+      "val_unseen_auc": 0.5669191919191919,
+      "reliability": 0.0,
+      "probabilities": {
+        "BEHIND_CURRENT_AGENT": 0.20780129432187822,
+        "BEHIND_GLOBAL": 0.17397445185584307,
+        "BEHIND_START_AGENT": 0.20780129432187822,
+        "BEHIND_ANCHOR": 0.18143651529273314,
+        "UNKNOWN": 0.2289864442076673
+      },
+      "train_auc": {
+        "BEHIND_CURRENT_AGENT": 0.45280612244897966,
+        "BEHIND_GLOBAL": 0.43305933484504905,
+        "BEHIND_START_AGENT": 0.45280612244897966,
+        "BEHIND_ANCHOR": 0.43372071050642474
+      },
+      "val_seen_program_auc": {
+        "BEHIND_CURRENT_AGENT": 0.4986536281179138,
+        "BEHIND_GLOBAL": 0.42956349206349204,
+        "BEHIND_START_AGENT": 0.4986536281179138,
+        "BEHIND_ANCHOR": 0.4499007936507936
+      },
+      "val_unseen_program_auc": {
+        "BEHIND_GLOBAL": 0.6199494949494949,
+        "BEHIND_START_AGENT": 0.5669191919191919,
+        "BEHIND_CURRENT_AGENT": 0.5669191919191919,
+        "BEHIND_ANCHOR": 0.6186868686868686
+      }
+    },
+    {
+      "phrase": "in front of",
+      "anchor_type": "building",
+      "n_train": 25,
+      "n_val_seen": 4,
+      "n_val_unseen": 11,
+      "best_program": "FRONT_START_AGENT",
+      "val_seen_auc": 0.7222222222222222,
+      "val_unseen_auc": 0.5505050505050505,
+      "reliability": 0.0,
+      "probabilities": {
+        "FRONT_GLOBAL": 0.18889274449788906,
+        "FRONT_START_AGENT": 0.23071411912616602,
+        "FRONT_CURRENT_AGENT": 0.23071411912616602,
+        "FRONT_ANCHOR": 0.1977517977994945,
+        "UNKNOWN": 0.15192721945028445
+      },
+      "train_auc": {
+        "FRONT_GLOBAL": 0.595,
+        "FRONT_START_AGENT": 0.48666666666666664,
+        "FRONT_CURRENT_AGENT": 0.48666666666666664,
+        "FRONT_ANCHOR": 0.5588888888888889
+      },
+      "val_seen_program_auc": {
+        "FRONT_GLOBAL": 0.5138888888888888,
+        "FRONT_START_AGENT": 0.7222222222222222,
+        "FRONT_CURRENT_AGENT": 0.7222222222222222,
+        "FRONT_ANCHOR": 0.5729166666666666
+      },
+      "val_unseen_program_auc": {
+        "FRONT_GLOBAL": 0.5050505050505051,
+        "FRONT_START_AGENT": 0.5505050505050505,
+        "FRONT_CURRENT_AGENT": 0.5505050505050505,
+        "FRONT_ANCHOR": 0.5505050505050505
+      }
+    },
+    {
+      "phrase": "in front of",
+      "anchor_type": "road",
+      "n_train": 4,
+      "n_val_seen": 7,
+      "n_val_unseen": 3,
+      "best_program": "FRONT_START_AGENT",
+      "val_seen_auc": 0.6746031746031746,
+      "val_unseen_auc": 0.5555555555555555,
+      "reliability": 0.0,
+      "probabilities": {
+        "FRONT_GLOBAL": 0.22399059685027128,
+        "FRONT_START_AGENT": 0.1689931262266639,
+        "FRONT_CURRENT_AGENT": 0.1689931262266639,
+        "FRONT_ANCHOR": 0.23029977973613244,
+        "UNKNOWN": 0.20772337096026852
+      },
+      "train_auc": {
+        "FRONT_GLOBAL": 0.6805555555555556,
+        "FRONT_START_AGENT": 0.2222222222222222,
+        "FRONT_CURRENT_AGENT": 0.2222222222222222,
+        "FRONT_ANCHOR": 0.5833333333333333
+      },
+      "val_seen_program_auc": {
+        "FRONT_GLOBAL": 0.35714285714285715,
+        "FRONT_START_AGENT": 0.6746031746031746,
+        "FRONT_CURRENT_AGENT": 0.6746031746031746,
+        "FRONT_ANCHOR": 0.46825396825396837
+      },
+      "val_unseen_program_auc": {
+        "FRONT_GLOBAL": 0.3333333333333333,
+        "FRONT_START_AGENT": 0.5555555555555555,
+        "FRONT_CURRENT_AGENT": 0.5555555555555555,
+        "FRONT_ANCHOR": 0.16666666666666666
+      }
+    },
+    {
+      "phrase": "in front of",
+      "anchor_type": "unknown",
+      "n_train": 32,
+      "n_val_seen": 26,
+      "n_val_unseen": 6,
+      "best_program": "FRONT_GLOBAL",
+      "val_seen_auc": 0.5881410256410257,
+      "val_unseen_auc": 0.48148148148148145,
+      "reliability": 0.17628205128205132,
+      "probabilities": {
+        "FRONT_GLOBAL": 0.23776534524420379,
+        "FRONT_START_AGENT": 0.17277703750600334,
+        "FRONT_CURRENT_AGENT": 0.17277703750600334,
+        "FRONT_ANCHOR": 0.22325975329429185,
+        "UNKNOWN": 0.1934208264494977
+      },
+      "train_auc": {
+        "FRONT_GLOBAL": 0.5150669642857143,
+        "FRONT_START_AGENT": 0.5183531746031746,
+        "FRONT_CURRENT_AGENT": 0.5183531746031746,
+        "FRONT_ANCHOR": 0.498015873015873
+      },
+      "val_seen_program_auc": {
+        "FRONT_GLOBAL": 0.5881410256410257,
+        "FRONT_START_AGENT": 0.4252136752136752,
+        "FRONT_CURRENT_AGENT": 0.4252136752136752,
+        "FRONT_ANCHOR": 0.5737179487179488
+      },
+      "val_unseen_program_auc": {
+        "FRONT_GLOBAL": 0.48148148148148145,
+        "FRONT_START_AGENT": 0.4074074074074074,
+        "FRONT_CURRENT_AGENT": 0.4074074074074074,
+        "FRONT_ANCHOR": 0.5
+      }
+    },
+    {
+      "phrase": "left of",
+      "anchor_type": "building",
+      "n_train": 8,
+      "n_val_seen": 13,
+      "n_val_unseen": 6,
+      "best_program": "LEFT_GLOBAL",
+      "val_seen_auc": 0.7026862026862026,
+      "val_unseen_auc": 0.4444444444444444,
+      "reliability": 0.0,
+      "probabilities": {
+        "LEFT_GLOBAL": 0.3089121841431613,
+        "LEFT_START_AGENT": 0.19117773841257582,
+        "LEFT_ANCHOR": 0.11923948691885548,
+        "LEFT_CURRENT_AGENT": 0.19117773841257582,
+        "UNKNOWN": 0.1894928521128316
+      },
+      "train_auc": {
+        "LEFT_GLOBAL": 0.5416666666666666,
+        "LEFT_START_AGENT": 0.5416666666666666,
+        "LEFT_ANCHOR": 0.4375,
+        "LEFT_CURRENT_AGENT": 0.5416666666666666
+      },
+      "val_seen_program_auc": {
+        "LEFT_GLOBAL": 0.7026862026862026,
+        "LEFT_START_AGENT": 0.46275946275946267,
+        "LEFT_ANCHOR": 0.3308913308913309,
+        "LEFT_CURRENT_AGENT": 0.46275946275946267
+      },
+      "val_unseen_program_auc": {
+        "LEFT_GLOBAL": 0.4444444444444444,
+        "LEFT_START_AGENT": 0.4166666666666667,
+        "LEFT_CURRENT_AGENT": 0.4166666666666667,
+        "LEFT_ANCHOR": 0.5833333333333334
+      }
+    },
+    {
+      "phrase": "left of",
+      "anchor_type": "road",
+      "n_train": 4,
+      "n_val_seen": 9,
+      "n_val_unseen": 5,
+      "best_program": "LEFT_GLOBAL",
+      "val_seen_auc": 0.7654320987654321,
+      "val_unseen_auc": 0.35,
+      "reliability": 0.0,
+      "probabilities": {
+        "LEFT_GLOBAL": 0.5072902635718596,
+        "LEFT_START_AGENT": 0.12571552588338084,
+        "LEFT_ANCHOR": 0.10035490785036351,
+        "LEFT_CURRENT_AGENT": 0.12571552588338084,
+        "UNKNOWN": 0.14092377681101517
+      },
+      "train_auc": {
+        "LEFT_GLOBAL": 0.875,
+        "LEFT_START_AGENT": 0.7083333333333333,
+        "LEFT_ANCHOR": 0.4166666666666667,
+        "LEFT_CURRENT_AGENT": 0.7083333333333333
+      },
+      "val_seen_program_auc": {
+        "LEFT_GLOBAL": 0.7654320987654321,
+        "LEFT_START_AGENT": 0.23456790123456792,
+        "LEFT_ANCHOR": 0.4135802469135802,
+        "LEFT_CURRENT_AGENT": 0.23456790123456792
+      },
+      "val_unseen_program_auc": {
+        "LEFT_GLOBAL": 0.35,
+        "LEFT_START_AGENT": 0.25,
+        "LEFT_CURRENT_AGENT": 0.25,
+        "LEFT_ANCHOR": 0.38333333333333336
+      }
+    },
+    {
+      "phrase": "left of",
+      "anchor_type": "unknown",
+      "n_train": 18,
+      "n_val_seen": 15,
+      "n_val_unseen": 5,
+      "best_program": "LEFT_GLOBAL",
+      "val_seen_auc": 0.6555555555555554,
+      "val_unseen_auc": 0.6777777777777778,
+      "reliability": 0.0,
+      "probabilities": {
+        "LEFT_GLOBAL": 0.29330038831942,
+        "LEFT_START_AGENT": 0.1739860420210357,
+        "LEFT_ANCHOR": 0.15918804698485334,
+        "LEFT_CURRENT_AGENT": 0.1739860420210357,
+        "UNKNOWN": 0.19953948065365526
+      },
+      "train_auc": {
+        "LEFT_GLOBAL": 0.5370370370370371,
+        "LEFT_START_AGENT": 0.6388888888888888,
+        "LEFT_ANCHOR": 0.4722222222222222,
+        "LEFT_CURRENT_AGENT": 0.6388888888888888
+      },
+      "val_seen_program_auc": {
+        "LEFT_GLOBAL": 0.6555555555555554,
+        "LEFT_START_AGENT": 0.2925925925925926,
+        "LEFT_ANCHOR": 0.41481481481481475,
+        "LEFT_CURRENT_AGENT": 0.2925925925925926
+      },
+      "val_unseen_program_auc": {
+        "LEFT_GLOBAL": 0.6777777777777778,
+        "LEFT_START_AGENT": 0.42222222222222217,
+        "LEFT_CURRENT_AGENT": 0.42222222222222217,
+        "LEFT_ANCHOR": 0.3555555555555555
+      }
+    },
+    {
+      "phrase": "right of",
+      "anchor_type": "building",
+      "n_train": 15,
+      "n_val_seen": 7,
+      "n_val_unseen": 11,
+      "best_program": "RIGHT_ANCHOR",
+      "val_seen_auc": 0.7023809523809523,
+      "val_unseen_auc": 0.5606060606060606,
+      "reliability": 0.0,
+      "probabilities": {
+        "RIGHT_ANCHOR": 0.3106379324269688,
+        "RIGHT_START_AGENT": 0.1622959759552926,
+        "RIGHT_GLOBAL": 0.16432653950730675,
+        "RIGHT_CURRENT_AGENT": 0.1622959759552926,
+        "UNKNOWN": 0.20044357615513933
+      },
+      "train_auc": {
+        "RIGHT_ANCHOR": 0.5166666666666666,
+        "RIGHT_START_AGENT": 0.40833333333333327,
+        "RIGHT_GLOBAL": 0.5296296296296297,
+        "RIGHT_CURRENT_AGENT": 0.40833333333333327
+      },
+      "val_seen_program_auc": {
+        "RIGHT_ANCHOR": 0.7023809523809523,
+        "RIGHT_START_AGENT": 0.4861111111111111,
+        "RIGHT_GLOBAL": 0.37103174603174605,
+        "RIGHT_CURRENT_AGENT": 0.4861111111111111
+      },
+      "val_unseen_program_auc": {
+        "RIGHT_GLOBAL": 0.3333333333333333,
+        "RIGHT_START_AGENT": 0.4393939393939394,
+        "RIGHT_CURRENT_AGENT": 0.4393939393939394,
+        "RIGHT_ANCHOR": 0.5606060606060606
+      }
+    },
+    {
+      "phrase": "right of",
+      "anchor_type": "road",
+      "n_train": 9,
+      "n_val_seen": 5,
+      "n_val_unseen": 3,
+      "best_program": "RIGHT_START_AGENT",
+      "val_seen_auc": 0.6916666666666667,
+      "val_unseen_auc": 0.5925925925925927,
+      "reliability": 0.0,
+      "probabilities": {
+        "RIGHT_ANCHOR": 0.19018465463726195,
+        "RIGHT_START_AGENT": 0.27138840464761094,
+        "RIGHT_GLOBAL": 0.10151612866262315,
+        "RIGHT_CURRENT_AGENT": 0.27138840464761094,
+        "UNKNOWN": 0.16552240740489307
+      },
+      "train_auc": {
+        "RIGHT_ANCHOR": 0.5694444444444444,
+        "RIGHT_START_AGENT": 0.5555555555555556,
+        "RIGHT_GLOBAL": 0.4722222222222222,
+        "RIGHT_CURRENT_AGENT": 0.5555555555555556
+      },
+      "val_seen_program_auc": {
+        "RIGHT_ANCHOR": 0.5,
+        "RIGHT_START_AGENT": 0.6916666666666667,
+        "RIGHT_GLOBAL": 0.2833333333333333,
+        "RIGHT_CURRENT_AGENT": 0.6916666666666667
+      },
+      "val_unseen_program_auc": {
+        "RIGHT_GLOBAL": 0.7407407407407408,
+        "RIGHT_START_AGENT": 0.5925925925925927,
+        "RIGHT_CURRENT_AGENT": 0.5925925925925927,
+        "RIGHT_ANCHOR": 0.48148148148148145
+      }
+    },
+    {
+      "phrase": "right of",
+      "anchor_type": "unknown",
+      "n_train": 20,
+      "n_val_seen": 10,
+      "n_val_unseen": 4,
+      "best_program": "RIGHT_ANCHOR",
+      "val_seen_auc": 0.5960317460317459,
+      "val_unseen_auc": 0.5416666666666666,
+      "reliability": 0.0,
+      "probabilities": {
+        "RIGHT_ANCHOR": 0.1929575280118533,
+        "RIGHT_START_AGENT": 0.23109462193798008,
+        "RIGHT_GLOBAL": 0.15512265620215315,
+        "RIGHT_CURRENT_AGENT": 0.23109462193798008,
+        "UNKNOWN": 0.1897305719100333
+      },
+      "train_auc": {
+        "RIGHT_ANCHOR": 0.4124007936507937,
+        "RIGHT_START_AGENT": 0.5351190476190476,
+        "RIGHT_GLOBAL": 0.5262896825396826,
+        "RIGHT_CURRENT_AGENT": 0.5351190476190476
+      },
+      "val_seen_program_auc": {
+        "RIGHT_ANCHOR": 0.5960317460317459,
+        "RIGHT_START_AGENT": 0.5634920634920635,
+        "RIGHT_GLOBAL": 0.37301587301587297,
+        "RIGHT_CURRENT_AGENT": 0.5634920634920635
+      },
+      "val_unseen_program_auc": {
+        "RIGHT_GLOBAL": 0.25,
+        "RIGHT_START_AGENT": 0.5833333333333334,
+        "RIGHT_CURRENT_AGENT": 0.5833333333333334,
+        "RIGHT_ANCHOR": 0.5416666666666666
+      }
+    }
+  ],
+  "unavailable": [
+    "FINAL_APPROACH",
+    "ROUTE",
+    "ROAD",
+    "CURRENT_AGENT"
+  ],
+  "reason": "existing sampled geometry lacks trajectory and road-frame features"
+}
