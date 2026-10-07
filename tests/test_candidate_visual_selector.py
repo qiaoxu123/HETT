@@ -7,6 +7,7 @@ from multiagent.models.candidate_selector import (
     CandidateVisualSelector,
     candidate_ranking_loss,
     heatmap_ids_to_normalized_xy,
+    relative_geometry,
     sample_candidate_features_from_current_view,
     select_candidate_with_abstention,
 )
@@ -43,23 +44,119 @@ class CandidateVisualSelectorTest(unittest.TestCase):
         self.assertAlmostEqual(float(sampled[0, 1, 0]), 1.0, places=5)
         self.assertAlmostEqual(float(sampled[0, 2, 0]), 0.0, places=5)
 
+    def test_relative_geometry_matches_sbf_five_tuple(self):
+        origin = torch.tensor([[[0.0, 0.0]]])
+        destination = torch.tensor([[[3.0, 4.0]]])
+        geometry = relative_geometry(origin, destination)
+        expected = torch.tensor([[[3.0, 4.0, 5.0, 0.8, 0.6]]])
+        self.assertTrue(torch.allclose(geometry, expected, atol=1e-6))
+
     def test_selector_is_candidate_permutation_equivariant(self):
         torch.manual_seed(0)
         model = CandidateVisualSelector(
             visual_dim=8,
             language_dim=8,
             hidden_dim=8,
+            layers=2,
             attention_heads=2,
             dropout=0.0,
         ).eval()
         visual = torch.randn(1, 3, 8)
         language = torch.randn(1, 5, 8)
-        mask = torch.ones(1, 5, dtype=torch.bool)
+        language_mask = torch.ones(1, 5, dtype=torch.bool)
+        candidate_xy = torch.tensor([[[0.2, 0.2], [0.5, 0.4], [0.8, 0.7]]])
+        agent_xy = torch.tensor([[0.1, 0.1]])
+        landmark_features = torch.randn(1, 2, 8)
+        landmark_xy = torch.tensor([[[0.3, 0.3], [0.7, 0.6]]])
+        landmark_mask = torch.tensor([[True, True]])
 
-        logits = model(visual, language, mask)
+        logits = model(
+            visual,
+            language,
+            candidate_xy,
+            agent_xy,
+            landmark_features,
+            landmark_xy,
+            landmark_mask,
+            language_mask,
+        )
         permutation = torch.tensor([2, 0, 1])
-        permuted = model(visual[:, permutation], language, mask)
+        permuted = model(
+            visual[:, permutation],
+            language,
+            candidate_xy[:, permutation],
+            agent_xy,
+            landmark_features,
+            landmark_xy,
+            landmark_mask,
+            language_mask,
+        )
         self.assertTrue(torch.allclose(permuted, logits[:, permutation], atol=1e-6))
+
+    def test_selector_is_landmark_permutation_invariant(self):
+        torch.manual_seed(1)
+        model = CandidateVisualSelector(
+            visual_dim=8,
+            language_dim=8,
+            hidden_dim=8,
+            layers=1,
+            attention_heads=2,
+            dropout=0.0,
+        ).eval()
+        visual = torch.randn(1, 2, 8)
+        language = torch.randn(1, 4, 8)
+        language_mask = torch.ones(1, 4, dtype=torch.bool)
+        candidate_xy = torch.tensor([[[0.2, 0.2], [0.8, 0.8]]])
+        agent_xy = torch.tensor([[0.5, 0.5]])
+        landmark_features = torch.randn(1, 2, 8)
+        landmark_xy = torch.tensor([[[0.1, 0.2], [0.9, 0.7]]])
+        landmark_mask = torch.tensor([[True, True]])
+
+        logits = model(
+            visual, language, candidate_xy, agent_xy,
+            landmark_features, landmark_xy, landmark_mask, language_mask,
+        )
+        order = torch.tensor([1, 0])
+        permuted = model(
+            visual, language, candidate_xy, agent_xy,
+            landmark_features[:, order], landmark_xy[:, order],
+            landmark_mask[:, order], language_mask,
+        )
+        self.assertTrue(torch.allclose(permuted, logits, atol=1e-6))
+
+    def test_geometry_ablation_removes_coordinate_dependence(self):
+        torch.manual_seed(2)
+        model = CandidateVisualSelector(
+            visual_dim=8,
+            language_dim=8,
+            hidden_dim=8,
+            layers=1,
+            attention_heads=2,
+            dropout=0.0,
+            use_geometry=False,
+        ).eval()
+        visual = torch.randn(1, 2, 8)
+        language = torch.randn(1, 4, 8)
+        language_mask = torch.ones(1, 4, dtype=torch.bool)
+        agent_xy = torch.tensor([[0.5, 0.5]])
+        landmark_features = torch.randn(1, 1, 8)
+        landmark_mask = torch.tensor([[True]])
+
+        first = model(
+            visual, language,
+            torch.tensor([[[0.1, 0.1], [0.2, 0.2]]]),
+            agent_xy, landmark_features,
+            torch.tensor([[[0.3, 0.3]]]),
+            landmark_mask, language_mask,
+        )
+        second = model(
+            visual, language,
+            torch.tensor([[[0.8, 0.8], [0.9, 0.9]]]),
+            agent_xy, landmark_features,
+            torch.tensor([[[0.7, 0.7]]]),
+            landmark_mask, language_mask,
+        )
+        self.assertTrue(torch.allclose(first, second, atol=1e-6))
 
     def test_selector_api_has_no_heatmap_score_input(self):
         parameters = set(inspect.signature(CandidateVisualSelector.forward).parameters)
