@@ -181,8 +181,11 @@ class ET(nn.Module):
                 visual_dim=512,
                 language_dim=self.args.demb,
                 hidden_dim=self.args.candidate_selector_hidden_dim,
+                layers=self.args.candidate_selector_layers,
                 attention_heads=self.args.candidate_selector_heads,
                 dropout=self.args.candidate_selector_dropout,
+                use_geometry=not self.args.candidate_selector_no_geometry,
+                use_landmark_text=not self.args.candidate_selector_no_landmark_text,
             )
 
     def forward(self, **inputs):
@@ -370,9 +373,23 @@ class ET(nn.Module):
                 1.0
             ).unsqueeze(-1)
 
+            for required in (
+                "selector_landmark_features",
+                "selector_landmark_xy",
+                "selector_landmark_mask",
+            ):
+                if required not in inputs:
+                    raise ValueError(
+                        f"{required} is required when candidate_selector is enabled"
+                    )
             selector_logits = self.candidate_visual_selector(
                 candidate_visual,
                 emb_lang,
+                selector_candidate_xy,
+                current_direction[:, 2:4],
+                inputs["selector_landmark_features"],
+                inputs["selector_landmark_xy"],
+                inputs["selector_landmark_mask"],
                 inputs.get("lang_mask"),
             )
 
