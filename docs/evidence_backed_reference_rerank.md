@@ -12,9 +12,11 @@ frames, probabilistic relation programs, or explicit layout reasoning.  This
 branch therefore does **not** add those failed/unstable components.
 
 The existing 4-channel dense spatial belief already receives the referenced
-mask.  This change adds a deterministic control-time use of the same legal
+mask.  This change adds a deterministic inference-time use of the same legal
 input so an existing 20-epoch checkpoint can be evaluated without adding model
-parameters or retraining.
+parameters or retraining. The reranker is forcibly disabled for every training
+rollout, including the student rollout, so it cannot change the trajectories
+used for optimization.
 
 ## Reranking rule
 
@@ -35,10 +37,10 @@ candidate rank label, or GT information enters the reranker.
 ## Default settings
 
 - Top-K allowed to rerank: 4
-- reference weight: 0.75
-- maximum raw Top1/runner-up log margin: 0.35
-- minimum reference-prior gain: 0.20
-- proximity expansion: 3 dense cells
+- reference weight: 0.50
+- maximum raw Top1/runner-up log margin: 0.20
+- minimum reference-prior gain: 0.30
+- proximity expansion: 1 dense cell
 - per-cell decay: 0.70
 
 Use `--disable_reference_rerank` for the exact control behavior of the base
@@ -55,7 +57,7 @@ The existing HEATMAP_DIAGNOSTICS line now also reports:
 Rescue/regression use GT only after the decision for offline evaluation.  They
 never participate in candidate selection.
 
-The first closed-loop comparison should use the same checkpoint and seed:
+Do **not** retrain to evaluate this post-process. The first closed-loop comparison should load the same already-trained `experiment/heatmap-system-optimization-20e` checkpoint and use the same seed:
 
 - base branch / or `--disable_reference_rerank`
 - this branch with default reranking

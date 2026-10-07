@@ -7,6 +7,7 @@ from multiagent.models.spatial_belief import (
     greedy_nms_topk,
     local_soft_argmax_xy,
     metric_gaussian_target,
+    should_apply_reference_rerank,
     referenced_landmark_proximity_prior,
     rerank_heatmap_topk_with_reference,
 )
@@ -101,6 +102,23 @@ class DenseSpatialBeliefTest(unittest.TestCase):
         self.assertEqual(ids[0, 0].item(), 1 * 7 + 1)
         self.assertEqual(ids[0, 1].item(), 5 * 7 + 5)
 
+
+
+    def test_reference_rerank_is_disabled_during_student_training_rollout(self):
+        self.assertFalse(should_apply_reference_rerank(
+            feedback="student", train_ml=0.2, disabled=False
+        ))
+
+    def test_reference_rerank_is_enabled_only_for_student_inference(self):
+        self.assertTrue(should_apply_reference_rerank(
+            feedback="student", train_ml=None, disabled=False
+        ))
+        self.assertFalse(should_apply_reference_rerank(
+            feedback="teacher", train_ml=None, disabled=False
+        ))
+        self.assertFalse(should_apply_reference_rerank(
+            feedback="student", train_ml=None, disabled=True
+        ))
 
     def test_reference_prior_expands_without_target_information(self):
         maps = torch.zeros(1, 4, 9, 9)

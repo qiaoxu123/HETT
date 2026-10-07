@@ -126,6 +126,21 @@ def greedy_nms_topk(
 
 
 
+def should_apply_reference_rerank(
+    *,
+    feedback: str,
+    train_ml,
+    disabled: bool,
+) -> bool:
+    """Return True only for student inference/evaluation rollouts.
+
+    Training invokes both teacher and student rollouts with train_ml set.
+    Reference reranking is a checkpoint-compatible inference post-process and
+    must never alter the student trajectories used to optimize the model.
+    """
+    return feedback == "student" and train_ml is None and not disabled
+
+
 def referenced_landmark_proximity_prior(
     nav_maps: torch.Tensor,
     *,

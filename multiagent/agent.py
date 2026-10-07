@@ -29,6 +29,7 @@ from multiagent.models.spatial_belief import (
     metric_gaussian_target,
     greedy_nms_topk,
     local_soft_argmax_xy,
+    should_apply_reference_rerank,
     referenced_landmark_proximity_prior,
     rerank_heatmap_topk_with_reference,
 )
@@ -579,7 +580,11 @@ class NavCMTAgent:
             # localization cue in our diagnostics.  Use it only as a
             # conservative student-time reranker of ambiguous Top-K heatmap
             # hypotheses; confident raw Top-1 predictions are untouched.
-            if self.feedback == 'student' and not self.args.disable_reference_rerank:
+            if should_apply_reference_rerank(
+                feedback=self.feedback,
+                train_ml=train_ml,
+                disabled=self.args.disable_reference_rerank,
+            ):
                 reference_prior = referenced_landmark_proximity_prior(
                     input['maps'],
                     field_size=self.args.heatmap_grid_size,
