@@ -7,6 +7,8 @@ from multiagent.models.spatial_belief import (
     greedy_nms_topk,
     local_soft_argmax_xy,
     metric_gaussian_target,
+    referenced_landmark_proximity_prior,
+    rerank_heatmap_topk_with_reference,
 )
 
 
@@ -98,6 +100,70 @@ class DenseSpatialBeliefTest(unittest.TestCase):
         ids = greedy_nms_topk(belief, top_k=2, kernel_size=3)
         self.assertEqual(ids[0, 0].item(), 1 * 7 + 1)
         self.assertEqual(ids[0, 1].item(), 5 * 7 + 5)
+
+
+    def test_reference_prior_expands_without_target_information(self):
+        maps = torch.zeros(1, 4, 9, 9)
+        maps[0, 3, 4, 4] = 1.0
+        prior = referenced_landmark_proximity_prior(
+            maps, field_size=9, dilation_steps=2, decay=0.5
+        )
+        self.assertAlmostEqual(float(prior[0, 4, 4]), 1.0)
+        self.assertAlmostEqual(float(prior[0, 4, 5]), 0.5)
+        self.assertAlmostEqual(float(prior[0, 4, 6]), 0.25)
+        self.assertEqual(float(prior[0, 0, 0]), 0.0)
+
+    def test_reference_rerank_changes_only_ambiguous_topk(self):
+        probs = torch.full((1, 5, 5), 1e-4)
+        probs[0, 1, 1] = 0.40
+        probs[0, 3, 3] = 0.35
+        probs = probs / probs.sum(dim=(1, 2), keepdim=True)
+        topk = torch.tensor([[1 * 5 + 1, 3 * 5 + 3]])
+        prior = torch.zeros_like(probs)
+        prior[0, 3, 3] = 1.0
+        selected, changed = rerank_heatmap_topk_with_reference(
+            probs,
+            topk,
+            prior,
+            rerank_top_k=2,
+            prior_weight=1.0,
+            max_log_margin=0.5,
+            min_prior_gain=0.2,
+        )
+        self.assertTrue(bool(changed[0]))
+        self.assertEqual(int(selected[0]), 3 * 5 + 3)
+
+    def test_reference_rerank_preserves_confident_top1(self):
+        probs = torch.full((1, 5, 5), 1e-5)
+        probs[0, 1, 1] = 0.90
+        probs[0, 3, 3] = 0.05
+        probs = probs / probs.sum(dim=(1, 2), keepdim=True)
+        topk = torch.tensor([[1 * 5 + 1, 3 * 5 + 3]])
+        prior = torch.zeros_like(probs)
+        prior[0, 3, 3] = 1.0
+        selected, changed = rerank_heatmap_topk_with_reference(
+            probs,
+            topk,
+            prior,
+            rerank_top_k=2,
+            prior_weight=2.0,
+            max_log_margin=0.35,
+            min_prior_gain=0.2,
+        )
+        self.assertFalse(bool(changed[0]))
+        self.assertEqual(int(selected[0]), 1 * 5 + 1)
+
+    def test_reference_rerank_is_noop_without_reference_mask(self):
+        probs = torch.zeros(1, 5, 5)
+        probs[0, 1, 1] = 0.51
+        probs[0, 3, 3] = 0.49
+        topk = torch.tensor([[1 * 5 + 1, 3 * 5 + 3]])
+        prior = torch.zeros_like(probs)
+        selected, changed = rerank_heatmap_topk_with_reference(
+            probs, topk, prior, rerank_top_k=2
+        )
+        self.assertFalse(bool(changed[0]))
+        self.assertEqual(int(selected[0]), 1 * 5 + 1)
 
 
 if __name__ == "__main__":

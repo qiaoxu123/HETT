@@ -25,7 +25,13 @@ from multiagent.models.dark_net import Darknet
 from multiagent.models.CLIP import CLIP
 # from direction.models.ddppo.resenet_encoders import TorchVisionResNet50
 from multiagent.models.goal_predictor import GoalPredictor, MapEncoder
-from multiagent.models.spatial_belief import metric_gaussian_target, greedy_nms_topk, local_soft_argmax_xy
+from multiagent.models.spatial_belief import (
+    metric_gaussian_target,
+    greedy_nms_topk,
+    local_soft_argmax_xy,
+    referenced_landmark_proximity_prior,
+    rerank_heatmap_topk_with_reference,
+)
 from multiagent.observation import cropclient
 from multiagent.space import Pose4D, Point2D, Point3D
 from multiagent.teacher.algorithm.lookahead import lookahead_discrete_action
@@ -453,6 +459,9 @@ class NavCMTAgent:
         heatmap_refined_top1_distance_sum = torch.zeros((), device='cuda')
         heatmap_top16_nearest_distance_sum = torch.zeros((), device='cuda')
         heatmap_top16_candidate_distance_sum = torch.zeros((), device='cuda')
+        reference_rerank_change_count = torch.zeros((), device='cuda')
+        reference_rerank_rescue_count = torch.zeros((), device='cuda')
+        reference_rerank_regression_count = torch.zeros((), device='cuda')
 
         stage1_step = 0
         teacher_stage1_steps = np.zeros(batch_size, dtype=np.int32)
@@ -561,7 +570,44 @@ class NavCMTAgent:
                 top_k=self.args.heatmap_top_k,
                 kernel_size=self.args.heatmap_nms_kernel,
             )
-            heatmap_goal_ids = heatmap_topk_ids[:, 0]
+            raw_heatmap_goal_ids = heatmap_topk_ids[:, 0]
+            heatmap_goal_ids = raw_heatmap_goal_ids
+            reference_rerank_changed = torch.zeros_like(
+                raw_heatmap_goal_ids, dtype=torch.bool
+            )
+            # The referenced-landmark mask is the strongest validated static
+            # localization cue in our diagnostics.  Use it only as a
+            # conservative student-time reranker of ambiguous Top-K heatmap
+            # hypotheses; confident raw Top-1 predictions are untouched.
+            if self.feedback == 'student' and not self.args.disable_reference_rerank:
+                reference_prior = referenced_landmark_proximity_prior(
+                    input['maps'],
+                    field_size=self.args.heatmap_grid_size,
+                    dilation_steps=self.args.reference_prior_dilation_steps,
+                    decay=self.args.reference_prior_decay,
+                )
+                heatmap_goal_ids, reference_rerank_changed = (
+                    rerank_heatmap_topk_with_reference(
+                        heatmap_probs.reshape(
+                            -1,
+                            self.args.heatmap_grid_size,
+                            self.args.heatmap_grid_size,
+                        ),
+                        heatmap_topk_ids,
+                        reference_prior,
+                        rerank_top_k=self.args.reference_rerank_top_k,
+                        prior_weight=self.args.reference_rerank_weight,
+                        max_log_margin=self.args.reference_rerank_max_log_margin,
+                        min_prior_gain=self.args.reference_rerank_min_prior_gain,
+                    )
+                )
+            active_now = torch.as_tensor(
+                ~ended, dtype=torch.bool, device=heatmap_goal_ids.device
+            )
+            reference_rerank_change_count += (
+                reference_rerank_changed & active_now
+            ).sum()
+
             heatmap_goal_rows = torch.div(
                 heatmap_goal_ids,
                 self.args.heatmap_grid_size,
@@ -570,9 +616,8 @@ class NavCMTAgent:
             heatmap_goal_cols = (
                 heatmap_goal_ids % self.args.heatmap_grid_size
             ).float()
-            # Refine the Top-1 cell to a continuous coordinate using only its
-            # local probability mass; this preserves the selected mode while
-            # avoiding a hard jump to the cell center.
+            # Refine around the selected mode (raw Top-1 or the conservatively
+            # reranked candidate) rather than jumping to a cell center.
             heatmap_goals = local_soft_argmax_xy(
                 heatmap_probs.reshape(
                     -1,
@@ -694,6 +739,55 @@ class NavCMTAgent:
                     (candidate_xy - gt_xy.unsqueeze(1)) * self.args.map_meters,
                     dim=-1,
                 )
+                raw_rows = torch.div(
+                    raw_heatmap_goal_ids,
+                    self.args.heatmap_grid_size,
+                    rounding_mode='floor',
+                ).float()
+                raw_cols = (
+                    raw_heatmap_goal_ids % self.args.heatmap_grid_size
+                ).float()
+                selected_rows = torch.div(
+                    heatmap_goal_ids,
+                    self.args.heatmap_grid_size,
+                    rounding_mode='floor',
+                ).float()
+                selected_cols = (
+                    heatmap_goal_ids % self.args.heatmap_grid_size
+                ).float()
+                raw_xy = torch.stack(
+                    (
+                        (raw_cols + 0.5) / self.args.heatmap_grid_size,
+                        (raw_rows + 0.5) / self.args.heatmap_grid_size,
+                    ),
+                    dim=-1,
+                )
+                selected_xy = torch.stack(
+                    (
+                        (selected_cols + 0.5) / self.args.heatmap_grid_size,
+                        (selected_rows + 0.5) / self.args.heatmap_grid_size,
+                    ),
+                    dim=-1,
+                )
+                raw_goal_dist_m = torch.linalg.vector_norm(
+                    (raw_xy - gt_xy) * self.args.map_meters,
+                    dim=-1,
+                )
+                selected_goal_dist_m = torch.linalg.vector_norm(
+                    (selected_xy - gt_xy) * self.args.map_meters,
+                    dim=-1,
+                )
+                changed_active = reference_rerank_changed & active_bool
+                reference_rerank_rescue_count += (
+                    changed_active
+                    & (raw_goal_dist_m > self.args.success_dist)
+                    & (selected_goal_dist_m <= self.args.success_dist)
+                ).sum()
+                reference_rerank_regression_count += (
+                    changed_active
+                    & (raw_goal_dist_m <= self.args.success_dist)
+                    & (selected_goal_dist_m > self.args.success_dist)
+                ).sum()
                 active_count = active_bool.sum()
                 heatmap_diag_count += active_count
                 for k in (1, 4, 8, 16):
@@ -928,6 +1022,9 @@ class NavCMTAgent:
             heatmap_refined_top1_distance_sum,
             heatmap_top16_nearest_distance_sum,
             heatmap_top16_candidate_distance_sum,
+            reference_rerank_change_count,
+            reference_rerank_rescue_count,
+            reference_rerank_regression_count,
         )).detach().cpu().tolist()
         diagnostic_names = (
             'heatmap_diag_count',
@@ -939,6 +1036,9 @@ class NavCMTAgent:
             'heatmap_refined_top1_distance_sum_m',
             'heatmap_top16_nearest_distance_sum_m',
             'heatmap_top16_candidate_distance_sum_m',
+            'reference_rerank_changes',
+            'reference_rerank_rescues',
+            'reference_rerank_regressions',
         )
         for name, value in zip(diagnostic_names, diagnostic_values):
             self.logs[name].append(value)

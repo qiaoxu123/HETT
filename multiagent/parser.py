@@ -104,6 +104,20 @@ def parse_args():
                         help='Odd local window for soft-argmax refinement around Top-1')
     parser.add_argument('--heatmap_loss_weight', type=float, default=0.1,
                         help='Weight of the Stage-1 heatmap loss')
+    parser.add_argument('--disable_reference_rerank', action='store_true', default=False,
+                        help='Disable evidence-backed referenced-landmark Top-K reranking')
+    parser.add_argument('--reference_rerank_top_k', type=int, default=4,
+                        help='Only the first K NMS hypotheses may be reranked by the reference prior')
+    parser.add_argument('--reference_rerank_weight', type=float, default=0.75,
+                        help='Weight of the referenced-landmark proximity prior during conservative reranking')
+    parser.add_argument('--reference_rerank_max_log_margin', type=float, default=0.35,
+                        help='Maximum raw Top1-vs-runner-up log-probability margin that permits reranking')
+    parser.add_argument('--reference_rerank_min_prior_gain', type=float, default=0.20,
+                        help='Minimum reference-prior gain required to replace raw Top-1')
+    parser.add_argument('--reference_prior_dilation_steps', type=int, default=3,
+                        help='Number of dense-grid cells over which referenced-landmark support is expanded')
+    parser.add_argument('--reference_prior_decay', type=float, default=0.70,
+                        help='Per-cell decay for referenced-landmark proximity support')
     parser.add_argument('--stage1_switch_dist', type=float, default=25.0,
                         help='Distance in meters for switching from coarse Stage 1 to fine Stage 2')
     parser.add_argument('--stage2_recover_dist', type=float, default=40.0,

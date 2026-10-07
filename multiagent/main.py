@@ -48,6 +48,15 @@ def heatmap_diagnostics_summary(logs, success_radius_m):
         'top16_mean_candidate_distance_m=%.3f' % (
             sum(logs.get('heatmap_top16_candidate_distance_sum_m', ())) / count
         ),
+        'ref_rerank_changes=%d' % round(
+            sum(logs.get('reference_rerank_changes', ()))
+        ),
+        'ref_rerank_rescues=%d' % round(
+            sum(logs.get('reference_rerank_rescues', ()))
+        ),
+        'ref_rerank_regressions=%d' % round(
+            sum(logs.get('reference_rerank_regressions', ()))
+        ),
     ))
     return ' '.join(values)
 
@@ -392,6 +401,17 @@ def valid(args, val_envs, rank=-1):
             # Get validation distance from goal under test evaluation conditions
             agent_eval.test(loader, feedback='student')
             pred_results = agent_eval.get_results()
+
+            diagnostic_summary = heatmap_diagnostics_summary(
+                agent_eval.logs, args.success_dist
+            )
+            if diagnostic_summary:
+                write_to_record_file(
+                    '\nHEATMAP_DIAGNOSTICS split=%s %s' % (
+                        env_name, diagnostic_summary,
+                    ),
+                    record_file,
+                )
 
             score_summary, result = env.eval_metrics(pred_results)
             stage1_step = sum(agent_eval.logs['stage1_step']) / max(len(agent_eval.logs['stage1_step']), 1)

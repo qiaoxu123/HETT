@@ -125,6 +125,125 @@ def greedy_nms_topk(
     return torch.stack(selected, dim=1)
 
 
+
+def referenced_landmark_proximity_prior(
+    nav_maps: torch.Tensor,
+    *,
+    field_size: int,
+    dilation_steps: int = 3,
+    decay: float = 0.7,
+) -> torch.Tensor:
+    """Build a conservative soft prior around instruction-referenced landmarks.
+
+    The HETT map convention is [current, explored, global, referenced].  This
+    helper uses only channel 3 and never reads the target position.  The mask is
+    pooled to the dense belief resolution, then expanded by one cell per step
+    with geometrically decaying support so that nearby targets are preferred
+    without forcing the goal onto the landmark footprint itself.
+    """
+    if nav_maps.ndim != 4 or nav_maps.shape[1] < 4:
+        raise ValueError("nav_maps must have shape [B,>=4,H,W]")
+    if field_size < 1:
+        raise ValueError("field_size must be positive")
+    if dilation_steps < 0:
+        raise ValueError("dilation_steps must be non-negative")
+    if not (0.0 < decay <= 1.0):
+        raise ValueError("decay must be in (0,1]")
+
+    referenced = (nav_maps[:, 3:4] > 0).to(dtype=torch.float32)
+    coarse = F.adaptive_max_pool2d(
+        referenced, (field_size, field_size)
+    ).squeeze(1)
+    reached = coarse.bool()
+    prior = coarse
+    value = 1.0
+
+    for _ in range(dilation_steps):
+        expanded = F.max_pool2d(
+            reached.float().unsqueeze(1),
+            kernel_size=3,
+            stride=1,
+            padding=1,
+        ).squeeze(1).bool()
+        ring = expanded & ~reached
+        value *= float(decay)
+        prior = torch.where(
+            ring,
+            torch.full_like(prior, value),
+            prior,
+        )
+        reached = expanded
+
+    return prior
+
+
+def rerank_heatmap_topk_with_reference(
+    probabilities: torch.Tensor,
+    topk_ids: torch.Tensor,
+    reference_prior: torch.Tensor,
+    *,
+    rerank_top_k: int = 4,
+    prior_weight: float = 0.75,
+    max_log_margin: float = 0.35,
+    min_prior_gain: float = 0.20,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Conservatively rerank only ambiguous Top-K heatmap hypotheses.
+
+    The raw heatmap Top-1 is preserved unless all of the following hold:
+      * another candidate within the first rerank_top_k has a better combined
+        heatmap+reference score;
+      * raw Top-1 is uncertain (small log-probability margin);
+      * the replacement has materially stronger referenced-landmark support.
+
+    Returns selected flattened ids and a boolean tensor indicating changed
+    samples.  No ground-truth quantity is used by this function.
+    """
+    if probabilities.ndim != 3 or probabilities.shape[1] != probabilities.shape[2]:
+        raise ValueError("probabilities must have shape [B,H,H]")
+    if reference_prior.shape != probabilities.shape:
+        raise ValueError("reference_prior shape must match probabilities")
+    if topk_ids.ndim != 2 or topk_ids.shape[0] != probabilities.shape[0]:
+        raise ValueError("topk_ids must have shape [B,K]")
+    if rerank_top_k < 1:
+        raise ValueError("rerank_top_k must be positive")
+    if prior_weight < 0 or max_log_margin < 0 or min_prior_gain < 0:
+        raise ValueError("rerank thresholds/weight must be non-negative")
+
+    k = min(int(rerank_top_k), int(topk_ids.shape[1]))
+    candidate_ids = topk_ids[:, :k]
+    flat_prob = probabilities.flatten(1)
+    flat_prior = reference_prior.flatten(1)
+    candidate_prob = flat_prob.gather(1, candidate_ids).clamp_min(1e-12)
+    candidate_prior = flat_prior.gather(1, candidate_ids)
+
+    base_ids = candidate_ids[:, 0]
+    if k == 1:
+        return base_ids, torch.zeros_like(base_ids, dtype=torch.bool)
+
+    log_prob = candidate_prob.log()
+    combined = log_prob + float(prior_weight) * candidate_prior
+    selected_local = combined.argmax(dim=1)
+    proposed_ids = candidate_ids.gather(
+        1, selected_local.unsqueeze(1)
+    ).squeeze(1)
+
+    runner_up = log_prob[:, 1:].amax(dim=1)
+    raw_margin = log_prob[:, 0] - runner_up
+    proposed_prior = candidate_prior.gather(
+        1, selected_local.unsqueeze(1)
+    ).squeeze(1)
+    prior_gain = proposed_prior - candidate_prior[:, 0]
+    has_reference_signal = candidate_prior.amax(dim=1) > 0
+    changed = (
+        (selected_local != 0)
+        & has_reference_signal
+        & (raw_margin <= float(max_log_margin))
+        & (prior_gain >= float(min_prior_gain))
+    )
+    selected_ids = torch.where(changed, proposed_ids, base_ids)
+    return selected_ids, changed
+
+
 class CompactSpatialBelief(nn.Module):
     """Map + instruction -> dense 28x28 belief field.
 
