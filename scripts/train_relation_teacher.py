@@ -130,8 +130,10 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--config", default=None)
     ap.add_argument("--out", default=None)
-    ap.add_argument("--epochs", type=int, default=60)
-    ap.add_argument("--tune-epochs", type=int, default=20)
+    # 249k examples against a 44k-parameter model: one pass is already a lot of
+    # updates, and the early-stopping behaviour is visible in the tuning table.
+    ap.add_argument("--epochs", type=int, default=18)
+    ap.add_argument("--tune-epochs", type=int, default=6)
     ap.add_argument("--seed", type=int, default=0)
     args = ap.parse_args()
 
@@ -139,6 +141,12 @@ def main() -> None:
     out_dir = Path(args.out) if args.out else artifact_dir(cfg) / "spatial_graph"
     import torch
     torch.manual_seed(args.seed)
+    # This box has 12 cores and other work on it.  Left to itself torch takes
+    # one thread per core and then thrashes: the first attempt burned 6400
+    # CPU-seconds without finishing ten epochs, because 17 threads were
+    # competing with a concurrent job for the same cores.  Four threads is
+    # faster here in wall-clock than sixteen.
+    torch.set_num_threads(4)
     device = torch.device("cpu")
 
     vocab = relation_vocab(RELATION_NAMES)
