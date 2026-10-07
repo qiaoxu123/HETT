@@ -295,6 +295,16 @@ class CityNavBatch(torch.utils.data.IterableDataset):
                 'trajectory': episode.trajectory,
                 'progress': progress,
                 'centroids': np.mean(normalized_centroids, axis=0) if normalized_centroids else np.array([0, 0]),
+                # Exact same referenced landmarks already used to build the
+                # heatmap reference-mask channel.  These normalized centroids
+                # and names add no new GT source; they expose explicit geometry
+                # to the independent Top-K selector.
+                'referenced_landmark_xy': np.asarray(
+                    normalized_centroids, dtype=np.float32
+                ).reshape(-1, 2),
+                'referenced_landmark_names': list(
+                    self.nav_maps[i].landmark_map.landmark_names
+                ),
                 'centroid_goal': pred_goal_xy,
                 'normalized_goal': normalized_goal_xys,
                 'grid_goal': normalized_goal_id
