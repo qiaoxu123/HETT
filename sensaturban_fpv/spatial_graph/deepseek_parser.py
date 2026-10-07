@@ -77,10 +77,59 @@ SYSTEM_PROMPT = (
 )
 
 
+DEFAULT_BASE_URL = "https://api.deepseek.com"
+
+
 def api_key(env=None) -> str | None:
-    """The key, from the environment and nowhere else."""
+    """The key, from the environment and nowhere else.
+
+    ``ANTHROPIC_AUTH_TOKEN`` is accepted as well because that is the name this
+    machine's DeepSeek credential is stored under -- the same key serves both
+    the Anthropic-compatible and the OpenAI-compatible endpoints.  It is still
+    read from the environment and never from a file.
+    """
     env = env if env is not None else os.environ
-    return env.get("DEEPSEEK_API_KEY") or None
+    return (env.get("DEEPSEEK_API_KEY")
+            or env.get("ANTHROPIC_AUTH_TOKEN") or None)
+
+
+def base_url(env=None) -> str:
+    env = env if env is not None else os.environ
+    return env.get("DEEPSEEK_BASE_URL") or DEFAULT_BASE_URL
+
+
+def call_model(request: dict, key: str, cache: "Cache" = None,
+               timeout: float = 90.0, base: str = None) -> tuple:
+    """One completion, served from the cache when it has been asked before.
+
+    Returns ``(parsed_json_or_None, usage)``.  The key is never logged, never
+    stored in the cache, and never included in the request body -- it goes in
+    the Authorization header and nowhere else.
+    """
+    import urllib.request
+
+    if cache is not None:
+        hit = cache.get(request)
+        if hit is not None:
+            return hit, {}
+
+    body = json.dumps(request).encode("utf-8")
+    url = f"{(base or base_url()).rstrip('/')}/chat/completions"
+    http = urllib.request.Request(
+        url, data=body,
+        headers={"Content-Type": "application/json",
+                 "Authorization": f"Bearer {key}"})
+    with urllib.request.urlopen(http, timeout=timeout) as response:
+        payload = json.loads(response.read().decode("utf-8"))
+    usage = payload.get("usage") or {}
+    content = payload["choices"][0]["message"]["content"]
+    try:
+        parsed = json.loads(content)
+    except json.JSONDecodeError:
+        parsed = None
+    if cache is not None:
+        cache.put(request, parsed, usage)
+    return parsed, usage
 
 
 def require_key(env=None) -> str:
