@@ -1,0 +1,1602 @@
+[
+  {
+    "phrase": "behind",
+    "anchor_type": "all",
+    "source": "annotation",
+    "context": false,
+    "probabilities": {
+      "BACK_ANCHOR_MAJOR": 0.0673406696947661,
+      "BACK_FINAL5": 0.05013298909393425,
+      "BACK_FINAL3": 0.05013298909393425,
+      "BACK_GLOBAL": 0.05013298909393425,
+      "BACK_FINAL20": 0.05013298909393425,
+      "BACK_START": 0.05013298909393425,
+      "BACK_ROUTE_PCA": 0.05013298909393425,
+      "BACK_ANCHOR_MINOR": 0.05013298909393425,
+      "BACK_ROUTE_END": 0.05013298909393425,
+      "BACK_FINAL10": 0.05013298909393425,
+      "BACK_ROAD": 0.11102695963766686,
+      "UNKNOWN": 0.37043546882215866
+    }
+  },
+  {
+    "phrase": "behind",
+    "anchor_type": "all",
+    "source": "parser",
+    "context": false,
+    "probabilities": {
+      "BACK_ANCHOR_MAJOR": 0.04929719472004628,
+      "BACK_FINAL5": 0.047474618436842246,
+      "BACK_FINAL3": 0.047474618436842246,
+      "BACK_GLOBAL": 0.047474618436842246,
+      "BACK_FINAL20": 0.047474618436842246,
+      "BACK_START": 0.047474618436842246,
+      "BACK_ROUTE_PCA": 0.047474618436842246,
+      "BACK_ANCHOR_MINOR": 0.047474618436842246,
+      "BACK_ROUTE_END": 0.047474618436842246,
+      "BACK_FINAL10": 0.047474618436842246,
+      "BACK_ROAD": 0.17263862044321873,
+      "UNKNOWN": 0.3507926189051547
+    }
+  },
+  {
+    "phrase": "on",
+    "anchor_type": "all",
+    "source": "annotation",
+    "context": false,
+    "probabilities": {
+      "ALONG_ROAD": 0.20915961640110733,
+      "NEAR_ROAD_REGION": 0.21059466819327485,
+      "IN_ROAD_BUFFER": 0.18909375957638275,
+      "ROAD_ASSOCIATION": 0.23817654996280796,
+      "UNKNOWN": 0.1529754058664271
+    }
+  },
+  {
+    "phrase": "on",
+    "anchor_type": "all",
+    "source": "parser",
+    "context": false,
+    "probabilities": {
+      "ALONG_ROAD": 0.20951520515726593,
+      "NEAR_ROAD_REGION": 0.20951520515726593,
+      "IN_ROAD_BUFFER": 0.1865160408448853,
+      "ROAD_ASSOCIATION": 0.23718189181691723,
+      "UNKNOWN": 0.15727165702366566
+    }
+  },
+  {
+    "phrase": "in front of",
+    "anchor_type": "all",
+    "source": "annotation",
+    "context": false,
+    "probabilities": {
+      "FRONT_START": 0.07840669895274995,
+      "FRONT_GLOBAL": 0.07064662918028043,
+      "FRONT_FINAL10": 0.07654550078382104,
+      "FRONT_ANCHOR_MINOR": 0.0650868924017006,
+      "FRONT_FINAL3": 0.15353994040173322,
+      "FRONT_FINAL20": 0.07563153557897388,
+      "FRONT_ROAD": 0.0650868924017006,
+      "FRONT_ROUTE_END": 0.09445235766866221,
+      "FRONT_ROUTE_PCA": 0.09388677638366155,
+      "FRONT_ANCHOR_MAJOR": 0.0650868924017006,
+      "FRONT_FINAL5": 0.09654299144331518,
+      "UNKNOWN": 0.0650868924017006
+    }
+  },
+  {
+    "phrase": "in front of",
+    "anchor_type": "all",
+    "source": "parser",
+    "context": false,
+    "probabilities": {
+      "FRONT_START": 0.058125699848782346,
+      "FRONT_GLOBAL": 0.05890051423693033,
+      "FRONT_FINAL10": 0.04762577888096538,
+      "FRONT_ANCHOR_MINOR": 0.04762577888096538,
+      "FRONT_FINAL3": 0.1042136345782047,
+      "FRONT_FINAL20": 0.04762577888096538,
+      "FRONT_ROAD": 0.07427828383457831,
+      "FRONT_ROUTE_END": 0.04762577888096538,
+      "FRONT_ROUTE_PCA": 0.056155529050455746,
+      "FRONT_ANCHOR_MAJOR": 0.04762577888096538,
+      "FRONT_FINAL5": 0.05828789213950178,
+      "UNKNOWN": 0.3519095519067198
+    }
+  },
+  {
+    "phrase": "next to",
+    "anchor_type": "all",
+    "source": "annotation",
+    "context": false,
+    "probabilities": {
+      "CENTER_DISTANCE": 0.4026735565449937,
+      "FOOTPRINT_DISTANCE": 0.4849314643807958,
+      "UNKNOWN": 0.11239497907421038
+    }
+  },
+  {
+    "phrase": "next to",
+    "anchor_type": "all",
+    "source": "parser",
+    "context": false,
+    "probabilities": {
+      "CENTER_DISTANCE": 0.43085021433682014,
+      "FOOTPRINT_DISTANCE": 0.47421460389110587,
+      "UNKNOWN": 0.09493518177207401
+    }
+  },
+  {
+    "phrase": "adjacent to",
+    "anchor_type": "all",
+    "source": "annotation",
+    "context": false,
+    "probabilities": {
+      "CENTER_DISTANCE": 0.44043414995198393,
+      "FOOTPRINT_DISTANCE": 0.20689375265959245,
+      "UNKNOWN": 0.3526720973884236
+    }
+  },
+  {
+    "phrase": "adjacent to",
+    "anchor_type": "all",
+    "source": "parser",
+    "context": false,
+    "probabilities": {
+      "CENTER_DISTANCE": 0.47409655847987536,
+      "FOOTPRINT_DISTANCE": 0.1985499370347542,
+      "UNKNOWN": 0.32735350448537043
+    }
+  },
+  {
+    "phrase": "right of",
+    "anchor_type": "all",
+    "source": "annotation",
+    "context": false,
+    "probabilities": {
+      "RIGHT_FINAL5": 0.09145454515609197,
+      "RIGHT_FINAL3": 0.07856408309791174,
+      "RIGHT_ROAD": 0.07856408309791174,
+      "RIGHT_GLOBAL": 0.07856408309791174,
+      "RIGHT_ROUTE_END": 0.08465548998890189,
+      "RIGHT_ROUTE_PCA": 0.08150881498740828,
+      "RIGHT_START": 0.08034108703901259,
+      "RIGHT_FINAL20": 0.07856408309791174,
+      "RIGHT_FINAL10": 0.07856408309791174,
+      "RIGHT_ANCHOR_MINOR": 0.11209148114320301,
+      "RIGHT_ANCHOR_MAJOR": 0.07856408309791174,
+      "UNKNOWN": 0.07856408309791174
+    }
+  },
+  {
+    "phrase": "right of",
+    "anchor_type": "all",
+    "source": "parser",
+    "context": false,
+    "probabilities": {
+      "RIGHT_FINAL5": 0.08737817658961776,
+      "RIGHT_FINAL3": 0.07615720328725482,
+      "RIGHT_ROAD": 0.07615720328725482,
+      "RIGHT_GLOBAL": 0.07615720328725482,
+      "RIGHT_ROUTE_END": 0.0858287363510279,
+      "RIGHT_ROUTE_PCA": 0.08767444525086032,
+      "RIGHT_START": 0.07918292698622979,
+      "RIGHT_FINAL20": 0.07979058736335128,
+      "RIGHT_FINAL10": 0.07995243434110695,
+      "RIGHT_ANCHOR_MINOR": 0.11940667668153193,
+      "RIGHT_ANCHOR_MAJOR": 0.07615720328725482,
+      "UNKNOWN": 0.07615720328725482
+    }
+  },
+  {
+    "phrase": "between",
+    "anchor_type": "all",
+    "source": "annotation",
+    "context": false,
+    "probabilities": {
+      "BETWEEN_TERNARY": 0.27085544624362207,
+      "PAIRWISE_OLD": 0.435712270419348,
+      "DISTANCE_PRIOR": 0.2503223008706469,
+      "UNKNOWN": 0.04310998246638286
+    }
+  },
+  {
+    "phrase": "between",
+    "anchor_type": "all",
+    "source": "parser",
+    "context": false,
+    "probabilities": {
+      "BETWEEN_TERNARY": 0.25021556437303416,
+      "PAIRWISE_OLD": 0.43240747976776683,
+      "DISTANCE_PRIOR": 0.2797236263465526,
+      "UNKNOWN": 0.037653329512646556
+    }
+  },
+  {
+    "phrase": "left of",
+    "anchor_type": "all",
+    "source": "parser",
+    "context": false,
+    "probabilities": {
+      "LEFT_FINAL5": 0.0804609949023675,
+      "LEFT_ANCHOR_MINOR": 0.08505755008230462,
+      "LEFT_START": 0.0913553327836214,
+      "LEFT_GLOBAL": 0.09178073519615006,
+      "LEFT_ROAD": 0.0804609949023675,
+      "LEFT_FINAL3": 0.08811842271898393,
+      "LEFT_ROUTE_PCA": 0.0804609949023675,
+      "LEFT_FINAL10": 0.0804609949023675,
+      "LEFT_FINAL20": 0.0804609949023675,
+      "LEFT_ROUTE_END": 0.0804609949023675,
+      "LEFT_ANCHOR_MAJOR": 0.0804609949023675,
+      "UNKNOWN": 0.0804609949023675
+    }
+  },
+  {
+    "phrase": "near",
+    "anchor_type": "all",
+    "source": "annotation",
+    "context": false,
+    "probabilities": {
+      "CENTER_DISTANCE": 0.3655002142140864,
+      "FOOTPRINT_DISTANCE": 0.5116560907832337,
+      "UNKNOWN": 0.12284369500267975
+    }
+  },
+  {
+    "phrase": "left of",
+    "anchor_type": "all",
+    "source": "annotation",
+    "context": false,
+    "probabilities": {
+      "LEFT_FINAL5": 0.07875360550035448,
+      "LEFT_ANCHOR_MINOR": 0.07875360550035448,
+      "LEFT_START": 0.09860483388259976,
+      "LEFT_GLOBAL": 0.09277732104806864,
+      "LEFT_ROAD": 0.07875360550035448,
+      "LEFT_FINAL3": 0.09132935048469588,
+      "LEFT_ROUTE_PCA": 0.07875360550035448,
+      "LEFT_FINAL10": 0.07875360550035448,
+      "LEFT_FINAL20": 0.07875360550035448,
+      "LEFT_ROUTE_END": 0.07875360550035448,
+      "LEFT_ANCHOR_MAJOR": 0.08725965058179977,
+      "UNKNOWN": 0.07875360550035448
+    }
+  },
+  {
+    "phrase": "near",
+    "anchor_type": "all",
+    "source": "parser",
+    "context": false,
+    "probabilities": {
+      "CENTER_DISTANCE": 0.3175297491031081,
+      "FOOTPRINT_DISTANCE": 0.5447102770601484,
+      "UNKNOWN": 0.1377599738367436
+    }
+  },
+  {
+    "phrase": "beside",
+    "anchor_type": "all",
+    "source": "annotation",
+    "context": false,
+    "probabilities": {
+      "CENTER_DISTANCE": 0.3230881702184786,
+      "FOOTPRINT_DISTANCE": 0.5817381875103864,
+      "UNKNOWN": 0.09517364227113508
+    }
+  },
+  {
+    "phrase": "beside",
+    "anchor_type": "all",
+    "source": "parser",
+    "context": false,
+    "probabilities": {
+      "CENTER_DISTANCE": 0.19480804103553018,
+      "FOOTPRINT_DISTANCE": 0.3144142583861229,
+      "UNKNOWN": 0.49077770057834696
+    }
+  },
+  {
+    "phrase": "close to",
+    "anchor_type": "all",
+    "source": "annotation",
+    "context": false,
+    "probabilities": {
+      "CENTER_DISTANCE": 0.2342860813607395,
+      "FOOTPRINT_DISTANCE": 0.16327433574077285,
+      "UNKNOWN": 0.6024395828984876
+    }
+  },
+  {
+    "phrase": "close to",
+    "anchor_type": "all",
+    "source": "parser",
+    "context": false,
+    "probabilities": {
+      "CENTER_DISTANCE": 0.2000171350813121,
+      "FOOTPRINT_DISTANCE": 0.09536029506593255,
+      "UNKNOWN": 0.7046225698527554
+    }
+  },
+  {
+    "phrase": "on",
+    "anchor_type": "all",
+    "source": "raw_parser",
+    "context": false,
+    "probabilities": {
+      "ALONG_ROAD": 0.25478278723877296,
+      "NEAR_ROAD_REGION": 0.2547827872387725,
+      "IN_ROAD_BUFFER": 0.2279896552688044,
+      "ROAD_ASSOCIATION": 0.24918339343489737,
+      "UNKNOWN": 0.013261376818752762
+    }
+  },
+  {
+    "phrase": "off",
+    "anchor_type": "all",
+    "source": "raw_parser",
+    "context": false,
+    "probabilities": {
+      "NEAR_ROAD_REGION": 0.4752154262090113,
+      "OFF_ROAD_BUFFER": 0.036089084540043566,
+      "ROAD_ASSOCIATION": 0.46477155618993105,
+      "UNKNOWN": 0.02392393306101412
+    }
+  },
+  {
+    "phrase": "along",
+    "anchor_type": "all",
+    "source": "raw_parser",
+    "context": false,
+    "probabilities": {
+      "NEAR_ROAD_REGION": 0.4648728625155738,
+      "ALONG_ROAD_TANGENT": 0.5080870764107658,
+      "UNKNOWN": 0.027040061073660478
+    }
+  },
+  {
+    "phrase": "across",
+    "anchor_type": "all",
+    "source": "raw_parser",
+    "context": false,
+    "probabilities": {
+      "LINE_CROSSES_ROAD": 0.3569867940112778,
+      "OPPOSITE_SIDE_OF_ROAD": 0.07664905305266546,
+      "UNKNOWN": 0.5663641529360567
+    }
+  },
+  {
+    "phrase": "behind",
+    "anchor_type": "all",
+    "source": "deepseek",
+    "context": false,
+    "probabilities": {
+      "BACK_ANCHOR_MAJOR": 0.05750743423396601,
+      "BACK_FINAL5": 0.05750743423396601,
+      "BACK_FINAL3": 0.05750743423396601,
+      "BACK_GLOBAL": 0.05750743423396601,
+      "BACK_FINAL20": 0.05750743423396601,
+      "BACK_START": 0.05750743423396601,
+      "BACK_ROUTE_PCA": 0.05750743423396601,
+      "BACK_ANCHOR_MINOR": 0.05750743423396601,
+      "BACK_ROUTE_END": 0.05750743423396601,
+      "BACK_FINAL10": 0.05750743423396601,
+      "UNKNOWN": 0.4249256576603398
+    }
+  },
+  {
+    "phrase": "off",
+    "anchor_type": "all",
+    "source": "deepseek",
+    "context": false,
+    "probabilities": {
+      "NEAR_ROAD_REGION": 0.09625513525746872,
+      "OFF_ROAD_BUFFER": 0.09625513525746872,
+      "ROAD_ASSOCIATION": 0.09625513525746872,
+      "UNKNOWN": 0.7112345942275938
+    }
+  },
+  {
+    "phrase": "in front of",
+    "anchor_type": "all",
+    "source": "deepseek",
+    "context": false,
+    "probabilities": {
+      "FRONT_START": 0.030633432818600967,
+      "FRONT_GLOBAL": 0.030633432818600967,
+      "FRONT_FINAL10": 0.2263521535994658,
+      "FRONT_ANCHOR_MINOR": 0.04844481531829657,
+      "FRONT_FINAL3": 0.2263521535994658,
+      "FRONT_FINAL20": 0.05966577989515061,
+      "FRONT_ROUTE_END": 0.030633432818600967,
+      "FRONT_ROUTE_PCA": 0.030633432818600967,
+      "FRONT_ANCHOR_MAJOR": 0.030633432818600967,
+      "FRONT_FINAL5": 0.05966577989515055,
+      "UNKNOWN": 0.2263521535994658
+    }
+  },
+  {
+    "phrase": "on",
+    "anchor_type": "all",
+    "source": "deepseek",
+    "context": false,
+    "probabilities": {
+      "ALONG_ROAD": 0.09842889915787195,
+      "NEAR_ROAD_REGION": 0.10558432155907063,
+      "IN_ROAD_BUFFER": 0.10558432155907063,
+      "ROAD_ASSOCIATION": 0.12149350047997955,
+      "UNKNOWN": 0.5689089572440074
+    }
+  },
+  {
+    "phrase": "between",
+    "anchor_type": "all",
+    "source": "deepseek",
+    "context": false,
+    "probabilities": {
+      "BETWEEN_TERNARY": 0.3454385270453549,
+      "PAIRWISE_OLD": 0.26902779536595506,
+      "DISTANCE_PRIOR": 0.19276683879434503,
+      "UNKNOWN": 0.19276683879434503
+    }
+  },
+  {
+    "phrase": "to the left of",
+    "anchor_type": "all",
+    "source": "deepseek",
+    "context": false,
+    "probabilities": {
+      "LEFT_FINAL5": 0.05302433555481136,
+      "LEFT_ANCHOR_MINOR": 0.05302433555481136,
+      "LEFT_START": 0.05302433555481136,
+      "LEFT_GLOBAL": 0.06922884674566925,
+      "LEFT_ROAD": 0.05302433555481136,
+      "LEFT_FINAL3": 0.05302433555481136,
+      "LEFT_ROUTE_PCA": 0.05302433555481136,
+      "LEFT_FINAL10": 0.05302433555481136,
+      "LEFT_FINAL20": 0.05302433555481136,
+      "LEFT_ROUTE_END": 0.05302433555481136,
+      "LEFT_ANCHOR_MAJOR": 0.06175234323800408,
+      "UNKNOWN": 0.39179979002302423
+    }
+  },
+  {
+    "phrase": "near",
+    "anchor_type": "all",
+    "source": "deepseek",
+    "context": false,
+    "probabilities": {
+      "CENTER_DISTANCE": 0.2531124970280209,
+      "FOOTPRINT_DISTANCE": 0.35212730506915146,
+      "UNKNOWN": 0.39476019790282757
+    }
+  },
+  {
+    "phrase": "to the right of",
+    "anchor_type": "all",
+    "source": "deepseek",
+    "context": false,
+    "probabilities": {
+      "RIGHT_FINAL5": 0.053975470698209266,
+      "RIGHT_FINAL3": 0.053975470698209266,
+      "RIGHT_ROAD": 0.053975470698209266,
+      "RIGHT_GLOBAL": 0.053975470698209266,
+      "RIGHT_ROUTE_END": 0.057696491380430495,
+      "RIGHT_ROUTE_PCA": 0.057696491380430495,
+      "RIGHT_START": 0.053975470698209266,
+      "RIGHT_FINAL20": 0.053975470698209266,
+      "RIGHT_FINAL10": 0.053975470698209266,
+      "RIGHT_ANCHOR_MINOR": 0.053975470698209266,
+      "RIGHT_ANCHOR_MAJOR": 0.053975470698209266,
+      "UNKNOWN": 0.3988277809552558
+    }
+  },
+  {
+    "phrase": "next to",
+    "anchor_type": "all",
+    "source": "deepseek",
+    "context": false,
+    "probabilities": {
+      "CENTER_DISTANCE": 0.19850203309013498,
+      "FOOTPRINT_DISTANCE": 0.19850203309013498,
+      "UNKNOWN": 0.6029959338197302
+    }
+  },
+  {
+    "phrase": "behind",
+    "anchor_type": "building",
+    "source": "annotation",
+    "context": true,
+    "probabilities": {
+      "BACK_ANCHOR_MAJOR": 0.11080275390241594,
+      "BACK_FINAL5": 0.0889197246097584,
+      "BACK_FINAL3": 0.0889197246097584,
+      "BACK_GLOBAL": 0.0889197246097584,
+      "BACK_FINAL20": 0.0889197246097584,
+      "BACK_START": 0.0889197246097584,
+      "BACK_ROUTE_PCA": 0.0889197246097584,
+      "BACK_ANCHOR_MINOR": 0.0889197246097584,
+      "BACK_ROUTE_END": 0.0889197246097584,
+      "BACK_FINAL10": 0.0889197246097584,
+      "UNKNOWN": 0.0889197246097584
+    }
+  },
+  {
+    "phrase": "behind",
+    "anchor_type": "building",
+    "source": "parser",
+    "context": true,
+    "probabilities": {
+      "BACK_ANCHOR_MAJOR": 0.09383661812050977,
+      "BACK_FINAL5": 0.09061633818794902,
+      "BACK_FINAL3": 0.09061633818794902,
+      "BACK_GLOBAL": 0.09061633818794902,
+      "BACK_FINAL20": 0.09061633818794902,
+      "BACK_START": 0.09061633818794902,
+      "BACK_ROUTE_PCA": 0.09061633818794902,
+      "BACK_ANCHOR_MINOR": 0.09061633818794902,
+      "BACK_ROUTE_END": 0.09061633818794902,
+      "BACK_FINAL10": 0.09061633818794902,
+      "UNKNOWN": 0.09061633818794902
+    }
+  },
+  {
+    "phrase": "on",
+    "anchor_type": "road_region",
+    "source": "annotation",
+    "context": true,
+    "probabilities": {
+      "ALONG_ROAD": 0.20915961640110733,
+      "NEAR_ROAD_REGION": 0.21059466819327485,
+      "IN_ROAD_BUFFER": 0.18909375957638275,
+      "ROAD_ASSOCIATION": 0.23817654996280796,
+      "UNKNOWN": 0.1529754058664271
+    }
+  },
+  {
+    "phrase": "on",
+    "anchor_type": "road_region",
+    "source": "parser",
+    "context": true,
+    "probabilities": {
+      "ALONG_ROAD": 0.20951520515726593,
+      "NEAR_ROAD_REGION": 0.20951520515726593,
+      "IN_ROAD_BUFFER": 0.1865160408448853,
+      "ROAD_ASSOCIATION": 0.23718189181691723,
+      "UNKNOWN": 0.15727165702366566
+    }
+  },
+  {
+    "phrase": "in front of",
+    "anchor_type": "building",
+    "source": "annotation",
+    "context": true,
+    "probabilities": {
+      "FRONT_START": 0.08805597563448242,
+      "FRONT_GLOBAL": 0.09330147779284836,
+      "FRONT_FINAL10": 0.07145613822959476,
+      "FRONT_ANCHOR_MINOR": 0.07082378716922294,
+      "FRONT_FINAL3": 0.18414996941323222,
+      "FRONT_FINAL20": 0.07082378716922294,
+      "FRONT_ROUTE_END": 0.07879594907818299,
+      "FRONT_ROUTE_PCA": 0.0916496081723917,
+      "FRONT_ANCHOR_MAJOR": 0.07082378716922294,
+      "FRONT_FINAL5": 0.10929573300237569,
+      "UNKNOWN": 0.07082378716922294
+    }
+  },
+  {
+    "phrase": "in front of",
+    "anchor_type": "building",
+    "source": "parser",
+    "context": true,
+    "probabilities": {
+      "FRONT_START": 0.11951029671448682,
+      "FRONT_GLOBAL": 0.10529892456554628,
+      "FRONT_FINAL10": 0.07434043808823268,
+      "FRONT_ANCHOR_MINOR": 0.07434043808823268,
+      "FRONT_FINAL3": 0.17860885865842607,
+      "FRONT_FINAL20": 0.07434043808823268,
+      "FRONT_ROUTE_END": 0.07434043808823268,
+      "FRONT_ROUTE_PCA": 0.07434043808823268,
+      "FRONT_ANCHOR_MAJOR": 0.07434043808823268,
+      "FRONT_FINAL5": 0.07619885344391207,
+      "UNKNOWN": 0.07434043808823268
+    }
+  },
+  {
+    "phrase": "next to",
+    "anchor_type": "building",
+    "source": "annotation",
+    "context": true,
+    "probabilities": {
+      "CENTER_DISTANCE": 0.40246485652686104,
+      "FOOTPRINT_DISTANCE": 0.5121353886552646,
+      "UNKNOWN": 0.08539975481787433
+    }
+  },
+  {
+    "phrase": "next to",
+    "anchor_type": "building",
+    "source": "parser",
+    "context": true,
+    "probabilities": {
+      "CENTER_DISTANCE": 0.42830676152137387,
+      "FOOTPRINT_DISTANCE": 0.4823228088263263,
+      "UNKNOWN": 0.08937042965229991
+    }
+  },
+  {
+    "phrase": "adjacent to",
+    "anchor_type": "building",
+    "source": "annotation",
+    "context": true,
+    "probabilities": {
+      "CENTER_DISTANCE": 0.42374697651766846,
+      "FOOTPRINT_DISTANCE": 0.3586940715998587,
+      "UNKNOWN": 0.21755895188247287
+    }
+  },
+  {
+    "phrase": "adjacent to",
+    "anchor_type": "building",
+    "source": "parser",
+    "context": true,
+    "probabilities": {
+      "CENTER_DISTANCE": 0.42374697651766846,
+      "FOOTPRINT_DISTANCE": 0.3586940715998587,
+      "UNKNOWN": 0.21755895188247287
+    }
+  },
+  {
+    "phrase": "right of",
+    "anchor_type": "building",
+    "source": "annotation",
+    "context": true,
+    "probabilities": {
+      "RIGHT_FINAL5": 0.08006331976250562,
+      "RIGHT_FINAL3": 0.08006331976250562,
+      "RIGHT_GLOBAL": 0.08754710742862164,
+      "RIGHT_ROUTE_END": 0.10573009160539382,
+      "RIGHT_ROUTE_PCA": 0.1110823987722368,
+      "RIGHT_START": 0.08006331976250562,
+      "RIGHT_FINAL20": 0.09235824305312013,
+      "RIGHT_FINAL10": 0.08006331976250562,
+      "RIGHT_ANCHOR_MINOR": 0.12290224056559391,
+      "RIGHT_ANCHOR_MAJOR": 0.08006331976250562,
+      "UNKNOWN": 0.08006331976250562
+    }
+  },
+  {
+    "phrase": "right of",
+    "anchor_type": "building",
+    "source": "parser",
+    "context": true,
+    "probabilities": {
+      "RIGHT_FINAL5": 0.07767099141961561,
+      "RIGHT_FINAL3": 0.07767099141961561,
+      "RIGHT_GLOBAL": 0.07767099141961561,
+      "RIGHT_ROUTE_END": 0.12091584278906661,
+      "RIGHT_ROUTE_PCA": 0.12091584278906661,
+      "RIGHT_START": 0.07767099141961561,
+      "RIGHT_FINAL20": 0.10507555355424299,
+      "RIGHT_FINAL10": 0.07767099141961561,
+      "RIGHT_ANCHOR_MINOR": 0.10939582093031444,
+      "RIGHT_ANCHOR_MAJOR": 0.07767099141961561,
+      "UNKNOWN": 0.07767099141961561
+    }
+  },
+  {
+    "phrase": "between",
+    "anchor_type": "road_region",
+    "source": "annotation",
+    "context": true,
+    "probabilities": {
+      "BETWEEN_TERNARY": 0.23892756915132196,
+      "PAIRWISE_OLD": 0.3220069555727165,
+      "DISTANCE_PRIOR": 0.12112164469985184,
+      "UNKNOWN": 0.3179438305761096
+    }
+  },
+  {
+    "phrase": "between",
+    "anchor_type": "road_region",
+    "source": "parser",
+    "context": true,
+    "probabilities": {
+      "BETWEEN_TERNARY": 0.2051585415831575,
+      "PAIRWISE_OLD": 0.381011924624196,
+      "DISTANCE_PRIOR": 0.0913099026328643,
+      "UNKNOWN": 0.32251963115978227
+    }
+  },
+  {
+    "phrase": "left of",
+    "anchor_type": "unknown",
+    "source": "parser",
+    "context": true,
+    "probabilities": {
+      "LEFT_FINAL5": 0.061693265464090624,
+      "LEFT_ANCHOR_MINOR": 0.053198309903690656,
+      "LEFT_START": 0.053198309903690656,
+      "LEFT_GLOBAL": 0.053198309903690656,
+      "LEFT_ROAD": 0.053198309903690656,
+      "LEFT_FINAL3": 0.053198309903690705,
+      "LEFT_ROUTE_PCA": 0.053198309903690656,
+      "LEFT_FINAL10": 0.053198309903690705,
+      "LEFT_FINAL20": 0.053198309903690656,
+      "LEFT_ROUTE_END": 0.06643664915602508,
+      "LEFT_ANCHOR_MAJOR": 0.053198309903690656,
+      "UNKNOWN": 0.39308529624666827
+    }
+  },
+  {
+    "phrase": "in front of",
+    "anchor_type": "unknown",
+    "source": "parser",
+    "context": true,
+    "probabilities": {
+      "FRONT_START": 0.03692609195197528,
+      "FRONT_GLOBAL": 0.03692609195197528,
+      "FRONT_FINAL10": 0.0629443959986924,
+      "FRONT_ANCHOR_MINOR": 0.03692609195197528,
+      "FRONT_FINAL3": 0.10037552474906218,
+      "FRONT_FINAL20": 0.04821089663664492,
+      "FRONT_ROAD": 0.057590800683089236,
+      "FRONT_ROUTE_END": 0.0629443959986924,
+      "FRONT_ROUTE_PCA": 0.10729532366417319,
+      "FRONT_ANCHOR_MAJOR": 0.03692609195197528,
+      "FRONT_FINAL5": 0.14008532951432742,
+      "UNKNOWN": 0.2728489649474169
+    }
+  },
+  {
+    "phrase": "next to",
+    "anchor_type": "unknown",
+    "source": "parser",
+    "context": true,
+    "probabilities": {
+      "CENTER_DISTANCE": 0.10650697891920075,
+      "FOOTPRINT_DISTANCE": 0.10650697891920075,
+      "UNKNOWN": 0.7869860421615985
+    }
+  },
+  {
+    "phrase": "near",
+    "anchor_type": "building",
+    "source": "annotation",
+    "context": true,
+    "probabilities": {
+      "CENTER_DISTANCE": 0.374700229823238,
+      "FOOTPRINT_DISTANCE": 0.4957484293150259,
+      "UNKNOWN": 0.12955134086173625
+    }
+  },
+  {
+    "phrase": "near",
+    "anchor_type": "road_region",
+    "source": "annotation",
+    "context": true,
+    "probabilities": {
+      "CENTER_DISTANCE": 0.09931873603415547,
+      "FOOTPRINT_DISTANCE": 0.16680955173458464,
+      "UNKNOWN": 0.7338717122312599
+    }
+  },
+  {
+    "phrase": "left of",
+    "anchor_type": "road_region",
+    "source": "annotation",
+    "context": true,
+    "probabilities": {
+      "LEFT_FINAL5": 0.05820626583247004,
+      "LEFT_START": 0.05820626583247004,
+      "LEFT_GLOBAL": 0.05820626583247004,
+      "LEFT_ROAD": 0.05820626583247004,
+      "LEFT_FINAL3": 0.05820626583247004,
+      "LEFT_ROUTE_PCA": 0.08123338781365916,
+      "LEFT_FINAL10": 0.05820626583247004,
+      "LEFT_FINAL20": 0.05820626583247004,
+      "LEFT_ROUTE_END": 0.08123338781365916,
+      "UNKNOWN": 0.43008936354539146
+    }
+  },
+  {
+    "phrase": "left of",
+    "anchor_type": "road_region",
+    "source": "parser",
+    "context": true,
+    "probabilities": {
+      "LEFT_FINAL5": 0.057554087876631944,
+      "LEFT_START": 0.057554087876631944,
+      "LEFT_GLOBAL": 0.057554087876631944,
+      "LEFT_ROAD": 0.057554087876631944,
+      "LEFT_FINAL3": 0.057554087876631944,
+      "LEFT_ROUTE_PCA": 0.0626385716588344,
+      "LEFT_FINAL10": 0.057554087876631944,
+      "LEFT_FINAL20": 0.0956467457014092,
+      "LEFT_ROUTE_END": 0.07111977133674695,
+      "UNKNOWN": 0.4252703840432179
+    }
+  },
+  {
+    "phrase": "adjacent to",
+    "anchor_type": "road_region",
+    "source": "annotation",
+    "context": true,
+    "probabilities": {
+      "CENTER_DISTANCE": 0.3113973440317466,
+      "FOOTPRINT_DISTANCE": 0.08208344870360675,
+      "UNKNOWN": 0.6065192072646466
+    }
+  },
+  {
+    "phrase": "adjacent to",
+    "anchor_type": "road_region",
+    "source": "parser",
+    "context": true,
+    "probabilities": {
+      "CENTER_DISTANCE": 0.10650697891920075,
+      "FOOTPRINT_DISTANCE": 0.10650697891920075,
+      "UNKNOWN": 0.7869860421615985
+    }
+  },
+  {
+    "phrase": "left of",
+    "anchor_type": "building",
+    "source": "annotation",
+    "context": true,
+    "probabilities": {
+      "LEFT_FINAL5": 0.0793172490033453,
+      "LEFT_ANCHOR_MINOR": 0.0793172490033453,
+      "LEFT_START": 0.10610836803147304,
+      "LEFT_GLOBAL": 0.15489814782253486,
+      "LEFT_FINAL3": 0.10424538032404448,
+      "LEFT_ROUTE_PCA": 0.0793172490033453,
+      "LEFT_FINAL10": 0.07952736079853048,
+      "LEFT_FINAL20": 0.0793172490033453,
+      "LEFT_ROUTE_END": 0.0793172490033453,
+      "LEFT_ANCHOR_MAJOR": 0.0793172490033453,
+      "UNKNOWN": 0.0793172490033453
+    }
+  },
+  {
+    "phrase": "left of",
+    "anchor_type": "building",
+    "source": "parser",
+    "context": true,
+    "probabilities": {
+      "LEFT_FINAL5": 0.07890848790477041,
+      "LEFT_ANCHOR_MINOR": 0.07890848790477041,
+      "LEFT_START": 0.11583041524748221,
+      "LEFT_GLOBAL": 0.13892654854497025,
+      "LEFT_FINAL3": 0.10470188095498709,
+      "LEFT_ROUTE_PCA": 0.07890848790477041,
+      "LEFT_FINAL10": 0.08818173991916761,
+      "LEFT_FINAL20": 0.07890848790477041,
+      "LEFT_ROUTE_END": 0.07890848790477041,
+      "LEFT_ANCHOR_MAJOR": 0.07890848790477041,
+      "UNKNOWN": 0.07890848790477041
+    }
+  },
+  {
+    "phrase": "between",
+    "anchor_type": "building",
+    "source": "parser",
+    "context": true,
+    "probabilities": {
+      "BETWEEN_TERNARY": 0.2929334954847015,
+      "PAIRWISE_OLD": 0.3841395435925162,
+      "DISTANCE_PRIOR": 0.2857909877078734,
+      "UNKNOWN": 0.03713597321490895
+    }
+  },
+  {
+    "phrase": "near",
+    "anchor_type": "road_region",
+    "source": "parser",
+    "context": true,
+    "probabilities": {
+      "CENTER_DISTANCE": 0.10650697891920075,
+      "FOOTPRINT_DISTANCE": 0.10650697891920075,
+      "UNKNOWN": 0.7869860421615985
+    }
+  },
+  {
+    "phrase": "beside",
+    "anchor_type": "road_region",
+    "source": "annotation",
+    "context": true,
+    "probabilities": {
+      "CENTER_DISTANCE": 0.10650697891920075,
+      "FOOTPRINT_DISTANCE": 0.10650697891920075,
+      "UNKNOWN": 0.7869860421615985
+    }
+  },
+  {
+    "phrase": "behind",
+    "anchor_type": "road_region",
+    "source": "annotation",
+    "context": true,
+    "probabilities": {
+      "BACK_FINAL5": 0.05686458134896079,
+      "BACK_FINAL3": 0.05686458134896079,
+      "BACK_GLOBAL": 0.05686458134896079,
+      "BACK_FINAL20": 0.05686458134896079,
+      "BACK_START": 0.07101526810390385,
+      "BACK_ROUTE_PCA": 0.05686458134896079,
+      "BACK_ROUTE_END": 0.05686458134896079,
+      "BACK_FINAL10": 0.05686458134896079,
+      "BACK_ROAD": 0.11075708082369379,
+      "UNKNOWN": 0.42017558162967683
+    }
+  },
+  {
+    "phrase": "next to",
+    "anchor_type": "road_region",
+    "source": "annotation",
+    "context": true,
+    "probabilities": {
+      "CENTER_DISTANCE": 0.10650697891920075,
+      "FOOTPRINT_DISTANCE": 0.10650697891920075,
+      "UNKNOWN": 0.7869860421615985
+    }
+  },
+  {
+    "phrase": "beside",
+    "anchor_type": "building",
+    "source": "annotation",
+    "context": true,
+    "probabilities": {
+      "CENTER_DISTANCE": 0.22907761863998577,
+      "FOOTPRINT_DISTANCE": 0.43915592969877576,
+      "UNKNOWN": 0.33176645166123836
+    }
+  },
+  {
+    "phrase": "beside",
+    "anchor_type": "building",
+    "source": "parser",
+    "context": true,
+    "probabilities": {
+      "CENTER_DISTANCE": 0.192393683087386,
+      "FOOTPRINT_DISTANCE": 0.36841262346839065,
+      "UNKNOWN": 0.43919369344422327
+    }
+  },
+  {
+    "phrase": "near",
+    "anchor_type": "building",
+    "source": "parser",
+    "context": true,
+    "probabilities": {
+      "CENTER_DISTANCE": 0.25593441634174047,
+      "FOOTPRINT_DISTANCE": 0.2795286095230688,
+      "UNKNOWN": 0.46453697413519074
+    }
+  },
+  {
+    "phrase": "right of",
+    "anchor_type": "road_region",
+    "source": "annotation",
+    "context": true,
+    "probabilities": {
+      "RIGHT_FINAL5": 0.03360448073337689,
+      "RIGHT_FINAL3": 0.03360448073337689,
+      "RIGHT_ROAD": 0.03360448073337689,
+      "RIGHT_ROUTE_END": 0.1274842396757113,
+      "RIGHT_GLOBAL": 0.03360448073337689,
+      "RIGHT_ROUTE_PCA": 0.198827415772774,
+      "RIGHT_START": 0.1274842396757113,
+      "RIGHT_FINAL20": 0.08174039431396997,
+      "RIGHT_FINAL10": 0.08174039431396997,
+      "UNKNOWN": 0.24830539331435605
+    }
+  },
+  {
+    "phrase": "right of",
+    "anchor_type": "road_region",
+    "source": "parser",
+    "context": true,
+    "probabilities": {
+      "RIGHT_FINAL5": 0.06956330362256005,
+      "RIGHT_FINAL3": 0.018336687752782202,
+      "RIGHT_ROAD": 0.018336687752782202,
+      "RIGHT_ROUTE_END": 0.1354908144738823,
+      "RIGHT_GLOBAL": 0.018336687752782202,
+      "RIGHT_ROUTE_PCA": 0.263900071601004,
+      "RIGHT_START": 0.1354908144738823,
+      "RIGHT_FINAL20": 0.1354908144738823,
+      "RIGHT_FINAL10": 0.06956330362256005,
+      "UNKNOWN": 0.1354908144738823
+    }
+  },
+  {
+    "phrase": "left of",
+    "anchor_type": "unknown",
+    "source": "annotation",
+    "context": true,
+    "probabilities": {
+      "LEFT_FINAL5": 0.05750743423396601,
+      "LEFT_ANCHOR_MINOR": 0.05750743423396601,
+      "LEFT_START": 0.05750743423396601,
+      "LEFT_GLOBAL": 0.05750743423396601,
+      "LEFT_FINAL3": 0.05750743423396601,
+      "LEFT_ROUTE_PCA": 0.05750743423396601,
+      "LEFT_FINAL10": 0.05750743423396601,
+      "LEFT_FINAL20": 0.05750743423396601,
+      "LEFT_ROUTE_END": 0.05750743423396601,
+      "LEFT_ANCHOR_MAJOR": 0.05750743423396601,
+      "UNKNOWN": 0.4249256576603398
+    }
+  },
+  {
+    "phrase": "beside",
+    "anchor_type": "unknown",
+    "source": "annotation",
+    "context": true,
+    "probabilities": {
+      "CENTER_DISTANCE": 0.2889212154417394,
+      "FOOTPRINT_DISTANCE": 0.14833709805949277,
+      "UNKNOWN": 0.5627416864987679
+    }
+  },
+  {
+    "phrase": "beside",
+    "anchor_type": "unknown",
+    "source": "parser",
+    "context": true,
+    "probabilities": {
+      "CENTER_DISTANCE": 0.10650697891920075,
+      "FOOTPRINT_DISTANCE": 0.10650697891920075,
+      "UNKNOWN": 0.7869860421615985
+    }
+  },
+  {
+    "phrase": "near",
+    "anchor_type": "unknown",
+    "source": "parser",
+    "context": true,
+    "probabilities": {
+      "CENTER_DISTANCE": 0.10650697891920075,
+      "FOOTPRINT_DISTANCE": 0.10650697891920075,
+      "UNKNOWN": 0.7869860421615985
+    }
+  },
+  {
+    "phrase": "near",
+    "anchor_type": "object",
+    "source": "annotation",
+    "context": true,
+    "probabilities": {
+      "CENTER_DISTANCE": 0.08486241771225009,
+      "FOOTPRINT_DISTANCE": 0.28808441712104804,
+      "UNKNOWN": 0.627053165166702
+    }
+  },
+  {
+    "phrase": "in front of",
+    "anchor_type": "road_region",
+    "source": "annotation",
+    "context": true,
+    "probabilities": {
+      "FRONT_START": 0.04995135919903693,
+      "FRONT_GLOBAL": 0.04995135919903693,
+      "FRONT_FINAL10": 0.04995135919903693,
+      "FRONT_FINAL20": 0.06521675292193684,
+      "FRONT_ROAD": 0.04995135919903693,
+      "FRONT_ROUTE_END": 0.18949886768917373,
+      "FRONT_ROUTE_PCA": 0.1111687943312854,
+      "FRONT_FINAL5": 0.06521675292193684,
+      "UNKNOWN": 0.36909339533951946
+    }
+  },
+  {
+    "phrase": "right of",
+    "anchor_type": "object",
+    "source": "annotation",
+    "context": true,
+    "probabilities": {
+      "RIGHT_FINAL5": 0.05750743423396601,
+      "RIGHT_FINAL3": 0.05750743423396601,
+      "RIGHT_GLOBAL": 0.05750743423396601,
+      "RIGHT_ROUTE_END": 0.05750743423396601,
+      "RIGHT_ROUTE_PCA": 0.05750743423396601,
+      "RIGHT_START": 0.05750743423396601,
+      "RIGHT_FINAL20": 0.05750743423396601,
+      "RIGHT_FINAL10": 0.05750743423396601,
+      "RIGHT_ANCHOR_MINOR": 0.05750743423396601,
+      "RIGHT_ANCHOR_MAJOR": 0.05750743423396601,
+      "UNKNOWN": 0.4249256576603398
+    }
+  },
+  {
+    "phrase": "right of",
+    "anchor_type": "object",
+    "source": "parser",
+    "context": true,
+    "probabilities": {
+      "RIGHT_FINAL5": 0.05750743423396601,
+      "RIGHT_FINAL3": 0.05750743423396601,
+      "RIGHT_GLOBAL": 0.05750743423396601,
+      "RIGHT_ROUTE_END": 0.05750743423396601,
+      "RIGHT_ROUTE_PCA": 0.05750743423396601,
+      "RIGHT_START": 0.05750743423396601,
+      "RIGHT_FINAL20": 0.05750743423396601,
+      "RIGHT_FINAL10": 0.05750743423396601,
+      "RIGHT_ANCHOR_MINOR": 0.05750743423396601,
+      "RIGHT_ANCHOR_MAJOR": 0.05750743423396601,
+      "UNKNOWN": 0.4249256576603398
+    }
+  },
+  {
+    "phrase": "right of",
+    "anchor_type": "unknown",
+    "source": "parser",
+    "context": true,
+    "probabilities": {
+      "RIGHT_FINAL5": 0.0765849662988341,
+      "RIGHT_FINAL3": 0.059644431725029146,
+      "RIGHT_ROAD": 0.04645113013330165,
+      "RIGHT_GLOBAL": 0.04645113013330165,
+      "RIGHT_ROUTE_END": 0.04645113013330165,
+      "RIGHT_ROUTE_PCA": 0.04645113013330165,
+      "RIGHT_START": 0.049182784425276786,
+      "RIGHT_FINAL20": 0.04645113013330165,
+      "RIGHT_FINAL10": 0.111947546267845,
+      "RIGHT_ANCHOR_MINOR": 0.08070348406951122,
+      "RIGHT_ANCHOR_MAJOR": 0.04645113013330165,
+      "UNKNOWN": 0.34323000641369383
+    }
+  },
+  {
+    "phrase": "behind",
+    "anchor_type": "unknown",
+    "source": "parser",
+    "context": true,
+    "probabilities": {
+      "BACK_ANCHOR_MAJOR": 0.049996199792259076,
+      "BACK_FINAL5": 0.047620805196667976,
+      "BACK_FINAL3": 0.047620805196667976,
+      "BACK_GLOBAL": 0.047620805196667976,
+      "BACK_FINAL20": 0.047620805196667976,
+      "BACK_START": 0.047620805196667976,
+      "BACK_ROUTE_PCA": 0.047620805196667976,
+      "BACK_ANCHOR_MINOR": 0.047620805196667976,
+      "BACK_ROUTE_END": 0.047620805196667976,
+      "BACK_FINAL10": 0.047620805196667976,
+      "BACK_ROAD": 0.16954375236330116,
+      "UNKNOWN": 0.3518728010744279
+    }
+  },
+  {
+    "phrase": "between",
+    "anchor_type": "building",
+    "source": "annotation",
+    "context": true,
+    "probabilities": {
+      "BETWEEN_TERNARY": 0.2844650807248907,
+      "PAIRWISE_OLD": 0.4745212558516292,
+      "DISTANCE_PRIOR": 0.20646311676170834,
+      "UNKNOWN": 0.034550546661771646
+    }
+  },
+  {
+    "phrase": "right of",
+    "anchor_type": "unknown",
+    "source": "annotation",
+    "context": true,
+    "probabilities": {
+      "RIGHT_FINAL5": 0.08113594176172106,
+      "RIGHT_FINAL3": 0.050798766511121814,
+      "RIGHT_ROAD": 0.04805357418997954,
+      "RIGHT_GLOBAL": 0.04805357418997954,
+      "RIGHT_ROUTE_END": 0.04805357418997954,
+      "RIGHT_ROUTE_PCA": 0.04805357418997954,
+      "RIGHT_START": 0.04805357418997954,
+      "RIGHT_FINAL20": 0.04805357418997954,
+      "RIGHT_FINAL10": 0.128566142763436,
+      "RIGHT_ANCHOR_MINOR": 0.04805357418997954,
+      "RIGHT_ANCHOR_MAJOR": 0.04805357418997954,
+      "UNKNOWN": 0.3550705554438848
+    }
+  },
+  {
+    "phrase": "behind",
+    "anchor_type": "unknown",
+    "source": "annotation",
+    "context": true,
+    "probabilities": {
+      "BACK_ANCHOR_MAJOR": 0.10371924012712928,
+      "BACK_FINAL5": 0.04724051287255504,
+      "BACK_FINAL3": 0.04724051287255504,
+      "BACK_GLOBAL": 0.04724051287255504,
+      "BACK_FINAL20": 0.04724051287255504,
+      "BACK_START": 0.04724051287255504,
+      "BACK_ROUTE_PCA": 0.04724051287255504,
+      "BACK_ANCHOR_MINOR": 0.04724051287255504,
+      "BACK_ROUTE_END": 0.04724051287255504,
+      "BACK_FINAL10": 0.04724051287255504,
+      "BACK_ROAD": 0.12205334426231063,
+      "UNKNOWN": 0.3490627997575647
+    }
+  },
+  {
+    "phrase": "between",
+    "anchor_type": "unknown",
+    "source": "parser",
+    "context": true,
+    "probabilities": {
+      "BETWEEN_TERNARY": 0.11797881207310873,
+      "PAIRWISE_OLD": 0.3875510000900326,
+      "DISTANCE_PRIOR": 0.3047478280898272,
+      "UNKNOWN": 0.18972235974703144
+    }
+  },
+  {
+    "phrase": "next to",
+    "anchor_type": "landmark",
+    "source": "annotation",
+    "context": true,
+    "probabilities": {
+      "CENTER_DISTANCE": 0.10650697891920075,
+      "FOOTPRINT_DISTANCE": 0.10650697891920075,
+      "UNKNOWN": 0.7869860421615985
+    }
+  },
+  {
+    "phrase": "next to",
+    "anchor_type": "landmark",
+    "source": "parser",
+    "context": true,
+    "probabilities": {
+      "CENTER_DISTANCE": 0.10650697891920075,
+      "FOOTPRINT_DISTANCE": 0.10650697891920075,
+      "UNKNOWN": 0.7869860421615985
+    }
+  },
+  {
+    "phrase": "close to",
+    "anchor_type": "building",
+    "source": "annotation",
+    "context": true,
+    "probabilities": {
+      "CENTER_DISTANCE": 0.10650697891920075,
+      "FOOTPRINT_DISTANCE": 0.10650697891920075,
+      "UNKNOWN": 0.7869860421615985
+    }
+  },
+  {
+    "phrase": "close to",
+    "anchor_type": "building",
+    "source": "parser",
+    "context": true,
+    "probabilities": {
+      "CENTER_DISTANCE": 0.10650697891920075,
+      "FOOTPRINT_DISTANCE": 0.10650697891920075,
+      "UNKNOWN": 0.7869860421615985
+    }
+  },
+  {
+    "phrase": "near",
+    "anchor_type": "unknown",
+    "source": "annotation",
+    "context": true,
+    "probabilities": {
+      "CENTER_DISTANCE": 0.10650697891920075,
+      "FOOTPRINT_DISTANCE": 0.10650697891920075,
+      "UNKNOWN": 0.7869860421615985
+    }
+  },
+  {
+    "phrase": "next to",
+    "anchor_type": "unknown",
+    "source": "annotation",
+    "context": true,
+    "probabilities": {
+      "CENTER_DISTANCE": 0.10650697891920075,
+      "FOOTPRINT_DISTANCE": 0.10650697891920075,
+      "UNKNOWN": 0.7869860421615985
+    }
+  },
+  {
+    "phrase": "between",
+    "anchor_type": "unknown",
+    "source": "annotation",
+    "context": true,
+    "probabilities": {
+      "BETWEEN_TERNARY": 0.1398947986161489,
+      "PAIRWISE_OLD": 0.2564545119971831,
+      "DISTANCE_PRIOR": 0.12392525238133584,
+      "UNKNOWN": 0.4797254370053321
+    }
+  },
+  {
+    "phrase": "in front of",
+    "anchor_type": "unknown",
+    "source": "annotation",
+    "context": true,
+    "probabilities": {
+      "FRONT_START": 0.05631646056637305,
+      "FRONT_GLOBAL": 0.054268819081655574,
+      "FRONT_FINAL10": 0.054268819081655574,
+      "FRONT_ANCHOR_MINOR": 0.054268819081655574,
+      "FRONT_FINAL3": 0.054268819081655574,
+      "FRONT_FINAL20": 0.054268819081655574,
+      "FRONT_ROAD": 0.054268819081655574,
+      "FRONT_ROUTE_END": 0.054268819081655574,
+      "FRONT_ROUTE_PCA": 0.054268819081655574,
+      "FRONT_ANCHOR_MAJOR": 0.054268819081655574,
+      "FRONT_FINAL5": 0.054268819081655574,
+      "UNKNOWN": 0.4009953486170712
+    }
+  },
+  {
+    "phrase": "near",
+    "anchor_type": "landmark",
+    "source": "annotation",
+    "context": true,
+    "probabilities": {
+      "CENTER_DISTANCE": 0.03046431318744341,
+      "FOOTPRINT_DISTANCE": 0.8539641999397792,
+      "UNKNOWN": 0.11557148687277738
+    }
+  },
+  {
+    "phrase": "near",
+    "anchor_type": "landmark",
+    "source": "parser",
+    "context": true,
+    "probabilities": {
+      "CENTER_DISTANCE": 0.03046431318744341,
+      "FOOTPRINT_DISTANCE": 0.8539641999397792,
+      "UNKNOWN": 0.11557148687277738
+    }
+  },
+  {
+    "phrase": "between",
+    "anchor_type": "landmark",
+    "source": "annotation",
+    "context": true,
+    "probabilities": {
+      "BETWEEN_TERNARY": 0.34119767749575763,
+      "PAIRWISE_OLD": 0.10430056963932904,
+      "DISTANCE_PRIOR": 0.4421818699769667,
+      "UNKNOWN": 0.11231988288794668
+    }
+  },
+  {
+    "phrase": "between",
+    "anchor_type": "landmark",
+    "source": "parser",
+    "context": true,
+    "probabilities": {
+      "BETWEEN_TERNARY": 0.29610097974566685,
+      "PAIRWISE_OLD": 0.4618060456757315,
+      "DISTANCE_PRIOR": 0.17959432258669644,
+      "UNKNOWN": 0.06249865199190523
+    }
+  },
+  {
+    "phrase": "on",
+    "anchor_type": "road_region",
+    "source": "raw_parser",
+    "context": true,
+    "probabilities": {
+      "ALONG_ROAD": 0.25478278723877296,
+      "NEAR_ROAD_REGION": 0.2547827872387725,
+      "IN_ROAD_BUFFER": 0.2279896552688044,
+      "ROAD_ASSOCIATION": 0.24918339343489737,
+      "UNKNOWN": 0.013261376818752762
+    }
+  },
+  {
+    "phrase": "off",
+    "anchor_type": "road_region",
+    "source": "raw_parser",
+    "context": true,
+    "probabilities": {
+      "NEAR_ROAD_REGION": 0.4752154262090113,
+      "OFF_ROAD_BUFFER": 0.036089084540043566,
+      "ROAD_ASSOCIATION": 0.46477155618993105,
+      "UNKNOWN": 0.02392393306101412
+    }
+  },
+  {
+    "phrase": "along",
+    "anchor_type": "road_region",
+    "source": "raw_parser",
+    "context": true,
+    "probabilities": {
+      "NEAR_ROAD_REGION": 0.4648728625155738,
+      "ALONG_ROAD_TANGENT": 0.5080870764107658,
+      "UNKNOWN": 0.027040061073660478
+    }
+  },
+  {
+    "phrase": "across",
+    "anchor_type": "road_region",
+    "source": "raw_parser",
+    "context": true,
+    "probabilities": {
+      "LINE_CROSSES_ROAD": 0.3569867940112778,
+      "OPPOSITE_SIDE_OF_ROAD": 0.07664905305266546,
+      "UNKNOWN": 0.5663641529360567
+    }
+  },
+  {
+    "phrase": "behind",
+    "anchor_type": "building",
+    "source": "deepseek",
+    "context": true,
+    "probabilities": {
+      "BACK_ANCHOR_MAJOR": 0.04483149026219336,
+      "BACK_FINAL5": 0.04483149026219336,
+      "BACK_FINAL3": 0.04483149026219336,
+      "BACK_GLOBAL": 0.04483149026219336,
+      "BACK_FINAL20": 0.04483149026219336,
+      "BACK_START": 0.26525419109424975,
+      "BACK_ROUTE_PCA": 0.04483149026219336,
+      "BACK_ANCHOR_MINOR": 0.04483149026219336,
+      "BACK_ROUTE_END": 0.04483149026219336,
+      "BACK_FINAL10": 0.04483149026219336,
+      "UNKNOWN": 0.3312623965460099
+    }
+  },
+  {
+    "phrase": "behind",
+    "anchor_type": "unknown",
+    "source": "deepseek",
+    "context": true,
+    "probabilities": {
+      "BACK_ANCHOR_MAJOR": 0.05750743423396601,
+      "BACK_FINAL5": 0.05750743423396601,
+      "BACK_FINAL3": 0.05750743423396601,
+      "BACK_GLOBAL": 0.05750743423396601,
+      "BACK_FINAL20": 0.05750743423396601,
+      "BACK_START": 0.05750743423396601,
+      "BACK_ROUTE_PCA": 0.05750743423396601,
+      "BACK_ANCHOR_MINOR": 0.05750743423396601,
+      "BACK_ROUTE_END": 0.05750743423396601,
+      "BACK_FINAL10": 0.05750743423396601,
+      "UNKNOWN": 0.4249256576603398
+    }
+  },
+  {
+    "phrase": "off",
+    "anchor_type": "road_region",
+    "source": "deepseek",
+    "context": true,
+    "probabilities": {
+      "NEAR_ROAD_REGION": 0.09625513525746872,
+      "OFF_ROAD_BUFFER": 0.09625513525746872,
+      "ROAD_ASSOCIATION": 0.09625513525746872,
+      "UNKNOWN": 0.7112345942275938
+    }
+  },
+  {
+    "phrase": "in front of",
+    "anchor_type": "building",
+    "source": "deepseek",
+    "context": true,
+    "probabilities": {
+      "FRONT_START": 0.030633432818600967,
+      "FRONT_GLOBAL": 0.030633432818600967,
+      "FRONT_FINAL10": 0.2263521535994658,
+      "FRONT_ANCHOR_MINOR": 0.04844481531829657,
+      "FRONT_FINAL3": 0.2263521535994658,
+      "FRONT_FINAL20": 0.05966577989515061,
+      "FRONT_ROUTE_END": 0.030633432818600967,
+      "FRONT_ROUTE_PCA": 0.030633432818600967,
+      "FRONT_ANCHOR_MAJOR": 0.030633432818600967,
+      "FRONT_FINAL5": 0.05966577989515055,
+      "UNKNOWN": 0.2263521535994658
+    }
+  },
+  {
+    "phrase": "on",
+    "anchor_type": "road_region",
+    "source": "deepseek",
+    "context": true,
+    "probabilities": {
+      "ALONG_ROAD": 0.09842889915787195,
+      "NEAR_ROAD_REGION": 0.10558432155907063,
+      "IN_ROAD_BUFFER": 0.10558432155907063,
+      "ROAD_ASSOCIATION": 0.12149350047997955,
+      "UNKNOWN": 0.5689089572440074
+    }
+  },
+  {
+    "phrase": "between",
+    "anchor_type": "building",
+    "source": "deepseek",
+    "context": true,
+    "probabilities": {
+      "BETWEEN_TERNARY": 0.3570227365474517,
+      "PAIRWISE_OLD": 0.25581796932298634,
+      "DISTANCE_PRIOR": 0.25581796932298634,
+      "UNKNOWN": 0.13134132480657562
+    }
+  },
+  {
+    "phrase": "to the left of",
+    "anchor_type": "building",
+    "source": "deepseek",
+    "context": true,
+    "probabilities": {
+      "LEFT_FINAL5": 0.05400637948338124,
+      "LEFT_ANCHOR_MINOR": 0.06617328167124116,
+      "LEFT_START": 0.05400637948338124,
+      "LEFT_GLOBAL": 0.0938298589029236,
+      "LEFT_FINAL3": 0.05400637948338124,
+      "LEFT_ROUTE_PCA": 0.05400637948338124,
+      "LEFT_FINAL10": 0.05400637948338124,
+      "LEFT_FINAL20": 0.05400637948338124,
+      "LEFT_ROUTE_END": 0.05400637948338124,
+      "LEFT_ANCHOR_MAJOR": 0.06289603533932532,
+      "UNKNOWN": 0.3990561677028413
+    }
+  },
+  {
+    "phrase": "near",
+    "anchor_type": "building",
+    "source": "deepseek",
+    "context": true,
+    "probabilities": {
+      "CENTER_DISTANCE": 0.2533098708272759,
+      "FOOTPRINT_DISTANCE": 0.2533098708272759,
+      "UNKNOWN": 0.4933802583454482
+    }
+  },
+  {
+    "phrase": "to the right of",
+    "anchor_type": "unknown",
+    "source": "deepseek",
+    "context": true,
+    "probabilities": {
+      "RIGHT_FINAL5": 0.04170769332845719,
+      "RIGHT_FINAL3": 0.04170769332845719,
+      "RIGHT_ROAD": 0.04170769332845719,
+      "RIGHT_GLOBAL": 0.04170769332845719,
+      "RIGHT_ROUTE_END": 0.15822513714145978,
+      "RIGHT_ROUTE_PCA": 0.15822513714145978,
+      "RIGHT_START": 0.04170769332845719,
+      "RIGHT_FINAL20": 0.04170769332845719,
+      "RIGHT_FINAL10": 0.04170769332845719,
+      "RIGHT_ANCHOR_MINOR": 0.04170769332845719,
+      "RIGHT_ANCHOR_MAJOR": 0.04170769332845719,
+      "UNKNOWN": 0.3081804857609658
+    }
+  },
+  {
+    "phrase": "to the right of",
+    "anchor_type": "building",
+    "source": "deepseek",
+    "context": true,
+    "probabilities": {
+      "RIGHT_FINAL5": 0.05750743423396601,
+      "RIGHT_FINAL3": 0.05750743423396601,
+      "RIGHT_GLOBAL": 0.05750743423396601,
+      "RIGHT_ROUTE_END": 0.05750743423396601,
+      "RIGHT_ROUTE_PCA": 0.05750743423396601,
+      "RIGHT_START": 0.05750743423396601,
+      "RIGHT_FINAL20": 0.05750743423396601,
+      "RIGHT_FINAL10": 0.05750743423396601,
+      "RIGHT_ANCHOR_MINOR": 0.05750743423396601,
+      "RIGHT_ANCHOR_MAJOR": 0.05750743423396601,
+      "UNKNOWN": 0.4249256576603398
+    }
+  },
+  {
+    "phrase": "next to",
+    "anchor_type": "building",
+    "source": "deepseek",
+    "context": true,
+    "probabilities": {
+      "CENTER_DISTANCE": 0.19850203309013498,
+      "FOOTPRINT_DISTANCE": 0.19850203309013498,
+      "UNKNOWN": 0.6029959338197302
+    }
+  }
+]

@@ -1,0 +1,890 @@
+[
+  {
+    "phrase": "behind",
+    "anchor_type": "all",
+    "source": "annotation",
+    "context": false,
+    "reliability": 0.18809523809523815,
+    "unstable_seen_unseen": true
+  },
+  {
+    "phrase": "behind",
+    "anchor_type": "all",
+    "source": "parser",
+    "context": false,
+    "reliability": 0.021428571428571432,
+    "unstable_seen_unseen": true
+  },
+  {
+    "phrase": "on",
+    "anchor_type": "all",
+    "source": "annotation",
+    "context": false,
+    "reliability": 0.11068376068376051,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "on",
+    "anchor_type": "all",
+    "source": "parser",
+    "context": false,
+    "reliability": 0.1027131782945736,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "in front of",
+    "anchor_type": "all",
+    "source": "annotation",
+    "context": false,
+    "reliability": 0.21455938697318033,
+    "unstable_seen_unseen": true
+  },
+  {
+    "phrase": "in front of",
+    "anchor_type": "all",
+    "source": "parser",
+    "context": false,
+    "reliability": 0.0125,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "next to",
+    "anchor_type": "all",
+    "source": "annotation",
+    "context": false,
+    "reliability": 0.36549707602339176,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "next to",
+    "anchor_type": "all",
+    "source": "parser",
+    "context": false,
+    "reliability": 0.4021164021164021,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "adjacent to",
+    "anchor_type": "all",
+    "source": "annotation",
+    "context": false,
+    "reliability": 0.2,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "adjacent to",
+    "anchor_type": "all",
+    "source": "parser",
+    "context": false,
+    "reliability": 0.15000000000000002,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "right of",
+    "anchor_type": "all",
+    "source": "annotation",
+    "context": false,
+    "reliability": 0.27200577200577203,
+    "unstable_seen_unseen": true
+  },
+  {
+    "phrase": "right of",
+    "anchor_type": "all",
+    "source": "parser",
+    "context": false,
+    "reliability": 0.2278138528138527,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "between",
+    "anchor_type": "all",
+    "source": "annotation",
+    "context": false,
+    "reliability": 0.6758832565284181,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "between",
+    "anchor_type": "all",
+    "source": "parser",
+    "context": false,
+    "reliability": 0.7379629629629632,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "left of",
+    "anchor_type": "all",
+    "source": "parser",
+    "context": false,
+    "reliability": 0.0,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "near",
+    "anchor_type": "all",
+    "source": "annotation",
+    "context": false,
+    "reliability": 0.35668498168498175,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "left of",
+    "anchor_type": "all",
+    "source": "annotation",
+    "context": false,
+    "reliability": 0.17972350230414724,
+    "unstable_seen_unseen": true
+  },
+  {
+    "phrase": "near",
+    "anchor_type": "all",
+    "source": "parser",
+    "context": false,
+    "reliability": 0.34368530020703947,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "beside",
+    "anchor_type": "all",
+    "source": "annotation",
+    "context": false,
+    "reliability": 0.4513888888888889,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "beside",
+    "anchor_type": "all",
+    "source": "parser",
+    "context": false,
+    "reliability": 0.3138888888888889,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "close to",
+    "anchor_type": "all",
+    "source": "annotation",
+    "context": false,
+    "reliability": 0.05277777777777777,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "close to",
+    "anchor_type": "all",
+    "source": "parser",
+    "context": false,
+    "reliability": 0.05277777777777777,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "on",
+    "anchor_type": "all",
+    "source": "raw_parser",
+    "context": false,
+    "reliability": 0.8,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "off",
+    "anchor_type": "all",
+    "source": "raw_parser",
+    "context": false,
+    "reliability": 0.7666666666666664,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "along",
+    "anchor_type": "all",
+    "source": "raw_parser",
+    "context": false,
+    "reliability": 0.7805555555555557,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "across",
+    "anchor_type": "all",
+    "source": "raw_parser",
+    "context": false,
+    "reliability": 0.2555555555555555,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "behind",
+    "anchor_type": "all",
+    "source": "deepseek",
+    "context": false,
+    "reliability": 0.0,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "off",
+    "anchor_type": "all",
+    "source": "deepseek",
+    "context": false,
+    "reliability": 0.0,
+    "unstable_seen_unseen": true
+  },
+  {
+    "phrase": "in front of",
+    "anchor_type": "all",
+    "source": "deepseek",
+    "context": false,
+    "reliability": 0.05,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "on",
+    "anchor_type": "all",
+    "source": "deepseek",
+    "context": false,
+    "reliability": 0.1333333333333333,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "between",
+    "anchor_type": "all",
+    "source": "deepseek",
+    "context": false,
+    "reliability": 0.1,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "to the left of",
+    "anchor_type": "all",
+    "source": "deepseek",
+    "context": false,
+    "reliability": 0.05119047619047614,
+    "unstable_seen_unseen": true
+  },
+  {
+    "phrase": "near",
+    "anchor_type": "all",
+    "source": "deepseek",
+    "context": false,
+    "reliability": 0.11904761904761907,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "to the right of",
+    "anchor_type": "all",
+    "source": "deepseek",
+    "context": false,
+    "reliability": 0.0,
+    "unstable_seen_unseen": true
+  },
+  {
+    "phrase": "next to",
+    "anchor_type": "all",
+    "source": "deepseek",
+    "context": false,
+    "reliability": 0.03333333333333331,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "behind",
+    "anchor_type": "building",
+    "source": "annotation",
+    "context": true,
+    "reliability": 0.2649911816578481,
+    "unstable_seen_unseen": true
+  },
+  {
+    "phrase": "behind",
+    "anchor_type": "building",
+    "source": "parser",
+    "context": true,
+    "reliability": 0.263392857142857,
+    "unstable_seen_unseen": true
+  },
+  {
+    "phrase": "on",
+    "anchor_type": "road_region",
+    "source": "annotation",
+    "context": true,
+    "reliability": 0.11068376068376051,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "on",
+    "anchor_type": "road_region",
+    "source": "parser",
+    "context": true,
+    "reliability": 0.1027131782945736,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "in front of",
+    "anchor_type": "building",
+    "source": "annotation",
+    "context": true,
+    "reliability": 0.2388888888888887,
+    "unstable_seen_unseen": true
+  },
+  {
+    "phrase": "in front of",
+    "anchor_type": "building",
+    "source": "parser",
+    "context": true,
+    "reliability": 0.1972222222222221,
+    "unstable_seen_unseen": true
+  },
+  {
+    "phrase": "next to",
+    "anchor_type": "building",
+    "source": "annotation",
+    "context": true,
+    "reliability": 0.44781144781144766,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "next to",
+    "anchor_type": "building",
+    "source": "parser",
+    "context": true,
+    "reliability": 0.4214559386973178,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "adjacent to",
+    "anchor_type": "building",
+    "source": "annotation",
+    "context": true,
+    "reliability": 0.1,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "adjacent to",
+    "anchor_type": "building",
+    "source": "parser",
+    "context": true,
+    "reliability": 0.1,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "right of",
+    "anchor_type": "building",
+    "source": "annotation",
+    "context": true,
+    "reliability": 0.15357142857142853,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "right of",
+    "anchor_type": "building",
+    "source": "parser",
+    "context": true,
+    "reliability": 0.0,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "between",
+    "anchor_type": "road_region",
+    "source": "annotation",
+    "context": true,
+    "reliability": 0.2571428571428571,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "between",
+    "anchor_type": "road_region",
+    "source": "parser",
+    "context": true,
+    "reliability": 0.22142857142857145,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "left of",
+    "anchor_type": "unknown",
+    "source": "parser",
+    "context": true,
+    "reliability": 0.15555555555555556,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "in front of",
+    "anchor_type": "unknown",
+    "source": "parser",
+    "context": true,
+    "reliability": 0.04999999999999999,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "next to",
+    "anchor_type": "unknown",
+    "source": "parser",
+    "context": true,
+    "reliability": 0.0,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "near",
+    "anchor_type": "building",
+    "source": "annotation",
+    "context": true,
+    "reliability": 0.18452380952380956,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "near",
+    "anchor_type": "road_region",
+    "source": "annotation",
+    "context": true,
+    "reliability": 0.0,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "left of",
+    "anchor_type": "road_region",
+    "source": "annotation",
+    "context": true,
+    "reliability": 0.0,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "left of",
+    "anchor_type": "road_region",
+    "source": "parser",
+    "context": true,
+    "reliability": 0.05714285714285714,
+    "unstable_seen_unseen": true
+  },
+  {
+    "phrase": "adjacent to",
+    "anchor_type": "road_region",
+    "source": "annotation",
+    "context": true,
+    "reliability": 0.03333333333333334,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "adjacent to",
+    "anchor_type": "road_region",
+    "source": "parser",
+    "context": true,
+    "reliability": 0.03333333333333334,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "left of",
+    "anchor_type": "building",
+    "source": "annotation",
+    "context": true,
+    "reliability": 0.1673280423280421,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "left of",
+    "anchor_type": "building",
+    "source": "parser",
+    "context": true,
+    "reliability": 0.0,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "between",
+    "anchor_type": "building",
+    "source": "parser",
+    "context": true,
+    "reliability": 0.6319444444444445,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "near",
+    "anchor_type": "road_region",
+    "source": "parser",
+    "context": true,
+    "reliability": 0.0,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "beside",
+    "anchor_type": "road_region",
+    "source": "annotation",
+    "context": true,
+    "reliability": 0.0,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "behind",
+    "anchor_type": "road_region",
+    "source": "annotation",
+    "context": true,
+    "reliability": 0.08809523809523807,
+    "unstable_seen_unseen": true
+  },
+  {
+    "phrase": "next to",
+    "anchor_type": "road_region",
+    "source": "annotation",
+    "context": true,
+    "reliability": 0.0,
+    "unstable_seen_unseen": true
+  },
+  {
+    "phrase": "beside",
+    "anchor_type": "building",
+    "source": "annotation",
+    "context": true,
+    "reliability": 0.2888888888888889,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "beside",
+    "anchor_type": "building",
+    "source": "parser",
+    "context": true,
+    "reliability": 0.2888888888888889,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "near",
+    "anchor_type": "building",
+    "source": "parser",
+    "context": true,
+    "reliability": 0.16785714285714287,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "right of",
+    "anchor_type": "road_region",
+    "source": "annotation",
+    "context": true,
+    "reliability": 0.13333333333333336,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "right of",
+    "anchor_type": "road_region",
+    "source": "parser",
+    "context": true,
+    "reliability": 0.1,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "left of",
+    "anchor_type": "unknown",
+    "source": "annotation",
+    "context": true,
+    "reliability": 0.15000000000000002,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "beside",
+    "anchor_type": "unknown",
+    "source": "annotation",
+    "context": true,
+    "reliability": 0.11666666666666664,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "beside",
+    "anchor_type": "unknown",
+    "source": "parser",
+    "context": true,
+    "reliability": 0.025,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "near",
+    "anchor_type": "unknown",
+    "source": "parser",
+    "context": true,
+    "reliability": 0.0,
+    "unstable_seen_unseen": true
+  },
+  {
+    "phrase": "near",
+    "anchor_type": "object",
+    "source": "annotation",
+    "context": true,
+    "reliability": 0.04583333333333334,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "in front of",
+    "anchor_type": "road_region",
+    "source": "annotation",
+    "context": true,
+    "reliability": 0.08333333333333337,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "right of",
+    "anchor_type": "object",
+    "source": "annotation",
+    "context": true,
+    "reliability": 0.05,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "right of",
+    "anchor_type": "object",
+    "source": "parser",
+    "context": true,
+    "reliability": 0.05,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "right of",
+    "anchor_type": "unknown",
+    "source": "parser",
+    "context": true,
+    "reliability": 0.09047619047619049,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "behind",
+    "anchor_type": "unknown",
+    "source": "parser",
+    "context": true,
+    "reliability": 0.021428571428571432,
+    "unstable_seen_unseen": true
+  },
+  {
+    "phrase": "between",
+    "anchor_type": "building",
+    "source": "annotation",
+    "context": true,
+    "reliability": 0.6111111111111112,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "right of",
+    "anchor_type": "unknown",
+    "source": "annotation",
+    "context": true,
+    "reliability": 0.0,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "behind",
+    "anchor_type": "unknown",
+    "source": "annotation",
+    "context": true,
+    "reliability": 0.1,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "between",
+    "anchor_type": "unknown",
+    "source": "parser",
+    "context": true,
+    "reliability": 0.15833333333333335,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "next to",
+    "anchor_type": "landmark",
+    "source": "annotation",
+    "context": true,
+    "reliability": 0.05,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "next to",
+    "anchor_type": "landmark",
+    "source": "parser",
+    "context": true,
+    "reliability": 0.05,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "close to",
+    "anchor_type": "building",
+    "source": "annotation",
+    "context": true,
+    "reliability": 0.0,
+    "unstable_seen_unseen": true
+  },
+  {
+    "phrase": "close to",
+    "anchor_type": "building",
+    "source": "parser",
+    "context": true,
+    "reliability": 0.0,
+    "unstable_seen_unseen": true
+  },
+  {
+    "phrase": "near",
+    "anchor_type": "unknown",
+    "source": "annotation",
+    "context": true,
+    "reliability": 0.0,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "next to",
+    "anchor_type": "unknown",
+    "source": "annotation",
+    "context": true,
+    "reliability": 0.0,
+    "unstable_seen_unseen": true
+  },
+  {
+    "phrase": "between",
+    "anchor_type": "unknown",
+    "source": "annotation",
+    "context": true,
+    "reliability": 0.10714285714285712,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "in front of",
+    "anchor_type": "unknown",
+    "source": "annotation",
+    "context": true,
+    "reliability": 0.0,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "near",
+    "anchor_type": "landmark",
+    "source": "annotation",
+    "context": true,
+    "reliability": 0.1,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "near",
+    "anchor_type": "landmark",
+    "source": "parser",
+    "context": true,
+    "reliability": 0.1,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "between",
+    "anchor_type": "landmark",
+    "source": "annotation",
+    "context": true,
+    "reliability": 0.12638888888888888,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "between",
+    "anchor_type": "landmark",
+    "source": "parser",
+    "context": true,
+    "reliability": 0.1,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "on",
+    "anchor_type": "road_region",
+    "source": "raw_parser",
+    "context": true,
+    "reliability": 0.8,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "off",
+    "anchor_type": "road_region",
+    "source": "raw_parser",
+    "context": true,
+    "reliability": 0.7666666666666664,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "along",
+    "anchor_type": "road_region",
+    "source": "raw_parser",
+    "context": true,
+    "reliability": 0.7805555555555557,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "across",
+    "anchor_type": "road_region",
+    "source": "raw_parser",
+    "context": true,
+    "reliability": 0.2555555555555555,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "behind",
+    "anchor_type": "building",
+    "source": "deepseek",
+    "context": true,
+    "reliability": 0.03333333333333334,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "behind",
+    "anchor_type": "unknown",
+    "source": "deepseek",
+    "context": true,
+    "reliability": 0.0,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "off",
+    "anchor_type": "road_region",
+    "source": "deepseek",
+    "context": true,
+    "reliability": 0.0,
+    "unstable_seen_unseen": true
+  },
+  {
+    "phrase": "in front of",
+    "anchor_type": "building",
+    "source": "deepseek",
+    "context": true,
+    "reliability": 0.05,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "on",
+    "anchor_type": "road_region",
+    "source": "deepseek",
+    "context": true,
+    "reliability": 0.1333333333333333,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "between",
+    "anchor_type": "building",
+    "source": "deepseek",
+    "context": true,
+    "reliability": 0.05,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "to the left of",
+    "anchor_type": "building",
+    "source": "deepseek",
+    "context": true,
+    "reliability": 0.03452380952380951,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "near",
+    "anchor_type": "building",
+    "source": "deepseek",
+    "context": true,
+    "reliability": 0.11904761904761907,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "to the right of",
+    "anchor_type": "unknown",
+    "source": "deepseek",
+    "context": true,
+    "reliability": 0.016666666666666663,
+    "unstable_seen_unseen": false
+  },
+  {
+    "phrase": "to the right of",
+    "anchor_type": "building",
+    "source": "deepseek",
+    "context": true,
+    "reliability": 0.0,
+    "unstable_seen_unseen": true
+  },
+  {
+    "phrase": "next to",
+    "anchor_type": "building",
+    "source": "deepseek",
+    "context": true,
+    "reliability": 0.03333333333333331,
+    "unstable_seen_unseen": false
+  }
+]

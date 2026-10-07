@@ -1,0 +1,19 @@
+{
+  "counts": {
+    "rows": 6230,
+    "missing_schema_rows": 0,
+    "duplicate_sample_ids": 0,
+    "trajectory_rows": 6230,
+    "road_hypothesis_rows": 2536,
+    "unique_road_rows": 1912,
+    "between_second_rows": 264,
+    "between_annotation_second_rows": 117
+  },
+  "source_rows": {
+    "annotation": 1960,
+    "parser": 3467,
+    "raw_parser": 516,
+    "deepseek": 287
+  },
+  "unique_episodes": 2416
+}

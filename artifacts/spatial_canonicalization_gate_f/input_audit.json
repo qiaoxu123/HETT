@@ -1,0 +1,19 @@
+{
+  "samples": 2290,
+  "counts": {
+    "episode_join": 2290,
+    "instruction_ok": 2290,
+    "map_ok": 2290,
+    "target_id_ok": 2290,
+    "trajectory_ok": 2290,
+    "sample_step_ok": 2290,
+    "annotation_id_ok": 2290,
+    "target_position_ok": 2290,
+    "target_footprint_ok": 2290,
+    "description_landmarks_present": 2289,
+    "two_landmarks_present": 1130,
+    "annotation_text_match": 2243,
+    "annotation_whitespace_normalized_match": 2290
+  },
+  "first_mismatch": {}
+}

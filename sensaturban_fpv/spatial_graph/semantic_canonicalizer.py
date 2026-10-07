@@ -11,7 +11,7 @@ PHRASES = {
     'to the right of':'VIEW_DEPENDENT_DIRECTION', 'next to':'PROXIMITY',
     'beside':'PROXIMITY', 'near':'PROXIMITY', 'close to':'PROXIMITY',
     'between':'BETWEEN', 'on':'ROAD_ASSOCIATION', 'in':'CONTAINMENT',
-    'off':'ROAD_ASSOCIATION', 'along':'ROAD_ALONG', 'across':'ROAD_ACROSS',
+    'off':'ROAD_ASSOCIATION', 'inside':'CONTAINMENT', 'on top of':'CONTAINMENT', 'along':'ROAD_ALONG', 'across from':'ROAD_ACROSS', 'across':'ROAD_ACROSS',
     'bordered by':'TOPOLOGICAL_ASSOCIATION', 'surrounded by':'CONTAINMENT',
     'connected to':'TOPOLOGICAL_ASSOCIATION', 'far from':'DISTANCE',
     'north of':'GLOBAL_DIRECTION', 'south of':'GLOBAL_DIRECTION',
@@ -27,14 +27,24 @@ def anchor_type(text):
 
 def parse_clauses(instruction):
     """Conservative fallback parser; preserves each clause and UNKNOWN."""
-    matches = list(REGEX.finditer(instruction))
+    raw_matches = list(REGEX.finditer(instruction))
+    matches = []
+    for i, match in enumerate(raw_matches):
+        phrase = match.group().lower()
+        following = instruction[match.end():raw_matches[i+1].start() if i+1 < len(raw_matches) else len(instruction)]
+        # Bare 'in' frequently introduces a place/attribute, with no asserted
+        # target-anchor geometry. Bare 'on' needs a typed surface or road.
+        if phrase == 'in': continue
+        if phrase in ('on', 'off') and not (ROAD.search(following) or re.search(r'\b(building|roof|wall|bridge)\b', following, re.I)):
+            continue
+        matches.append(match)
     target = instruction[:matches[0].start()].strip(' ,.;') if matches else instruction.strip()
     clauses = []
     for i, m in enumerate(matches):
         following = instruction[m.end():matches[i+1].start() if i+1 < len(matches) else len(instruction)].strip(' ,.;')
         if not following: continue
         phrase = m.group().lower()
-        anchor = following.split(',')[0].strip()
+        anchor = re.split(r'[.,;]', following, maxsplit=1)[0].strip()
         clauses.append({'raw_phrase':phrase, 'anchor_phrase':anchor,
                         'semantic_family':PHRASES[phrase], 'arity':2 if phrase == 'between' else 1,
                         'view_dependency':'possible' if PHRASES[phrase] == 'VIEW_DEPENDENT_DIRECTION' else 'none',
@@ -85,3 +95,19 @@ def marginalize(log_probs, scores):
     return float(m+np.log(np.exp(x-m).sum()))
 
 def weighted(score,rho): return float(score*rho)
+
+
+def normalize_relation_phrase(raw_phrase, semantic_family=None):
+    """Map an extracted clause span to a surface relation without map/answer data."""
+    raw=(raw_phrase or '').lower()
+    if semantic_family=='BETWEEN' and re.search(r'\b(in the middle of|midway between)\b',raw):
+        return 'between'
+    match=REGEX.search(raw)
+    if match:
+        phrase=match.group().lower()
+        # Do not force an ambiguous short preposition into an unrelated family.
+        if phrase in ('in','on','off') and semantic_family == 'UNKNOWN':return 'UNKNOWN'
+        return phrase
+    if semantic_family=='BETWEEN' and re.search(r'\b(in the middle of|midway between)\b',raw):
+        return 'between'
+    return 'UNKNOWN'

@@ -1,0 +1,4956 @@
+{
+  "source_rows": 6230,
+  "evaluated_clause_rows": 3263,
+  "coverage": {
+    "evaluated": 3263
+  },
+  "variants": {
+    "train_seen:F0": {
+      "auc": 0.5610525427598598,
+      "top1": 0.18124274099883853,
+      "top4": 0.6086482623067988,
+      "mrr": 0.40432131559454443,
+      "margin": 13.319128824082457,
+      "n": 1599
+    },
+    "train_seen:F2": {
+      "auc": 0.6388736361510224,
+      "top1": 0.24182834568805098,
+      "top4": 0.7112809249260242,
+      "mrr": 0.4630425367586948,
+      "margin": 25.126864551672757,
+      "n": 1561
+    },
+    "train_seen:F3": {
+      "auc": 0.5942938046596584,
+      "top1": 0.22272948370509346,
+      "top4": 0.6524355499965256,
+      "mrr": 0.4381232593563217,
+      "margin": 0.31387521267589424,
+      "n": 1599
+    },
+    "train_seen:F4": {
+      "auc": 0.5933557183557184,
+      "top1": 0.2284567735787248,
+      "top4": 0.6459513386342655,
+      "mrr": 0.44095147276477126,
+      "margin": 0.14426036006907642,
+      "n": 1599
+    },
+    "train_seen:F1": {
+      "auc": 0.6513406496221258,
+      "top1": 0.2621761077803046,
+      "top4": 0.7320136448211702,
+      "mrr": 0.4813103529788933,
+      "margin": 24.592718354848415,
+      "n": 1382
+    },
+    "val_seen:F0": {
+      "auc": 0.5479799792613863,
+      "top1": 0.1798061737257717,
+      "top4": 0.5875664034458004,
+      "mrr": 0.39530469334579177,
+      "margin": 17.018928299002308,
+      "n": 995
+    },
+    "val_seen:F1": {
+      "auc": 0.661965881105179,
+      "top1": 0.2531022488270506,
+      "top4": 0.7406083158065038,
+      "mrr": 0.479813167528242,
+      "margin": 30.469085907168438,
+      "n": 883
+    },
+    "val_seen:F2": {
+      "auc": 0.6672716828004303,
+      "top1": 0.24322993057592648,
+      "top4": 0.7514960398943972,
+      "mrr": 0.4779222352014043,
+      "margin": 31.71460951408347,
+      "n": 974
+    },
+    "val_seen:F3": {
+      "auc": 0.5908470926058865,
+      "top1": 0.2027614261785116,
+      "top4": 0.6486503948312994,
+      "mrr": 0.42604867307056826,
+      "margin": 0.2808224712787101,
+      "n": 995
+    },
+    "val_seen:F4": {
+      "auc": 0.5958801946239133,
+      "top1": 0.2031315306692191,
+      "top4": 0.6591760389247827,
+      "mrr": 0.4287614761892101,
+      "margin": 0.1741282368704679,
+      "n": 995
+    },
+    "val_unseen:F0": {
+      "auc": 0.5768518518518518,
+      "top1": 0.17931604077945537,
+      "top4": 0.6056110465866562,
+      "mrr": 0.40403718349730733,
+      "margin": 26.942043623678188,
+      "n": 615
+    },
+    "val_unseen:F1": {
+      "auc": 0.7116978897502153,
+      "top1": 0.2650516795865633,
+      "top4": 0.8006782945736434,
+      "mrr": 0.5071147038164965,
+      "margin": 46.474400000290395,
+      "n": 516
+    },
+    "val_unseen:F2": {
+      "auc": 0.6808993399339934,
+      "top1": 0.23311331133113308,
+      "top4": 0.7576732673267327,
+      "mrr": 0.4762300223077863,
+      "margin": 44.67644922980392,
+      "n": 606
+    },
+    "val_unseen:F3": {
+      "auc": 0.6637985546522132,
+      "top1": 0.23382113821138215,
+      "top4": 0.7304065040650406,
+      "mrr": 0.46867544199251515,
+      "margin": 0.4671716057551906,
+      "n": 615
+    },
+    "val_unseen:F4": {
+      "auc": 0.6565266485998192,
+      "top1": 0.23588333978577877,
+      "top4": 0.7223951477610014,
+      "mrr": 0.46721524231493256,
+      "margin": 0.2538146647755582,
+      "n": 615
+    }
+  },
+  "variants_by_protocol": {
+    "train_seen:F0:legacy_hard_negative": {
+      "auc": 0.5671872098231355,
+      "top1": 0.18940615475371153,
+      "top4": 0.6296136073149149,
+      "mrr": 0.4155174446852994,
+      "margin": 14.657458354926252,
+      "n": 1453
+    },
+    "train_seen:F2:legacy_hard_negative": {
+      "auc": 0.6187699814908295,
+      "top1": 0.21718660609119975,
+      "top4": 0.6963082618206293,
+      "mrr": 0.44356908888408136,
+      "margin": 24.502084773140286,
+      "n": 1415
+    },
+    "train_seen:F3:legacy_hard_negative": {
+      "auc": 0.5717658593604912,
+      "top1": 0.19706354668501952,
+      "top4": 0.635237439779766,
+      "mrr": 0.4178180884650259,
+      "margin": 0.21680513915085378,
+      "n": 1453
+    },
+    "train_seen:F4:legacy_hard_negative": {
+      "auc": 0.5707335124919433,
+      "top1": 0.20336632473590494,
+      "top4": 0.6281016834354756,
+      "mrr": 0.42093048573970643,
+      "margin": 0.06143361912420716,
+      "n": 1453
+    },
+    "train_seen:F1:legacy_hard_negative": {
+      "auc": 0.6297981841064365,
+      "top1": 0.23636924025273545,
+      "top4": 0.7173216212051163,
+      "mrr": 0.46117457015168534,
+      "margin": 23.814361776078357,
+      "n": 1236
+    },
+    "val_seen:F0:legacy_hard_negative": {
+      "auc": 0.5551271124308076,
+      "top1": 0.19169416034312106,
+      "top4": 0.6155064335202901,
+      "mrr": 0.41055944503795877,
+      "margin": 19.554080435920664,
+      "n": 866
+    },
+    "val_seen:F1:legacy_hard_negative": {
+      "auc": 0.6240263567849774,
+      "top1": 0.2083743842364532,
+      "top4": 0.7083870152835671,
+      "mrr": 0.44334856577467413,
+      "margin": 29.57517607090572,
+      "n": 754
+    },
+    "val_seen:F2:legacy_hard_negative": {
+      "auc": 0.6342279515356438,
+      "top1": 0.20181177796562413,
+      "top4": 0.7244068751761059,
+      "mrr": 0.4450959156838278,
+      "margin": 31.107111914970982,
+      "n": 845
+    },
+    "val_seen:F3:legacy_hard_negative": {
+      "auc": 0.5479260603394552,
+      "top1": 0.15883096887715825,
+      "top4": 0.6076102496425821,
+      "mrr": 0.38777225285803313,
+      "margin": 0.11158724104964488,
+      "n": 866
+    },
+    "val_seen:F4:legacy_hard_negative": {
+      "auc": 0.5537088969537006,
+      "top1": 0.15925620440631985,
+      "top4": 0.6197038014589977,
+      "mrr": 0.3908891571340708,
+      "margin": 0.03910671421357676,
+      "n": 866
+    },
+    "val_unseen:F0:legacy_hard_negative": {
+      "auc": 0.5966541695069303,
+      "top1": 0.19975330282078746,
+      "top4": 0.6585905800629726,
+      "mrr": 0.43267457638209417,
+      "margin": 33.884165293582996,
+      "n": 489
+    },
+    "val_unseen:F1:legacy_hard_negative": {
+      "auc": 0.6742521367521368,
+      "top1": 0.22128205128205128,
+      "top4": 0.7896153846153846,
+      "mrr": 0.47487924806674814,
+      "margin": 52.8785566786748,
+      "n": 390
+    },
+    "val_unseen:F2:legacy_hard_negative": {
+      "auc": 0.6423900462962961,
+      "top1": 0.18916666666666665,
+      "top4": 0.7373958333333334,
+      "mrr": 0.44193148561507933,
+      "margin": 49.40786445373854,
+      "n": 480
+    },
+    "val_unseen:F3:legacy_hard_negative": {
+      "auc": 0.6222733469665985,
+      "top1": 0.19284253578732105,
+      "top4": 0.701840490797546,
+      "mrr": 0.4338488005972668,
+      "margin": 0.2704043439232729,
+      "n": 489
+    },
+    "val_unseen:F4:legacy_hard_negative": {
+      "auc": 0.6131276982503977,
+      "top1": 0.19543610218456844,
+      "top4": 0.6917648586360243,
+      "mrr": 0.43201235315000047,
+      "margin": 0.07411939671500324,
+      "n": 489
+    },
+    "train_seen:F0:9 deterministic map distractors plus target; separate from legacy hard-negative protocol": {
+      "auc": 0.5,
+      "top1": 0.09999999999999999,
+      "top4": 0.39999999999999997,
+      "mrr": 0.2928968253968254,
+      "margin": 0.0,
+      "n": 146
+    },
+    "train_seen:F1:9 deterministic map distractors plus target; separate from legacy hard-negative protocol": {
+      "auc": 0.8337138508371386,
+      "top1": 0.4806506849315068,
+      "top4": 0.8563926940639269,
+      "mrr": 0.6517749254064894,
+      "margin": 31.18209322717577,
+      "n": 146
+    },
+    "train_seen:F2:9 deterministic map distractors plus target; separate from legacy hard-negative protocol": {
+      "auc": 0.8337138508371386,
+      "top1": 0.4806506849315068,
+      "top4": 0.8563926940639269,
+      "mrr": 0.6517749254064894,
+      "margin": 31.18209322717577,
+      "n": 146
+    },
+    "train_seen:F3:9 deterministic map distractors plus target; separate from legacy hard-negative protocol": {
+      "auc": 0.8184931506849314,
+      "top1": 0.4781582952815829,
+      "top4": 0.8235920852359209,
+      "mrr": 0.6402014326786016,
+      "margin": 1.279921903305236,
+      "n": 146
+    },
+    "train_seen:F4:9 deterministic map distractors plus target; separate from legacy hard-negative protocol": {
+      "auc": 0.8184931506849314,
+      "top1": 0.4781582952815829,
+      "top4": 0.8235920852359209,
+      "mrr": 0.6402014326786016,
+      "margin": 0.9685566244039738,
+      "n": 146
+    },
+    "val_seen:F0:9 deterministic map distractors plus target; separate from legacy hard-negative protocol": {
+      "auc": 0.5,
+      "top1": 0.09999999999999999,
+      "top4": 0.39999999999999997,
+      "mrr": 0.2928968253968254,
+      "margin": 0.0,
+      "n": 129
+    },
+    "val_seen:F1:9 deterministic map distractors plus target; separate from legacy hard-negative protocol": {
+      "auc": 0.8837209302325582,
+      "top1": 0.5145348837209303,
+      "top4": 0.9289405684754521,
+      "mrr": 0.6929473514211887,
+      "margin": 35.69395425245593,
+      "n": 129
+    },
+    "val_seen:F2:9 deterministic map distractors plus target; separate from legacy hard-negative protocol": {
+      "auc": 0.8837209302325582,
+      "top1": 0.5145348837209303,
+      "top4": 0.9289405684754521,
+      "mrr": 0.6929473514211887,
+      "margin": 35.69395425245593,
+      "n": 129
+    },
+    "val_seen:F3:9 deterministic map distractors plus target; separate from legacy hard-negative protocol": {
+      "auc": 0.8789836347975882,
+      "top1": 0.49767441860465117,
+      "top4": 0.9241602067183463,
+      "mrr": 0.683005106435339,
+      "margin": 1.4169287455296444,
+      "n": 129
+    },
+    "val_seen:F4:9 deterministic map distractors plus target; separate from legacy hard-negative protocol": {
+      "auc": 0.8789836347975882,
+      "top1": 0.49767441860465117,
+      "top4": 0.9241602067183463,
+      "mrr": 0.683005106435339,
+      "margin": 1.080551792070993,
+      "n": 129
+    },
+    "val_unseen:F0:9 deterministic map distractors plus target; separate from legacy hard-negative protocol": {
+      "auc": 0.5,
+      "top1": 0.09999999999999999,
+      "top4": 0.39999999999999997,
+      "mrr": 0.29289682539682527,
+      "margin": 0.0,
+      "n": 126
+    },
+    "val_unseen:F1:9 deterministic map distractors plus target; separate from legacy hard-negative protocol": {
+      "auc": 0.8276014109347443,
+      "top1": 0.4005291005291006,
+      "top4": 0.834920634920635,
+      "mrr": 0.6068911144704795,
+      "margin": 26.65201028148152,
+      "n": 126
+    },
+    "val_unseen:F2:9 deterministic map distractors plus target; separate from legacy hard-negative protocol": {
+      "auc": 0.8276014109347443,
+      "top1": 0.4005291005291006,
+      "top4": 0.834920634920635,
+      "mrr": 0.6068911144704795,
+      "margin": 26.65201028148152,
+      "n": 126
+    },
+    "val_unseen:F3:9 deterministic map distractors plus target; separate from legacy hard-negative protocol": {
+      "auc": 0.8249559082892416,
+      "top1": 0.39285714285714285,
+      "top4": 0.8412698412698413,
+      "mrr": 0.6038359788359788,
+      "margin": 1.2308159790552524,
+      "n": 126
+    },
+    "val_unseen:F4:9 deterministic map distractors plus target; separate from legacy hard-negative protocol": {
+      "auc": 0.8249559082892416,
+      "top1": 0.39285714285714285,
+      "top4": 0.8412698412698413,
+      "mrr": 0.6038359788359788,
+      "margin": 0.9512034432010453,
+      "n": 126
+    }
+  },
+  "calibration_policy": "train_seen statistics; val_seen selection/probabilities/reliability; val_unseen report only",
+  "controls": {
+    "('train_seen', 'shuffled_relation')": {
+      "n_clauses": 1559,
+      "n_episode_clusters": 1457,
+      "wins": 637,
+      "losses": 421,
+      "ties": 399,
+      "mean_auc_difference": 0.09447322359127439,
+      "paired_sign_p_one_sided": 1.6505162157940372e-11
+    },
+    "('train_seen', 'behind', 'shuffled_relation')": {
+      "n_clauses": 151,
+      "n_episode_clusters": 141,
+      "wins": 55,
+      "losses": 58,
+      "ties": 28,
+      "mean_auc_difference": -0.03985843746482044,
+      "paired_sign_p_one_sided": 0.6465588692540237
+    },
+    "('train_seen', 'behind', 'shuffled_relation', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 83,
+      "n_episode_clusters": 73,
+      "wins": 29,
+      "losses": 30,
+      "ties": 14,
+      "mean_auc_difference": -0.03988638834529246,
+      "paired_sign_p_one_sided": 0.6025781730085695
+    },
+    "('train_seen', 'opposite_relation')": {
+      "n_clauses": 727,
+      "n_episode_clusters": 680,
+      "wins": 407,
+      "losses": 181,
+      "ties": 92,
+      "mean_auc_difference": 0.24727182539682538,
+      "paired_sign_p_one_sided": 2.803606073747559e-21
+    },
+    "('train_seen', 'behind', 'opposite_relation')": {
+      "n_clauses": 151,
+      "n_episode_clusters": 141,
+      "wins": 70,
+      "losses": 57,
+      "ties": 14,
+      "mean_auc_difference": 0.03892266126308679,
+      "paired_sign_p_one_sided": 0.1434573036015493
+    },
+    "('train_seen', 'behind', 'opposite_relation', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 83,
+      "n_episode_clusters": 73,
+      "wins": 37,
+      "losses": 29,
+      "ties": 7,
+      "mean_auc_difference": 0.05517503805175038,
+      "paired_sign_p_one_sided": 0.1945262302738964
+    },
+    "('train_seen', 'shuffled_anchor')": {
+      "n_clauses": 1419,
+      "n_episode_clusters": 1334,
+      "wins": 627,
+      "losses": 238,
+      "ties": 469,
+      "mean_auc_difference": 0.1488615811142048,
+      "paired_sign_p_one_sided": 2.0147598159784276e-41
+    },
+    "('train_seen', 'behind', 'shuffled_anchor')": {
+      "n_clauses": 142,
+      "n_episode_clusters": 137,
+      "wins": 29,
+      "losses": 39,
+      "ties": 69,
+      "mean_auc_difference": -0.0032586027111574586,
+      "paired_sign_p_one_sided": 0.9090949727322033
+    },
+    "('train_seen', 'behind', 'shuffled_anchor', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 78,
+      "n_episode_clusters": 73,
+      "wins": 16,
+      "losses": 21,
+      "ties": 36,
+      "mean_auc_difference": -0.0026908023483365974,
+      "paired_sign_p_one_sided": 0.8379956999560818
+    },
+    "('train_seen', 'behind', 'shuffled_relation', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 64,
+      "n_episode_clusters": 64,
+      "wins": 25,
+      "losses": 26,
+      "ties": 13,
+      "mean_auc_difference": -0.039713541666666664,
+      "paired_sign_p_one_sided": 0.6101160347234629
+    },
+    "('train_seen', 'behind', 'opposite_relation', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 64,
+      "n_episode_clusters": 64,
+      "wins": 31,
+      "losses": 26,
+      "ties": 7,
+      "mean_auc_difference": 0.028025793650793662,
+      "paired_sign_p_one_sided": 0.2983208801865413
+    },
+    "('train_seen', 'behind', 'shuffled_anchor', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 60,
+      "n_episode_clusters": 60,
+      "wins": 13,
+      "losses": 18,
+      "ties": 29,
+      "mean_auc_difference": -0.004166666666666668,
+      "paired_sign_p_one_sided": 0.8594792424701154
+    },
+    "('train_seen', 'on', 'shuffled_relation')": {
+      "n_clauses": 604,
+      "n_episode_clusters": 557,
+      "wins": 207,
+      "losses": 147,
+      "ties": 203,
+      "mean_auc_difference": 0.11087422700977459,
+      "paired_sign_p_one_sided": 0.0008378428287372408
+    },
+    "('train_seen', 'on', 'shuffled_relation', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 292,
+      "n_episode_clusters": 256,
+      "wins": 89,
+      "losses": 71,
+      "ties": 96,
+      "mean_auc_difference": 0.0805392795138889,
+      "paired_sign_p_one_sided": 0.08938863402458781
+    },
+    "('train_seen', 'on', 'shuffled_anchor')": {
+      "n_clauses": 510,
+      "n_episode_clusters": 469,
+      "wins": 264,
+      "losses": 115,
+      "ties": 90,
+      "mean_auc_difference": 0.17587656953328593,
+      "paired_sign_p_one_sided": 6.653292511661148e-15
+    },
+    "('train_seen', 'on', 'shuffled_anchor', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 247,
+      "n_episode_clusters": 211,
+      "wins": 114,
+      "losses": 55,
+      "ties": 42,
+      "mean_auc_difference": 0.15909689310163244,
+      "paired_sign_p_one_sided": 3.31843879564697e-06
+    },
+    "('train_seen', 'on', 'shuffled_relation', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 253,
+      "n_episode_clusters": 243,
+      "wins": 90,
+      "losses": 63,
+      "ties": 90,
+      "mean_auc_difference": 0.09567901234567901,
+      "paired_sign_p_one_sided": 0.017605510089904523
+    },
+    "('train_seen', 'on', 'shuffled_anchor', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 207,
+      "n_episode_clusters": 203,
+      "wins": 114,
+      "losses": 48,
+      "ties": 41,
+      "mean_auc_difference": 0.17296113847837988,
+      "paired_sign_p_one_sided": 1.1277181933812701e-07
+    },
+    "('train_seen', 'in front of', 'shuffled_relation')": {
+      "n_clauses": 105,
+      "n_episode_clusters": 98,
+      "wins": 47,
+      "losses": 29,
+      "ties": 22,
+      "mean_auc_difference": 0.06671120829284095,
+      "paired_sign_p_one_sided": 0.025226205123608833
+    },
+    "('train_seen', 'in front of', 'shuffled_relation', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 49,
+      "n_episode_clusters": 43,
+      "wins": 19,
+      "losses": 13,
+      "ties": 11,
+      "mean_auc_difference": 0.04323551125876709,
+      "paired_sign_p_one_sided": 0.18854279373772442
+    },
+    "('train_seen', 'in front of', 'opposite_relation')": {
+      "n_clauses": 105,
+      "n_episode_clusters": 98,
+      "wins": 65,
+      "losses": 25,
+      "ties": 8,
+      "mean_auc_difference": 0.26919339164237127,
+      "paired_sign_p_one_sided": 1.4832264612600933e-05
+    },
+    "('train_seen', 'in front of', 'opposite_relation', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 49,
+      "n_episode_clusters": 43,
+      "wins": 27,
+      "losses": 12,
+      "ties": 4,
+      "mean_auc_difference": 0.21760797342192692,
+      "paired_sign_p_one_sided": 0.011851351235236507
+    },
+    "('train_seen', 'in front of', 'shuffled_anchor')": {
+      "n_clauses": 98,
+      "n_episode_clusters": 95,
+      "wins": 2,
+      "losses": 0,
+      "ties": 93,
+      "mean_auc_difference": 0.0035087719298245606,
+      "paired_sign_p_one_sided": 0.25
+    },
+    "('train_seen', 'in front of', 'shuffled_anchor', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 42,
+      "n_episode_clusters": 40,
+      "wins": 1,
+      "losses": 0,
+      "ties": 39,
+      "mean_auc_difference": 0.004166666666666666,
+      "paired_sign_p_one_sided": 0.5
+    },
+    "('train_seen', 'in front of', 'shuffled_relation', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 48,
+      "n_episode_clusters": 47,
+      "wins": 20,
+      "losses": 16,
+      "ties": 11,
+      "mean_auc_difference": 0.018870314083080052,
+      "paired_sign_p_one_sided": 0.308859658514848
+    },
+    "('train_seen', 'in front of', 'opposite_relation', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 48,
+      "n_episode_clusters": 47,
+      "wins": 30,
+      "losses": 13,
+      "ties": 4,
+      "mean_auc_difference": 0.25227963525835867,
+      "paired_sign_p_one_sided": 0.00685909252933925
+    },
+    "('train_seen', 'in front of', 'shuffled_anchor', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 48,
+      "n_episode_clusters": 47,
+      "wins": 1,
+      "losses": 0,
+      "ties": 46,
+      "mean_auc_difference": 0.003546099290780141,
+      "paired_sign_p_one_sided": 0.5
+    },
+    "('train_seen', 'next to', 'shuffled_relation')": {
+      "n_clauses": 162,
+      "n_episode_clusters": 142,
+      "wins": 103,
+      "losses": 22,
+      "ties": 17,
+      "mean_auc_difference": 0.2559244355019003,
+      "paired_sign_p_one_sided": 5.024367377233895e-14
+    },
+    "('train_seen', 'next to', 'shuffled_relation', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 84,
+      "n_episode_clusters": 68,
+      "wins": 50,
+      "losses": 10,
+      "ties": 8,
+      "mean_auc_difference": 0.27529761904761907,
+      "paired_sign_p_one_sided": 8.081907283078588e-08
+    },
+    "('train_seen', 'next to', 'opposite_relation')": {
+      "n_clauses": 162,
+      "n_episode_clusters": 142,
+      "wins": 112,
+      "losses": 18,
+      "ties": 12,
+      "mean_auc_difference": 0.49164431030628214,
+      "paired_sign_p_one_sided": 4.460511714667339e-18
+    },
+    "('train_seen', 'next to', 'opposite_relation', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 84,
+      "n_episode_clusters": 68,
+      "wins": 55,
+      "losses": 8,
+      "ties": 5,
+      "mean_auc_difference": 0.5194911297852475,
+      "paired_sign_p_one_sided": 4.880836543307357e-10
+    },
+    "('train_seen', 'next to', 'shuffled_anchor')": {
+      "n_clauses": 159,
+      "n_episode_clusters": 140,
+      "wins": 85,
+      "losses": 30,
+      "ties": 25,
+      "mean_auc_difference": 0.19693877551020406,
+      "paired_sign_p_one_sided": 1.4303283020465907e-07
+    },
+    "('train_seen', 'next to', 'shuffled_anchor', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 82,
+      "n_episode_clusters": 67,
+      "wins": 41,
+      "losses": 14,
+      "ties": 12,
+      "mean_auc_difference": 0.18721866856195216,
+      "paired_sign_p_one_sided": 0.00017764055931573927
+    },
+    "('train_seen', 'next to', 'shuffled_relation', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 72,
+      "n_episode_clusters": 68,
+      "wins": 47,
+      "losses": 12,
+      "ties": 9,
+      "mean_auc_difference": 0.23421451914098973,
+      "paired_sign_p_one_sided": 2.5628146248443673e-06
+    },
+    "('train_seen', 'next to', 'opposite_relation', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 72,
+      "n_episode_clusters": 68,
+      "wins": 51,
+      "losses": 10,
+      "ties": 7,
+      "mean_auc_difference": 0.4393674136321195,
+      "paired_sign_p_one_sided": 4.812212543899019e-08
+    },
+    "('train_seen', 'next to', 'shuffled_anchor', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 71,
+      "n_episode_clusters": 67,
+      "wins": 39,
+      "losses": 15,
+      "ties": 13,
+      "mean_auc_difference": 0.19237147595356552,
+      "paired_sign_p_one_sided": 0.0007481294426967542
+    },
+    "('train_seen', 'adjacent to', 'shuffled_relation')": {
+      "n_clauses": 19,
+      "n_episode_clusters": 18,
+      "wins": 12,
+      "losses": 2,
+      "ties": 4,
+      "mean_auc_difference": 0.24999999999999994,
+      "paired_sign_p_one_sided": 0.0064697265625
+    },
+    "('train_seen', 'adjacent to', 'shuffled_relation', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 10,
+      "n_episode_clusters": 9,
+      "wins": 6,
+      "losses": 1,
+      "ties": 2,
+      "mean_auc_difference": 0.2592592592592593,
+      "paired_sign_p_one_sided": 0.0625
+    },
+    "('train_seen', 'adjacent to', 'opposite_relation')": {
+      "n_clauses": 19,
+      "n_episode_clusters": 18,
+      "wins": 15,
+      "losses": 0,
+      "ties": 3,
+      "mean_auc_difference": 0.6111111111111112,
+      "paired_sign_p_one_sided": 3.0517578125e-05
+    },
+    "('train_seen', 'adjacent to', 'opposite_relation', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 10,
+      "n_episode_clusters": 9,
+      "wins": 8,
+      "losses": 0,
+      "ties": 1,
+      "mean_auc_difference": 0.6296296296296297,
+      "paired_sign_p_one_sided": 0.00390625
+    },
+    "('train_seen', 'adjacent to', 'shuffled_anchor')": {
+      "n_clauses": 15,
+      "n_episode_clusters": 14,
+      "wins": 7,
+      "losses": 0,
+      "ties": 7,
+      "mean_auc_difference": 0.1547619047619048,
+      "paired_sign_p_one_sided": 0.0078125
+    },
+    "('train_seen', 'adjacent to', 'shuffled_anchor', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 8,
+      "n_episode_clusters": 7,
+      "wins": 4,
+      "losses": 0,
+      "ties": 3,
+      "mean_auc_difference": 0.16666666666666666,
+      "paired_sign_p_one_sided": 0.0625
+    },
+    "('train_seen', 'adjacent to', 'shuffled_relation', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 9,
+      "n_episode_clusters": 9,
+      "wins": 6,
+      "losses": 1,
+      "ties": 2,
+      "mean_auc_difference": 0.24074074074074078,
+      "paired_sign_p_one_sided": 0.0625
+    },
+    "('train_seen', 'adjacent to', 'opposite_relation', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 9,
+      "n_episode_clusters": 9,
+      "wins": 7,
+      "losses": 0,
+      "ties": 2,
+      "mean_auc_difference": 0.5925925925925927,
+      "paired_sign_p_one_sided": 0.0078125
+    },
+    "('train_seen', 'adjacent to', 'shuffled_anchor', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 7,
+      "n_episode_clusters": 7,
+      "wins": 3,
+      "losses": 0,
+      "ties": 4,
+      "mean_auc_difference": 0.14285714285714285,
+      "paired_sign_p_one_sided": 0.125
+    },
+    "('train_seen', 'right of', 'shuffled_relation')": {
+      "n_clauses": 89,
+      "n_episode_clusters": 87,
+      "wins": 32,
+      "losses": 36,
+      "ties": 19,
+      "mean_auc_difference": -0.0548941798941799,
+      "paired_sign_p_one_sided": 0.7276938882903704
+    },
+    "('train_seen', 'right of', 'shuffled_relation', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 43,
+      "n_episode_clusters": 41,
+      "wins": 13,
+      "losses": 18,
+      "ties": 10,
+      "mean_auc_difference": -0.0933023615950445,
+      "paired_sign_p_one_sided": 0.8594792424701154
+    },
+    "('train_seen', 'right of', 'opposite_relation')": {
+      "n_clauses": 89,
+      "n_episode_clusters": 87,
+      "wins": 31,
+      "losses": 33,
+      "ties": 23,
+      "mean_auc_difference": 0.046912059843094316,
+      "paired_sign_p_one_sided": 0.646009622932618
+    },
+    "('train_seen', 'right of', 'opposite_relation', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 43,
+      "n_episode_clusters": 41,
+      "wins": 13,
+      "losses": 17,
+      "ties": 11,
+      "mean_auc_difference": 0.02453542392566782,
+      "paired_sign_p_one_sided": 0.8192026959732175
+    },
+    "('train_seen', 'right of', 'shuffled_anchor')": {
+      "n_clauses": 86,
+      "n_episode_clusters": 85,
+      "wins": 9,
+      "losses": 6,
+      "ties": 70,
+      "mean_auc_difference": 0.038235294117647055,
+      "paired_sign_p_one_sided": 0.30361938476562494
+    },
+    "('train_seen', 'right of', 'shuffled_anchor', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 41,
+      "n_episode_clusters": 40,
+      "wins": 4,
+      "losses": 2,
+      "ties": 34,
+      "mean_auc_difference": 0.04583333333333333,
+      "paired_sign_p_one_sided": 0.34375
+    },
+    "('train_seen', 'right of', 'shuffled_relation', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 46,
+      "n_episode_clusters": 46,
+      "wins": 19,
+      "losses": 18,
+      "ties": 9,
+      "mean_auc_difference": -0.020660800552104893,
+      "paired_sign_p_one_sided": 0.5
+    },
+    "('train_seen', 'right of', 'opposite_relation', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 46,
+      "n_episode_clusters": 46,
+      "wins": 18,
+      "losses": 16,
+      "ties": 12,
+      "mean_auc_difference": 0.06685645272601792,
+      "paired_sign_p_one_sided": 0.4320831202203408
+    },
+    "('train_seen', 'right of', 'shuffled_anchor', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 45,
+      "n_episode_clusters": 45,
+      "wins": 5,
+      "losses": 4,
+      "ties": 36,
+      "mean_auc_difference": 0.03148148148148148,
+      "paired_sign_p_one_sided": 0.5
+    },
+    "('train_seen', 'between', 'shuffled_relation')": {
+      "n_clauses": 120,
+      "n_episode_clusters": 112,
+      "wins": 46,
+      "losses": 26,
+      "ties": 40,
+      "mean_auc_difference": 0.04856386999244143,
+      "paired_sign_p_one_sided": 0.012230453664162186
+    },
+    "('train_seen', 'between', 'shuffled_relation', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 60,
+      "n_episode_clusters": 52,
+      "wins": 21,
+      "losses": 9,
+      "ties": 22,
+      "mean_auc_difference": 0.05717083842083843,
+      "paired_sign_p_one_sided": 0.021386972628533847
+    },
+    "('train_seen', 'between', 'shuffled_anchor')": {
+      "n_clauses": 120,
+      "n_episode_clusters": 112,
+      "wins": 71,
+      "losses": 14,
+      "ties": 27,
+      "mean_auc_difference": 0.18897037981859413,
+      "paired_sign_p_one_sided": 1.2135870773449326e-10
+    },
+    "('train_seen', 'between', 'shuffled_anchor', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 59,
+      "n_episode_clusters": 51,
+      "wins": 32,
+      "losses": 8,
+      "ties": 11,
+      "mean_auc_difference": 0.18495175848117026,
+      "paired_sign_p_one_sided": 9.108291487791575e-05
+    },
+    "('train_seen', 'shuffled_second_anchor')": {
+      "n_clauses": 146,
+      "n_episode_clusters": 138,
+      "wins": 82,
+      "losses": 27,
+      "ties": 29,
+      "mean_auc_difference": 0.20090004600874167,
+      "paired_sign_p_one_sided": 6.303857660858866e-08
+    },
+    "('train_seen', 'between', 'shuffled_second_anchor')": {
+      "n_clauses": 120,
+      "n_episode_clusters": 112,
+      "wins": 72,
+      "losses": 17,
+      "ties": 23,
+      "mean_auc_difference": 0.2301764455782313,
+      "paired_sign_p_one_sided": 1.586369509521797e-09
+    },
+    "('train_seen', 'between', 'shuffled_second_anchor', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 59,
+      "n_episode_clusters": 51,
+      "wins": 34,
+      "losses": 10,
+      "ties": 7,
+      "mean_auc_difference": 0.22868036103330222,
+      "paired_sign_p_one_sided": 0.00019406545146694043
+    },
+    "('train_seen', 'between', 'shuffled_relation', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 57,
+      "n_episode_clusters": 57,
+      "wins": 23,
+      "losses": 16,
+      "ties": 18,
+      "mean_auc_difference": 0.04107490949596213,
+      "paired_sign_p_one_sided": 0.16839181759496574
+    },
+    "('train_seen', 'between', 'shuffled_anchor', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 59,
+      "n_episode_clusters": 59,
+      "wins": 38,
+      "losses": 6,
+      "ties": 15,
+      "mean_auc_difference": 0.19461259079903148,
+      "paired_sign_p_one_sided": 4.715187742476701e-07
+    },
+    "('train_seen', 'between', 'shuffled_second_anchor', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 58,
+      "n_episode_clusters": 58,
+      "wins": 35,
+      "losses": 7,
+      "ties": 16,
+      "mean_auc_difference": 0.22615626710454298,
+      "paired_sign_p_one_sided": 7.5486004789127045e-06
+    },
+    "('train_seen', 'left of', 'shuffled_relation')": {
+      "n_clauses": 77,
+      "n_episode_clusters": 75,
+      "wins": 28,
+      "losses": 30,
+      "ties": 17,
+      "mean_auc_difference": -0.04888888888888889,
+      "paired_sign_p_one_sided": 0.6529979529619341
+    },
+    "('train_seen', 'left of', 'shuffled_relation', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 47,
+      "n_episode_clusters": 46,
+      "wins": 12,
+      "losses": 25,
+      "ties": 9,
+      "mean_auc_difference": -0.13647342995169084,
+      "paired_sign_p_one_sided": 0.9899630740401335
+    },
+    "('train_seen', 'left of', 'opposite_relation')": {
+      "n_clauses": 77,
+      "n_episode_clusters": 75,
+      "wins": 31,
+      "losses": 23,
+      "ties": 21,
+      "mean_auc_difference": 0.07407407407407406,
+      "paired_sign_p_one_sided": 0.17044547061004856
+    },
+    "('train_seen', 'left of', 'opposite_relation', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 47,
+      "n_episode_clusters": 46,
+      "wins": 15,
+      "losses": 15,
+      "ties": 16,
+      "mean_auc_difference": -0.014492753623188415,
+      "paired_sign_p_one_sided": 0.572232224047184
+    },
+    "('train_seen', 'left of', 'shuffled_anchor')": {
+      "n_clauses": 65,
+      "n_episode_clusters": 63,
+      "wins": 7,
+      "losses": 1,
+      "ties": 55,
+      "mean_auc_difference": 0.01587301587301587,
+      "paired_sign_p_one_sided": 0.03515625
+    },
+    "('train_seen', 'left of', 'shuffled_anchor', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 41,
+      "n_episode_clusters": 40,
+      "wins": 4,
+      "losses": 1,
+      "ties": 35,
+      "mean_auc_difference": 0.012499999999999997,
+      "paired_sign_p_one_sided": 0.1875
+    },
+    "('train_seen', 'near', 'shuffled_relation')": {
+      "n_clauses": 74,
+      "n_episode_clusters": 71,
+      "wins": 36,
+      "losses": 19,
+      "ties": 16,
+      "mean_auc_difference": 0.13341158059467922,
+      "paired_sign_p_one_sided": 0.015014472705946243
+    },
+    "('train_seen', 'near', 'shuffled_relation', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 37,
+      "n_episode_clusters": 34,
+      "wins": 17,
+      "losses": 9,
+      "ties": 8,
+      "mean_auc_difference": 0.14297385620915032,
+      "paired_sign_p_one_sided": 0.08431877195835114
+    },
+    "('train_seen', 'near', 'opposite_relation')": {
+      "n_clauses": 74,
+      "n_episode_clusters": 71,
+      "wins": 51,
+      "losses": 14,
+      "ties": 6,
+      "mean_auc_difference": 0.4029733959311424,
+      "paired_sign_p_one_sided": 2.237612424743769e-06
+    },
+    "('train_seen', 'near', 'opposite_relation', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 37,
+      "n_episode_clusters": 34,
+      "wins": 24,
+      "losses": 7,
+      "ties": 3,
+      "mean_auc_difference": 0.3986928104575163,
+      "paired_sign_p_one_sided": 0.0016634464263916016
+    },
+    "('train_seen', 'near', 'shuffled_anchor')": {
+      "n_clauses": 69,
+      "n_episode_clusters": 66,
+      "wins": 43,
+      "losses": 12,
+      "ties": 11,
+      "mean_auc_difference": 0.2962962962962963,
+      "paired_sign_p_one_sided": 1.6526882366030282e-05
+    },
+    "('train_seen', 'near', 'shuffled_anchor', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 35,
+      "n_episode_clusters": 32,
+      "wins": 20,
+      "losses": 6,
+      "ties": 6,
+      "mean_auc_difference": 0.2821180555555556,
+      "paired_sign_p_one_sided": 0.0046776533126831055
+    },
+    "('train_seen', 'left of', 'shuffled_relation', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 30,
+      "n_episode_clusters": 29,
+      "wins": 16,
+      "losses": 5,
+      "ties": 8,
+      "mean_auc_difference": 0.09003831417624522,
+      "paired_sign_p_one_sided": 0.013301849365234375
+    },
+    "('train_seen', 'left of', 'opposite_relation', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 30,
+      "n_episode_clusters": 29,
+      "wins": 16,
+      "losses": 8,
+      "ties": 5,
+      "mean_auc_difference": 0.21455938697318008,
+      "paired_sign_p_one_sided": 0.07579481601715088
+    },
+    "('train_seen', 'left of', 'shuffled_anchor', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 24,
+      "n_episode_clusters": 23,
+      "wins": 3,
+      "losses": 0,
+      "ties": 20,
+      "mean_auc_difference": 0.021739130434782605,
+      "paired_sign_p_one_sided": 0.125
+    },
+    "('train_seen', 'near', 'shuffled_relation', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 34,
+      "n_episode_clusters": 34,
+      "wins": 18,
+      "losses": 9,
+      "ties": 7,
+      "mean_auc_difference": 0.1454248366013072,
+      "paired_sign_p_one_sided": 0.06103906035423279
+    },
+    "('train_seen', 'near', 'opposite_relation', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 34,
+      "n_episode_clusters": 34,
+      "wins": 25,
+      "losses": 6,
+      "ties": 3,
+      "mean_auc_difference": 0.4133986928104575,
+      "paired_sign_p_one_sided": 0.0004389551468193531
+    },
+    "('train_seen', 'near', 'shuffled_anchor', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 31,
+      "n_episode_clusters": 31,
+      "wins": 21,
+      "losses": 5,
+      "ties": 5,
+      "mean_auc_difference": 0.3181003584229391,
+      "paired_sign_p_one_sided": 0.0012469589710235596
+    },
+    "('train_seen', 'beside', 'shuffled_relation')": {
+      "n_clauses": 37,
+      "n_episode_clusters": 35,
+      "wins": 22,
+      "losses": 10,
+      "ties": 3,
+      "mean_auc_difference": 0.1435374149659864,
+      "paired_sign_p_one_sided": 0.025051229866221547
+    },
+    "('train_seen', 'beside', 'shuffled_relation', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 19,
+      "n_episode_clusters": 17,
+      "wins": 12,
+      "losses": 5,
+      "ties": 0,
+      "mean_auc_difference": 0.15756302521008406,
+      "paired_sign_p_one_sided": 0.0717315673828125
+    },
+    "('train_seen', 'beside', 'opposite_relation')": {
+      "n_clauses": 37,
+      "n_episode_clusters": 35,
+      "wins": 25,
+      "losses": 7,
+      "ties": 3,
+      "mean_auc_difference": 0.4061224489795919,
+      "paired_sign_p_one_sided": 0.0010512007866054773
+    },
+    "('train_seen', 'beside', 'opposite_relation', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 19,
+      "n_episode_clusters": 17,
+      "wins": 13,
+      "losses": 3,
+      "ties": 1,
+      "mean_auc_difference": 0.46055088702147523,
+      "paired_sign_p_one_sided": 0.0106353759765625
+    },
+    "('train_seen', 'beside', 'shuffled_anchor')": {
+      "n_clauses": 37,
+      "n_episode_clusters": 35,
+      "wins": 20,
+      "losses": 8,
+      "ties": 7,
+      "mean_auc_difference": 0.10793650793650793,
+      "paired_sign_p_one_sided": 0.017849069088697433
+    },
+    "('train_seen', 'beside', 'shuffled_anchor', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 19,
+      "n_episode_clusters": 17,
+      "wins": 10,
+      "losses": 4,
+      "ties": 3,
+      "mean_auc_difference": 0.12745098039215688,
+      "paired_sign_p_one_sided": 0.08978271484375
+    },
+    "('train_seen', 'beside', 'shuffled_relation', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 18,
+      "n_episode_clusters": 18,
+      "wins": 10,
+      "losses": 5,
+      "ties": 3,
+      "mean_auc_difference": 0.1302910052910053,
+      "paired_sign_p_one_sided": 0.15087890624999997
+    },
+    "('train_seen', 'beside', 'opposite_relation', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 18,
+      "n_episode_clusters": 18,
+      "wins": 12,
+      "losses": 4,
+      "ties": 2,
+      "mean_auc_difference": 0.35471781305114636,
+      "paired_sign_p_one_sided": 0.0384063720703125
+    },
+    "('train_seen', 'beside', 'shuffled_anchor', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 18,
+      "n_episode_clusters": 18,
+      "wins": 10,
+      "losses": 4,
+      "ties": 4,
+      "mean_auc_difference": 0.08950617283950618,
+      "paired_sign_p_one_sided": 0.08978271484375
+    },
+    "('train_seen', 'close to', 'shuffled_relation')": {
+      "n_clauses": 5,
+      "n_episode_clusters": 5,
+      "wins": 3,
+      "losses": 0,
+      "ties": 2,
+      "mean_auc_difference": 0.2,
+      "paired_sign_p_one_sided": 0.125
+    },
+    "('train_seen', 'close to', 'shuffled_relation', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 3,
+      "n_episode_clusters": 3,
+      "wins": 2,
+      "losses": 0,
+      "ties": 1,
+      "mean_auc_difference": 0.22222222222222224,
+      "paired_sign_p_one_sided": 0.25
+    },
+    "('train_seen', 'close to', 'opposite_relation')": {
+      "n_clauses": 5,
+      "n_episode_clusters": 5,
+      "wins": 3,
+      "losses": 2,
+      "ties": 0,
+      "mean_auc_difference": 0.3555555555555555,
+      "paired_sign_p_one_sided": 0.5
+    },
+    "('train_seen', 'close to', 'opposite_relation', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 3,
+      "n_episode_clusters": 3,
+      "wins": 2,
+      "losses": 1,
+      "ties": 0,
+      "mean_auc_difference": 0.40740740740740744,
+      "paired_sign_p_one_sided": 0.5
+    },
+    "('train_seen', 'close to', 'shuffled_anchor')": {
+      "n_clauses": 5,
+      "n_episode_clusters": 5,
+      "wins": 3,
+      "losses": 2,
+      "ties": 0,
+      "mean_auc_difference": 0.17777777777777778,
+      "paired_sign_p_one_sided": 0.5
+    },
+    "('train_seen', 'close to', 'shuffled_anchor', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 3,
+      "n_episode_clusters": 3,
+      "wins": 2,
+      "losses": 1,
+      "ties": 0,
+      "mean_auc_difference": 0.25925925925925924,
+      "paired_sign_p_one_sided": 0.5
+    },
+    "('train_seen', 'close to', 'shuffled_relation', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 2,
+      "n_episode_clusters": 2,
+      "wins": 1,
+      "losses": 0,
+      "ties": 1,
+      "mean_auc_difference": 0.16666666666666669,
+      "paired_sign_p_one_sided": 0.5
+    },
+    "('train_seen', 'close to', 'opposite_relation', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 2,
+      "n_episode_clusters": 2,
+      "wins": 1,
+      "losses": 1,
+      "ties": 0,
+      "mean_auc_difference": 0.2777777777777778,
+      "paired_sign_p_one_sided": 0.75
+    },
+    "('train_seen', 'close to', 'shuffled_anchor', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 2,
+      "n_episode_clusters": 2,
+      "wins": 1,
+      "losses": 1,
+      "ties": 0,
+      "mean_auc_difference": 0.05555555555555558,
+      "paired_sign_p_one_sided": 0.75
+    },
+    "('val_seen', 'shuffled_relation')": {
+      "n_clauses": 974,
+      "n_episode_clusters": 922,
+      "wins": 381,
+      "losses": 208,
+      "ties": 333,
+      "mean_auc_difference": 0.11676006266570259,
+      "paired_sign_p_one_sided": 4.732036045688806e-13
+    },
+    "('val_seen', 'on', 'shuffled_relation')": {
+      "n_clauses": 415,
+      "n_episode_clusters": 383,
+      "wins": 113,
+      "losses": 113,
+      "ties": 157,
+      "mean_auc_difference": 0.04264577893820713,
+      "paired_sign_p_one_sided": 0.5265079067141286
+    },
+    "('val_seen', 'on', 'shuffled_relation', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 195,
+      "n_episode_clusters": 175,
+      "wins": 43,
+      "losses": 55,
+      "ties": 77,
+      "mean_auc_difference": -0.009999999999999995,
+      "paired_sign_p_one_sided": 0.905576640095549
+    },
+    "('val_seen', 'shuffled_anchor')": {
+      "n_clauses": 915,
+      "n_episode_clusters": 867,
+      "wins": 442,
+      "losses": 163,
+      "ties": 262,
+      "mean_auc_difference": 0.15844180809578734,
+      "paired_sign_p_one_sided": 5.450130609107028e-31
+    },
+    "('val_seen', 'on', 'shuffled_anchor')": {
+      "n_clauses": 375,
+      "n_episode_clusters": 343,
+      "wins": 176,
+      "losses": 105,
+      "ties": 62,
+      "mean_auc_difference": 0.12115322319403952,
+      "paired_sign_p_one_sided": 1.3542981136684021e-05
+    },
+    "('val_seen', 'on', 'shuffled_anchor', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 175,
+      "n_episode_clusters": 155,
+      "wins": 76,
+      "losses": 51,
+      "ties": 28,
+      "mean_auc_difference": 0.09677419354838712,
+      "paired_sign_p_one_sided": 0.01639478084651673
+    },
+    "('val_seen', 'on', 'shuffled_relation', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 172,
+      "n_episode_clusters": 163,
+      "wins": 43,
+      "losses": 50,
+      "ties": 70,
+      "mean_auc_difference": 0.009713701431492847,
+      "paired_sign_p_one_sided": 0.7965378159769323
+    },
+    "('val_seen', 'on', 'shuffled_anchor', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 156,
+      "n_episode_clusters": 147,
+      "wins": 69,
+      "losses": 53,
+      "ties": 25,
+      "mean_auc_difference": 0.08616780045351474,
+      "paired_sign_p_one_sided": 0.08710270274648559
+    },
+    "('val_seen', 'left of', 'shuffled_relation')": {
+      "n_clauses": 71,
+      "n_episode_clusters": 70,
+      "wins": 34,
+      "losses": 16,
+      "ties": 20,
+      "mean_auc_difference": 0.07891156462585035,
+      "paired_sign_p_one_sided": 0.007673338916315053
+    },
+    "('val_seen', 'left of', 'shuffled_relation', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 39,
+      "n_episode_clusters": 39,
+      "wins": 17,
+      "losses": 8,
+      "ties": 14,
+      "mean_auc_difference": 0.06857956857956858,
+      "paired_sign_p_one_sided": 0.05387607216835022
+    },
+    "('val_seen', 'opposite_relation')": {
+      "n_clauses": 407,
+      "n_episode_clusters": 390,
+      "wins": 252,
+      "losses": 79,
+      "ties": 59,
+      "mean_auc_difference": 0.3434269434269434,
+      "paired_sign_p_one_sided": 1.692805508842153e-22
+    },
+    "('val_seen', 'left of', 'opposite_relation')": {
+      "n_clauses": 71,
+      "n_episode_clusters": 70,
+      "wins": 37,
+      "losses": 12,
+      "ties": 21,
+      "mean_auc_difference": 0.21337868480725625,
+      "paired_sign_p_one_sided": 0.00023487865900406746
+    },
+    "('val_seen', 'left of', 'opposite_relation', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 39,
+      "n_episode_clusters": 39,
+      "wins": 19,
+      "losses": 5,
+      "ties": 15,
+      "mean_auc_difference": 0.20309320309320308,
+      "paired_sign_p_one_sided": 0.003305375576019287
+    },
+    "('val_seen', 'left of', 'shuffled_anchor')": {
+      "n_clauses": 65,
+      "n_episode_clusters": 64,
+      "wins": 2,
+      "losses": 6,
+      "ties": 56,
+      "mean_auc_difference": -0.010416666666666666,
+      "paired_sign_p_one_sided": 0.96484375
+    },
+    "('val_seen', 'left of', 'shuffled_anchor', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 36,
+      "n_episode_clusters": 36,
+      "wins": 1,
+      "losses": 3,
+      "ties": 32,
+      "mean_auc_difference": -0.009259259259259257,
+      "paired_sign_p_one_sided": 0.9375
+    },
+    "('val_seen', 'in front of', 'shuffled_relation')": {
+      "n_clauses": 51,
+      "n_episode_clusters": 47,
+      "wins": 26,
+      "losses": 13,
+      "ties": 8,
+      "mean_auc_difference": 0.12854609929078017,
+      "paired_sign_p_one_sided": 0.02662595704896376
+    },
+    "('val_seen', 'in front of', 'shuffled_relation', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 28,
+      "n_episode_clusters": 24,
+      "wins": 12,
+      "losses": 7,
+      "ties": 5,
+      "mean_auc_difference": 0.10243055555555558,
+      "paired_sign_p_one_sided": 0.1796417236328125
+    },
+    "('val_seen', 'in front of', 'opposite_relation')": {
+      "n_clauses": 51,
+      "n_episode_clusters": 47,
+      "wins": 28,
+      "losses": 8,
+      "ties": 11,
+      "mean_auc_difference": 0.25000000000000006,
+      "paired_sign_p_one_sided": 0.0005966214812360704
+    },
+    "('val_seen', 'in front of', 'opposite_relation', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 28,
+      "n_episode_clusters": 24,
+      "wins": 14,
+      "losses": 4,
+      "ties": 6,
+      "mean_auc_difference": 0.24189814814814817,
+      "paired_sign_p_one_sided": 0.01544189453125
+    },
+    "('val_seen', 'in front of', 'shuffled_anchor')": {
+      "n_clauses": 48,
+      "n_episode_clusters": 46,
+      "wins": 5,
+      "losses": 0,
+      "ties": 41,
+      "mean_auc_difference": 0.018115942028985508,
+      "paired_sign_p_one_sided": 0.03125
+    },
+    "('val_seen', 'in front of', 'shuffled_anchor', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 25,
+      "n_episode_clusters": 23,
+      "wins": 2,
+      "losses": 0,
+      "ties": 21,
+      "mean_auc_difference": 0.014492753623188408,
+      "paired_sign_p_one_sided": 0.25
+    },
+    "('val_seen', 'right of', 'shuffled_relation')": {
+      "n_clauses": 44,
+      "n_episode_clusters": 43,
+      "wins": 21,
+      "losses": 5,
+      "ties": 17,
+      "mean_auc_difference": 0.15605389442598747,
+      "paired_sign_p_one_sided": 0.0012469589710235596
+    },
+    "('val_seen', 'right of', 'shuffled_relation', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 22,
+      "n_episode_clusters": 21,
+      "wins": 10,
+      "losses": 3,
+      "ties": 8,
+      "mean_auc_difference": 0.14758125472411185,
+      "paired_sign_p_one_sided": 0.046142578125
+    },
+    "('val_seen', 'right of', 'opposite_relation')": {
+      "n_clauses": 44,
+      "n_episode_clusters": 43,
+      "wins": 29,
+      "losses": 12,
+      "ties": 2,
+      "mean_auc_difference": 0.3704318936877076,
+      "paired_sign_p_one_sided": 0.005753894867666531
+    },
+    "('val_seen', 'right of', 'opposite_relation', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 22,
+      "n_episode_clusters": 21,
+      "wins": 14,
+      "losses": 6,
+      "ties": 1,
+      "mean_auc_difference": 0.37641723356009066,
+      "paired_sign_p_one_sided": 0.057659149169921875
+    },
+    "('val_seen', 'right of', 'shuffled_anchor')": {
+      "n_clauses": 43,
+      "n_episode_clusters": 42,
+      "wins": 6,
+      "losses": 0,
+      "ties": 36,
+      "mean_auc_difference": 0.023809523809523808,
+      "paired_sign_p_one_sided": 0.015625
+    },
+    "('val_seen', 'right of', 'shuffled_anchor', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 21,
+      "n_episode_clusters": 20,
+      "wins": 3,
+      "losses": 0,
+      "ties": 17,
+      "mean_auc_difference": 0.025,
+      "paired_sign_p_one_sided": 0.125
+    },
+    "('val_seen', 'right of', 'shuffled_relation', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 22,
+      "n_episode_clusters": 22,
+      "wins": 11,
+      "losses": 2,
+      "ties": 9,
+      "mean_auc_difference": 0.16414141414141412,
+      "paired_sign_p_one_sided": 0.01123046875
+    },
+    "('val_seen', 'right of', 'opposite_relation', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 22,
+      "n_episode_clusters": 22,
+      "wins": 15,
+      "losses": 6,
+      "ties": 1,
+      "mean_auc_difference": 0.3647186147186146,
+      "paired_sign_p_one_sided": 0.03917694091796875
+    },
+    "('val_seen', 'right of', 'shuffled_anchor', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 22,
+      "n_episode_clusters": 22,
+      "wins": 3,
+      "losses": 0,
+      "ties": 19,
+      "mean_auc_difference": 0.022727272727272728,
+      "paired_sign_p_one_sided": 0.125
+    },
+    "('val_seen', 'between', 'shuffled_relation')": {
+      "n_clauses": 62,
+      "n_episode_clusters": 60,
+      "wins": 16,
+      "losses": 3,
+      "ties": 41,
+      "mean_auc_difference": 0.049537037037037046,
+      "paired_sign_p_one_sided": 0.0022125244140625
+    },
+    "('val_seen', 'between', 'shuffled_relation', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 31,
+      "n_episode_clusters": 30,
+      "wins": 5,
+      "losses": 2,
+      "ties": 23,
+      "mean_auc_difference": 0.028373015873015876,
+      "paired_sign_p_one_sided": 0.2265625
+    },
+    "('val_seen', 'between', 'shuffled_anchor')": {
+      "n_clauses": 60,
+      "n_episode_clusters": 58,
+      "wins": 52,
+      "losses": 1,
+      "ties": 5,
+      "mean_auc_difference": 0.3182471264367816,
+      "paired_sign_p_one_sided": 5.995204332975845e-15
+    },
+    "('val_seen', 'between', 'shuffled_anchor', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 30,
+      "n_episode_clusters": 29,
+      "wins": 26,
+      "losses": 1,
+      "ties": 2,
+      "mean_auc_difference": 0.3122605363984674,
+      "paired_sign_p_one_sided": 2.086162567138672e-07
+    },
+    "('val_seen', 'shuffled_second_anchor')": {
+      "n_clauses": 71,
+      "n_episode_clusters": 69,
+      "wins": 47,
+      "losses": 3,
+      "ties": 19,
+      "mean_auc_difference": 0.24416264090177137,
+      "paired_sign_p_one_sided": 1.8541612689659814e-11
+    },
+    "('val_seen', 'between', 'shuffled_second_anchor')": {
+      "n_clauses": 62,
+      "n_episode_clusters": 60,
+      "wins": 43,
+      "losses": 1,
+      "ties": 16,
+      "mean_auc_difference": 0.2604166666666667,
+      "paired_sign_p_one_sided": 2.5579538487363607e-12
+    },
+    "('val_seen', 'between', 'shuffled_second_anchor', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 31,
+      "n_episode_clusters": 30,
+      "wins": 21,
+      "losses": 1,
+      "ties": 8,
+      "mean_auc_difference": 0.26494708994708993,
+      "paired_sign_p_one_sided": 5.4836273193359375e-06
+    },
+    "('val_seen', 'left of', 'shuffled_relation', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 32,
+      "n_episode_clusters": 31,
+      "wins": 17,
+      "losses": 8,
+      "ties": 6,
+      "mean_auc_difference": 0.0919098822324629,
+      "paired_sign_p_one_sided": 0.05387607216835022
+    },
+    "('val_seen', 'left of', 'opposite_relation', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 32,
+      "n_episode_clusters": 31,
+      "wins": 18,
+      "losses": 7,
+      "ties": 6,
+      "mean_auc_difference": 0.22631848438300045,
+      "paired_sign_p_one_sided": 0.021642625331878662
+    },
+    "('val_seen', 'left of', 'shuffled_anchor', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 29,
+      "n_episode_clusters": 28,
+      "wins": 1,
+      "losses": 3,
+      "ties": 24,
+      "mean_auc_difference": -0.011904761904761906,
+      "paired_sign_p_one_sided": 0.9375
+    },
+    "('val_seen', 'in front of', 'shuffled_relation', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 21,
+      "n_episode_clusters": 21,
+      "wins": 12,
+      "losses": 6,
+      "ties": 3,
+      "mean_auc_difference": 0.123015873015873,
+      "paired_sign_p_one_sided": 0.1189422607421875
+    },
+    "('val_seen', 'in front of', 'opposite_relation', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 21,
+      "n_episode_clusters": 21,
+      "wins": 12,
+      "losses": 4,
+      "ties": 5,
+      "mean_auc_difference": 0.2354497354497354,
+      "paired_sign_p_one_sided": 0.0384063720703125
+    },
+    "('val_seen', 'in front of', 'shuffled_anchor', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 21,
+      "n_episode_clusters": 21,
+      "wins": 2,
+      "losses": 0,
+      "ties": 19,
+      "mean_auc_difference": 0.015873015873015876,
+      "paired_sign_p_one_sided": 0.25
+    },
+    "('val_seen', 'next to', 'shuffled_relation')": {
+      "n_clauses": 73,
+      "n_episode_clusters": 69,
+      "wins": 42,
+      "losses": 8,
+      "ties": 19,
+      "mean_auc_difference": 0.23130894870025304,
+      "paired_sign_p_one_sided": 5.81777902297631e-07
+    },
+    "('val_seen', 'next to', 'shuffled_relation', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 38,
+      "n_episode_clusters": 34,
+      "wins": 21,
+      "losses": 4,
+      "ties": 9,
+      "mean_auc_difference": 0.23249299719887956,
+      "paired_sign_p_one_sided": 0.0004552602767944336
+    },
+    "('val_seen', 'next to', 'opposite_relation')": {
+      "n_clauses": 73,
+      "n_episode_clusters": 69,
+      "wins": 44,
+      "losses": 15,
+      "ties": 10,
+      "mean_auc_difference": 0.40096618357487923,
+      "paired_sign_p_one_sided": 0.00010186092870392849
+    },
+    "('val_seen', 'next to', 'opposite_relation', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 38,
+      "n_episode_clusters": 34,
+      "wins": 22,
+      "losses": 7,
+      "ties": 5,
+      "mean_auc_difference": 0.40522875816993464,
+      "paired_sign_p_one_sided": 0.004065029323101044
+    },
+    "('val_seen', 'next to', 'shuffled_anchor')": {
+      "n_clauses": 73,
+      "n_episode_clusters": 69,
+      "wins": 45,
+      "losses": 15,
+      "ties": 9,
+      "mean_auc_difference": 0.18938348286174375,
+      "paired_sign_p_one_sided": 6.725704046424766e-05
+    },
+    "('val_seen', 'next to', 'shuffled_anchor', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 38,
+      "n_episode_clusters": 34,
+      "wins": 22,
+      "losses": 8,
+      "ties": 4,
+      "mean_auc_difference": 0.17886321195144728,
+      "paired_sign_p_one_sided": 0.008062400855123998
+    },
+    "('val_seen', 'next to', 'shuffled_relation', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 32,
+      "n_episode_clusters": 32,
+      "wins": 20,
+      "losses": 4,
+      "ties": 8,
+      "mean_auc_difference": 0.24131944444444445,
+      "paired_sign_p_one_sided": 0.000771939754486084
+    },
+    "('val_seen', 'next to', 'opposite_relation', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 32,
+      "n_episode_clusters": 32,
+      "wins": 21,
+      "losses": 7,
+      "ties": 4,
+      "mean_auc_difference": 0.4131944444444444,
+      "paired_sign_p_one_sided": 0.006270475685596466
+    },
+    "('val_seen', 'next to', 'shuffled_anchor', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 32,
+      "n_episode_clusters": 32,
+      "wins": 21,
+      "losses": 7,
+      "ties": 4,
+      "mean_auc_difference": 0.2026909722222222,
+      "paired_sign_p_one_sided": 0.006270475685596466
+    },
+    "('val_seen', 'behind', 'shuffled_relation')": {
+      "n_clauses": 76,
+      "n_episode_clusters": 72,
+      "wins": 40,
+      "losses": 20,
+      "ties": 12,
+      "mean_auc_difference": 0.16110008818342156,
+      "paired_sign_p_one_sided": 0.00674464686559593
+    },
+    "('val_seen', 'behind', 'shuffled_relation', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 41,
+      "n_episode_clusters": 37,
+      "wins": 20,
+      "losses": 10,
+      "ties": 7,
+      "mean_auc_difference": 0.16639854139854138,
+      "paired_sign_p_one_sided": 0.049368573352694525
+    },
+    "('val_seen', 'behind', 'opposite_relation')": {
+      "n_clauses": 76,
+      "n_episode_clusters": 72,
+      "wins": 46,
+      "losses": 17,
+      "ties": 9,
+      "mean_auc_difference": 0.29982363315696653,
+      "paired_sign_p_one_sided": 0.00016835467473311913
+    },
+    "('val_seen', 'behind', 'opposite_relation', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 41,
+      "n_episode_clusters": 37,
+      "wins": 25,
+      "losses": 8,
+      "ties": 4,
+      "mean_auc_difference": 0.3144573144573144,
+      "paired_sign_p_one_sided": 0.002275692066177726
+    },
+    "('val_seen', 'behind', 'shuffled_anchor')": {
+      "n_clauses": 73,
+      "n_episode_clusters": 71,
+      "wins": 19,
+      "losses": 22,
+      "ties": 30,
+      "mean_auc_difference": 0.036887994634473516,
+      "paired_sign_p_one_sided": 0.7336453723819432
+    },
+    "('val_seen', 'behind', 'shuffled_anchor', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 39,
+      "n_episode_clusters": 37,
+      "wins": 11,
+      "losses": 12,
+      "ties": 14,
+      "mean_auc_difference": 0.04032604032604031,
+      "paired_sign_p_one_sided": 0.6611802577972412
+    },
+    "('val_seen', 'behind', 'shuffled_relation', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 33,
+      "n_episode_clusters": 33,
+      "wins": 18,
+      "losses": 10,
+      "ties": 5,
+      "mean_auc_difference": 0.1512145262145262,
+      "paired_sign_p_one_sided": 0.09246667101979256
+    },
+    "('val_seen', 'behind', 'opposite_relation', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 33,
+      "n_episode_clusters": 33,
+      "wins": 19,
+      "losses": 9,
+      "ties": 5,
+      "mean_auc_difference": 0.26839826839826836,
+      "paired_sign_p_one_sided": 0.04357927665114403
+    },
+    "('val_seen', 'behind', 'shuffled_anchor', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 32,
+      "n_episode_clusters": 32,
+      "wins": 8,
+      "losses": 10,
+      "ties": 14,
+      "mean_auc_difference": 0.03521825396825397,
+      "paired_sign_p_one_sided": 0.7596588134765625
+    },
+    "('val_seen', 'near', 'shuffled_relation')": {
+      "n_clauses": 51,
+      "n_episode_clusters": 49,
+      "wins": 32,
+      "losses": 7,
+      "ties": 10,
+      "mean_auc_difference": 0.2661969549724652,
+      "paired_sign_p_one_sided": 3.5127392038702965e-05
+    },
+    "('val_seen', 'near', 'shuffled_relation', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 26,
+      "n_episode_clusters": 24,
+      "wins": 17,
+      "losses": 3,
+      "ties": 4,
+      "mean_auc_difference": 0.29133597883597884,
+      "paired_sign_p_one_sided": 0.0012884140014648438
+    },
+    "('val_seen', 'near', 'opposite_relation')": {
+      "n_clauses": 51,
+      "n_episode_clusters": 49,
+      "wins": 36,
+      "losses": 11,
+      "ties": 2,
+      "mean_auc_difference": 0.4164237123420797,
+      "paired_sign_p_one_sided": 0.00017300057015745549
+    },
+    "('val_seen', 'near', 'opposite_relation', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 26,
+      "n_episode_clusters": 24,
+      "wins": 18,
+      "losses": 5,
+      "ties": 1,
+      "mean_auc_difference": 0.4280753968253968,
+      "paired_sign_p_one_sided": 0.005311012268066406
+    },
+    "('val_seen', 'near', 'shuffled_anchor')": {
+      "n_clauses": 51,
+      "n_episode_clusters": 49,
+      "wins": 37,
+      "losses": 8,
+      "ties": 4,
+      "mean_auc_difference": 0.2681810819565922,
+      "paired_sign_p_one_sided": 7.687045098236922e-06
+    },
+    "('val_seen', 'near', 'shuffled_anchor', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 26,
+      "n_episode_clusters": 24,
+      "wins": 19,
+      "losses": 4,
+      "ties": 1,
+      "mean_auc_difference": 0.30588624338624343,
+      "paired_sign_p_one_sided": 0.001299738883972168
+    },
+    "('val_seen', 'near', 'shuffled_relation', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 20,
+      "n_episode_clusters": 20,
+      "wins": 12,
+      "losses": 4,
+      "ties": 4,
+      "mean_auc_difference": 0.2406746031746032,
+      "paired_sign_p_one_sided": 0.0384063720703125
+    },
+    "('val_seen', 'near', 'opposite_relation', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 20,
+      "n_episode_clusters": 20,
+      "wins": 14,
+      "losses": 5,
+      "ties": 1,
+      "mean_auc_difference": 0.38750000000000007,
+      "paired_sign_p_one_sided": 0.0317840576171875
+    },
+    "('val_seen', 'near', 'shuffled_anchor', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 20,
+      "n_episode_clusters": 20,
+      "wins": 13,
+      "losses": 4,
+      "ties": 3,
+      "mean_auc_difference": 0.21021825396825394,
+      "paired_sign_p_one_sided": 0.0245208740234375
+    },
+    "('val_seen', 'between', 'shuffled_relation', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 30,
+      "n_episode_clusters": 29,
+      "wins": 10,
+      "losses": 1,
+      "ties": 18,
+      "mean_auc_difference": 0.06739189928845102,
+      "paired_sign_p_one_sided": 0.005859375
+    },
+    "('val_seen', 'between', 'shuffled_anchor', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 29,
+      "n_episode_clusters": 28,
+      "wins": 25,
+      "losses": 0,
+      "ties": 3,
+      "mean_auc_difference": 0.31795634920634913,
+      "paired_sign_p_one_sided": 2.9802322387695312e-08
+    },
+    "('val_seen', 'between', 'shuffled_second_anchor', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 30,
+      "n_episode_clusters": 29,
+      "wins": 21,
+      "losses": 0,
+      "ties": 8,
+      "mean_auc_difference": 0.25321565407772306,
+      "paired_sign_p_one_sided": 4.76837158203125e-07
+    },
+    "('val_seen', 'beside', 'shuffled_relation')": {
+      "n_clauses": 21,
+      "n_episode_clusters": 20,
+      "wins": 18,
+      "losses": 0,
+      "ties": 2,
+      "mean_auc_difference": 0.475,
+      "paired_sign_p_one_sided": 3.814697265625e-06
+    },
+    "('val_seen', 'beside', 'shuffled_relation', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 12,
+      "n_episode_clusters": 11,
+      "wins": 10,
+      "losses": 0,
+      "ties": 1,
+      "mean_auc_difference": 0.4772727272727273,
+      "paired_sign_p_one_sided": 0.0009765625
+    },
+    "('val_seen', 'beside', 'opposite_relation')": {
+      "n_clauses": 21,
+      "n_episode_clusters": 20,
+      "wins": 18,
+      "losses": 0,
+      "ties": 2,
+      "mean_auc_difference": 0.7194444444444446,
+      "paired_sign_p_one_sided": 3.814697265625e-06
+    },
+    "('val_seen', 'beside', 'opposite_relation', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 12,
+      "n_episode_clusters": 11,
+      "wins": 10,
+      "losses": 0,
+      "ties": 1,
+      "mean_auc_difference": 0.7373737373737373,
+      "paired_sign_p_one_sided": 0.0009765625
+    },
+    "('val_seen', 'beside', 'shuffled_anchor')": {
+      "n_clauses": 21,
+      "n_episode_clusters": 20,
+      "wins": 18,
+      "losses": 2,
+      "ties": 0,
+      "mean_auc_difference": 0.3597222222222222,
+      "paired_sign_p_one_sided": 0.00020122528076171875
+    },
+    "('val_seen', 'beside', 'shuffled_anchor', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 12,
+      "n_episode_clusters": 11,
+      "wins": 10,
+      "losses": 1,
+      "ties": 0,
+      "mean_auc_difference": 0.38383838383838387,
+      "paired_sign_p_one_sided": 0.005859375
+    },
+    "('val_seen', 'adjacent to', 'shuffled_relation')": {
+      "n_clauses": 6,
+      "n_episode_clusters": 6,
+      "wins": 4,
+      "losses": 0,
+      "ties": 2,
+      "mean_auc_difference": 0.27777777777777773,
+      "paired_sign_p_one_sided": 0.0625
+    },
+    "('val_seen', 'adjacent to', 'shuffled_relation', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 3,
+      "n_episode_clusters": 3,
+      "wins": 2,
+      "losses": 0,
+      "ties": 1,
+      "mean_auc_difference": 0.2777777777777778,
+      "paired_sign_p_one_sided": 0.25
+    },
+    "('val_seen', 'adjacent to', 'opposite_relation')": {
+      "n_clauses": 6,
+      "n_episode_clusters": 6,
+      "wins": 6,
+      "losses": 0,
+      "ties": 0,
+      "mean_auc_difference": 0.888888888888889,
+      "paired_sign_p_one_sided": 0.015625
+    },
+    "('val_seen', 'adjacent to', 'opposite_relation', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 3,
+      "n_episode_clusters": 3,
+      "wins": 3,
+      "losses": 0,
+      "ties": 0,
+      "mean_auc_difference": 0.888888888888889,
+      "paired_sign_p_one_sided": 0.125
+    },
+    "('val_seen', 'adjacent to', 'shuffled_anchor')": {
+      "n_clauses": 4,
+      "n_episode_clusters": 4,
+      "wins": 4,
+      "losses": 0,
+      "ties": 0,
+      "mean_auc_difference": 0.5833333333333334,
+      "paired_sign_p_one_sided": 0.0625
+    },
+    "('val_seen', 'adjacent to', 'shuffled_anchor', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 2,
+      "n_episode_clusters": 2,
+      "wins": 2,
+      "losses": 0,
+      "ties": 0,
+      "mean_auc_difference": 0.5833333333333334,
+      "paired_sign_p_one_sided": 0.25
+    },
+    "('val_seen', 'adjacent to', 'shuffled_relation', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 3,
+      "n_episode_clusters": 3,
+      "wins": 2,
+      "losses": 0,
+      "ties": 1,
+      "mean_auc_difference": 0.2777777777777778,
+      "paired_sign_p_one_sided": 0.25
+    },
+    "('val_seen', 'adjacent to', 'opposite_relation', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 3,
+      "n_episode_clusters": 3,
+      "wins": 3,
+      "losses": 0,
+      "ties": 0,
+      "mean_auc_difference": 0.888888888888889,
+      "paired_sign_p_one_sided": 0.125
+    },
+    "('val_seen', 'adjacent to', 'shuffled_anchor', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 2,
+      "n_episode_clusters": 2,
+      "wins": 2,
+      "losses": 0,
+      "ties": 0,
+      "mean_auc_difference": 0.5833333333333334,
+      "paired_sign_p_one_sided": 0.25
+    },
+    "('val_seen', 'beside', 'shuffled_relation', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 9,
+      "n_episode_clusters": 9,
+      "wins": 8,
+      "losses": 0,
+      "ties": 1,
+      "mean_auc_difference": 0.4722222222222222,
+      "paired_sign_p_one_sided": 0.00390625
+    },
+    "('val_seen', 'beside', 'opposite_relation', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 9,
+      "n_episode_clusters": 9,
+      "wins": 8,
+      "losses": 0,
+      "ties": 1,
+      "mean_auc_difference": 0.697530864197531,
+      "paired_sign_p_one_sided": 0.00390625
+    },
+    "('val_seen', 'beside', 'shuffled_anchor', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 9,
+      "n_episode_clusters": 9,
+      "wins": 8,
+      "losses": 1,
+      "ties": 0,
+      "mean_auc_difference": 0.33024691358024694,
+      "paired_sign_p_one_sided": 0.01953125
+    },
+    "('val_seen', 'close to', 'shuffled_relation')": {
+      "n_clauses": 4,
+      "n_episode_clusters": 4,
+      "wins": 0,
+      "losses": 0,
+      "ties": 4,
+      "mean_auc_difference": 0.0,
+      "paired_sign_p_one_sided": null
+    },
+    "('val_seen', 'close to', 'shuffled_relation', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 2,
+      "n_episode_clusters": 2,
+      "wins": 0,
+      "losses": 0,
+      "ties": 2,
+      "mean_auc_difference": 0.0,
+      "paired_sign_p_one_sided": null
+    },
+    "('val_seen', 'close to', 'opposite_relation')": {
+      "n_clauses": 4,
+      "n_episode_clusters": 4,
+      "wins": 2,
+      "losses": 2,
+      "ties": 0,
+      "mean_auc_difference": -0.08333333333333334,
+      "paired_sign_p_one_sided": 0.6875
+    },
+    "('val_seen', 'close to', 'opposite_relation', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 2,
+      "n_episode_clusters": 2,
+      "wins": 1,
+      "losses": 1,
+      "ties": 0,
+      "mean_auc_difference": -0.08333333333333334,
+      "paired_sign_p_one_sided": 0.75
+    },
+    "('val_seen', 'close to', 'shuffled_anchor')": {
+      "n_clauses": 4,
+      "n_episode_clusters": 4,
+      "wins": 0,
+      "losses": 0,
+      "ties": 4,
+      "mean_auc_difference": 0.0,
+      "paired_sign_p_one_sided": null
+    },
+    "('val_seen', 'close to', 'shuffled_anchor', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 2,
+      "n_episode_clusters": 2,
+      "wins": 0,
+      "losses": 0,
+      "ties": 2,
+      "mean_auc_difference": 0.0,
+      "paired_sign_p_one_sided": null
+    },
+    "('val_seen', 'close to', 'shuffled_relation', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 2,
+      "n_episode_clusters": 2,
+      "wins": 0,
+      "losses": 0,
+      "ties": 2,
+      "mean_auc_difference": 0.0,
+      "paired_sign_p_one_sided": null
+    },
+    "('val_seen', 'close to', 'opposite_relation', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 2,
+      "n_episode_clusters": 2,
+      "wins": 1,
+      "losses": 1,
+      "ties": 0,
+      "mean_auc_difference": -0.08333333333333334,
+      "paired_sign_p_one_sided": 0.75
+    },
+    "('val_seen', 'close to', 'shuffled_anchor', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 2,
+      "n_episode_clusters": 2,
+      "wins": 0,
+      "losses": 0,
+      "ties": 2,
+      "mean_auc_difference": 0.0,
+      "paired_sign_p_one_sided": null
+    },
+    "('val_unseen', 'shuffled_relation')": {
+      "n_clauses": 606,
+      "n_episode_clusters": 581,
+      "wins": 268,
+      "losses": 152,
+      "ties": 161,
+      "mean_auc_difference": 0.12948221457257603,
+      "paired_sign_p_one_sided": 8.195653461800862e-09
+    },
+    "('val_unseen', 'next to', 'shuffled_relation')": {
+      "n_clauses": 70,
+      "n_episode_clusters": 66,
+      "wins": 55,
+      "losses": 4,
+      "ties": 7,
+      "mean_auc_difference": 0.3691077441077441,
+      "paired_sign_p_one_sided": 8.489840774839053e-13
+    },
+    "('val_unseen', 'next to', 'shuffled_relation', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 36,
+      "n_episode_clusters": 32,
+      "wins": 27,
+      "losses": 2,
+      "ties": 3,
+      "mean_auc_difference": 0.37673611111111116,
+      "paired_sign_p_one_sided": 8.121132850646973e-07
+    },
+    "('val_unseen', 'opposite_relation')": {
+      "n_clauses": 281,
+      "n_episode_clusters": 263,
+      "wins": 156,
+      "losses": 74,
+      "ties": 33,
+      "mean_auc_difference": 0.23369947894662724,
+      "paired_sign_p_one_sided": 3.392031727463321e-08
+    },
+    "('val_unseen', 'next to', 'opposite_relation')": {
+      "n_clauses": 70,
+      "n_episode_clusters": 66,
+      "wins": 60,
+      "losses": 2,
+      "ties": 4,
+      "mean_auc_difference": 0.6952861952861954,
+      "paired_sign_p_one_sided": 4.2370620900733513e-16
+    },
+    "('val_unseen', 'next to', 'opposite_relation', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 36,
+      "n_episode_clusters": 32,
+      "wins": 29,
+      "losses": 1,
+      "ties": 2,
+      "mean_auc_difference": 0.6857638888888888,
+      "paired_sign_p_one_sided": 2.8870999813079834e-08
+    },
+    "('val_unseen', 'shuffled_anchor')": {
+      "n_clauses": 605,
+      "n_episode_clusters": 580,
+      "wins": 344,
+      "losses": 85,
+      "ties": 151,
+      "mean_auc_difference": 0.19895833333333335,
+      "paired_sign_p_one_sided": 2.5791577422054916e-38
+    },
+    "('val_unseen', 'next to', 'shuffled_anchor')": {
+      "n_clauses": 70,
+      "n_episode_clusters": 66,
+      "wins": 53,
+      "losses": 6,
+      "ties": 7,
+      "mean_auc_difference": 0.41961279461279466,
+      "paired_sign_p_one_sided": 8.769593731750014e-11
+    },
+    "('val_unseen', 'next to', 'shuffled_anchor', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 36,
+      "n_episode_clusters": 32,
+      "wins": 27,
+      "losses": 3,
+      "ties": 2,
+      "mean_auc_difference": 0.4184027777777778,
+      "paired_sign_p_one_sided": 4.215165972709656e-06
+    },
+    "('val_unseen', 'next to', 'shuffled_relation', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 30,
+      "n_episode_clusters": 30,
+      "wins": 25,
+      "losses": 2,
+      "ties": 3,
+      "mean_auc_difference": 0.3685185185185186,
+      "paired_sign_p_one_sided": 2.823770046234131e-06
+    },
+    "('val_unseen', 'next to', 'opposite_relation', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 30,
+      "n_episode_clusters": 30,
+      "wins": 27,
+      "losses": 1,
+      "ties": 2,
+      "mean_auc_difference": 0.6925925925925925,
+      "paired_sign_p_one_sided": 1.0803341865539551e-07
+    },
+    "('val_unseen', 'next to', 'shuffled_anchor', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 30,
+      "n_episode_clusters": 30,
+      "wins": 23,
+      "losses": 2,
+      "ties": 5,
+      "mean_auc_difference": 0.4129629629629629,
+      "paired_sign_p_one_sided": 9.715557098388672e-06
+    },
+    "('val_unseen', 'on', 'shuffled_relation')": {
+      "n_clauses": 182,
+      "n_episode_clusters": 178,
+      "wins": 80,
+      "losses": 31,
+      "ties": 67,
+      "mean_auc_difference": 0.1694756554307116,
+      "paired_sign_p_one_sided": 1.840816462622209e-06
+    },
+    "('val_unseen', 'on', 'shuffled_relation', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 70,
+      "n_episode_clusters": 67,
+      "wins": 26,
+      "losses": 11,
+      "ties": 30,
+      "mean_auc_difference": 0.09369817578772803,
+      "paired_sign_p_one_sided": 0.010036925959866494
+    },
+    "('val_unseen', 'on', 'shuffled_anchor')": {
+      "n_clauses": 182,
+      "n_episode_clusters": 178,
+      "wins": 121,
+      "losses": 30,
+      "ties": 27,
+      "mean_auc_difference": 0.17649812734082398,
+      "paired_sign_p_one_sided": 1.858863301953684e-14
+    },
+    "('val_unseen', 'on', 'shuffled_anchor', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 70,
+      "n_episode_clusters": 67,
+      "wins": 44,
+      "losses": 12,
+      "ties": 11,
+      "mean_auc_difference": 0.12852404643449422,
+      "paired_sign_p_one_sided": 1.0438284109209883e-05
+    },
+    "('val_unseen', 'on', 'shuffled_relation', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 68,
+      "n_episode_clusters": 68,
+      "wins": 27,
+      "losses": 12,
+      "ties": 29,
+      "mean_auc_difference": 0.10947712418300652,
+      "paired_sign_p_one_sided": 0.011851351235236507
+    },
+    "('val_unseen', 'on', 'shuffled_anchor', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 68,
+      "n_episode_clusters": 68,
+      "wins": 44,
+      "losses": 13,
+      "ties": 11,
+      "mean_auc_difference": 0.12908496732026148,
+      "paired_sign_p_one_sided": 2.3552188046976893e-05
+    },
+    "('val_unseen', 'left of', 'shuffled_relation')": {
+      "n_clauses": 28,
+      "n_episode_clusters": 27,
+      "wins": 8,
+      "losses": 14,
+      "ties": 5,
+      "mean_auc_difference": -0.09156378600823045,
+      "paired_sign_p_one_sided": 0.9330997467041016
+    },
+    "('val_unseen', 'left of', 'shuffled_relation', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 15,
+      "n_episode_clusters": 14,
+      "wins": 5,
+      "losses": 6,
+      "ties": 3,
+      "mean_auc_difference": -0.03769841269841269,
+      "paired_sign_p_one_sided": 0.7255859375
+    },
+    "('val_unseen', 'left of', 'opposite_relation')": {
+      "n_clauses": 28,
+      "n_episode_clusters": 27,
+      "wins": 13,
+      "losses": 8,
+      "ties": 6,
+      "mean_auc_difference": 0.14197530864197527,
+      "paired_sign_p_one_sided": 0.19165515899658203
+    },
+    "('val_unseen', 'left of', 'opposite_relation', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 15,
+      "n_episode_clusters": 14,
+      "wins": 6,
+      "losses": 5,
+      "ties": 3,
+      "mean_auc_difference": 0.08333333333333333,
+      "paired_sign_p_one_sided": 0.5
+    },
+    "('val_unseen', 'left of', 'shuffled_anchor')": {
+      "n_clauses": 28,
+      "n_episode_clusters": 27,
+      "wins": 4,
+      "losses": 0,
+      "ties": 23,
+      "mean_auc_difference": 0.024691358024691357,
+      "paired_sign_p_one_sided": 0.0625
+    },
+    "('val_unseen', 'left of', 'shuffled_anchor', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 15,
+      "n_episode_clusters": 14,
+      "wins": 4,
+      "losses": 0,
+      "ties": 10,
+      "mean_auc_difference": 0.047619047619047616,
+      "paired_sign_p_one_sided": 0.0625
+    },
+    "('val_unseen', 'left of', 'shuffled_relation', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 13,
+      "n_episode_clusters": 13,
+      "wins": 3,
+      "losses": 8,
+      "ties": 2,
+      "mean_auc_difference": -0.14957264957264957,
+      "paired_sign_p_one_sided": 0.96728515625
+    },
+    "('val_unseen', 'left of', 'opposite_relation', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 13,
+      "n_episode_clusters": 13,
+      "wins": 7,
+      "losses": 3,
+      "ties": 3,
+      "mean_auc_difference": 0.20512820512820512,
+      "paired_sign_p_one_sided": 0.171875
+    },
+    "('val_unseen', 'left of', 'shuffled_anchor', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 13,
+      "n_episode_clusters": 13,
+      "wins": 0,
+      "losses": 0,
+      "ties": 13,
+      "mean_auc_difference": 0.0,
+      "paired_sign_p_one_sided": null
+    },
+    "('val_unseen', 'beside', 'shuffled_relation')": {
+      "n_clauses": 8,
+      "n_episode_clusters": 8,
+      "wins": 6,
+      "losses": 0,
+      "ties": 2,
+      "mean_auc_difference": 0.35416666666666663,
+      "paired_sign_p_one_sided": 0.015625
+    },
+    "('val_unseen', 'beside', 'shuffled_relation', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 4,
+      "n_episode_clusters": 4,
+      "wins": 3,
+      "losses": 0,
+      "ties": 1,
+      "mean_auc_difference": 0.35416666666666663,
+      "paired_sign_p_one_sided": 0.125
+    },
+    "('val_unseen', 'beside', 'opposite_relation')": {
+      "n_clauses": 8,
+      "n_episode_clusters": 8,
+      "wins": 6,
+      "losses": 0,
+      "ties": 2,
+      "mean_auc_difference": 0.5694444444444444,
+      "paired_sign_p_one_sided": 0.015625
+    },
+    "('val_unseen', 'beside', 'opposite_relation', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 4,
+      "n_episode_clusters": 4,
+      "wins": 3,
+      "losses": 0,
+      "ties": 1,
+      "mean_auc_difference": 0.5694444444444444,
+      "paired_sign_p_one_sided": 0.125
+    },
+    "('val_unseen', 'beside', 'shuffled_anchor')": {
+      "n_clauses": 8,
+      "n_episode_clusters": 8,
+      "wins": 8,
+      "losses": 0,
+      "ties": 0,
+      "mean_auc_difference": 0.5625,
+      "paired_sign_p_one_sided": 0.00390625
+    },
+    "('val_unseen', 'beside', 'shuffled_anchor', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 4,
+      "n_episode_clusters": 4,
+      "wins": 4,
+      "losses": 0,
+      "ties": 0,
+      "mean_auc_difference": 0.5625,
+      "paired_sign_p_one_sided": 0.0625
+    },
+    "('val_unseen', 'beside', 'shuffled_relation', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 4,
+      "n_episode_clusters": 4,
+      "wins": 3,
+      "losses": 0,
+      "ties": 1,
+      "mean_auc_difference": 0.35416666666666663,
+      "paired_sign_p_one_sided": 0.125
+    },
+    "('val_unseen', 'beside', 'opposite_relation', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 4,
+      "n_episode_clusters": 4,
+      "wins": 3,
+      "losses": 0,
+      "ties": 1,
+      "mean_auc_difference": 0.5694444444444444,
+      "paired_sign_p_one_sided": 0.125
+    },
+    "('val_unseen', 'beside', 'shuffled_anchor', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 4,
+      "n_episode_clusters": 4,
+      "wins": 4,
+      "losses": 0,
+      "ties": 0,
+      "mean_auc_difference": 0.5625,
+      "paired_sign_p_one_sided": 0.0625
+    },
+    "('val_unseen', 'behind', 'shuffled_relation')": {
+      "n_clauses": 86,
+      "n_episode_clusters": 78,
+      "wins": 33,
+      "losses": 40,
+      "ties": 5,
+      "mean_auc_difference": 0.039084757834757844,
+      "paired_sign_p_one_sided": 0.8254090809147059
+    },
+    "('val_unseen', 'behind', 'shuffled_relation', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 45,
+      "n_episode_clusters": 37,
+      "wins": 14,
+      "losses": 20,
+      "ties": 3,
+      "mean_auc_difference": 0.012575075075075081,
+      "paired_sign_p_one_sided": 0.8852594934869558
+    },
+    "('val_unseen', 'behind', 'opposite_relation')": {
+      "n_clauses": 86,
+      "n_episode_clusters": 78,
+      "wins": 31,
+      "losses": 39,
+      "ties": 8,
+      "mean_auc_difference": -0.05603038936372267,
+      "paired_sign_p_one_sided": 0.8590105391031719
+    },
+    "('val_unseen', 'behind', 'opposite_relation', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 45,
+      "n_episode_clusters": 37,
+      "wins": 12,
+      "losses": 20,
+      "ties": 5,
+      "mean_auc_difference": -0.13763763763763764,
+      "paired_sign_p_one_sided": 0.9449079174082726
+    },
+    "('val_unseen', 'behind', 'shuffled_anchor')": {
+      "n_clauses": 85,
+      "n_episode_clusters": 77,
+      "wins": 30,
+      "losses": 34,
+      "ties": 13,
+      "mean_auc_difference": 0.01217532467532468,
+      "paired_sign_p_one_sided": 0.7338456119860789
+    },
+    "('val_unseen', 'behind', 'shuffled_anchor', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 45,
+      "n_episode_clusters": 37,
+      "wins": 13,
+      "losses": 19,
+      "ties": 5,
+      "mean_auc_difference": -0.017079579579579566,
+      "paired_sign_p_one_sided": 0.8923364251386374
+    },
+    "('val_unseen', 'behind', 'shuffled_relation', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 36,
+      "n_episode_clusters": 36,
+      "wins": 15,
+      "losses": 19,
+      "ties": 2,
+      "mean_auc_difference": 0.03356481481481482,
+      "paired_sign_p_one_sided": 0.804235847434029
+    },
+    "('val_unseen', 'behind', 'opposite_relation', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 36,
+      "n_episode_clusters": 36,
+      "wins": 15,
+      "losses": 18,
+      "ties": 3,
+      "mean_auc_difference": -0.058641975308641965,
+      "paired_sign_p_one_sided": 0.7565748791676015
+    },
+    "('val_unseen', 'behind', 'shuffled_anchor', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 35,
+      "n_episode_clusters": 35,
+      "wins": 15,
+      "losses": 15,
+      "ties": 5,
+      "mean_auc_difference": 0.03531746031746033,
+      "paired_sign_p_one_sided": 0.572232224047184
+    },
+    "('val_unseen', 'between', 'shuffled_relation')": {
+      "n_clauses": 54,
+      "n_episode_clusters": 51,
+      "wins": 11,
+      "losses": 7,
+      "ties": 33,
+      "mean_auc_difference": 0.01661220043572984,
+      "paired_sign_p_one_sided": 0.2403411865234375
+    },
+    "('val_unseen', 'between', 'shuffled_relation', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 25,
+      "n_episode_clusters": 24,
+      "wins": 4,
+      "losses": 4,
+      "ties": 16,
+      "mean_auc_difference": -0.004629629629629632,
+      "paired_sign_p_one_sided": 0.63671875
+    },
+    "('val_unseen', 'between', 'shuffled_anchor')": {
+      "n_clauses": 54,
+      "n_episode_clusters": 51,
+      "wins": 34,
+      "losses": 2,
+      "ties": 15,
+      "mean_auc_difference": 0.23502178649237476,
+      "paired_sign_p_one_sided": 9.70612745732069e-09
+    },
+    "('val_unseen', 'between', 'shuffled_anchor', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 25,
+      "n_episode_clusters": 24,
+      "wins": 15,
+      "losses": 1,
+      "ties": 8,
+      "mean_auc_difference": 0.21585648148148148,
+      "paired_sign_p_one_sided": 0.0002593994140625
+    },
+    "('val_unseen', 'shuffled_second_anchor')": {
+      "n_clauses": 60,
+      "n_episode_clusters": 57,
+      "wins": 21,
+      "losses": 10,
+      "ties": 26,
+      "mean_auc_difference": 0.1493664717348928,
+      "paired_sign_p_one_sided": 0.035377772990614176
+    },
+    "('val_unseen', 'between', 'shuffled_second_anchor')": {
+      "n_clauses": 54,
+      "n_episode_clusters": 51,
+      "wins": 20,
+      "losses": 7,
+      "ties": 24,
+      "mean_auc_difference": 0.1604030501089325,
+      "paired_sign_p_one_sided": 0.0095786452293396
+    },
+    "('val_unseen', 'between', 'shuffled_second_anchor', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 25,
+      "n_episode_clusters": 24,
+      "wins": 9,
+      "losses": 4,
+      "ties": 11,
+      "mean_auc_difference": 0.13078703703703706,
+      "paired_sign_p_one_sided": 0.1334228515625
+    },
+    "('val_unseen', 'between', 'shuffled_relation', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 29,
+      "n_episode_clusters": 27,
+      "wins": 7,
+      "losses": 3,
+      "ties": 17,
+      "mean_auc_difference": 0.03549382716049382,
+      "paired_sign_p_one_sided": 0.171875
+    },
+    "('val_unseen', 'between', 'shuffled_anchor', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 29,
+      "n_episode_clusters": 27,
+      "wins": 19,
+      "losses": 1,
+      "ties": 7,
+      "mean_auc_difference": 0.25205761316872427,
+      "paired_sign_p_one_sided": 2.002716064453125e-05
+    },
+    "('val_unseen', 'between', 'shuffled_second_anchor', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 29,
+      "n_episode_clusters": 27,
+      "wins": 11,
+      "losses": 3,
+      "ties": 13,
+      "mean_auc_difference": 0.18672839506172842,
+      "paired_sign_p_one_sided": 0.0286865234375
+    },
+    "('val_unseen', 'near', 'shuffled_relation')": {
+      "n_clauses": 11,
+      "n_episode_clusters": 11,
+      "wins": 11,
+      "losses": 0,
+      "ties": 0,
+      "mean_auc_difference": 0.4494949494949495,
+      "paired_sign_p_one_sided": 0.00048828125
+    },
+    "('val_unseen', 'near', 'shuffled_relation', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 6,
+      "n_episode_clusters": 6,
+      "wins": 6,
+      "losses": 0,
+      "ties": 0,
+      "mean_auc_difference": 0.4537037037037038,
+      "paired_sign_p_one_sided": 0.015625
+    },
+    "('val_unseen', 'near', 'opposite_relation')": {
+      "n_clauses": 11,
+      "n_episode_clusters": 11,
+      "wins": 11,
+      "losses": 0,
+      "ties": 0,
+      "mean_auc_difference": 0.5858585858585859,
+      "paired_sign_p_one_sided": 0.00048828125
+    },
+    "('val_unseen', 'near', 'opposite_relation', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 6,
+      "n_episode_clusters": 6,
+      "wins": 6,
+      "losses": 0,
+      "ties": 0,
+      "mean_auc_difference": 0.6111111111111112,
+      "paired_sign_p_one_sided": 0.015625
+    },
+    "('val_unseen', 'near', 'shuffled_anchor')": {
+      "n_clauses": 11,
+      "n_episode_clusters": 11,
+      "wins": 9,
+      "losses": 0,
+      "ties": 2,
+      "mean_auc_difference": 0.3434343434343434,
+      "paired_sign_p_one_sided": 0.001953125
+    },
+    "('val_unseen', 'near', 'shuffled_anchor', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 6,
+      "n_episode_clusters": 6,
+      "wins": 5,
+      "losses": 0,
+      "ties": 1,
+      "mean_auc_difference": 0.3703703703703704,
+      "paired_sign_p_one_sided": 0.03125
+    },
+    "('val_unseen', 'right of', 'shuffled_relation')": {
+      "n_clauses": 33,
+      "n_episode_clusters": 31,
+      "wins": 6,
+      "losses": 16,
+      "ties": 9,
+      "mean_auc_difference": -0.16308243727598565,
+      "paired_sign_p_one_sided": 0.9915497303009033
+    },
+    "('val_unseen', 'right of', 'shuffled_relation', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 18,
+      "n_episode_clusters": 16,
+      "wins": 3,
+      "losses": 8,
+      "ties": 5,
+      "mean_auc_difference": -0.16319444444444445,
+      "paired_sign_p_one_sided": 0.96728515625
+    },
+    "('val_unseen', 'right of', 'opposite_relation')": {
+      "n_clauses": 33,
+      "n_episode_clusters": 31,
+      "wins": 15,
+      "losses": 8,
+      "ties": 8,
+      "mean_auc_difference": 0.0967741935483871,
+      "paired_sign_p_one_sided": 0.10501980781555176
+    },
+    "('val_unseen', 'right of', 'opposite_relation', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 18,
+      "n_episode_clusters": 16,
+      "wins": 7,
+      "losses": 5,
+      "ties": 4,
+      "mean_auc_difference": 0.0763888888888889,
+      "paired_sign_p_one_sided": 0.38720703125
+    },
+    "('val_unseen', 'right of', 'shuffled_anchor')": {
+      "n_clauses": 33,
+      "n_episode_clusters": 31,
+      "wins": 7,
+      "losses": 0,
+      "ties": 24,
+      "mean_auc_difference": 0.037634408602150546,
+      "paired_sign_p_one_sided": 0.0078125
+    },
+    "('val_unseen', 'right of', 'shuffled_anchor', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 18,
+      "n_episode_clusters": 16,
+      "wins": 4,
+      "losses": 0,
+      "ties": 12,
+      "mean_auc_difference": 0.04166666666666667,
+      "paired_sign_p_one_sided": 0.0625
+    },
+    "('val_unseen', 'right of', 'shuffled_relation', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 15,
+      "n_episode_clusters": 15,
+      "wins": 3,
+      "losses": 8,
+      "ties": 4,
+      "mean_auc_difference": -0.16296296296296298,
+      "paired_sign_p_one_sided": 0.96728515625
+    },
+    "('val_unseen', 'right of', 'opposite_relation', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 15,
+      "n_episode_clusters": 15,
+      "wins": 8,
+      "losses": 3,
+      "ties": 4,
+      "mean_auc_difference": 0.11851851851851852,
+      "paired_sign_p_one_sided": 0.11328125
+    },
+    "('val_unseen', 'right of', 'shuffled_anchor', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 15,
+      "n_episode_clusters": 15,
+      "wins": 3,
+      "losses": 0,
+      "ties": 12,
+      "mean_auc_difference": 0.03333333333333334,
+      "paired_sign_p_one_sided": 0.125
+    },
+    "('val_unseen', 'in front of', 'shuffled_relation')": {
+      "n_clauses": 32,
+      "n_episode_clusters": 29,
+      "wins": 12,
+      "losses": 9,
+      "ties": 8,
+      "mean_auc_difference": 0.031609195402298854,
+      "paired_sign_p_one_sided": 0.33181190490722656
+    },
+    "('val_unseen', 'in front of', 'shuffled_relation', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 17,
+      "n_episode_clusters": 14,
+      "wins": 6,
+      "losses": 4,
+      "ties": 4,
+      "mean_auc_difference": 0.03373015873015873,
+      "paired_sign_p_one_sided": 0.376953125
+    },
+    "('val_unseen', 'in front of', 'opposite_relation')": {
+      "n_clauses": 32,
+      "n_episode_clusters": 29,
+      "wins": 11,
+      "losses": 14,
+      "ties": 4,
+      "mean_auc_difference": -0.06896551724137934,
+      "paired_sign_p_one_sided": 0.787821888923645
+    },
+    "('val_unseen', 'in front of', 'opposite_relation', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 17,
+      "n_episode_clusters": 14,
+      "wins": 5,
+      "losses": 6,
+      "ties": 3,
+      "mean_auc_difference": -0.04761904761904762,
+      "paired_sign_p_one_sided": 0.7255859375
+    },
+    "('val_unseen', 'in front of', 'shuffled_anchor')": {
+      "n_clauses": 32,
+      "n_episode_clusters": 29,
+      "wins": 0,
+      "losses": 0,
+      "ties": 29,
+      "mean_auc_difference": 0.0,
+      "paired_sign_p_one_sided": null
+    },
+    "('val_unseen', 'in front of', 'shuffled_anchor', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 17,
+      "n_episode_clusters": 14,
+      "wins": 0,
+      "losses": 0,
+      "ties": 14,
+      "mean_auc_difference": 0.0,
+      "paired_sign_p_one_sided": null
+    },
+    "('val_unseen', 'in front of', 'shuffled_relation', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 13,
+      "n_episode_clusters": 13,
+      "wins": 5,
+      "losses": 4,
+      "ties": 4,
+      "mean_auc_difference": 0.017094017094017103,
+      "paired_sign_p_one_sided": 0.5
+    },
+    "('val_unseen', 'in front of', 'opposite_relation', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 13,
+      "n_episode_clusters": 13,
+      "wins": 5,
+      "losses": 7,
+      "ties": 1,
+      "mean_auc_difference": -0.10256410256410257,
+      "paired_sign_p_one_sided": 0.80615234375
+    },
+    "('val_unseen', 'in front of', 'shuffled_anchor', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 13,
+      "n_episode_clusters": 13,
+      "wins": 0,
+      "losses": 0,
+      "ties": 13,
+      "mean_auc_difference": 0.0,
+      "paired_sign_p_one_sided": null
+    },
+    "('val_unseen', 'near', 'shuffled_relation', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 5,
+      "n_episode_clusters": 5,
+      "wins": 5,
+      "losses": 0,
+      "ties": 0,
+      "mean_auc_difference": 0.4444444444444445,
+      "paired_sign_p_one_sided": 0.03125
+    },
+    "('val_unseen', 'near', 'opposite_relation', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 5,
+      "n_episode_clusters": 5,
+      "wins": 5,
+      "losses": 0,
+      "ties": 0,
+      "mean_auc_difference": 0.5555555555555556,
+      "paired_sign_p_one_sided": 0.03125
+    },
+    "('val_unseen', 'near', 'shuffled_anchor', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 5,
+      "n_episode_clusters": 5,
+      "wins": 4,
+      "losses": 0,
+      "ties": 1,
+      "mean_auc_difference": 0.3111111111111111,
+      "paired_sign_p_one_sided": 0.0625
+    },
+    "('val_unseen', 'close to', 'shuffled_relation')": {
+      "n_clauses": 2,
+      "n_episode_clusters": 2,
+      "wins": 2,
+      "losses": 0,
+      "ties": 0,
+      "mean_auc_difference": 0.3333333333333333,
+      "paired_sign_p_one_sided": 0.25
+    },
+    "('val_unseen', 'close to', 'shuffled_relation', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 1,
+      "n_episode_clusters": 1,
+      "wins": 1,
+      "losses": 0,
+      "ties": 0,
+      "mean_auc_difference": 0.3333333333333333,
+      "paired_sign_p_one_sided": 0.5
+    },
+    "('val_unseen', 'close to', 'opposite_relation')": {
+      "n_clauses": 2,
+      "n_episode_clusters": 2,
+      "wins": 2,
+      "losses": 0,
+      "ties": 0,
+      "mean_auc_difference": 0.3333333333333333,
+      "paired_sign_p_one_sided": 0.25
+    },
+    "('val_unseen', 'close to', 'opposite_relation', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 1,
+      "n_episode_clusters": 1,
+      "wins": 1,
+      "losses": 0,
+      "ties": 0,
+      "mean_auc_difference": 0.3333333333333333,
+      "paired_sign_p_one_sided": 0.5
+    },
+    "('val_unseen', 'close to', 'shuffled_anchor')": {
+      "n_clauses": 2,
+      "n_episode_clusters": 2,
+      "wins": 2,
+      "losses": 0,
+      "ties": 0,
+      "mean_auc_difference": 0.3333333333333333,
+      "paired_sign_p_one_sided": 0.25
+    },
+    "('val_unseen', 'close to', 'shuffled_anchor', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 1,
+      "n_episode_clusters": 1,
+      "wins": 1,
+      "losses": 0,
+      "ties": 0,
+      "mean_auc_difference": 0.3333333333333333,
+      "paired_sign_p_one_sided": 0.5
+    },
+    "('val_unseen', 'close to', 'shuffled_relation', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 1,
+      "n_episode_clusters": 1,
+      "wins": 1,
+      "losses": 0,
+      "ties": 0,
+      "mean_auc_difference": 0.3333333333333333,
+      "paired_sign_p_one_sided": 0.5
+    },
+    "('val_unseen', 'close to', 'opposite_relation', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 1,
+      "n_episode_clusters": 1,
+      "wins": 1,
+      "losses": 0,
+      "ties": 0,
+      "mean_auc_difference": 0.3333333333333333,
+      "paired_sign_p_one_sided": 0.5
+    },
+    "('val_unseen', 'close to', 'shuffled_anchor', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 1,
+      "n_episode_clusters": 1,
+      "wins": 1,
+      "losses": 0,
+      "ties": 0,
+      "mean_auc_difference": 0.3333333333333333,
+      "paired_sign_p_one_sided": 0.5
+    },
+    "('val_unseen', 'adjacent to', 'shuffled_relation')": {
+      "n_clauses": 6,
+      "n_episode_clusters": 6,
+      "wins": 4,
+      "losses": 0,
+      "ties": 2,
+      "mean_auc_difference": 0.3333333333333334,
+      "paired_sign_p_one_sided": 0.0625
+    },
+    "('val_unseen', 'adjacent to', 'shuffled_relation', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 3,
+      "n_episode_clusters": 3,
+      "wins": 2,
+      "losses": 0,
+      "ties": 1,
+      "mean_auc_difference": 0.3333333333333333,
+      "paired_sign_p_one_sided": 0.25
+    },
+    "('val_unseen', 'adjacent to', 'opposite_relation')": {
+      "n_clauses": 6,
+      "n_episode_clusters": 6,
+      "wins": 6,
+      "losses": 0,
+      "ties": 0,
+      "mean_auc_difference": 0.7407407407407408,
+      "paired_sign_p_one_sided": 0.015625
+    },
+    "('val_unseen', 'adjacent to', 'opposite_relation', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 3,
+      "n_episode_clusters": 3,
+      "wins": 3,
+      "losses": 0,
+      "ties": 0,
+      "mean_auc_difference": 0.7407407407407408,
+      "paired_sign_p_one_sided": 0.125
+    },
+    "('val_unseen', 'adjacent to', 'shuffled_anchor')": {
+      "n_clauses": 6,
+      "n_episode_clusters": 6,
+      "wins": 6,
+      "losses": 0,
+      "ties": 0,
+      "mean_auc_difference": 0.5740740740740742,
+      "paired_sign_p_one_sided": 0.015625
+    },
+    "('val_unseen', 'adjacent to', 'shuffled_anchor', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 3,
+      "n_episode_clusters": 3,
+      "wins": 3,
+      "losses": 0,
+      "ties": 0,
+      "mean_auc_difference": 0.5740740740740741,
+      "paired_sign_p_one_sided": 0.125
+    },
+    "('val_unseen', 'adjacent to', 'shuffled_relation', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 3,
+      "n_episode_clusters": 3,
+      "wins": 2,
+      "losses": 0,
+      "ties": 1,
+      "mean_auc_difference": 0.3333333333333333,
+      "paired_sign_p_one_sided": 0.25
+    },
+    "('val_unseen', 'adjacent to', 'opposite_relation', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 3,
+      "n_episode_clusters": 3,
+      "wins": 3,
+      "losses": 0,
+      "ties": 0,
+      "mean_auc_difference": 0.7407407407407408,
+      "paired_sign_p_one_sided": 0.125
+    },
+    "('val_unseen', 'adjacent to', 'shuffled_anchor', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 3,
+      "n_episode_clusters": 3,
+      "wins": 3,
+      "losses": 0,
+      "ties": 0,
+      "mean_auc_difference": 0.5740740740740741,
+      "paired_sign_p_one_sided": 0.125
+    },
+    "('train_seen', 'on', 'shuffled_relation', 'raw_parser', '9 deterministic map distractors plus target; separate from legacy hard-negative protocol')": {
+      "n_clauses": 40,
+      "n_episode_clusters": 39,
+      "wins": 22,
+      "losses": 9,
+      "ties": 8,
+      "mean_auc_difference": 0.4074074074074074,
+      "paired_sign_p_one_sided": 0.014724686741828918
+    },
+    "('train_seen', 'on', 'shuffled_anchor', 'raw_parser', '9 deterministic map distractors plus target; separate from legacy hard-negative protocol')": {
+      "n_clauses": 40,
+      "n_episode_clusters": 39,
+      "wins": 29,
+      "losses": 4,
+      "ties": 6,
+      "mean_auc_difference": 0.33903133903133903,
+      "paired_sign_p_one_sided": 5.464302375912666e-06
+    },
+    "('train_seen', 'off', 'shuffled_relation')": {
+      "n_clauses": 42,
+      "n_episode_clusters": 42,
+      "wins": 21,
+      "losses": 12,
+      "ties": 9,
+      "mean_auc_difference": 0.32605820105820105,
+      "paired_sign_p_one_sided": 0.08137782872654498
+    },
+    "('train_seen', 'off', 'shuffled_relation', 'raw_parser', '9 deterministic map distractors plus target; separate from legacy hard-negative protocol')": {
+      "n_clauses": 40,
+      "n_episode_clusters": 40,
+      "wins": 19,
+      "losses": 12,
+      "ties": 9,
+      "mean_auc_difference": 0.3194444444444445,
+      "paired_sign_p_one_sided": 0.14052075752988458
+    },
+    "('train_seen', 'off', 'shuffled_anchor')": {
+      "n_clauses": 41,
+      "n_episode_clusters": 41,
+      "wins": 36,
+      "losses": 2,
+      "ties": 3,
+      "mean_auc_difference": 0.5311653116531165,
+      "paired_sign_p_one_sided": 2.699380274862051e-09
+    },
+    "('train_seen', 'off', 'shuffled_anchor', 'raw_parser', '9 deterministic map distractors plus target; separate from legacy hard-negative protocol')": {
+      "n_clauses": 40,
+      "n_episode_clusters": 40,
+      "wins": 35,
+      "losses": 2,
+      "ties": 3,
+      "mean_auc_difference": 0.5319444444444444,
+      "paired_sign_p_one_sided": 5.122274160385132e-09
+    },
+    "('train_seen', 'along', 'shuffled_relation')": {
+      "n_clauses": 40,
+      "n_episode_clusters": 40,
+      "wins": 21,
+      "losses": 8,
+      "ties": 11,
+      "mean_auc_difference": 0.3527777777777778,
+      "paired_sign_p_one_sided": 0.01205977238714695
+    },
+    "('train_seen', 'along', 'shuffled_relation', 'raw_parser', '9 deterministic map distractors plus target; separate from legacy hard-negative protocol')": {
+      "n_clauses": 40,
+      "n_episode_clusters": 40,
+      "wins": 21,
+      "losses": 8,
+      "ties": 11,
+      "mean_auc_difference": 0.3527777777777778,
+      "paired_sign_p_one_sided": 0.01205977238714695
+    },
+    "('train_seen', 'along', 'shuffled_anchor')": {
+      "n_clauses": 39,
+      "n_episode_clusters": 39,
+      "wins": 28,
+      "losses": 6,
+      "ties": 5,
+      "mean_auc_difference": 0.2507122507122507,
+      "paired_sign_p_one_sided": 9.756279177963734e-05
+    },
+    "('train_seen', 'along', 'shuffled_anchor', 'raw_parser', '9 deterministic map distractors plus target; separate from legacy hard-negative protocol')": {
+      "n_clauses": 39,
+      "n_episode_clusters": 39,
+      "wins": 28,
+      "losses": 6,
+      "ties": 5,
+      "mean_auc_difference": 0.2507122507122507,
+      "paired_sign_p_one_sided": 9.756279177963734e-05
+    },
+    "('train_seen', 'across', 'shuffled_relation')": {
+      "n_clauses": 26,
+      "n_episode_clusters": 26,
+      "wins": 2,
+      "losses": 21,
+      "ties": 3,
+      "mean_auc_difference": -0.23076923076923078,
+      "paired_sign_p_one_sided": 0.9999971389770508
+    },
+    "('train_seen', 'across', 'shuffled_relation', 'raw_parser', '9 deterministic map distractors plus target; separate from legacy hard-negative protocol')": {
+      "n_clauses": 26,
+      "n_episode_clusters": 26,
+      "wins": 2,
+      "losses": 21,
+      "ties": 3,
+      "mean_auc_difference": -0.23076923076923078,
+      "paired_sign_p_one_sided": 0.9999971389770508
+    },
+    "('train_seen', 'across', 'shuffled_anchor')": {
+      "n_clauses": 26,
+      "n_episode_clusters": 26,
+      "wins": 23,
+      "losses": 2,
+      "ties": 1,
+      "mean_auc_difference": 0.2094017094017094,
+      "paired_sign_p_one_sided": 9.715557098388672e-06
+    },
+    "('train_seen', 'across', 'shuffled_anchor', 'raw_parser', '9 deterministic map distractors plus target; separate from legacy hard-negative protocol')": {
+      "n_clauses": 26,
+      "n_episode_clusters": 26,
+      "wins": 23,
+      "losses": 2,
+      "ties": 1,
+      "mean_auc_difference": 0.2094017094017094,
+      "paired_sign_p_one_sided": 9.715557098388672e-06
+    },
+    "('train_seen', 'across', 'shuffled_second_anchor')": {
+      "n_clauses": 26,
+      "n_episode_clusters": 26,
+      "wins": 10,
+      "losses": 10,
+      "ties": 6,
+      "mean_auc_difference": 0.07478632478632481,
+      "paired_sign_p_one_sided": 0.5880985260009766
+    },
+    "('train_seen', 'across', 'shuffled_second_anchor', 'raw_parser', '9 deterministic map distractors plus target; separate from legacy hard-negative protocol')": {
+      "n_clauses": 26,
+      "n_episode_clusters": 26,
+      "wins": 10,
+      "losses": 10,
+      "ties": 6,
+      "mean_auc_difference": 0.07478632478632481,
+      "paired_sign_p_one_sided": 0.5880985260009766
+    },
+    "('val_seen', 'on', 'shuffled_relation', 'raw_parser', '9 deterministic map distractors plus target; separate from legacy hard-negative protocol')": {
+      "n_clauses": 40,
+      "n_episode_clusters": 37,
+      "wins": 24,
+      "losses": 6,
+      "ties": 7,
+      "mean_auc_difference": 0.42792792792792794,
+      "paired_sign_p_one_sided": 0.0007154531776905061
+    },
+    "('val_seen', 'on', 'shuffled_anchor', 'raw_parser', '9 deterministic map distractors plus target; separate from legacy hard-negative protocol')": {
+      "n_clauses": 38,
+      "n_episode_clusters": 35,
+      "wins": 28,
+      "losses": 0,
+      "ties": 7,
+      "mean_auc_difference": 0.3634920634920635,
+      "paired_sign_p_one_sided": 3.725290298461914e-09
+    },
+    "('val_seen', 'along', 'shuffled_relation')": {
+      "n_clauses": 40,
+      "n_episode_clusters": 40,
+      "wins": 13,
+      "losses": 9,
+      "ties": 18,
+      "mean_auc_difference": 0.23472222222222222,
+      "paired_sign_p_one_sided": 0.2617335319519043
+    },
+    "('val_seen', 'along', 'shuffled_relation', 'raw_parser', '9 deterministic map distractors plus target; separate from legacy hard-negative protocol')": {
+      "n_clauses": 40,
+      "n_episode_clusters": 40,
+      "wins": 13,
+      "losses": 9,
+      "ties": 18,
+      "mean_auc_difference": 0.23472222222222222,
+      "paired_sign_p_one_sided": 0.2617335319519043
+    },
+    "('val_seen', 'along', 'shuffled_anchor')": {
+      "n_clauses": 39,
+      "n_episode_clusters": 39,
+      "wins": 33,
+      "losses": 3,
+      "ties": 3,
+      "mean_auc_difference": 0.4088319088319088,
+      "paired_sign_p_one_sided": 1.1360680218786001e-07
+    },
+    "('val_seen', 'along', 'shuffled_anchor', 'raw_parser', '9 deterministic map distractors plus target; separate from legacy hard-negative protocol')": {
+      "n_clauses": 39,
+      "n_episode_clusters": 39,
+      "wins": 33,
+      "losses": 3,
+      "ties": 3,
+      "mean_auc_difference": 0.4088319088319088,
+      "paired_sign_p_one_sided": 1.1360680218786001e-07
+    },
+    "('val_seen', 'off', 'shuffled_relation')": {
+      "n_clauses": 41,
+      "n_episode_clusters": 40,
+      "wins": 16,
+      "losses": 6,
+      "ties": 18,
+      "mean_auc_difference": 0.22152777777777777,
+      "paired_sign_p_one_sided": 0.026239395141601562
+    },
+    "('val_seen', 'off', 'shuffled_relation', 'raw_parser', '9 deterministic map distractors plus target; separate from legacy hard-negative protocol')": {
+      "n_clauses": 40,
+      "n_episode_clusters": 39,
+      "wins": 15,
+      "losses": 6,
+      "ties": 18,
+      "mean_auc_difference": 0.2250712250712251,
+      "paired_sign_p_one_sided": 0.03917694091796875
+    },
+    "('val_seen', 'off', 'shuffled_anchor')": {
+      "n_clauses": 41,
+      "n_episode_clusters": 40,
+      "wins": 36,
+      "losses": 1,
+      "ties": 3,
+      "mean_auc_difference": 0.4777777777777777,
+      "paired_sign_p_one_sided": 2.764863893389702e-10
+    },
+    "('val_seen', 'off', 'shuffled_anchor', 'raw_parser', '9 deterministic map distractors plus target; separate from legacy hard-negative protocol')": {
+      "n_clauses": 40,
+      "n_episode_clusters": 39,
+      "wins": 36,
+      "losses": 0,
+      "ties": 3,
+      "mean_auc_difference": 0.49430199430199423,
+      "paired_sign_p_one_sided": 1.4551915228366852e-11
+    },
+    "('val_seen', 'across', 'shuffled_relation')": {
+      "n_clauses": 9,
+      "n_episode_clusters": 9,
+      "wins": 2,
+      "losses": 6,
+      "ties": 1,
+      "mean_auc_difference": -0.11728395061728396,
+      "paired_sign_p_one_sided": 0.96484375
+    },
+    "('val_seen', 'across', 'shuffled_relation', 'raw_parser', '9 deterministic map distractors plus target; separate from legacy hard-negative protocol')": {
+      "n_clauses": 9,
+      "n_episode_clusters": 9,
+      "wins": 2,
+      "losses": 6,
+      "ties": 1,
+      "mean_auc_difference": -0.11728395061728396,
+      "paired_sign_p_one_sided": 0.96484375
+    },
+    "('val_seen', 'across', 'shuffled_anchor')": {
+      "n_clauses": 9,
+      "n_episode_clusters": 9,
+      "wins": 8,
+      "losses": 0,
+      "ties": 1,
+      "mean_auc_difference": 0.29012345679012347,
+      "paired_sign_p_one_sided": 0.00390625
+    },
+    "('val_seen', 'across', 'shuffled_anchor', 'raw_parser', '9 deterministic map distractors plus target; separate from legacy hard-negative protocol')": {
+      "n_clauses": 9,
+      "n_episode_clusters": 9,
+      "wins": 8,
+      "losses": 0,
+      "ties": 1,
+      "mean_auc_difference": 0.29012345679012347,
+      "paired_sign_p_one_sided": 0.00390625
+    },
+    "('val_seen', 'across', 'shuffled_second_anchor')": {
+      "n_clauses": 9,
+      "n_episode_clusters": 9,
+      "wins": 4,
+      "losses": 2,
+      "ties": 3,
+      "mean_auc_difference": 0.1358024691358025,
+      "paired_sign_p_one_sided": 0.34375
+    },
+    "('val_seen', 'across', 'shuffled_second_anchor', 'raw_parser', '9 deterministic map distractors plus target; separate from legacy hard-negative protocol')": {
+      "n_clauses": 9,
+      "n_episode_clusters": 9,
+      "wins": 4,
+      "losses": 2,
+      "ties": 3,
+      "mean_auc_difference": 0.1358024691358025,
+      "paired_sign_p_one_sided": 0.34375
+    },
+    "('val_unseen', 'off', 'shuffled_relation')": {
+      "n_clauses": 43,
+      "n_episode_clusters": 43,
+      "wins": 14,
+      "losses": 20,
+      "ties": 9,
+      "mean_auc_difference": 0.06201550387596899,
+      "paired_sign_p_one_sided": 0.8852594934869558
+    },
+    "('val_unseen', 'off', 'shuffled_relation', 'raw_parser', '9 deterministic map distractors plus target; separate from legacy hard-negative protocol')": {
+      "n_clauses": 40,
+      "n_episode_clusters": 40,
+      "wins": 13,
+      "losses": 19,
+      "ties": 8,
+      "mean_auc_difference": 0.058333333333333334,
+      "paired_sign_p_one_sided": 0.8923364251386374
+    },
+    "('val_unseen', 'off', 'shuffled_anchor')": {
+      "n_clauses": 43,
+      "n_episode_clusters": 43,
+      "wins": 31,
+      "losses": 8,
+      "ties": 4,
+      "mean_auc_difference": 0.3055555555555556,
+      "paired_sign_p_one_sided": 0.00014703843771712855
+    },
+    "('val_unseen', 'off', 'shuffled_anchor', 'raw_parser', '9 deterministic map distractors plus target; separate from legacy hard-negative protocol')": {
+      "n_clauses": 40,
+      "n_episode_clusters": 40,
+      "wins": 30,
+      "losses": 6,
+      "ties": 4,
+      "mean_auc_difference": 0.325,
+      "paired_sign_p_one_sided": 3.480084706097841e-05
+    },
+    "('val_unseen', 'along', 'shuffled_relation')": {
+      "n_clauses": 40,
+      "n_episode_clusters": 40,
+      "wins": 23,
+      "losses": 6,
+      "ties": 11,
+      "mean_auc_difference": 0.2916666666666667,
+      "paired_sign_p_one_sided": 0.0011578500270843506
+    },
+    "('val_unseen', 'along', 'shuffled_relation', 'raw_parser', '9 deterministic map distractors plus target; separate from legacy hard-negative protocol')": {
+      "n_clauses": 40,
+      "n_episode_clusters": 40,
+      "wins": 23,
+      "losses": 6,
+      "ties": 11,
+      "mean_auc_difference": 0.2916666666666667,
+      "paired_sign_p_one_sided": 0.0011578500270843506
+    },
+    "('val_unseen', 'along', 'shuffled_anchor')": {
+      "n_clauses": 40,
+      "n_episode_clusters": 40,
+      "wins": 33,
+      "losses": 4,
+      "ties": 3,
+      "mean_auc_difference": 0.34305555555555556,
+      "paired_sign_p_one_sided": 5.421970854513347e-07
+    },
+    "('val_unseen', 'along', 'shuffled_anchor', 'raw_parser', '9 deterministic map distractors plus target; separate from legacy hard-negative protocol')": {
+      "n_clauses": 40,
+      "n_episode_clusters": 40,
+      "wins": 33,
+      "losses": 4,
+      "ties": 3,
+      "mean_auc_difference": 0.34305555555555556,
+      "paired_sign_p_one_sided": 5.421970854513347e-07
+    },
+    "('val_unseen', 'on', 'shuffled_relation', 'raw_parser', '9 deterministic map distractors plus target; separate from legacy hard-negative protocol')": {
+      "n_clauses": 40,
+      "n_episode_clusters": 39,
+      "wins": 24,
+      "losses": 8,
+      "ties": 7,
+      "mean_auc_difference": 0.3831908831908831,
+      "paired_sign_p_one_sided": 0.0035001833457499743
+    },
+    "('val_unseen', 'on', 'shuffled_anchor', 'raw_parser', '9 deterministic map distractors plus target; separate from legacy hard-negative protocol')": {
+      "n_clauses": 40,
+      "n_episode_clusters": 39,
+      "wins": 29,
+      "losses": 5,
+      "ties": 5,
+      "mean_auc_difference": 0.3233618233618234,
+      "paired_sign_p_one_sided": 1.9279075786471367e-05
+    },
+    "('val_unseen', 'across', 'shuffled_relation')": {
+      "n_clauses": 6,
+      "n_episode_clusters": 6,
+      "wins": 2,
+      "losses": 3,
+      "ties": 1,
+      "mean_auc_difference": -0.018518518518518528,
+      "paired_sign_p_one_sided": 0.8125
+    },
+    "('val_unseen', 'across', 'shuffled_relation', 'raw_parser', '9 deterministic map distractors plus target; separate from legacy hard-negative protocol')": {
+      "n_clauses": 6,
+      "n_episode_clusters": 6,
+      "wins": 2,
+      "losses": 3,
+      "ties": 1,
+      "mean_auc_difference": -0.018518518518518528,
+      "paired_sign_p_one_sided": 0.8125
+    },
+    "('val_unseen', 'across', 'shuffled_anchor')": {
+      "n_clauses": 6,
+      "n_episode_clusters": 6,
+      "wins": 4,
+      "losses": 1,
+      "ties": 1,
+      "mean_auc_difference": 0.32407407407407407,
+      "paired_sign_p_one_sided": 0.1875
+    },
+    "('val_unseen', 'across', 'shuffled_anchor', 'raw_parser', '9 deterministic map distractors plus target; separate from legacy hard-negative protocol')": {
+      "n_clauses": 6,
+      "n_episode_clusters": 6,
+      "wins": 4,
+      "losses": 1,
+      "ties": 1,
+      "mean_auc_difference": 0.32407407407407407,
+      "paired_sign_p_one_sided": 0.1875
+    },
+    "('val_unseen', 'across', 'shuffled_second_anchor')": {
+      "n_clauses": 6,
+      "n_episode_clusters": 6,
+      "wins": 1,
+      "losses": 3,
+      "ties": 2,
+      "mean_auc_difference": 0.05555555555555556,
+      "paired_sign_p_one_sided": 0.9375
+    },
+    "('val_unseen', 'across', 'shuffled_second_anchor', 'raw_parser', '9 deterministic map distractors plus target; separate from legacy hard-negative protocol')": {
+      "n_clauses": 6,
+      "n_episode_clusters": 6,
+      "wins": 1,
+      "losses": 3,
+      "ties": 2,
+      "mean_auc_difference": 0.05555555555555556,
+      "paired_sign_p_one_sided": 0.9375
+    },
+    "('val_seen', 'behind', 'shuffled_relation', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 2,
+      "n_episode_clusters": 2,
+      "wins": 2,
+      "losses": 0,
+      "ties": 0,
+      "mean_auc_difference": 0.22619047619047625,
+      "paired_sign_p_one_sided": 0.25
+    },
+    "('val_seen', 'behind', 'opposite_relation', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 2,
+      "n_episode_clusters": 2,
+      "wins": 2,
+      "losses": 0,
+      "ties": 0,
+      "mean_auc_difference": 0.5476190476190477,
+      "paired_sign_p_one_sided": 0.25
+    },
+    "('val_seen', 'behind', 'shuffled_anchor', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 2,
+      "n_episode_clusters": 2,
+      "wins": 0,
+      "losses": 0,
+      "ties": 2,
+      "mean_auc_difference": 0.0,
+      "paired_sign_p_one_sided": null
+    },
+    "('train_seen', 'behind', 'shuffled_relation', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 4,
+      "n_episode_clusters": 4,
+      "wins": 1,
+      "losses": 2,
+      "ties": 1,
+      "mean_auc_difference": -0.041666666666666664,
+      "paired_sign_p_one_sided": 0.875
+    },
+    "('train_seen', 'behind', 'opposite_relation', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 4,
+      "n_episode_clusters": 4,
+      "wins": 2,
+      "losses": 2,
+      "ties": 0,
+      "mean_auc_difference": -0.08333333333333337,
+      "paired_sign_p_one_sided": 0.6875
+    },
+    "('train_seen', 'behind', 'shuffled_anchor', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 4,
+      "n_episode_clusters": 4,
+      "wins": 0,
+      "losses": 0,
+      "ties": 4,
+      "mean_auc_difference": 0.0,
+      "paired_sign_p_one_sided": null
+    },
+    "('val_unseen', 'behind', 'shuffled_relation', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 5,
+      "n_episode_clusters": 5,
+      "wins": 4,
+      "losses": 1,
+      "ties": 0,
+      "mean_auc_difference": 0.275,
+      "paired_sign_p_one_sided": 0.1875
+    },
+    "('val_unseen', 'behind', 'opposite_relation', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 5,
+      "n_episode_clusters": 5,
+      "wins": 4,
+      "losses": 1,
+      "ties": 0,
+      "mean_auc_difference": 0.5666666666666667,
+      "paired_sign_p_one_sided": 0.1875
+    },
+    "('val_unseen', 'behind', 'shuffled_anchor', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 5,
+      "n_episode_clusters": 5,
+      "wins": 2,
+      "losses": 0,
+      "ties": 3,
+      "mean_auc_difference": 0.06666666666666668,
+      "paired_sign_p_one_sided": 0.25
+    },
+    "('val_unseen', 'off', 'shuffled_relation', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 3,
+      "n_episode_clusters": 3,
+      "wins": 1,
+      "losses": 1,
+      "ties": 1,
+      "mean_auc_difference": 0.11111111111111112,
+      "paired_sign_p_one_sided": 0.75
+    },
+    "('val_unseen', 'off', 'shuffled_anchor', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 3,
+      "n_episode_clusters": 3,
+      "wins": 1,
+      "losses": 2,
+      "ties": 0,
+      "mean_auc_difference": 0.046296296296296315,
+      "paired_sign_p_one_sided": 0.875
+    },
+    "('train_seen', 'in front of', 'shuffled_relation', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 8,
+      "n_episode_clusters": 8,
+      "wins": 8,
+      "losses": 0,
+      "ties": 0,
+      "mean_auc_difference": 0.4739583333333333,
+      "paired_sign_p_one_sided": 0.00390625
+    },
+    "('train_seen', 'in front of', 'opposite_relation', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 8,
+      "n_episode_clusters": 8,
+      "wins": 8,
+      "losses": 0,
+      "ties": 0,
+      "mean_auc_difference": 0.6458333333333333,
+      "paired_sign_p_one_sided": 0.00390625
+    },
+    "('train_seen', 'in front of', 'shuffled_anchor', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 8,
+      "n_episode_clusters": 8,
+      "wins": 0,
+      "losses": 0,
+      "ties": 8,
+      "mean_auc_difference": 0.0,
+      "paired_sign_p_one_sided": null
+    },
+    "('val_seen', 'in front of', 'shuffled_relation', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 2,
+      "n_episode_clusters": 2,
+      "wins": 2,
+      "losses": 0,
+      "ties": 0,
+      "mean_auc_difference": 0.5,
+      "paired_sign_p_one_sided": 0.25
+    },
+    "('val_seen', 'in front of', 'opposite_relation', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 2,
+      "n_episode_clusters": 2,
+      "wins": 2,
+      "losses": 0,
+      "ties": 0,
+      "mean_auc_difference": 0.5,
+      "paired_sign_p_one_sided": 0.25
+    },
+    "('val_seen', 'in front of', 'shuffled_anchor', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 2,
+      "n_episode_clusters": 2,
+      "wins": 1,
+      "losses": 0,
+      "ties": 1,
+      "mean_auc_difference": 0.08333333333333331,
+      "paired_sign_p_one_sided": 0.5
+    },
+    "('val_unseen', 'in front of', 'shuffled_relation', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 2,
+      "n_episode_clusters": 2,
+      "wins": 1,
+      "losses": 1,
+      "ties": 0,
+      "mean_auc_difference": 0.1111111111111111,
+      "paired_sign_p_one_sided": 0.75
+    },
+    "('val_unseen', 'in front of', 'opposite_relation', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 2,
+      "n_episode_clusters": 2,
+      "wins": 1,
+      "losses": 1,
+      "ties": 0,
+      "mean_auc_difference": 0.0,
+      "paired_sign_p_one_sided": 0.75
+    },
+    "('val_unseen', 'in front of', 'shuffled_anchor', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 2,
+      "n_episode_clusters": 2,
+      "wins": 0,
+      "losses": 0,
+      "ties": 2,
+      "mean_auc_difference": 0.0,
+      "paired_sign_p_one_sided": null
+    },
+    "('train_seen', 'on', 'shuffled_relation', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 19,
+      "n_episode_clusters": 19,
+      "wins": 6,
+      "losses": 4,
+      "ties": 9,
+      "mean_auc_difference": 0.10526315789473684,
+      "paired_sign_p_one_sided": 0.376953125
+    },
+    "('train_seen', 'on', 'shuffled_anchor', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 16,
+      "n_episode_clusters": 16,
+      "wins": 7,
+      "losses": 8,
+      "ties": 1,
+      "mean_auc_difference": 0.03645833333333334,
+      "paired_sign_p_one_sided": 0.696380615234375
+    },
+    "('val_seen', 'on', 'shuffled_relation', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 8,
+      "n_episode_clusters": 8,
+      "wins": 3,
+      "losses": 2,
+      "ties": 3,
+      "mean_auc_difference": 0.08333333333333336,
+      "paired_sign_p_one_sided": 0.5
+    },
+    "('val_seen', 'on', 'shuffled_anchor', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 6,
+      "n_episode_clusters": 6,
+      "wins": 3,
+      "losses": 1,
+      "ties": 2,
+      "mean_auc_difference": 0.19444444444444445,
+      "paired_sign_p_one_sided": 0.3125
+    },
+    "('val_seen', 'between', 'shuffled_relation', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 1,
+      "n_episode_clusters": 1,
+      "wins": 1,
+      "losses": 0,
+      "ties": 0,
+      "mean_auc_difference": 0.16666666666666663,
+      "paired_sign_p_one_sided": 0.5
+    },
+    "('val_seen', 'between', 'shuffled_anchor', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 1,
+      "n_episode_clusters": 1,
+      "wins": 1,
+      "losses": 0,
+      "ties": 0,
+      "mean_auc_difference": 0.5,
+      "paired_sign_p_one_sided": 0.5
+    },
+    "('val_seen', 'between', 'shuffled_second_anchor', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 1,
+      "n_episode_clusters": 1,
+      "wins": 1,
+      "losses": 0,
+      "ties": 0,
+      "mean_auc_difference": 0.33333333333333337,
+      "paired_sign_p_one_sided": 0.5
+    },
+    "('train_seen', 'between', 'shuffled_relation', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 3,
+      "n_episode_clusters": 3,
+      "wins": 2,
+      "losses": 1,
+      "ties": 0,
+      "mean_auc_difference": 0.041666666666666664,
+      "paired_sign_p_one_sided": 0.5
+    },
+    "('train_seen', 'between', 'shuffled_anchor', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 2,
+      "n_episode_clusters": 2,
+      "wins": 1,
+      "losses": 0,
+      "ties": 1,
+      "mean_auc_difference": 0.125,
+      "paired_sign_p_one_sided": 0.5
+    },
+    "('train_seen', 'between', 'shuffled_second_anchor', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 3,
+      "n_episode_clusters": 3,
+      "wins": 3,
+      "losses": 0,
+      "ties": 0,
+      "mean_auc_difference": 0.3333333333333333,
+      "paired_sign_p_one_sided": 0.125
+    },
+    "('val_seen', 'off', 'shuffled_relation', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 1,
+      "n_episode_clusters": 1,
+      "wins": 1,
+      "losses": 0,
+      "ties": 0,
+      "mean_auc_difference": 0.08333333333333331,
+      "paired_sign_p_one_sided": 0.5
+    },
+    "('val_seen', 'off', 'shuffled_anchor', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 1,
+      "n_episode_clusters": 1,
+      "wins": 0,
+      "losses": 1,
+      "ties": 0,
+      "mean_auc_difference": -0.16666666666666669,
+      "paired_sign_p_one_sided": 1.0
+    },
+    "('train_seen', 'to the left of', 'shuffled_relation')": {
+      "n_clauses": 4,
+      "n_episode_clusters": 4,
+      "wins": 1,
+      "losses": 0,
+      "ties": 3,
+      "mean_auc_difference": 0.04166666666666667,
+      "paired_sign_p_one_sided": 0.5
+    },
+    "('train_seen', 'to the left of', 'shuffled_relation', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 4,
+      "n_episode_clusters": 4,
+      "wins": 1,
+      "losses": 0,
+      "ties": 3,
+      "mean_auc_difference": 0.04166666666666667,
+      "paired_sign_p_one_sided": 0.5
+    },
+    "('train_seen', 'to the left of', 'opposite_relation')": {
+      "n_clauses": 4,
+      "n_episode_clusters": 4,
+      "wins": 2,
+      "losses": 0,
+      "ties": 2,
+      "mean_auc_difference": 0.3333333333333333,
+      "paired_sign_p_one_sided": 0.25
+    },
+    "('train_seen', 'to the left of', 'opposite_relation', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 4,
+      "n_episode_clusters": 4,
+      "wins": 2,
+      "losses": 0,
+      "ties": 2,
+      "mean_auc_difference": 0.3333333333333333,
+      "paired_sign_p_one_sided": 0.25
+    },
+    "('train_seen', 'to the left of', 'shuffled_anchor')": {
+      "n_clauses": 3,
+      "n_episode_clusters": 3,
+      "wins": 0,
+      "losses": 0,
+      "ties": 3,
+      "mean_auc_difference": 0.0,
+      "paired_sign_p_one_sided": null
+    },
+    "('train_seen', 'to the left of', 'shuffled_anchor', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 3,
+      "n_episode_clusters": 3,
+      "wins": 0,
+      "losses": 0,
+      "ties": 3,
+      "mean_auc_difference": 0.0,
+      "paired_sign_p_one_sided": null
+    },
+    "('val_unseen', 'on', 'shuffled_relation', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 4,
+      "n_episode_clusters": 4,
+      "wins": 3,
+      "losses": 0,
+      "ties": 1,
+      "mean_auc_difference": 0.375,
+      "paired_sign_p_one_sided": 0.125
+    },
+    "('val_unseen', 'on', 'shuffled_anchor', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 4,
+      "n_episode_clusters": 4,
+      "wins": 4,
+      "losses": 0,
+      "ties": 0,
+      "mean_auc_difference": 0.35416666666666674,
+      "paired_sign_p_one_sided": 0.0625
+    },
+    "('train_seen', 'near', 'shuffled_relation', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 3,
+      "n_episode_clusters": 3,
+      "wins": 1,
+      "losses": 1,
+      "ties": 1,
+      "mean_auc_difference": -0.11111111111111112,
+      "paired_sign_p_one_sided": 0.75
+    },
+    "('train_seen', 'near', 'opposite_relation', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 3,
+      "n_episode_clusters": 3,
+      "wins": 2,
+      "losses": 1,
+      "ties": 0,
+      "mean_auc_difference": 0.3333333333333333,
+      "paired_sign_p_one_sided": 0.5
+    },
+    "('train_seen', 'near', 'shuffled_anchor', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 3,
+      "n_episode_clusters": 3,
+      "wins": 2,
+      "losses": 1,
+      "ties": 0,
+      "mean_auc_difference": 0.2222222222222222,
+      "paired_sign_p_one_sided": 0.5
+    },
+    "('val_seen', 'to the left of', 'shuffled_relation')": {
+      "n_clauses": 5,
+      "n_episode_clusters": 5,
+      "wins": 2,
+      "losses": 1,
+      "ties": 2,
+      "mean_auc_difference": 0.08809523809523809,
+      "paired_sign_p_one_sided": 0.5
+    },
+    "('val_seen', 'to the left of', 'shuffled_relation', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 5,
+      "n_episode_clusters": 5,
+      "wins": 2,
+      "losses": 1,
+      "ties": 2,
+      "mean_auc_difference": 0.08809523809523809,
+      "paired_sign_p_one_sided": 0.5
+    },
+    "('val_seen', 'to the left of', 'opposite_relation')": {
+      "n_clauses": 5,
+      "n_episode_clusters": 5,
+      "wins": 2,
+      "losses": 1,
+      "ties": 2,
+      "mean_auc_difference": 0.1380952380952381,
+      "paired_sign_p_one_sided": 0.5
+    },
+    "('val_seen', 'to the left of', 'opposite_relation', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 5,
+      "n_episode_clusters": 5,
+      "wins": 2,
+      "losses": 1,
+      "ties": 2,
+      "mean_auc_difference": 0.1380952380952381,
+      "paired_sign_p_one_sided": 0.5
+    },
+    "('val_seen', 'to the left of', 'shuffled_anchor')": {
+      "n_clauses": 4,
+      "n_episode_clusters": 4,
+      "wins": 0,
+      "losses": 0,
+      "ties": 4,
+      "mean_auc_difference": 0.0,
+      "paired_sign_p_one_sided": null
+    },
+    "('val_seen', 'to the left of', 'shuffled_anchor', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 4,
+      "n_episode_clusters": 4,
+      "wins": 0,
+      "losses": 0,
+      "ties": 4,
+      "mean_auc_difference": 0.0,
+      "paired_sign_p_one_sided": null
+    },
+    "('val_seen', 'to the right of', 'shuffled_relation')": {
+      "n_clauses": 5,
+      "n_episode_clusters": 5,
+      "wins": 2,
+      "losses": 1,
+      "ties": 2,
+      "mean_auc_difference": 0.1333333333333333,
+      "paired_sign_p_one_sided": 0.5
+    },
+    "('val_seen', 'to the right of', 'shuffled_relation', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 5,
+      "n_episode_clusters": 5,
+      "wins": 2,
+      "losses": 1,
+      "ties": 2,
+      "mean_auc_difference": 0.1333333333333333,
+      "paired_sign_p_one_sided": 0.5
+    },
+    "('val_seen', 'to the right of', 'opposite_relation')": {
+      "n_clauses": 5,
+      "n_episode_clusters": 5,
+      "wins": 4,
+      "losses": 1,
+      "ties": 0,
+      "mean_auc_difference": 0.31666666666666665,
+      "paired_sign_p_one_sided": 0.1875
+    },
+    "('val_seen', 'to the right of', 'opposite_relation', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 5,
+      "n_episode_clusters": 5,
+      "wins": 4,
+      "losses": 1,
+      "ties": 0,
+      "mean_auc_difference": 0.31666666666666665,
+      "paired_sign_p_one_sided": 0.1875
+    },
+    "('val_seen', 'to the right of', 'shuffled_anchor')": {
+      "n_clauses": 5,
+      "n_episode_clusters": 5,
+      "wins": 1,
+      "losses": 0,
+      "ties": 4,
+      "mean_auc_difference": 0.033333333333333326,
+      "paired_sign_p_one_sided": 0.5
+    },
+    "('val_seen', 'to the right of', 'shuffled_anchor', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 5,
+      "n_episode_clusters": 5,
+      "wins": 1,
+      "losses": 0,
+      "ties": 4,
+      "mean_auc_difference": 0.033333333333333326,
+      "paired_sign_p_one_sided": 0.5
+    },
+    "('val_unseen', 'to the left of', 'shuffled_relation')": {
+      "n_clauses": 2,
+      "n_episode_clusters": 2,
+      "wins": 1,
+      "losses": 0,
+      "ties": 1,
+      "mean_auc_difference": 0.04166666666666663,
+      "paired_sign_p_one_sided": 0.5
+    },
+    "('val_unseen', 'to the left of', 'shuffled_relation', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 2,
+      "n_episode_clusters": 2,
+      "wins": 1,
+      "losses": 0,
+      "ties": 1,
+      "mean_auc_difference": 0.04166666666666663,
+      "paired_sign_p_one_sided": 0.5
+    },
+    "('val_unseen', 'to the left of', 'opposite_relation')": {
+      "n_clauses": 2,
+      "n_episode_clusters": 2,
+      "wins": 1,
+      "losses": 1,
+      "ties": 0,
+      "mean_auc_difference": 0.0,
+      "paired_sign_p_one_sided": 0.75
+    },
+    "('val_unseen', 'to the left of', 'opposite_relation', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 2,
+      "n_episode_clusters": 2,
+      "wins": 1,
+      "losses": 1,
+      "ties": 0,
+      "mean_auc_difference": 0.0,
+      "paired_sign_p_one_sided": 0.75
+    },
+    "('val_unseen', 'to the left of', 'shuffled_anchor')": {
+      "n_clauses": 2,
+      "n_episode_clusters": 2,
+      "wins": 1,
+      "losses": 0,
+      "ties": 1,
+      "mean_auc_difference": 0.08333333333333333,
+      "paired_sign_p_one_sided": 0.5
+    },
+    "('val_unseen', 'to the left of', 'shuffled_anchor', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 2,
+      "n_episode_clusters": 2,
+      "wins": 1,
+      "losses": 0,
+      "ties": 1,
+      "mean_auc_difference": 0.08333333333333333,
+      "paired_sign_p_one_sided": 0.5
+    },
+    "('val_seen', 'near', 'shuffled_relation', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 5,
+      "n_episode_clusters": 5,
+      "wins": 3,
+      "losses": 0,
+      "ties": 2,
+      "mean_auc_difference": 0.24761904761904763,
+      "paired_sign_p_one_sided": 0.125
+    },
+    "('val_seen', 'near', 'opposite_relation', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 5,
+      "n_episode_clusters": 5,
+      "wins": 4,
+      "losses": 1,
+      "ties": 0,
+      "mean_auc_difference": 0.47619047619047616,
+      "paired_sign_p_one_sided": 0.1875
+    },
+    "('val_seen', 'near', 'shuffled_anchor', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 5,
+      "n_episode_clusters": 5,
+      "wins": 5,
+      "losses": 0,
+      "ties": 0,
+      "mean_auc_difference": 0.3190476190476191,
+      "paired_sign_p_one_sided": 0.03125
+    },
+    "('train_seen', 'to the right of', 'shuffled_relation')": {
+      "n_clauses": 4,
+      "n_episode_clusters": 4,
+      "wins": 1,
+      "losses": 1,
+      "ties": 2,
+      "mean_auc_difference": -0.08333333333333334,
+      "paired_sign_p_one_sided": 0.75
+    },
+    "('train_seen', 'to the right of', 'shuffled_relation', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 4,
+      "n_episode_clusters": 4,
+      "wins": 1,
+      "losses": 1,
+      "ties": 2,
+      "mean_auc_difference": -0.08333333333333334,
+      "paired_sign_p_one_sided": 0.75
+    },
+    "('train_seen', 'to the right of', 'opposite_relation')": {
+      "n_clauses": 4,
+      "n_episode_clusters": 4,
+      "wins": 2,
+      "losses": 2,
+      "ties": 0,
+      "mean_auc_difference": -0.027777777777777818,
+      "paired_sign_p_one_sided": 0.6875
+    },
+    "('train_seen', 'to the right of', 'opposite_relation', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 4,
+      "n_episode_clusters": 4,
+      "wins": 2,
+      "losses": 2,
+      "ties": 0,
+      "mean_auc_difference": -0.027777777777777818,
+      "paired_sign_p_one_sided": 0.6875
+    },
+    "('train_seen', 'to the right of', 'shuffled_anchor')": {
+      "n_clauses": 4,
+      "n_episode_clusters": 4,
+      "wins": 0,
+      "losses": 1,
+      "ties": 3,
+      "mean_auc_difference": -0.041666666666666685,
+      "paired_sign_p_one_sided": 1.0
+    },
+    "('train_seen', 'to the right of', 'shuffled_anchor', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 4,
+      "n_episode_clusters": 4,
+      "wins": 0,
+      "losses": 1,
+      "ties": 3,
+      "mean_auc_difference": -0.041666666666666685,
+      "paired_sign_p_one_sided": 1.0
+    },
+    "('val_unseen', 'to the right of', 'shuffled_relation')": {
+      "n_clauses": 3,
+      "n_episode_clusters": 3,
+      "wins": 0,
+      "losses": 2,
+      "ties": 1,
+      "mean_auc_difference": -0.4444444444444445,
+      "paired_sign_p_one_sided": 1.0
+    },
+    "('val_unseen', 'to the right of', 'shuffled_relation', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 3,
+      "n_episode_clusters": 3,
+      "wins": 0,
+      "losses": 2,
+      "ties": 1,
+      "mean_auc_difference": -0.4444444444444445,
+      "paired_sign_p_one_sided": 1.0
+    },
+    "('val_unseen', 'to the right of', 'opposite_relation')": {
+      "n_clauses": 3,
+      "n_episode_clusters": 3,
+      "wins": 0,
+      "losses": 2,
+      "ties": 1,
+      "mean_auc_difference": -0.3333333333333333,
+      "paired_sign_p_one_sided": 1.0
+    },
+    "('val_unseen', 'to the right of', 'opposite_relation', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 3,
+      "n_episode_clusters": 3,
+      "wins": 0,
+      "losses": 2,
+      "ties": 1,
+      "mean_auc_difference": -0.3333333333333333,
+      "paired_sign_p_one_sided": 1.0
+    },
+    "('val_unseen', 'to the right of', 'shuffled_anchor')": {
+      "n_clauses": 3,
+      "n_episode_clusters": 3,
+      "wins": 1,
+      "losses": 0,
+      "ties": 2,
+      "mean_auc_difference": 0.05555555555555555,
+      "paired_sign_p_one_sided": 0.5
+    },
+    "('val_unseen', 'to the right of', 'shuffled_anchor', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 3,
+      "n_episode_clusters": 3,
+      "wins": 1,
+      "losses": 0,
+      "ties": 2,
+      "mean_auc_difference": 0.05555555555555555,
+      "paired_sign_p_one_sided": 0.5
+    },
+    "('val_unseen', 'next to', 'shuffled_relation', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 4,
+      "n_episode_clusters": 4,
+      "wins": 3,
+      "losses": 0,
+      "ties": 1,
+      "mean_auc_difference": 0.3125,
+      "paired_sign_p_one_sided": 0.125
+    },
+    "('val_unseen', 'next to', 'opposite_relation', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 4,
+      "n_episode_clusters": 4,
+      "wins": 4,
+      "losses": 0,
+      "ties": 0,
+      "mean_auc_difference": 0.7916666666666665,
+      "paired_sign_p_one_sided": 0.0625
+    },
+    "('val_unseen', 'next to', 'shuffled_anchor', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 4,
+      "n_episode_clusters": 4,
+      "wins": 3,
+      "losses": 1,
+      "ties": 0,
+      "mean_auc_difference": 0.4791666666666667,
+      "paired_sign_p_one_sided": 0.3125
+    },
+    "('val_seen', 'next to', 'shuffled_relation', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 3,
+      "n_episode_clusters": 3,
+      "wins": 1,
+      "losses": 0,
+      "ties": 2,
+      "mean_auc_difference": 0.11111111111111112,
+      "paired_sign_p_one_sided": 0.5
+    },
+    "('val_seen', 'next to', 'opposite_relation', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 3,
+      "n_episode_clusters": 3,
+      "wins": 1,
+      "losses": 1,
+      "ties": 1,
+      "mean_auc_difference": 0.22222222222222224,
+      "paired_sign_p_one_sided": 0.75
+    },
+    "('val_seen', 'next to', 'shuffled_anchor', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 3,
+      "n_episode_clusters": 3,
+      "wins": 2,
+      "losses": 0,
+      "ties": 1,
+      "mean_auc_difference": 0.16666666666666666,
+      "paired_sign_p_one_sided": 0.25
+    },
+    "('train_seen', 'next to', 'shuffled_relation', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 6,
+      "n_episode_clusters": 6,
+      "wins": 6,
+      "losses": 0,
+      "ties": 0,
+      "mean_auc_difference": 0.28240740740740744,
+      "paired_sign_p_one_sided": 0.015625
+    },
+    "('train_seen', 'next to', 'opposite_relation', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 6,
+      "n_episode_clusters": 6,
+      "wins": 6,
+      "losses": 0,
+      "ties": 0,
+      "mean_auc_difference": 0.7685185185185185,
+      "paired_sign_p_one_sided": 0.015625
+    },
+    "('train_seen', 'next to', 'shuffled_anchor', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 6,
+      "n_episode_clusters": 6,
+      "wins": 5,
+      "losses": 1,
+      "ties": 0,
+      "mean_auc_difference": 0.3564814814814814,
+      "paired_sign_p_one_sided": 0.109375
+    },
+    "('train_seen', 'off', 'shuffled_relation', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 2,
+      "n_episode_clusters": 2,
+      "wins": 2,
+      "losses": 0,
+      "ties": 0,
+      "mean_auc_difference": 0.45833333333333337,
+      "paired_sign_p_one_sided": 0.25
+    },
+    "('train_seen', 'off', 'shuffled_anchor', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 1,
+      "n_episode_clusters": 1,
+      "wins": 1,
+      "losses": 0,
+      "ties": 0,
+      "mean_auc_difference": 0.5,
+      "paired_sign_p_one_sided": 0.5
+    }
+  },
+  "paired_variants": {
+    "('train_seen', 'F2')": {
+      "n_clauses": 1561,
+      "n_episode_clusters": 1459,
+      "wins": 657,
+      "losses": 399,
+      "ties": 403,
+      "mean_auc_difference": 0.07396278707964793,
+      "paired_sign_p_one_sided": 9.486171728643282e-16
+    },
+    "('train_seen', 'F3')": {
+      "n_clauses": 1599,
+      "n_episode_clusters": 1497,
+      "wins": 641,
+      "losses": 563,
+      "ties": 293,
+      "mean_auc_difference": 0.03045398557255603,
+      "paired_sign_p_one_sided": 0.013219343555769949
+    },
+    "('train_seen', 'F4')": {
+      "n_clauses": 1599,
+      "n_episode_clusters": 1497,
+      "wins": 605,
+      "losses": 535,
+      "ties": 357,
+      "mean_auc_difference": 0.030862209427673676,
+      "paired_sign_p_one_sided": 0.020472889894920646
+    },
+    "('train_seen', 'F1')": {
+      "n_clauses": 1382,
+      "n_episode_clusters": 1290,
+      "wins": 568,
+      "losses": 315,
+      "ties": 407,
+      "mean_auc_difference": 0.07781161560231328,
+      "paired_sign_p_one_sided": 6.771095505933604e-18
+    },
+    "('val_seen', 'F1')": {
+      "n_clauses": 883,
+      "n_episode_clusters": 835,
+      "wins": 392,
+      "losses": 153,
+      "ties": 290,
+      "mean_auc_difference": 0.10949529512403762,
+      "paired_sign_p_one_sided": 1.7429921036754863e-25
+    },
+    "('val_seen', 'F2')": {
+      "n_clauses": 974,
+      "n_episode_clusters": 922,
+      "wins": 460,
+      "losses": 170,
+      "ties": 292,
+      "mean_auc_difference": 0.11906698688152051,
+      "paired_sign_p_one_sided": 4.396542481976972e-32
+    },
+    "('val_seen', 'F3')": {
+      "n_clauses": 995,
+      "n_episode_clusters": 941,
+      "wins": 391,
+      "losses": 307,
+      "ties": 243,
+      "mean_auc_difference": 0.04424223639154562,
+      "paired_sign_p_one_sided": 0.0008306046410518081
+    },
+    "('val_seen', 'F4')": {
+      "n_clauses": 995,
+      "n_episode_clusters": 941,
+      "wins": 372,
+      "losses": 274,
+      "ties": 295,
+      "mean_auc_difference": 0.04906233658890406,
+      "paired_sign_p_one_sided": 6.587956582360654e-05
+    },
+    "('val_unseen', 'F1')": {
+      "n_clauses": 516,
+      "n_episode_clusters": 499,
+      "wins": 263,
+      "losses": 87,
+      "ties": 149,
+      "mean_auc_difference": 0.12435983077265643,
+      "paired_sign_p_one_sided": 5.51584676219189e-22
+    },
+    "('val_unseen', 'F2')": {
+      "n_clauses": 606,
+      "n_episode_clusters": 581,
+      "wins": 301,
+      "losses": 124,
+      "ties": 156,
+      "mean_auc_difference": 0.10481608975584877,
+      "paired_sign_p_one_sided": 2.242851876718584e-18
+    },
+    "('val_unseen', 'F3')": {
+      "n_clauses": 615,
+      "n_episode_clusters": 589,
+      "wins": 294,
+      "losses": 154,
+      "ties": 141,
+      "mean_auc_difference": 0.08791580204992769,
+      "paired_sign_p_one_sided": 1.7902469389675947e-11
+    },
+    "('val_unseen', 'F4')": {
+      "n_clauses": 615,
+      "n_episode_clusters": 589,
+      "wins": 277,
+      "losses": 145,
+      "ties": 167,
+      "mean_auc_difference": 0.08124253285543608,
+      "paired_sign_p_one_sided": 6.432551291441449e-11
+    }
+  },
+  "paired_variants_by_source": {
+    "('train_seen', 'F2', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 710,
+      "n_episode_clusters": 625,
+      "wins": 255,
+      "losses": 184,
+      "ties": 186,
+      "mean_auc_difference": 0.04473492063492063,
+      "paired_sign_p_one_sided": 0.00040783524798012206
+    },
+    "('train_seen', 'F3', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 728,
+      "n_episode_clusters": 643,
+      "wins": 246,
+      "losses": 266,
+      "ties": 131,
+      "mean_auc_difference": -0.00342465048919171,
+      "paired_sign_p_one_sided": 0.8233108173209922
+    },
+    "('train_seen', 'F4', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 728,
+      "n_episode_clusters": 643,
+      "wins": 227,
+      "losses": 263,
+      "ties": 153,
+      "mean_auc_difference": -0.010531095970442784,
+      "paired_sign_p_one_sided": 0.9527378367426487
+    },
+    "('train_seen', 'F2', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 652,
+      "n_episode_clusters": 636,
+      "wins": 245,
+      "losses": 191,
+      "ties": 200,
+      "mean_auc_difference": 0.04307676949186382,
+      "paired_sign_p_one_sided": 0.005528480056103146
+    },
+    "('train_seen', 'F3', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 672,
+      "n_episode_clusters": 656,
+      "wins": 245,
+      "losses": 258,
+      "ties": 153,
+      "mean_auc_difference": 0.0013550135501354966,
+      "paired_sign_p_one_sided": 0.733740623656683
+    },
+    "('train_seen', 'F4', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 672,
+      "n_episode_clusters": 656,
+      "wins": 230,
+      "losses": 238,
+      "ties": 188,
+      "mean_auc_difference": 0.007134993224932241,
+      "paired_sign_p_one_sided": 0.6612817023577622
+    },
+    "('train_seen', 'F1', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 636,
+      "n_episode_clusters": 560,
+      "wins": 223,
+      "losses": 153,
+      "ties": 184,
+      "mean_auc_difference": 0.04630810657596371,
+      "paired_sign_p_one_sided": 0.00018005462523715287
+    },
+    "('train_seen', 'F1', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 547,
+      "n_episode_clusters": 532,
+      "wins": 189,
+      "losses": 138,
+      "ties": 205,
+      "mean_auc_difference": 0.04145781119465329,
+      "paired_sign_p_one_sided": 0.002805160604345711
+    },
+    "('val_seen', 'F1', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 390,
+      "n_episode_clusters": 356,
+      "wins": 136,
+      "losses": 76,
+      "ties": 144,
+      "mean_auc_difference": 0.06057718031032638,
+      "paired_sign_p_one_sided": 2.2769847815892677e-05
+    },
+    "('val_seen', 'F2', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 430,
+      "n_episode_clusters": 392,
+      "wins": 166,
+      "losses": 82,
+      "ties": 144,
+      "mean_auc_difference": 0.07646987366375121,
+      "paired_sign_p_one_sided": 5.1893347263480995e-08
+    },
+    "('val_seen', 'F3', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 441,
+      "n_episode_clusters": 401,
+      "wins": 134,
+      "losses": 146,
+      "ties": 121,
+      "mean_auc_difference": -0.003456141392550375,
+      "paired_sign_p_one_sided": 0.7813633074532119
+    },
+    "('val_seen', 'F4', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 441,
+      "n_episode_clusters": 401,
+      "wins": 129,
+      "losses": 138,
+      "ties": 134,
+      "mean_auc_difference": -0.003005878161738515,
+      "paired_sign_p_one_sided": 0.7296879640177444
+    },
+    "('val_seen', 'F1', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 332,
+      "n_episode_clusters": 322,
+      "wins": 121,
+      "losses": 65,
+      "ties": 136,
+      "mean_auc_difference": 0.05900621118012421,
+      "paired_sign_p_one_sided": 2.4401727369474987e-05
+    },
+    "('val_seen', 'F2', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 383,
+      "n_episode_clusters": 373,
+      "wins": 158,
+      "losses": 77,
+      "ties": 138,
+      "mean_auc_difference": 0.0766947529682114,
+      "paired_sign_p_one_sided": 6.845973078738345e-08
+    },
+    "('val_seen', 'F3', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 393,
+      "n_episode_clusters": 383,
+      "wins": 130,
+      "losses": 140,
+      "ties": 113,
+      "mean_auc_difference": -0.009874010526752046,
+      "paired_sign_p_one_sided": 0.7483554443941423
+    },
+    "('val_seen', 'F4', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 393,
+      "n_episode_clusters": 383,
+      "wins": 117,
+      "losses": 120,
+      "ties": 146,
+      "mean_auc_difference": -0.0007563512785444943,
+      "paired_sign_p_one_sided": 0.6024686710241629
+    },
+    "('val_unseen', 'F1', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 198,
+      "n_episode_clusters": 184,
+      "wins": 70,
+      "losses": 43,
+      "ties": 71,
+      "mean_auc_difference": 0.041666666666666664,
+      "paired_sign_p_one_sided": 0.0070437477618790195
+    },
+    "('val_unseen', 'F2', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 240,
+      "n_episode_clusters": 218,
+      "wins": 84,
+      "losses": 56,
+      "ties": 78,
+      "mean_auc_difference": 0.03393645939517499,
+      "paired_sign_p_one_sided": 0.011077477990279774
+    },
+    "('val_unseen', 'F3', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 244,
+      "n_episode_clusters": 221,
+      "wins": 85,
+      "losses": 68,
+      "ties": 68,
+      "mean_auc_difference": 0.018686106921401033,
+      "paired_sign_p_one_sided": 0.09783377373455195
+    },
+    "('val_unseen', 'F4', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 244,
+      "n_episode_clusters": 221,
+      "wins": 80,
+      "losses": 68,
+      "ties": 73,
+      "mean_auc_difference": 0.009447796212502082,
+      "paired_sign_p_one_sided": 0.18297203690879424
+    },
+    "('val_unseen', 'F1', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 169,
+      "n_episode_clusters": 167,
+      "wins": 68,
+      "losses": 28,
+      "ties": 71,
+      "mean_auc_difference": 0.06803060545575515,
+      "paired_sign_p_one_sided": 2.7295771788557236e-05
+    },
+    "('val_unseen', 'F2', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 217,
+      "n_episode_clusters": 215,
+      "wins": 92,
+      "losses": 52,
+      "ties": 71,
+      "mean_auc_difference": 0.04870801033591731,
+      "paired_sign_p_one_sided": 0.0005406450342235986
+    },
+    "('val_unseen', 'F3', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 222,
+      "n_episode_clusters": 220,
+      "wins": 84,
+      "losses": 69,
+      "ties": 67,
+      "mean_auc_difference": 0.019760101010101006,
+      "paired_sign_p_one_sided": 0.12881688827336088
+    },
+    "('val_unseen', 'F4', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 222,
+      "n_episode_clusters": 220,
+      "wins": 75,
+      "losses": 62,
+      "ties": 83,
+      "mean_auc_difference": 0.013952020202020198,
+      "paired_sign_p_one_sided": 0.15262138906667633
+    },
+    "('train_seen', 'F1', 'raw_parser', '9 deterministic map distractors plus target; separate from legacy hard-negative protocol')": {
+      "n_clauses": 146,
+      "n_episode_clusters": 145,
+      "wins": 132,
+      "losses": 11,
+      "ties": 2,
+      "mean_auc_difference": 0.3329501915708813,
+      "paired_sign_p_one_sided": 8.435752704864258e-28
+    },
+    "('train_seen', 'F2', 'raw_parser', '9 deterministic map distractors plus target; separate from legacy hard-negative protocol')": {
+      "n_clauses": 146,
+      "n_episode_clusters": 145,
+      "wins": 132,
+      "losses": 11,
+      "ties": 2,
+      "mean_auc_difference": 0.3329501915708813,
+      "paired_sign_p_one_sided": 8.435752704864258e-28
+    },
+    "('train_seen', 'F3', 'raw_parser', '9 deterministic map distractors plus target; separate from legacy hard-negative protocol')": {
+      "n_clauses": 146,
+      "n_episode_clusters": 145,
+      "wins": 127,
+      "losses": 18,
+      "ties": 0,
+      "mean_auc_difference": 0.31762452107279693,
+      "paired_sign_p_one_sided": 1.0867972841473556e-21
+    },
+    "('train_seen', 'F4', 'raw_parser', '9 deterministic map distractors plus target; separate from legacy hard-negative protocol')": {
+      "n_clauses": 146,
+      "n_episode_clusters": 145,
+      "wins": 127,
+      "losses": 18,
+      "ties": 0,
+      "mean_auc_difference": 0.31762452107279693,
+      "paired_sign_p_one_sided": 1.0867972841473556e-21
+    },
+    "('val_seen', 'F1', 'raw_parser', '9 deterministic map distractors plus target; separate from legacy hard-negative protocol')": {
+      "n_clauses": 129,
+      "n_episode_clusters": 125,
+      "wins": 120,
+      "losses": 4,
+      "ties": 1,
+      "mean_auc_difference": 0.38266666666666665,
+      "paired_sign_p_one_sided": 4.560507128365428e-31
+    },
+    "('val_seen', 'F2', 'raw_parser', '9 deterministic map distractors plus target; separate from legacy hard-negative protocol')": {
+      "n_clauses": 129,
+      "n_episode_clusters": 125,
+      "wins": 120,
+      "losses": 4,
+      "ties": 1,
+      "mean_auc_difference": 0.38266666666666665,
+      "paired_sign_p_one_sided": 4.560507128365428e-31
+    },
+    "('val_seen', 'F3', 'raw_parser', '9 deterministic map distractors plus target; separate from legacy hard-negative protocol')": {
+      "n_clauses": 129,
+      "n_episode_clusters": 125,
+      "wins": 118,
+      "losses": 7,
+      "ties": 0,
+      "mean_auc_difference": 0.3777777777777777,
+      "paired_sign_p_one_sided": 1.990718662085095e-27
+    },
+    "('val_seen', 'F4', 'raw_parser', '9 deterministic map distractors plus target; separate from legacy hard-negative protocol')": {
+      "n_clauses": 129,
+      "n_episode_clusters": 125,
+      "wins": 118,
+      "losses": 7,
+      "ties": 0,
+      "mean_auc_difference": 0.3777777777777777,
+      "paired_sign_p_one_sided": 1.990718662085095e-27
+    },
+    "('val_unseen', 'F1', 'raw_parser', '9 deterministic map distractors plus target; separate from legacy hard-negative protocol')": {
+      "n_clauses": 126,
+      "n_episode_clusters": 125,
+      "wins": 115,
+      "losses": 9,
+      "ties": 1,
+      "mean_auc_difference": 0.32844444444444443,
+      "paired_sign_p_one_sided": 7.227053036149187e-25
+    },
+    "('val_unseen', 'F2', 'raw_parser', '9 deterministic map distractors plus target; separate from legacy hard-negative protocol')": {
+      "n_clauses": 126,
+      "n_episode_clusters": 125,
+      "wins": 115,
+      "losses": 9,
+      "ties": 1,
+      "mean_auc_difference": 0.32844444444444443,
+      "paired_sign_p_one_sided": 7.227053036149187e-25
+    },
+    "('val_unseen', 'F3', 'raw_parser', '9 deterministic map distractors plus target; separate from legacy hard-negative protocol')": {
+      "n_clauses": 126,
+      "n_episode_clusters": 125,
+      "wins": 114,
+      "losses": 11,
+      "ties": 0,
+      "mean_auc_difference": 0.3257777777777777,
+      "paired_sign_p_one_sided": 4.8153197998136864e-23
+    },
+    "('val_unseen', 'F4', 'raw_parser', '9 deterministic map distractors plus target; separate from legacy hard-negative protocol')": {
+      "n_clauses": 126,
+      "n_episode_clusters": 125,
+      "wins": 114,
+      "losses": 11,
+      "ties": 0,
+      "mean_auc_difference": 0.3257777777777777,
+      "paired_sign_p_one_sided": 4.8153197998136864e-23
+    },
+    "('val_seen', 'F1', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 32,
+      "n_episode_clusters": 32,
+      "wins": 15,
+      "losses": 8,
+      "ties": 9,
+      "mean_auc_difference": 0.0946800595238095,
+      "paired_sign_p_one_sided": 0.10501980781555176
+    },
+    "('val_seen', 'F2', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 32,
+      "n_episode_clusters": 32,
+      "wins": 16,
+      "losses": 7,
+      "ties": 9,
+      "mean_auc_difference": 0.10509672619047618,
+      "paired_sign_p_one_sided": 0.04656982421875
+    },
+    "('val_seen', 'F3', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 32,
+      "n_episode_clusters": 32,
+      "wins": 9,
+      "losses": 14,
+      "ties": 9,
+      "mean_auc_difference": -0.013206845238095248,
+      "paired_sign_p_one_sided": 0.8949801921844482
+    },
+    "('val_seen', 'F4', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 32,
+      "n_episode_clusters": 32,
+      "wins": 8,
+      "losses": 9,
+      "ties": 15,
+      "mean_auc_difference": 0.013764880952380949,
+      "paired_sign_p_one_sided": 0.6854705810546875
+    },
+    "('train_seen', 'F1', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 53,
+      "n_episode_clusters": 53,
+      "wins": 24,
+      "losses": 13,
+      "ties": 16,
+      "mean_auc_difference": 0.07756813417190775,
+      "paired_sign_p_one_sided": 0.04943587479647249
+    },
+    "('train_seen', 'F2', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 53,
+      "n_episode_clusters": 53,
+      "wins": 25,
+      "losses": 13,
+      "ties": 15,
+      "mean_auc_difference": 0.08071278825995806,
+      "paired_sign_p_one_sided": 0.036475694258115254
+    },
+    "('train_seen', 'F3', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 53,
+      "n_episode_clusters": 53,
+      "wins": 23,
+      "losses": 21,
+      "ties": 9,
+      "mean_auc_difference": 0.015985324947589093,
+      "paired_sign_p_one_sided": 0.440197910640336
+    },
+    "('train_seen', 'F4', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 53,
+      "n_episode_clusters": 53,
+      "wins": 21,
+      "losses": 16,
+      "ties": 16,
+      "mean_auc_difference": 0.04219077568134171,
+      "paired_sign_p_one_sided": 0.2556878907926148
+    },
+    "('val_unseen', 'F1', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 23,
+      "n_episode_clusters": 23,
+      "wins": 10,
+      "losses": 7,
+      "ties": 6,
+      "mean_auc_difference": 0.0857487922705314,
+      "paired_sign_p_one_sided": 0.3145294189453125
+    },
+    "('val_unseen', 'F2', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 23,
+      "n_episode_clusters": 23,
+      "wins": 10,
+      "losses": 7,
+      "ties": 6,
+      "mean_auc_difference": 0.0857487922705314,
+      "paired_sign_p_one_sided": 0.3145294189453125
+    },
+    "('val_unseen', 'F3', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 23,
+      "n_episode_clusters": 23,
+      "wins": 11,
+      "losses": 6,
+      "ties": 6,
+      "mean_auc_difference": 0.11231884057971013,
+      "paired_sign_p_one_sided": 0.1661529541015625
+    },
+    "('val_unseen', 'F4', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 23,
+      "n_episode_clusters": 23,
+      "wins": 8,
+      "losses": 4,
+      "ties": 11,
+      "mean_auc_difference": 0.0857487922705314,
+      "paired_sign_p_one_sided": 0.19384765625
+    }
+  },
+  "context_vs_phrase": {
+    "('train_seen', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 634,
+      "n_episode_clusters": 558,
+      "wins": 26,
+      "losses": 31,
+      "ties": 501,
+      "mean_auc_difference": 0.001534320418729021,
+      "paired_sign_p_one_sided": 0.7864785717483724
+    },
+    "('train_seen', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 547,
+      "n_episode_clusters": 532,
+      "wins": 22,
+      "losses": 25,
+      "ties": 485,
+      "mean_auc_difference": 0.00010069817400644474,
+      "paired_sign_p_one_sided": 0.7199676852098946
+    },
+    "('val_seen', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 390,
+      "n_episode_clusters": 356,
+      "wins": 24,
+      "losses": 16,
+      "ties": 316,
+      "mean_auc_difference": 0.011280542179418583,
+      "paired_sign_p_one_sided": 0.13409362552738457
+    },
+    "('val_seen', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 330,
+      "n_episode_clusters": 320,
+      "wins": 16,
+      "losses": 10,
+      "ties": 294,
+      "mean_auc_difference": 0.008475942460317461,
+      "paired_sign_p_one_sided": 0.16346979141235352
+    },
+    "('val_unseen', 'annotation', 'legacy_hard_negative')": {
+      "n_clauses": 198,
+      "n_episode_clusters": 184,
+      "wins": 16,
+      "losses": 16,
+      "ties": 152,
+      "mean_auc_difference": 0.004528985507246377,
+      "paired_sign_p_one_sided": 0.5699749670457095
+    },
+    "('val_unseen', 'parser', 'legacy_hard_negative')": {
+      "n_clauses": 168,
+      "n_episode_clusters": 166,
+      "wins": 8,
+      "losses": 6,
+      "ties": 152,
+      "mean_auc_difference": 0.005354752342704151,
+      "paired_sign_p_one_sided": 0.395263671875
+    },
+    "('train_seen', 'raw_parser', '9 deterministic map distractors plus target; separate from legacy hard-negative protocol')": {
+      "n_clauses": 146,
+      "n_episode_clusters": 145,
+      "wins": 0,
+      "losses": 0,
+      "ties": 145,
+      "mean_auc_difference": 0.0,
+      "paired_sign_p_one_sided": null
+    },
+    "('val_seen', 'raw_parser', '9 deterministic map distractors plus target; separate from legacy hard-negative protocol')": {
+      "n_clauses": 129,
+      "n_episode_clusters": 125,
+      "wins": 0,
+      "losses": 0,
+      "ties": 125,
+      "mean_auc_difference": 0.0,
+      "paired_sign_p_one_sided": null
+    },
+    "('val_unseen', 'raw_parser', '9 deterministic map distractors plus target; separate from legacy hard-negative protocol')": {
+      "n_clauses": 126,
+      "n_episode_clusters": 125,
+      "wins": 0,
+      "losses": 0,
+      "ties": 125,
+      "mean_auc_difference": 0.0,
+      "paired_sign_p_one_sided": null
+    },
+    "('val_seen', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 32,
+      "n_episode_clusters": 32,
+      "wins": 1,
+      "losses": 0,
+      "ties": 31,
+      "mean_auc_difference": 0.010416666666666666,
+      "paired_sign_p_one_sided": 0.5
+    },
+    "('train_seen', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 53,
+      "n_episode_clusters": 53,
+      "wins": 1,
+      "losses": 0,
+      "ties": 52,
+      "mean_auc_difference": 0.0031446540880503138,
+      "paired_sign_p_one_sided": 0.5
+    },
+    "('val_unseen', 'deepseek', 'legacy_hard_negative')": {
+      "n_clauses": 23,
+      "n_episode_clusters": 23,
+      "wins": 0,
+      "losses": 0,
+      "ties": 23,
+      "mean_auc_difference": 0.0,
+      "paired_sign_p_one_sided": null
+    }
+  },
+  "gate_f": {
+    "status": "FAIL",
+    "conditions": {
+      "three_classes_over_shuffle": false,
+      "two_classes_over_opposite": false,
+      "probabilistic_over_old": false,
+      "no_systemic_sign_flip": false,
+      "view_dependent_stable_or_unknown": false
+    },
+    "high_frequency_contexts": 5,
+    "stable_contexts": 3,
+    "caveat": "F0 executes existing hard ontology satisfaction for near/between and is neutral for unsupported words; learned teacher/DeepSeek pipeline is not reproduced."
+  }
+}

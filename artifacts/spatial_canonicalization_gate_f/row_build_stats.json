@@ -1,0 +1,8 @@
+{
+  "samples": 2290,
+  "clauses": 5427,
+  "anchor_bound": 3708,
+  "unique_anchor": 2699,
+  "between_explicit_second": 256,
+  "road_bound": 1938
+}

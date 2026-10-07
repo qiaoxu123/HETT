@@ -1,0 +1,8 @@
+{
+  "instructions_in_validation": 108,
+  "unmatched_in_legacy_samples": 0,
+  "clause_rows_added": 287,
+  "bound_anchor_rows": 180,
+  "note": "DeepSeek supplied text roles only; program probabilities come from geometry calibration.",
+  "canonical_unknown_clauses": 27
+}

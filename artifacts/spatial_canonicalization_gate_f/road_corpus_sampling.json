@@ -1,0 +1,39 @@
+{
+  "per_split_limit": 40,
+  "rows_added": 516,
+  "counts": {
+    "train_seen:on": 40,
+    "train_seen:off": 40,
+    "train_seen:along": 40,
+    "train_seen:across": 40,
+    "train_seen:across from": 40,
+    "val_seen:on": 40,
+    "val_seen:along": 40,
+    "val_seen:off": 40,
+    "val_seen:across": 16,
+    "val_seen:across from": 7,
+    "val_unseen:off": 40,
+    "val_unseen:along": 40,
+    "val_unseen:on": 40,
+    "val_unseen:across": 33,
+    "val_unseen:across from": 20
+  },
+  "unbound_attempts": {
+    "train_seen:on": 30,
+    "train_seen:across": 331,
+    "train_seen:along": 4,
+    "train_seen:off": 1,
+    "train_seen:across from": 30,
+    "val_seen:on": 33,
+    "val_seen:along": 2,
+    "val_seen:across": 77,
+    "val_seen:off": 2,
+    "val_seen:across from": 8,
+    "val_unseen:on": 30,
+    "val_unseen:across": 67,
+    "val_unseen:off": 6,
+    "val_unseen:along": 6,
+    "val_unseen:across from": 2
+  },
+  "candidate_protocol": "separate deterministic 9 map distractors plus target; not pooled with legacy hard-negative metrics"
+}
