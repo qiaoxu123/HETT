@@ -123,7 +123,7 @@ where to look — the 23.9% ambiguous binding rate is the obvious suspect.
 
 ```bash
 PY=/home/rental/20260922_1/miniconda3/envs/AirVLN39/bin/python
-$PY -m pytest tests/ -q                        # 254 tests
+$PY -m pytest tests/ -q                        # 226 tests
 $PY scripts/audit_map_graph.py                 # ~90 s
 $PY scripts/run_synthetic_relations.py         # ~20 min
 $PY scripts/train_relation_teacher.py          # ~5 min
