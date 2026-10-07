@@ -102,7 +102,7 @@ def _road_for(graph, node):
     return best if best is not None else (None, ())
 
 
-def pair_facts(graph, anchor, target, road=None) -> dict:
+def pair_facts(graph, anchor, target, road=None, second=None) -> dict:
     """Every raw quantity the ontology needs, computed once per pair."""
     from .edge_features import EdgeContext, edge_vector, footprint_distance, road_frame
 
@@ -149,13 +149,19 @@ def pair_facts(graph, anchor, target, road=None) -> dict:
                                  np.asarray(n.center[:2]))) for n in inter)
     else:
         facts["intersection_distance"] = 1000.0
+    # ``second`` is the other anchor of a between-factor.  The first version of
+    # this function never passed it, so the three between columns were always
+    # zero and the relation scored exactly chance in the gate -- a relation the
+    # model could not see, rather than one it could not learn.
     facts["edge"] = edge_vector(
         anchor, target,
         EdgeContext(road_regions=graph.regions,
                     road_members=graph.context.road_members,
-                    cross_road=(region, members)))
+                    cross_road=(region, members),
+                    second_anchor=(None if second is None
+                                   else np.asarray(second.center[:2]))))
     facts["road"] = road
-    facts["second"] = None
+    facts["second"] = second
     return facts
 
 
@@ -269,9 +275,36 @@ def _second_anchors(graph, anchor, target, pairs, rng, limit=3):
     return out[:limit]
 
 
+def _between_second_anchors(graph, anchor, rng, limit=4):
+    """Named anchors worth reading a between-factor against.
+
+    Chosen by geometry -- other named entities at a between-able separation --
+    and *not* by anything to do with the target.  Picking the second anchor that
+    best brackets the target would make the relation true by construction.
+    """
+    out = []
+    for other in graph.nodes:
+        if other.kind not in ANCHOR_KINDS or other.node_id == anchor.node_id:
+            continue
+        gap = float(np.linalg.norm(np.asarray(other.center[:2]) -
+                                   np.asarray(anchor.center[:2])))
+        if 30.0 <= gap <= 200.0:
+            out.append(other)
+    rng.shuffle(out)
+    return out[:limit]
+
+
 def build_block_examples(graph, thresholds, rng, split: str,
                          with_between: bool = True) -> list:
-    """Every usable (anchor, relation, positive, matched negatives) in a block."""
+    """Every usable (anchor, relation, positive, matched negatives) in a block.
+
+    ``between`` is generated in its own pass because it is a ternary factor: the
+    positive and every negative must be read against the *same* second anchor,
+    or the comparison is between two different questions.  The first version
+    computed the between margin for targets while leaving the edge vector's
+    between columns at zero, so the relation was invisible to the model and
+    scored chance.
+    """
     pairs = build_pairs(graph, rng)
     examples = []
     for anchor_id, bundle in pairs.items():
@@ -283,37 +316,21 @@ def build_block_examples(graph, thresholds, rng, split: str,
             entries.append((target, facts, margins))
         if not entries:
             continue
-        if with_between:
-            seen_targets = {t.node_id for t, _, _ in entries}
-            for target, facts, margins in list(entries):
-                for t, perp, length, other in _second_anchors(
-                        graph, anchor, target, pairs, rng):
-                    margins["between"] = margin_from_facts(
-                        "between", facts, thresholds, (t, perp, length))
-                    facts["second_id"] = int(other.node_id)
-                    break
         for relation in RELATION_NAMES:
+            if relation == "between":
+                continue
             positives = [e for e in entries if e[2].get(relation, -np.inf) > 0]
             pool = [e for e in entries
                     if relation in e[2] and e[2][relation] <= 0]
             if not positives or not pool:
                 continue
             for target, facts, margins in positives[:MAX_TARGETS_PER_ANCHOR]:
-                band = facts["centre_distance"]
-                if band <= 1e-6:
+                chosen = _matched(negatives=pool, target=target, facts=facts,
+                                  rng=rng)
+                if not chosen:
                     continue
-                group = target.kind.value
-                hard = [(t, f, e) for t, f, e in pool
-                        if t.kind.value == group
-                        and DISTANCE_BAND[0] * band
-                        <= f["centre_distance"] <= DISTANCE_BAND[1] * band]
-                if not hard:
-                    continue
-                rng.shuffle(hard)
-                chosen = hard[:MAX_NEGATIVES]
                 examples.append({
-                    "split": split,
-                    "map": graph.map_name,
+                    "split": split, "map": graph.map_name,
                     "relation": relation,
                     "anchor_id": int(anchor.node_id),
                     "anchor_kind": anchor.kind.value,
@@ -324,7 +341,69 @@ def build_block_examples(graph, thresholds, rng, split: str,
                     "negative_edges": [f["edge"].tolist() for _, f, _ in chosen],
                     "opposite": OPPOSITE.get(relation),
                 })
+        if with_between:
+            examples.extend(_between_examples(
+                graph, anchor, thresholds, rng, split,
+                [t for t, _ in bundle["targets"]]))
     return examples
+
+
+def _matched(negatives, target, facts, rng):
+    """Hard negatives: same kind group, same distance band, relation fails."""
+    band = facts["centre_distance"]
+    if band <= 1e-6:
+        return []
+    hard = [(t, f, e) for t, f, e in negatives
+            if t.kind.value == target.kind.value
+            and DISTANCE_BAND[0] * band <= f["centre_distance"]
+            <= DISTANCE_BAND[1] * band]
+    if not hard:
+        return []
+    rng.shuffle(hard)
+    return hard[:MAX_NEGATIVES]
+
+
+def _between_examples(graph, anchor, thresholds, rng, split, targets):
+    """Between examples for one anchor, one second anchor at a time.
+
+    ``targets`` is the anchor's already-sampled neighbour list rather than the
+    whole block: re-deriving the neighbourhood per second anchor made this pass
+    the slowest part of generation by an order of magnitude, for no new pairs.
+    """
+    out = []
+    for second in _between_second_anchors(graph, anchor, rng):
+        readings = []
+        for target in targets:
+            if target.node_id in (anchor.node_id, second.node_id):
+                continue
+            facts = pair_facts(graph, anchor, target, second=second)
+            t, perp, span = between_frame(anchor, second, target)
+            margin = margin_from_facts("between", facts, thresholds,
+                                       (t, perp, span))
+            # The edge vector has to be rebuilt now that the second anchor is
+            # known, since the between columns live in it.
+            readings.append((target, facts, margin))
+        positives = [r for r in readings if r[2] > 0]
+        pool = [r for r in readings if r[2] <= 0]
+        if not positives or not pool:
+            continue
+        for target, facts, margin in positives[:MAX_TARGETS_PER_ANCHOR]:
+            chosen = _matched(pool, target, facts, rng)
+            if not chosen:
+                continue
+            out.append({
+                "split": split, "map": graph.map_name, "relation": "between",
+                "anchor_id": int(anchor.node_id),
+                "anchor_kind": anchor.kind.value,
+                "second_id": int(second.node_id),
+                "positive_id": int(target.node_id),
+                "positive_edge": facts["edge"].tolist(),
+                "positive_margin": float(margin),
+                "negative_ids": [int(t.node_id) for t, _, _ in chosen],
+                "negative_edges": [f["edge"].tolist() for _, f, _ in chosen],
+                "opposite": OPPOSITE.get("between"),
+            })
+    return out
 
 
 def pack_facts(blocks, seed: int = 0) -> list:

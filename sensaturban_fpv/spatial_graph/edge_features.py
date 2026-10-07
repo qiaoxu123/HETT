@@ -66,6 +66,14 @@ EDGE_FEATURES = (
     # region, which is what "across the road from" asserts and what a
     # same-side/opposite-side pair of columns cannot express alone.
     ("crosses_road", 1.0),
+    # Axis-versus-axis alignment.  Without these two the model cannot express
+    # "parallel to" or "perpendicular to" at all: anchor_major_coord and
+    # anchor_minor_coord project the *displacement* onto the anchor's axes,
+    # which is a positional fact, not an orientation one.  The gate found this
+    # by scoring both relations at chance while aligned_with, which reads the
+    # displacement, scored 0.96.
+    ("axis_parallel", 1.0),
+    ("axis_perp", 1.0),
 )
 # A node with no road frame at all gets this distance rather than infinity:
 # an infinity would propagate through log1p into the feature vector and take the
@@ -216,6 +224,11 @@ def edge_vector(a, b, ctx: EdgeContext = None) -> np.ndarray:
     right = np.array([np.sin(ctx.agent_yaw), -np.cos(ctx.agent_yaw)])
     major = np.asarray(a.major_axis, dtype=np.float64)[:2]
     minor = np.array([-major[1], major[0]])
+    axis_b = np.asarray(b.major_axis, dtype=np.float64)[:2]
+    if np.linalg.norm(axis_b) > 1e-9:
+        axis_b = axis_b / float(np.linalg.norm(axis_b))
+    if np.linalg.norm(major) > 1e-9:
+        major = major / float(np.linalg.norm(major))
 
     road_d = MISSING_ROAD_M
     same_region = 0.0
@@ -290,5 +303,7 @@ def edge_vector(a, b, ctx: EdgeContext = None) -> np.ndarray:
         float(xy @ right),
         between_t, between_perp, between_span,
         crosses,
+        abs(float(major @ axis_b)),
+        abs(float(major @ np.array([-axis_b[1], axis_b[0]]))),
     ], dtype=np.float64)
     return (raw / _SCALE).astype(np.float32)
