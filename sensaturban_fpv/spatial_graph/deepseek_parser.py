@@ -313,3 +313,106 @@ def unknown_rate(parsed_rows) -> dict:
             "associated_with": associated,
             "unknown_rate": unknown / total if total else 0.0,
             "mapped_rate": known / total if total else 0.0}
+
+
+# --------------------------------------------------------------------------
+# Phase: the hypothesis prompt
+# --------------------------------------------------------------------------
+
+HYPOTHESIS_SYSTEM_PROMPT = (
+    "You convert one navigation instruction into a JSON object describing the "
+    "spatial relations it uses. You do not see the map, the answer, or any "
+    "candidate.\n"
+    "\n"
+    "Many instructions do not determine a single reading. \"behind the "
+    "church\" can be read against the camera's heading, against the church's "
+    "own facing, against the road, or against the world axes, and the sentence "
+    "alone may not say which. Report that honestly as a DISTRIBUTION over "
+    "readings rather than picking one.\n"
+    "\n"
+    "Return exactly these keys:\n"
+    '  "target": the noun phrase naming the thing to find\n'
+    '  "anchors": [{"phrase", "entity_name", "entity_type"}]\n'
+    '  "hypotheses": [{"relation", "frame", "anchors", "probability"}]\n'
+    "\n"
+    "Each hypothesis says: the target stands in relation R to anchor A, read in "
+    "frame F. \"anchors\" lists indices into your own anchors array. \"frame\" "
+    "is one of agent (the camera's heading), anchor (the anchor's own footprint "
+    "axes), road (the nearest road's direction), global (north/east axes), or "
+    "none for relations that need no frame.\n"
+    "\n"
+    "probabilities must sum to 1 across the hypotheses. Give 3 to 5 hypotheses. "
+    "If the instruction is genuinely ambiguous, spread the probability and let "
+    "the entropy be high; if it is clear, concentrate it. Do not invent "
+    "certainty you do not have.\n"
+    "\n"
+    "Use \"UNKNOWN\" for a relation none of the listed ones describes, and "
+    "\"associated_with\" when an anchor is mentioned with no spatial relation. "
+    "Do not force a mapping.\n"
+    "\n"
+    "Answer with JSON only. No prose, no code fences."
+)
+
+
+def hypothesis_ontology() -> dict:
+    """The relation list the hypothesis prompt presents, with glosses."""
+    from .relation_belief import HYPOTHESIS_RELATIONS
+    glosses = dict(ONTOLOGY)
+    glosses.update({
+        "behind": "target is further along the frame's forward direction",
+        "front": "target is nearer along the frame's forward direction",
+        "left": "target is on the frame's left-hand side",
+        "right": "target is on the frame's right-hand side",
+        "associated_with": "the anchor is mentioned with no spatial relation",
+    })
+    return {name: glosses.get(name, name) for name in HYPOTHESIS_RELATIONS}
+
+
+def build_hypothesis_request(instruction: str, model="deepseek-chat",
+                             temperature=0.0, shuffle_seed: int = 0,
+                             top_k: int = 5):
+    """The hypothesis request.  Built here so the leakage test covers it too."""
+    items = list(hypothesis_ontology().items())
+    if shuffle_seed:
+        import random
+        random.Random(shuffle_seed).shuffle(items)
+    listing = "\n".join(f"- {name}: {gloss}" for name, gloss in items)
+    frames = ("agent, anchor, road, global, none")
+    user = (f"Instruction:\n{instruction}\n\n"
+            f"Relations:\n{listing}\n\n"
+            f"Frames: {frames}\n"
+            f"Give at most {top_k} hypotheses.")
+    return {
+        "model": model,
+        "temperature": temperature,
+        "response_format": {"type": "json_object"},
+        "messages": [
+            {"role": "system", "content": HYPOTHESIS_SYSTEM_PROMPT},
+            {"role": "user", "content": user},
+        ],
+    }
+
+
+def validate_hypotheses(parsed) -> tuple:
+    """(ok, reason) for a hypothesis answer."""
+    from .relation_belief import HYPOTHESIS_RELATIONS
+    if not isinstance(parsed, dict):
+        return False, "not an object"
+    for key in ("anchors", "hypotheses"):
+        if key not in parsed:
+            return False, f"missing {key}"
+    if not isinstance(parsed["hypotheses"], list):
+        return False, "hypotheses must be a list"
+    if not parsed["hypotheses"]:
+        return False, "no hypotheses"
+    for h in parsed["hypotheses"]:
+        if not isinstance(h, dict):
+            return False, "hypothesis is not an object"
+        if h.get("relation") not in HYPOTHESIS_RELATIONS:
+            return False, f"relation {h.get('relation')!r} not in the ontology"
+        try:
+            if float(h.get("probability", 0.0)) < 0:
+                return False, "negative probability"
+        except (TypeError, ValueError):
+            return False, "probability is not a number"
+    return True, ""
