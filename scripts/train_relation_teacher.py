@@ -213,6 +213,9 @@ def main() -> None:
 
     model = run(args.epochs, lr, wd, hidden)
     params = count_params(model)
+    # Saved so the grounding stage reads the teacher that the gate has just
+    # judged, rather than refitting one and hoping it is the same.
+    torch.save(model.state_dict(), out_dir / "relation_teacher.pt")
 
     # ---- Gate A on the held-out maps
     batch = to_torch(torch, data["test"], device)

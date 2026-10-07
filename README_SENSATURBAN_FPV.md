@@ -261,3 +261,45 @@ $PY scripts/run_relation_v2_data.py          # ~15 s
 $PY scripts/audit_relation_semantics.py      # ~2 min
 $PY scripts/train_relation_v2.py             # ~2 min
 ```
+
+### Hierarchical spatial graph: clean supervision and the language bridge
+
+See [`HIERARCHICAL_MAP_GRAPH_AUDIT.md`](HIERARCHICAL_MAP_GRAPH_AUDIT.md) and
+[`SYNTHETIC_RELATION_REPORT.md`](SYNTHETIC_RELATION_REPORT.md).
+
+The previous round ended with a relation reasoner at chance and a diagnosis it
+could not test from the inside: the corpus's relation words select no geometry,
+so training on them teaches nothing and fails invisibly. This round changes what
+the labels are made of. **Gate A passes at 0.9573** against 0.1738 for the
+opposite relation, on maps the model has never seen — the same architecture that
+scored 0.125 last round. The failure was the labels, not the geometry and not the
+model.
+
+A road name denotes a road, so the graph has **RoadRegion** nodes: 27,356 nodes
+over 34 blocks, including 486 regions built from segments that share a name *and*
+are spatially connected. Connectivity is not optional — 59 names split into
+several regions, and without the check the largest region in the corpus would be
+a 66-segment blob. Unnamed segments stay segments, because grouping them by
+adjacency alone merges a block's whole unnamed network into one non-road.
+
+The gate earned its place by finding two relations the model could not *see*:
+`between` (0.24), `parallel_to` (0.35) and `perpendicular_to` (0.31) were not
+relations it failed to learn but ones with no feature column at all — the schema
+had positional projections onto the anchor's axes but no axis-versus-axis angle,
+and the between columns were always zero because the second anchor was never
+passed in. Fixing those took the three to 0.991, 0.999 and 0.998.
+
+DeepSeek parses the instructions onto the ontology (400/400 valid, consistency
+0.887 under ontology reordering) and **43.2% of the corpus's relations come back
+UNKNOWN** — almost exactly the vocabulary the ontology deliberately excludes:
+`behind` 54, `in front of` 44, `to the left of` 13, `in` 11. Two independent
+routes, the geometry audit and a language model that never saw the map, agree
+that those words do not describe well-defined geometry here.
+
+```bash
+$PY scripts/audit_map_graph.py                 # ~90 s
+$PY scripts/run_synthetic_relations.py         # ~20 min
+$PY scripts/train_relation_teacher.py          # ~5 min
+$PY scripts/run_deepseek_parse.py              # needs DEEPSEEK_API_KEY
+$PY scripts/eval_graph_grounding.py
+```
