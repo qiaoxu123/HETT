@@ -1,0 +1,3778 @@
+[
+  {
+    "split": "train_seen",
+    "episode_index": 6817,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6818,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6821,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6822,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6826,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6836,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6837,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6838,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6842,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6865,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6868,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6869,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6870,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6879,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6880,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6891,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6895,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6901,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6902,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6906,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6913,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6917,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6918,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6923,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6928,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6929,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6930,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6935,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6939,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6940,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6943,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6944,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6945,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6950,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6951,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6958,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6961,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6962,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6967,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6968,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6981,
+    "frame": [
+      [
+        0.04254947319890617,
+        0.9990943610743159
+      ],
+      [
+        -0.9990943610743159,
+        0.04254947319890617
+      ]
+    ],
+    "reference_id": 1,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6983,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6989,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6993,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6994,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7000,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7001,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7002,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7005,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7006,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7012,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7028,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7029,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7031,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7039,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7040,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7041,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7043,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7044,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7054,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7059,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7064,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7077,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7078,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7083,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7084,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7088,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7089,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7093,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7099,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7100,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7101,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7102,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7105,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7106,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7107,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7111,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7113,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7131,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7132,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7147,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7148,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7151,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7155,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7156,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7157,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7162,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7163,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7168,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7169,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7173,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7174,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7187,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7193,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7194,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7195,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7206,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7208,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7209,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7211,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7212,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7216,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7217,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7222,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7223,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7224,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7227,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7228,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7235,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7241,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7242,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7251,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7252,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7263,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7264,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7269,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7274,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7279,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7280,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7289,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7290,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7294,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7295,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7300,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7301,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7304,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7309,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7310,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7311,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7315,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7317,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7323,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7328,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7329,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7350,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7351,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7356,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7365,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7366,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7373,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7382,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7383,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7388,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7394,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7404,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7405,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7409,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7411,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7412,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7413,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7417,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7419,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7423,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7428,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7429,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7433,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7439,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7440,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7448,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7449,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7450,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7451,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7454,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7455,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7467,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7472,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7477,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7478,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7482,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7483,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7484,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7487,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7488,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7489,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7493,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7494,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7500,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7506,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7507,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7511,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7512,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7540,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7541,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7547,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7565,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7567,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7568,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7570,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7580,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7585,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 8848,
+    "frame": [
+      [
+        -0.7766522757634428,
+        0.6299295536418855
+      ],
+      [
+        -0.6299295536418855,
+        -0.7766522757634428
+      ]
+    ],
+    "reference_id": 486,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 8863,
+    "frame": [
+      [
+        0.7766522757634428,
+        -0.6299295536418855
+      ],
+      [
+        0.6299295536418855,
+        0.7766522757634428
+      ]
+    ],
+    "reference_id": 486,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 8880,
+    "frame": [
+      [
+        0.7766522757634428,
+        -0.6299295536418855
+      ],
+      [
+        0.6299295536418855,
+        0.7766522757634428
+      ]
+    ],
+    "reference_id": 486,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 8933,
+    "frame": [
+      [
+        0.7766522757634428,
+        -0.6299295536418855
+      ],
+      [
+        0.6299295536418855,
+        0.7766522757634428
+      ]
+    ],
+    "reference_id": 486,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 18542,
+    "frame": [
+      [
+        -0.9997383677699649,
+        0.022873478280451207
+      ],
+      [
+        -0.022873478280451207,
+        -0.9997383677699649
+      ]
+    ],
+    "reference_id": 0,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 18543,
+    "frame": [
+      [
+        -0.9997383677699649,
+        0.022873478280451207
+      ],
+      [
+        -0.022873478280451207,
+        -0.9997383677699649
+      ]
+    ],
+    "reference_id": 0,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 18642,
+    "frame": [
+      [
+        -0.9997383677699649,
+        0.022873478280451207
+      ],
+      [
+        -0.022873478280451207,
+        -0.9997383677699649
+      ]
+    ],
+    "reference_id": 0,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 18694,
+    "frame": [
+      [
+        -0.9997383677699649,
+        0.022873478280451207
+      ],
+      [
+        -0.022873478280451207,
+        -0.9997383677699649
+      ]
+    ],
+    "reference_id": 0,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 18695,
+    "frame": [
+      [
+        -0.9997383677699649,
+        0.022873478280451207
+      ],
+      [
+        -0.022873478280451207,
+        -0.9997383677699649
+      ]
+    ],
+    "reference_id": 0,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 18696,
+    "frame": [
+      [
+        -0.9997383677699649,
+        0.022873478280451207
+      ],
+      [
+        -0.022873478280451207,
+        -0.9997383677699649
+      ]
+    ],
+    "reference_id": 0,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 18698,
+    "frame": [
+      [
+        -0.9997383677699649,
+        0.022873478280451207
+      ],
+      [
+        -0.022873478280451207,
+        -0.9997383677699649
+      ]
+    ],
+    "reference_id": 0,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 18701,
+    "frame": [
+      [
+        -0.9997383677699649,
+        0.022873478280451207
+      ],
+      [
+        -0.022873478280451207,
+        -0.9997383677699649
+      ]
+    ],
+    "reference_id": 0,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 18702,
+    "frame": [
+      [
+        -0.9997383677699649,
+        0.022873478280451207
+      ],
+      [
+        -0.022873478280451207,
+        -0.9997383677699649
+      ]
+    ],
+    "reference_id": 0,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 19466,
+    "frame": [
+      [
+        -0.37517137822953295,
+        0.926955466544835
+      ],
+      [
+        -0.926955466544835,
+        -0.37517137822953295
+      ]
+    ],
+    "reference_id": 65,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 19472,
+    "frame": [
+      [
+        -0.37517137822953295,
+        0.926955466544835
+      ],
+      [
+        -0.926955466544835,
+        -0.37517137822953295
+      ]
+    ],
+    "reference_id": 65,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 19477,
+    "frame": [
+      [
+        -0.37517137822953295,
+        0.926955466544835
+      ],
+      [
+        -0.926955466544835,
+        -0.37517137822953295
+      ]
+    ],
+    "reference_id": 65,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "val_seen",
+    "episode_index": 768,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "val_seen",
+    "episode_index": 769,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "val_seen",
+    "episode_index": 770,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "val_seen",
+    "episode_index": 774,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "val_seen",
+    "episode_index": 775,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "val_seen",
+    "episode_index": 776,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "val_seen",
+    "episode_index": 780,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "val_seen",
+    "episode_index": 781,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "val_seen",
+    "episode_index": 785,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "val_seen",
+    "episode_index": 786,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "val_seen",
+    "episode_index": 787,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "val_seen",
+    "episode_index": 792,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "val_seen",
+    "episode_index": 796,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "val_seen",
+    "episode_index": 797,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "val_seen",
+    "episode_index": 801,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "val_seen",
+    "episode_index": 802,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "val_seen",
+    "episode_index": 807,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "val_seen",
+    "episode_index": 808,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "val_seen",
+    "episode_index": 817,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "val_seen",
+    "episode_index": 818,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "val_seen",
+    "episode_index": 821,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "val_seen",
+    "episode_index": 822,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "val_seen",
+    "episode_index": 827,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "val_seen",
+    "episode_index": 828,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "val_seen",
+    "episode_index": 832,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "val_seen",
+    "episode_index": 837,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "val_seen",
+    "episode_index": 840,
+    "frame": [
+      [
+        0.19706976769248163,
+        0.980389466825114
+      ],
+      [
+        -0.980389466825114,
+        0.19706976769248163
+      ]
+    ],
+    "reference_id": 160,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "val_seen",
+    "episode_index": 996,
+    "frame": [
+      [
+        0.7766522757634428,
+        -0.6299295536418855
+      ],
+      [
+        0.6299295536418855,
+        0.7766522757634428
+      ]
+    ],
+    "reference_id": 486,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "val_seen",
+    "episode_index": 1004,
+    "frame": [
+      [
+        0.7766522757634428,
+        -0.6299295536418855
+      ],
+      [
+        0.6299295536418855,
+        0.7766522757634428
+      ]
+    ],
+    "reference_id": 486,
+    "source": "resolved_by_reference_position"
+  },
+  {
+    "split": "val_seen",
+    "episode_index": 1018,
+    "frame": [
+      [
+        -0.7766522757634428,
+        0.6299295536418855
+      ],
+      [
+        -0.6299295536418855,
+        -0.7766522757634428
+      ]
+    ],
+    "reference_id": 486,
+    "source": "resolved_by_reference_position"
+  }
+]

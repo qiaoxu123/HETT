@@ -1,0 +1,4541 @@
+[
+  {
+    "split": "train_seen",
+    "episode_index": 5788,
+    "map_id": "birmingham_block_9",
+    "lot_id": 727,
+    "candidate_count": 23,
+    "frame": [
+      [
+        0.9586523017593134,
+        -0.2845799787960674
+      ],
+      [
+        -0.2845799787960674,
+        -0.9586523017593134
+      ]
+    ],
+    "row_count": 8,
+    "column_count": 14,
+    "active": [
+      "NTH_FROM_TOP",
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 5790,
+    "map_id": "birmingham_block_9",
+    "lot_id": 727,
+    "candidate_count": 23,
+    "frame": [
+      [
+        0.9586523017593134,
+        -0.2845799787960674
+      ],
+      [
+        -0.2845799787960674,
+        -0.9586523017593134
+      ]
+    ],
+    "row_count": 8,
+    "column_count": 14,
+    "active": [
+      "NTH_FROM_LEFT",
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 5791,
+    "map_id": "birmingham_block_9",
+    "lot_id": 727,
+    "candidate_count": 23,
+    "frame": [
+      [
+        0.9586523017593134,
+        -0.2845799787960674
+      ],
+      [
+        -0.2845799787960674,
+        -0.9586523017593134
+      ]
+    ],
+    "row_count": 8,
+    "column_count": 14,
+    "active": [
+      "NTH_FROM_LEFT",
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 5797,
+    "map_id": "birmingham_block_9",
+    "lot_id": 727,
+    "candidate_count": 23,
+    "frame": [
+      [
+        0.9586523017593134,
+        -0.2845799787960674
+      ],
+      [
+        -0.2845799787960674,
+        -0.9586523017593134
+      ]
+    ],
+    "row_count": 8,
+    "column_count": 14,
+    "active": [
+      "NTH_FROM_LEFT",
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 5798,
+    "map_id": "birmingham_block_9",
+    "lot_id": 727,
+    "candidate_count": 23,
+    "frame": [
+      [
+        0.9586523017593134,
+        -0.2845799787960674
+      ],
+      [
+        -0.2845799787960674,
+        -0.9586523017593134
+      ]
+    ],
+    "row_count": 8,
+    "column_count": 14,
+    "active": [
+      "NTH_FROM_LEFT",
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 5799,
+    "map_id": "birmingham_block_9",
+    "lot_id": 727,
+    "candidate_count": 23,
+    "frame": [
+      [
+        0.9586523017593134,
+        -0.2845799787960674
+      ],
+      [
+        -0.2845799787960674,
+        -0.9586523017593134
+      ]
+    ],
+    "row_count": 8,
+    "column_count": 14,
+    "active": [
+      "NTH_FROM_LEFT",
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 5802,
+    "map_id": "birmingham_block_9",
+    "lot_id": 727,
+    "candidate_count": 23,
+    "frame": [
+      [
+        0.9586523017593134,
+        -0.2845799787960674
+      ],
+      [
+        -0.2845799787960674,
+        -0.9586523017593134
+      ]
+    ],
+    "row_count": 8,
+    "column_count": 14,
+    "active": [
+      "NTH_FROM_LEFT",
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 5803,
+    "map_id": "birmingham_block_9",
+    "lot_id": 727,
+    "candidate_count": 23,
+    "frame": [
+      [
+        0.9586523017593134,
+        -0.2845799787960674
+      ],
+      [
+        -0.2845799787960674,
+        -0.9586523017593134
+      ]
+    ],
+    "row_count": 8,
+    "column_count": 14,
+    "active": [
+      "NTH_FROM_LEFT",
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 5811,
+    "map_id": "birmingham_block_9",
+    "lot_id": 727,
+    "candidate_count": 23,
+    "frame": [
+      [
+        0.9586523017593134,
+        -0.2845799787960674
+      ],
+      [
+        -0.2845799787960674,
+        -0.9586523017593134
+      ]
+    ],
+    "row_count": 8,
+    "column_count": 14,
+    "active": [
+      "NTH_FROM_LEFT",
+      "ROW_TOP"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 5855,
+    "map_id": "birmingham_block_9",
+    "lot_id": 727,
+    "candidate_count": 23,
+    "frame": [
+      [
+        0.9586523017593134,
+        -0.2845799787960674
+      ],
+      [
+        -0.2845799787960674,
+        -0.9586523017593134
+      ]
+    ],
+    "row_count": 8,
+    "column_count": 14,
+    "active": [
+      "NTH_FROM_LEFT",
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 5867,
+    "map_id": "birmingham_block_9",
+    "lot_id": 727,
+    "candidate_count": 23,
+    "frame": [
+      [
+        0.9586523017593134,
+        -0.2845799787960674
+      ],
+      [
+        -0.2845799787960674,
+        -0.9586523017593134
+      ]
+    ],
+    "row_count": 8,
+    "column_count": 14,
+    "active": [
+      "NTH_FROM_RIGHT",
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 5868,
+    "map_id": "birmingham_block_9",
+    "lot_id": 727,
+    "candidate_count": 23,
+    "frame": [
+      [
+        0.9586523017593134,
+        -0.2845799787960674
+      ],
+      [
+        -0.2845799787960674,
+        -0.9586523017593134
+      ]
+    ],
+    "row_count": 8,
+    "column_count": 14,
+    "active": [
+      "NTH_FROM_LEFT",
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 5902,
+    "map_id": "birmingham_block_9",
+    "lot_id": 727,
+    "candidate_count": 23,
+    "frame": [
+      [
+        0.9586523017593134,
+        -0.2845799787960674
+      ],
+      [
+        -0.2845799787960674,
+        -0.9586523017593134
+      ]
+    ],
+    "row_count": 8,
+    "column_count": 14,
+    "active": [
+      "NTH_FROM_RIGHT",
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6043,
+    "map_id": "birmingham_block_9",
+    "lot_id": 727,
+    "candidate_count": 23,
+    "frame": [
+      [
+        0.9586523017593134,
+        -0.2845799787960674
+      ],
+      [
+        -0.2845799787960674,
+        -0.9586523017593134
+      ]
+    ],
+    "row_count": 8,
+    "column_count": 14,
+    "active": [
+      "NTH_FROM_RIGHT",
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6044,
+    "map_id": "birmingham_block_9",
+    "lot_id": 727,
+    "candidate_count": 23,
+    "frame": [
+      [
+        0.9586523017593134,
+        -0.2845799787960674
+      ],
+      [
+        -0.2845799787960674,
+        -0.9586523017593134
+      ]
+    ],
+    "row_count": 8,
+    "column_count": 14,
+    "active": [
+      "NTH_FROM_RIGHT",
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6045,
+    "map_id": "birmingham_block_9",
+    "lot_id": 727,
+    "candidate_count": 23,
+    "frame": [
+      [
+        0.9586523017593134,
+        -0.2845799787960674
+      ],
+      [
+        -0.2845799787960674,
+        -0.9586523017593134
+      ]
+    ],
+    "row_count": 8,
+    "column_count": 14,
+    "active": [
+      "NTH_FROM_RIGHT",
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6046,
+    "map_id": "birmingham_block_9",
+    "lot_id": 727,
+    "candidate_count": 23,
+    "frame": [
+      [
+        0.9586523017593134,
+        -0.2845799787960674
+      ],
+      [
+        -0.2845799787960674,
+        -0.9586523017593134
+      ]
+    ],
+    "row_count": 8,
+    "column_count": 14,
+    "active": [
+      "NTH_FROM_RIGHT",
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6131,
+    "map_id": "birmingham_block_9",
+    "lot_id": 733,
+    "candidate_count": 22,
+    "frame": [
+      [
+        0.6738594108041028,
+        -0.7388595904979154
+      ],
+      [
+        -0.7388595904979154,
+        -0.6738594108041028
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 21,
+    "active": [
+      "NTH_FROM_TOP"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6137,
+    "map_id": "birmingham_block_9",
+    "lot_id": 733,
+    "candidate_count": 22,
+    "frame": [
+      [
+        0.6738594108041028,
+        -0.7388595904979154
+      ],
+      [
+        -0.7388595904979154,
+        -0.6738594108041028
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 21,
+    "active": [
+      "NTH_FROM_BOTTOM"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6138,
+    "map_id": "birmingham_block_9",
+    "lot_id": 733,
+    "candidate_count": 22,
+    "frame": [
+      [
+        0.6738594108041028,
+        -0.7388595904979154
+      ],
+      [
+        -0.7388595904979154,
+        -0.6738594108041028
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 21,
+    "active": [
+      "NTH_FROM_TOP"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6247,
+    "map_id": "birmingham_block_9",
+    "lot_id": 733,
+    "candidate_count": 22,
+    "frame": [
+      [
+        0.6738594108041028,
+        -0.7388595904979154
+      ],
+      [
+        -0.7388595904979154,
+        -0.6738594108041028
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 21,
+    "active": [
+      "NTH_FROM_LEFT"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6253,
+    "map_id": "birmingham_block_9",
+    "lot_id": 733,
+    "candidate_count": 22,
+    "frame": [
+      [
+        0.6738594108041028,
+        -0.7388595904979154
+      ],
+      [
+        -0.7388595904979154,
+        -0.6738594108041028
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 21,
+    "active": [
+      "NTH_FROM_LEFT"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6258,
+    "map_id": "birmingham_block_9",
+    "lot_id": 733,
+    "candidate_count": 22,
+    "frame": [
+      [
+        0.6738594108041028,
+        -0.7388595904979154
+      ],
+      [
+        -0.7388595904979154,
+        -0.6738594108041028
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 21,
+    "active": [
+      "NTH_FROM_LEFT"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6260,
+    "map_id": "birmingham_block_9",
+    "lot_id": 733,
+    "candidate_count": 22,
+    "frame": [
+      [
+        0.6738594108041028,
+        -0.7388595904979154
+      ],
+      [
+        -0.7388595904979154,
+        -0.6738594108041028
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 21,
+    "active": [
+      "NTH_FROM_LEFT"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6267,
+    "map_id": "birmingham_block_9",
+    "lot_id": 733,
+    "candidate_count": 22,
+    "frame": [
+      [
+        0.6738594108041028,
+        -0.7388595904979154
+      ],
+      [
+        -0.7388595904979154,
+        -0.6738594108041028
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 21,
+    "active": [
+      "NTH_FROM_LEFT"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6270,
+    "map_id": "birmingham_block_9",
+    "lot_id": 733,
+    "candidate_count": 22,
+    "frame": [
+      [
+        0.6738594108041028,
+        -0.7388595904979154
+      ],
+      [
+        -0.7388595904979154,
+        -0.6738594108041028
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 21,
+    "active": [
+      "NTH_FROM_LEFT"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6271,
+    "map_id": "birmingham_block_9",
+    "lot_id": 733,
+    "candidate_count": 22,
+    "frame": [
+      [
+        0.6738594108041028,
+        -0.7388595904979154
+      ],
+      [
+        -0.7388595904979154,
+        -0.6738594108041028
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 21,
+    "active": [
+      "NTH_FROM_BOTTOM"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6275,
+    "map_id": "birmingham_block_9",
+    "lot_id": 733,
+    "candidate_count": 22,
+    "frame": [
+      [
+        0.6738594108041028,
+        -0.7388595904979154
+      ],
+      [
+        -0.7388595904979154,
+        -0.6738594108041028
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 21,
+    "active": [
+      "NTH_FROM_LEFT"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6276,
+    "map_id": "birmingham_block_9",
+    "lot_id": 733,
+    "candidate_count": 22,
+    "frame": [
+      [
+        0.6738594108041028,
+        -0.7388595904979154
+      ],
+      [
+        -0.7388595904979154,
+        -0.6738594108041028
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 21,
+    "active": [
+      "NTH_FROM_LEFT"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6279,
+    "map_id": "birmingham_block_9",
+    "lot_id": 733,
+    "candidate_count": 22,
+    "frame": [
+      [
+        0.6738594108041028,
+        -0.7388595904979154
+      ],
+      [
+        -0.7388595904979154,
+        -0.6738594108041028
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 21,
+    "active": [
+      "NTH_FROM_LEFT"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6282,
+    "map_id": "birmingham_block_9",
+    "lot_id": 733,
+    "candidate_count": 22,
+    "frame": [
+      [
+        0.6738594108041028,
+        -0.7388595904979154
+      ],
+      [
+        -0.7388595904979154,
+        -0.6738594108041028
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 21,
+    "active": [
+      "NTH_FROM_LEFT"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6286,
+    "map_id": "birmingham_block_9",
+    "lot_id": 733,
+    "candidate_count": 22,
+    "frame": [
+      [
+        0.6738594108041028,
+        -0.7388595904979154
+      ],
+      [
+        -0.7388595904979154,
+        -0.6738594108041028
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 21,
+    "active": [
+      "NTH_FROM_LEFT"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6293,
+    "map_id": "birmingham_block_9",
+    "lot_id": 733,
+    "candidate_count": 22,
+    "frame": [
+      [
+        0.6738594108041028,
+        -0.7388595904979154
+      ],
+      [
+        -0.7388595904979154,
+        -0.6738594108041028
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 21,
+    "active": [
+      "NTH_FROM_LEFT"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6296,
+    "map_id": "birmingham_block_9",
+    "lot_id": 733,
+    "candidate_count": 22,
+    "frame": [
+      [
+        0.6738594108041028,
+        -0.7388595904979154
+      ],
+      [
+        -0.7388595904979154,
+        -0.6738594108041028
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 21,
+    "active": [
+      "NTH_FROM_LEFT"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6297,
+    "map_id": "birmingham_block_9",
+    "lot_id": 733,
+    "candidate_count": 22,
+    "frame": [
+      [
+        0.6738594108041028,
+        -0.7388595904979154
+      ],
+      [
+        -0.7388595904979154,
+        -0.6738594108041028
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 21,
+    "active": [
+      "NTH_FROM_LEFT"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6298,
+    "map_id": "birmingham_block_9",
+    "lot_id": 733,
+    "candidate_count": 22,
+    "frame": [
+      [
+        0.6738594108041028,
+        -0.7388595904979154
+      ],
+      [
+        -0.7388595904979154,
+        -0.6738594108041028
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 21,
+    "active": [
+      "NTH_FROM_LEFT"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6303,
+    "map_id": "birmingham_block_9",
+    "lot_id": 733,
+    "candidate_count": 22,
+    "frame": [
+      [
+        0.6738594108041028,
+        -0.7388595904979154
+      ],
+      [
+        -0.7388595904979154,
+        -0.6738594108041028
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 21,
+    "active": [
+      "NTH_FROM_LEFT"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6425,
+    "map_id": "birmingham_block_9",
+    "lot_id": 727,
+    "candidate_count": 23,
+    "frame": [
+      [
+        0.9586523017593134,
+        -0.2845799787960674
+      ],
+      [
+        -0.2845799787960674,
+        -0.9586523017593134
+      ]
+    ],
+    "row_count": 8,
+    "column_count": 14,
+    "active": [
+      "NTH_FROM_RIGHT",
+      "ROW_TOP"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6443,
+    "map_id": "birmingham_block_9",
+    "lot_id": 727,
+    "candidate_count": 23,
+    "frame": [
+      [
+        0.9586523017593134,
+        -0.2845799787960674
+      ],
+      [
+        -0.2845799787960674,
+        -0.9586523017593134
+      ]
+    ],
+    "row_count": 8,
+    "column_count": 14,
+    "active": [
+      "NTH_FROM_BOTTOM",
+      "NTH_FROM_LEFT",
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6483,
+    "map_id": "birmingham_block_9",
+    "lot_id": 733,
+    "candidate_count": 22,
+    "frame": [
+      [
+        0.6738594108041028,
+        -0.7388595904979154
+      ],
+      [
+        -0.7388595904979154,
+        -0.6738594108041028
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 21,
+    "active": [
+      "NTH_FROM_BOTTOM"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6485,
+    "map_id": "birmingham_block_9",
+    "lot_id": 733,
+    "candidate_count": 22,
+    "frame": [
+      [
+        0.6738594108041028,
+        -0.7388595904979154
+      ],
+      [
+        -0.7388595904979154,
+        -0.6738594108041028
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 21,
+    "active": [
+      "NTH_FROM_LEFT"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6669,
+    "map_id": "birmingham_block_10",
+    "lot_id": 365,
+    "candidate_count": 8,
+    "frame": [
+      [
+        -0.7535892907952313,
+        -0.6573455566129129
+      ],
+      [
+        0.6573455566129129,
+        -0.7535892907952313
+      ]
+    ],
+    "row_count": 3,
+    "column_count": 5,
+    "active": [
+      "NTH_FROM_TOP"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6681,
+    "map_id": "birmingham_block_10",
+    "lot_id": 366,
+    "candidate_count": 5,
+    "frame": [
+      [
+        -0.13579738506408195,
+        0.9907366300938698
+      ],
+      [
+        -0.9907366300938698,
+        -0.13579738506408195
+      ]
+    ],
+    "row_count": 1,
+    "column_count": 5,
+    "active": [
+      "NTH_FROM_LEFT"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6682,
+    "map_id": "birmingham_block_10",
+    "lot_id": 366,
+    "candidate_count": 5,
+    "frame": [
+      [
+        -0.13579738506408195,
+        0.9907366300938698
+      ],
+      [
+        -0.9907366300938698,
+        -0.13579738506408195
+      ]
+    ],
+    "row_count": 1,
+    "column_count": 5,
+    "active": [
+      "NTH_FROM_LEFT"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6696,
+    "map_id": "birmingham_block_10",
+    "lot_id": 366,
+    "candidate_count": 5,
+    "frame": [
+      [
+        -0.13579738506408195,
+        0.9907366300938698
+      ],
+      [
+        -0.9907366300938698,
+        -0.13579738506408195
+      ]
+    ],
+    "row_count": 1,
+    "column_count": 5,
+    "active": [
+      "NTH_FROM_LEFT"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6697,
+    "map_id": "birmingham_block_10",
+    "lot_id": 366,
+    "candidate_count": 5,
+    "frame": [
+      [
+        -0.13579738506408195,
+        0.9907366300938698
+      ],
+      [
+        -0.9907366300938698,
+        -0.13579738506408195
+      ]
+    ],
+    "row_count": 1,
+    "column_count": 5,
+    "active": [
+      "NTH_FROM_LEFT"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6703,
+    "map_id": "birmingham_block_10",
+    "lot_id": 366,
+    "candidate_count": 5,
+    "frame": [
+      [
+        -0.13579738506408195,
+        0.9907366300938698
+      ],
+      [
+        -0.9907366300938698,
+        -0.13579738506408195
+      ]
+    ],
+    "row_count": 1,
+    "column_count": 5,
+    "active": [
+      "NTH_FROM_LEFT"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6704,
+    "map_id": "birmingham_block_10",
+    "lot_id": 366,
+    "candidate_count": 5,
+    "frame": [
+      [
+        -0.13579738506408195,
+        0.9907366300938698
+      ],
+      [
+        -0.9907366300938698,
+        -0.13579738506408195
+      ]
+    ],
+    "row_count": 1,
+    "column_count": 5,
+    "active": [
+      "NTH_FROM_LEFT"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6715,
+    "map_id": "birmingham_block_10",
+    "lot_id": 365,
+    "candidate_count": 8,
+    "frame": [
+      [
+        -0.7535892907952313,
+        -0.6573455566129129
+      ],
+      [
+        0.6573455566129129,
+        -0.7535892907952313
+      ]
+    ],
+    "row_count": 3,
+    "column_count": 5,
+    "active": [
+      "NTH_FROM_BOTTOM"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6725,
+    "map_id": "birmingham_block_10",
+    "lot_id": 366,
+    "candidate_count": 5,
+    "frame": [
+      [
+        -0.13579738506408195,
+        0.9907366300938698
+      ],
+      [
+        -0.9907366300938698,
+        -0.13579738506408195
+      ]
+    ],
+    "row_count": 1,
+    "column_count": 5,
+    "active": [
+      "NTH_FROM_LEFT"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6817,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_LEFT",
+      "ROW_BOTTOM"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6818,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_LEFT",
+      "ROW_BOTTOM"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6821,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_RIGHT",
+      "ROW_BOTTOM"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6822,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_RIGHT",
+      "ROW_BOTTOM"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6826,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "COLUMN_RIGHT"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6836,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_LEFT",
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6837,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_LEFT",
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6838,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_LEFT",
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6842,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_LEFT",
+      "ROW_BOTTOM"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6849,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6851,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_BOTTOM",
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6865,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_LEFT",
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6868,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_LEFT",
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6869,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_LEFT",
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6870,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_LEFT",
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6873,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_TOP"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6874,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_TOP"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6875,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_TOP"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6879,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_RIGHT",
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6880,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_RIGHT",
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6883,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_RIGHT"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6891,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_TOP",
+      "COLUMN_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6895,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_RIGHT",
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6901,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_LEFT",
+      "ROW_TOP"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6902,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_LEFT",
+      "ROW_TOP"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6906,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_LEFT",
+      "ROW_TOP"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6913,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_LEFT",
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6917,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_RIGHT",
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6918,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_RIGHT",
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6923,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_RIGHT",
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6928,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_RIGHT",
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6929,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_RIGHT",
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6930,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_RIGHT",
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6935,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_RIGHT",
+      "ROW_BOTTOM"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6939,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_LEFT",
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6940,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_LEFT",
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6943,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_TOP",
+      "COLUMN_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6944,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_TOP",
+      "COLUMN_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6945,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_TOP",
+      "COLUMN_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6950,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_TOP",
+      "COLUMN_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6951,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_TOP",
+      "COLUMN_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6958,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_LEFT",
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6961,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_RIGHT",
+      "ROW_BOTTOM"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6962,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_RIGHT",
+      "ROW_BOTTOM"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6965,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "ROW_BOTTOM"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6967,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_RIGHT",
+      "ROW_BOTTOM"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6968,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_RIGHT",
+      "ROW_BOTTOM"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6974,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_BOTTOM"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6981,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_RIGHT"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6983,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_LEFT",
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6985,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": []
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6987,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "ROW_BOTTOM"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6989,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_LEFT",
+      "ROW_BOTTOM"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6993,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_RIGHT",
+      "ROW_BOTTOM"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 6994,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_RIGHT",
+      "ROW_BOTTOM"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7000,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_LEFT",
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7001,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_LEFT",
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7002,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_LEFT",
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7005,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_RIGHT",
+      "ROW_BOTTOM"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7006,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_RIGHT",
+      "ROW_BOTTOM"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7012,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_LEFT",
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7024,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_TOP"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7025,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_TOP"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7028,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "COLUMN_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7029,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_TOP",
+      "COLUMN_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7031,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_LEFT",
+      "ROW_BOTTOM"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7039,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_TOP",
+      "COLUMN_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7040,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_TOP",
+      "COLUMN_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7041,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_TOP",
+      "COLUMN_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7043,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_RIGHT",
+      "ROW_BOTTOM"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7044,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_RIGHT",
+      "ROW_BOTTOM"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7051,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_BOTTOM"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7052,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_BOTTOM"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7054,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_RIGHT",
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7059,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_LEFT",
+      "ROW_BOTTOM"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7064,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_RIGHT",
+      "ROW_BOTTOM"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7077,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_LEFT",
+      "ROW_BOTTOM"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7078,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_LEFT",
+      "ROW_BOTTOM"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7083,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_RIGHT",
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7084,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_LEFT",
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7088,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_RIGHT",
+      "ROW_BOTTOM"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7089,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_RIGHT",
+      "ROW_BOTTOM"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7093,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_LEFT",
+      "ROW_BOTTOM"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7099,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_RIGHT",
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7100,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_RIGHT",
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7101,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_RIGHT",
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7102,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_LEFT",
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7105,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_LEFT",
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7106,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_LEFT",
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7107,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_RIGHT",
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7111,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_RIGHT",
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7113,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_RIGHT",
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7119,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_TOP"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7128,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_BOTTOM"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7131,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_LEFT",
+      "ROW_BOTTOM"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7132,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_LEFT",
+      "ROW_BOTTOM"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7143,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7147,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_RIGHT",
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7148,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_LEFT",
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7151,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_RIGHT",
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7155,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_LEFT",
+      "ROW_TOP"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7156,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_LEFT",
+      "ROW_TOP"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7157,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_LEFT",
+      "ROW_TOP"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7158,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_LEFT"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7162,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_LEFT",
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7163,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_LEFT",
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7165,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7168,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_LEFT",
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7169,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_LEFT",
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7173,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_RIGHT",
+      "ROW_BOTTOM"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7174,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_RIGHT",
+      "ROW_BOTTOM"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7187,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_LEFT",
+      "ROW_TOP"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7191,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "ROW_BOTTOM"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7193,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_RIGHT",
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7194,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_RIGHT",
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7195,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_RIGHT",
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7198,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_RIGHT"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7200,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_TOP"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7206,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_TOP",
+      "COLUMN_RIGHT"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7208,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_BOTTOM",
+      "COLUMN_RIGHT"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7209,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_TOP",
+      "COLUMN_RIGHT"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7211,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_LEFT",
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7212,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_LEFT",
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7213,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7216,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_BOTTOM",
+      "COLUMN_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7217,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_BOTTOM",
+      "COLUMN_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7222,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_RIGHT",
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7223,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_RIGHT",
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7224,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_RIGHT",
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7227,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_TOP",
+      "COLUMN_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7228,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_BOTTOM",
+      "COLUMN_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7235,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_LEFT",
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7238,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7241,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_TOP",
+      "COLUMN_RIGHT"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7242,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_TOP",
+      "COLUMN_RIGHT"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7250,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_RIGHT",
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7251,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_RIGHT",
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7252,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_RIGHT",
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7263,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_LEFT",
+      "ROW_BOTTOM"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7264,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_LEFT",
+      "ROW_BOTTOM"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7269,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_LEFT",
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7274,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_LEFT",
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7279,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_TOP",
+      "COLUMN_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7280,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_TOP",
+      "COLUMN_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7281,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "ROW_INDEX"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7284,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_TOP"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7287,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_TOP"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7289,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_RIGHT",
+      "ROW_BOTTOM"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7290,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_LEFT",
+      "ROW_BOTTOM"
+    ]
+  },
+  {
+    "split": "train_seen",
+    "episode_index": 7294,
+    "map_id": "birmingham_block_12",
+    "lot_id": 242,
+    "candidate_count": 146,
+    "frame": [
+      [
+        0.09977154487647118,
+        -0.995010371218794
+      ],
+      [
+        0.995010371218794,
+        0.09977154487647118
+      ]
+    ],
+    "row_count": 13,
+    "column_count": 41,
+    "active": [
+      "NTH_FROM_BOTTOM",
+      "COLUMN_INDEX"
+    ]
+  }
+]

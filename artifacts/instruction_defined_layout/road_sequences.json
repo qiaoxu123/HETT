@@ -1,0 +1,10 @@
+{
+  "attempted": 191,
+  "status": {
+    "start_or_corner_unresolved": 40,
+    "road_unresolved": 116,
+    "scope_miss": 7,
+    "scope_too_small": 28
+  },
+  "rows": []
+}

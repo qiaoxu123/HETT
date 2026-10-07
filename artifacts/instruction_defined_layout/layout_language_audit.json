@@ -1,0 +1,727 @@
+{
+  "counts": {
+    "instructions": 27045,
+    "layout": 3506,
+    "frame": 3117,
+    "frame_and_layout": 1535,
+    "train_seen_instructions": 21878,
+    "train_seen_layout": 3073,
+    "train_seen_frame": 2606,
+    "train_seen_frame_and_layout": 1381,
+    "group_OTHER": 3705,
+    "group_C": 19834,
+    "group_A": 1535,
+    "layout_target_Building": 278,
+    "frame_layout_target_Building": 34,
+    "group_B": 1971,
+    "layout_target_Car": 3225,
+    "frame_layout_target_Car": 1501,
+    "layout_target_Ground": 2,
+    "val_seen_instructions": 2470,
+    "val_seen_layout": 307,
+    "val_seen_frame": 262,
+    "val_seen_frame_and_layout": 135,
+    "val_unseen_instructions": 2697,
+    "val_unseen_layout": 126,
+    "val_unseen_frame": 249,
+    "val_unseen_frame_and_layout": 19,
+    "layout_target_Parking": 1
+  },
+  "families": {
+    "NTH_FROM_RIGHT": {
+      "count": 928,
+      "split": {
+        "train_seen": 815,
+        "val_seen": 82,
+        "val_unseen": 31
+      },
+      "target_type": {
+        "Building": 42,
+        "Car": 885,
+        "Ground": 1
+      },
+      "contexts": [
+        "Gray building that is second from the right on the row of buildings above Willmore Road, when viewed aerially with Wellington road to the right.",
+        "The white car that is 1st from the right in the front row of cars in the parking lot behind the row of trees along Wellington Road, in front of red houses.",
+        "The gray car that is 4th from the right in the front row of cars in the parking lot behind the row of trees along Wellington Road, in front of red houses.",
+        "Blue car that is 3rd from the right in the row of cars parked along the green trees by Wellington road, when viewed aerially with the red car furthest to the right.",
+        "Parked on the north side of Leslie Road, this white car is third car from the right, to the left of a black car."
+      ]
+    },
+    "NTH_FROM_TOP": {
+      "count": 339,
+      "split": {
+        "train_seen": 294,
+        "val_seen": 33,
+        "val_unseen": 12
+      },
+      "target_type": {
+        "Building": 26,
+        "Car": 312,
+        "Ground": 1
+      },
+      "contexts": [
+        "On the right side of Willmore Road, this building has a gray roof and is third one from the top.",
+        "On the right side of Willmore Road, this building with a gray roof is fourth from the top.",
+        "The second building from the top of the four building cluster on the left side of Wellington Road.",
+        "The fourth car from the top on the right side of Wellington Row across from the cluster of four buildings.",
+        "The black car that is 1st from the top in the left column of cars in the parking lot for St. Teresa\u2019s Court, when viewed aerially with St. Teresa\u2019s Court to the left."
+      ]
+    },
+    "ROAD_SEQUENCE_ORDER": {
+      "count": 78,
+      "split": {
+        "train_seen": 63,
+        "val_seen": 8,
+        "val_unseen": 7
+      },
+      "target_type": {
+        "Building": 59,
+        "Car": 19
+      },
+      "contexts": [
+        "The last building on Willmore Road that has a small gray porch on the back and the next building has a green and black trampoline.",
+        "The last car on the left hand side of Leslie Road when coming from Wellington Road. It is white and is behind a larger white car.",
+        "The last car on the left of Willmore Road when coming from Wellington Road. It is white and the car in front of it is white with a black roof.",
+        "The gray car parked diagonally at the last house on Wellington Road that has a gray roof.",
+        "The last building on Thornbury Road across the street from blue containers on the sidewalk."
+      ]
+    },
+    "NTH_FROM_CORNER": {
+      "count": 100,
+      "split": {
+        "train_seen": 82,
+        "val_seen": 10,
+        "val_unseen": 8
+      },
+      "target_type": {
+        "Building": 60,
+        "Car": 40
+      },
+      "contexts": [
+        "A brick building with two residents each with a blue and gray trash bin back to back with each other in the front yard area. The building is facing Willmore Road and is the third building from the corner when looking down Willmore from Wellington Road.",
+        "The white car in front of the second building from the corner of Wellington Road and Willmore Road.",
+        "The purple car that is the third car from the end of the sixth aisle in the One Stop parking lot.",
+        "The white car that is the third car from the end of the fifth aisle of the One Stop parking lot. It has no cars beside it.",
+        "The black car that is the fifth car from the end of the ninth aisle in the One Stop parking lot."
+      ]
+    },
+    "NTH_FROM_LEFT": {
+      "count": 1280,
+      "split": {
+        "train_seen": 1140,
+        "val_seen": 98,
+        "val_unseen": 42
+      },
+      "target_type": {
+        "Building": 55,
+        "Car": 1225
+      },
+      "contexts": [
+        "The brown house that is 2nd from the left in the row of brown houses behind the long row of green trees along Wellington Road.",
+        "The brown house that is 2nd from the left in the row of brown houses behind the long row of green trees along Wellington Road.",
+        "The red house that is 3rd from the left in the row of red houses behind the long row of green trees along Wellington Road.",
+        "The brown house that is 3rd from the left in the row of brown houses behind the long row of green trees along Wellington Road.",
+        "The red house that is 6th from the left in the row of brownish red homes behind the long row of green trees along Wellington Road."
+      ]
+    },
+    "ROW_TOP": {
+      "count": 275,
+      "split": {
+        "train_seen": 256,
+        "val_seen": 12,
+        "val_unseen": 7
+      },
+      "target_type": {
+        "Car": 275
+      },
+      "contexts": [
+        "The black car that is 4th from the left in the top row of cars in the parking lot of the St. Teresa of the Child Jesus Catholic Church, when viewed aerially with Wellington Road to the right.",
+        "The black car that is 3rd from the left in the top row of cars in the brown parking lot off of Wellington Road, in front of a gray and white building.",
+        "The white car that is 2nd from the left in the top row of cars in the brown parking lot off of Wellington Road, in front of a gray and white building.",
+        "The red car that is 4th from the left in the top row of cars in the brown parking lot off of Wellington Road, in front of a gray and white building.",
+        "The gray car that is 4th from the left in the top row of cars in the brown parking lot off of Wellington Road, in front of a gray and white building."
+      ]
+    },
+    "ROW_BOTTOM": {
+      "count": 226,
+      "split": {
+        "train_seen": 196,
+        "val_seen": 25,
+        "val_unseen": 5
+      },
+      "target_type": {
+        "Car": 225,
+        "Building": 1
+      },
+      "contexts": [
+        "The black car that is 3rd from the left in the bottom row of cars in the brown parking lot off of Wellington Road, in front of a gray and white building.",
+        "The red car found at the eighth section of two car rows right of the One Stop building, when counting from the bottom up. It is on the right end of the bottom row, there's a dark grey car to the right of it. There's two empty spaces on its left and an dark orange car above it.",
+        "With the One Stop building on the left, it is the red car in the tenth lane, counting from the bottom. It is in the bottom row, the only red car.",
+        "The white car in the lane just above the ones that are equally long. It is in the bottom row and has the Gym building to the upper left of it. There's a black car to the left and a white car to the right of it. To the right of the white car is an empty space, then a blue car.",
+        "With the One Stop building on the left and counting from the bottom, it is the silver-grey car on the bottom row of the third lane. There's a blue car on its left and a black car above it. The black car has no cars on its immediate left or right."
+      ]
+    },
+    "NTH_FROM_BOTTOM": {
+      "count": 441,
+      "split": {
+        "train_seen": 377,
+        "val_seen": 44,
+        "val_unseen": 20
+      },
+      "target_type": {
+        "Car": 415,
+        "Building": 26
+      },
+      "contexts": [
+        "On Wellington Road north of Willmore Road and to the left of St Teresa's Court, it is a white car, fourth car from the bottom on the left.",
+        "The blue car that is 2nd from the bottom in the right column of cars in the parking lot for St. Teresa\u2019s Court, when viewed aerially with St. Teresa\u2019s Court to the left.",
+        "Parked on the left side of Leslie Road, this blue car is third car from the bottom, south of a white car.",
+        "Parked on the left side of Leslie Road, this white car is first car from the bottom, south of a gray car.",
+        "In the parking lot near One Stop, it is the white car in the bottom half of the fourth row from the bottom, eighth car from the left."
+      ]
+    },
+    "ROW_INDEX": {
+      "count": 1732,
+      "split": {
+        "train_seen": 1559,
+        "val_seen": 162,
+        "val_unseen": 11
+      },
+      "target_type": {
+        "Car": 1729,
+        "Building": 2,
+        "Parking": 1
+      },
+      "contexts": [
+        "The gray car that is 1st from the right in the 12th row of cars in the large parking lot behind the One Stop Building, when viewed aerially with the long side of the One Stop Building to the right",
+        "The black car that is 1st from the right in the 12th row of cars in the large parking lot behind the One Stop Building, when viewed aerially with the long side of the One Stop Building to the right.",
+        "This is a black car parked in the fifth row of the parking space from the Food Warehouse. On its left is an entrance to One Stop. On its right is an empty spot.",
+        "The black car that is 9th from the right in the 12th row of cars in the large parking lot behind the One Stop Building, when viewed aerially with the long side of the One Stop Building to the right.",
+        "A black car in between two empty spots, with a dark purple car in front of it, towards the center of the row, parked in the fifth row in the top in the parking lot of the One Stop building"
+      ]
+    },
+    "COLUMN_INDEX": {
+      "count": 92,
+      "split": {
+        "train_seen": 68,
+        "val_seen": 10,
+        "val_unseen": 14
+      },
+      "target_type": {
+        "Car": 92
+      },
+      "contexts": [
+        "With the One Stop building on the left, it is the silver car parked in the first column, counting from the bottom. The column is perpendicular to the majority of the parked cars. There's a black car with white spots in the roof above the car and a dark grey car below it.",
+        "In the One Stop parking lot, from the perspective of the long side of the building on the left and the short side at the top and the first row of cars being at the bottom and the first column on the left, ignoring the single column parked against the building, the gray car that is 14th in the 8th row.",
+        "In the One Stop parking lot, from the perspective of the long side of the building on the left and the short side at the top and the first row of cars being at the bottom and the first column on the left, ignoring the single column parked against the building, the white car that is 22nd on the 4th row.",
+        "In the One Stop parking lot, from the perspective of the long side of the building on the left and the short side at the top and the first row of cars being at the bottom and the first column on the left, ignoring the single column parked against the building, the silver car that is 4th in the 7th row.",
+        "The gray car that is 3rd from the top in the 2nd column of cars from the left in the parking lot behind the brown building at the intersection of Birchfield Road and Wellington Road, when viewed aerially with Birchfield Road to the right."
+      ]
+    },
+    "HALFWAY_ALONG": {
+      "count": 13,
+      "split": {
+        "train_seen": 8,
+        "val_seen": 4,
+        "val_unseen": 1
+      },
+      "target_type": {
+        "Building": 7,
+        "Car": 6
+      },
+      "contexts": [
+        "The building halfway down Thornbury Road that has no car in front of it and the start of the zigzag yellow line across the street at the school.",
+        "This is a dark blue car located about halfway down Davey Road. It has a red car directly behind it and a white car ahead of it. A white car is across the street from it.",
+        "A white car parked behind a black car with an empty space behind it on Davey Road. It is parked in front of a reddish-brown house with a gray pitched roof. It is part of a row of houses. The car is parked roughly halfway down Davey Road.",
+        "a white car about half way down Davey Road on the left hand side of the road from Ashton Lane. It has a black car not far behind it and another white car is a few houses down from it in front of it.",
+        "A black car that is located on Holford Drive, about halfway down the street, and that has four white cars around it, one in front, one behind, and two on one side."
+      ]
+    },
+    "COLUMN_RIGHT": {
+      "count": 52,
+      "split": {
+        "train_seen": 43,
+        "val_unseen": 9
+      },
+      "target_type": {
+        "Car": 52
+      },
+      "contexts": [
+        "The gray car that is 3rd from the bottom in the rightmost column of cars in the parking lot of the One Stop Building, when viewed aerially with Walsall Road below.",
+        "The white car that is 3rd from the bottom of the rightmost column of cars in the parking lot of the One Stop building on Walsall Road.",
+        "The red car that is 2nd from the top in the rightmost column of cars in the parking lot of the One Stop Building, when viewed aerially with Walsall Road below.",
+        "The red car at the top in the rightmost column of cars in the parking lot of the One Stop Building, when viewed aerially with Walsall Road below.",
+        "The magenta car that is 2nd from the top in the rightmost column of cars in the parking lot of the One Stop building on Walsall Road."
+      ]
+    },
+    "COLUMN_LEFT": {
+      "count": 47,
+      "split": {
+        "train_seen": 39,
+        "val_seen": 6,
+        "val_unseen": 2
+      },
+      "target_type": {
+        "Car": 47
+      },
+      "contexts": [
+        "The gray car that is 7th from the bottom in the leftmost column of cars in the parking lot behind the brown building at the intersection of Birchfield Road and Wellington Road, when viewed aerially with Birchfield Road to the right.",
+        "The white car that is 7th from the bottom in the leftmost column of cars in the large parking lot above Wellington Road and to the left of Birchfield Road.",
+        "The gray car that is 2nd from the bottom in the leftmost column of cars in the parking lot behind the brown building at the intersection of Birchfield Road and Wellington Road, when viewed aerially with Birchfield Road to the right.",
+        "The blue car that is 1st from the bottom in the leftmost column of cars in the parking lot behind the brown building at the intersection of Birchfield Road and Wellington Road, when viewed aerially with Birchfield Road to the right.",
+        "The blue car at the bottom of the leftmost column of cars in the parking lot behind the brown building at the intersection of Birchfield Road and Wellington Road, when viewed aerially with Birchfield Road to the right."
+      ]
+    }
+  },
+  "frame_cues": {
+    "road_axis": {
+      "count": 644,
+      "contexts": [
+        "Perpendicular to Wellington Road and at the end of a string of houses with red roofs, this smaller, square buildinghas a gray roof and is adjacent to St Teresa of the Child Jesus Catholic Church.",
+        "The first building from the St. Teresa of the child Jesus Catholic Church along Wellington road/Grosvenor road.",
+        "A building with white roof along the road named Celine Grove",
+        "The third building from top of the right lane along Willmore road. It has a black and a white car in front.",
+        "A rectangular white building near St Teresa\u2019s court building along wellington road. It is opposite Willmore road."
+      ]
+    },
+    "view_cue": {
+      "count": 1784,
+      "contexts": [
+        "Gray building that is second from the right on the row of buildings above Willmore Road, when viewed aerially with Wellington road to the right.",
+        "The second house away from St Teresa of the child Jesus Catholic church facing Wellington drive. It has a darker brown roof and a long green bin by the back door.",
+        "A white and blue building with a light gray roof, rectangular in shape, next to three cars that are parked on the side of it, two white and one silver, near the edge of the map facing the corner of willmore Road and Celine Grove",
+        "A multicolored blue and white long rectangular building with a light gray roof, that is facing the corner of Celine Grove and willmore Road",
+        "The third building with grey roof and brown wall situated at the right side of the road named Willmore road."
+      ]
+    },
+    "building_long_axis": {
+      "count": 778,
+      "contexts": [
+        "The gray car that is 1st from the right in the 12th row of cars in the large parking lot behind the One Stop Building, when viewed aerially with the long side of the One Stop Building to the right",
+        "The black car that is 1st from the right in the 12th row of cars in the large parking lot behind the One Stop Building, when viewed aerially with the long side of the One Stop Building to the right.",
+        "The black car that is 9th from the right in the 12th row of cars in the large parking lot behind the One Stop Building, when viewed aerially with the long side of the One Stop Building to the right.",
+        "The red car that is 2nd from the left in the 20th row of cars in the large parking lot behind the One Stop Building, when viewed aerially with the long side of the One Stop Building to the right.",
+        "The red car that is 2nd from the left in the 20th row of cars in the large parking lot behind the One Stop Building, when viewed aerially with the long side of the One Stop Building to the right."
+      ]
+    },
+    "row_axis": {
+      "count": 3,
+      "contexts": [
+        "In the One Stop parking lot, from the perspective of the long side of the building on the left and the short side at the top and the first row of cars being at the bottom and the first column on the left, ignoring the single column parked against the building, the gray car that is 14th in the 8th row.",
+        "In the One Stop parking lot, from the perspective of the long side of the building on the left and the short side at the top and the first row of cars being at the bottom and the first column on the left, ignoring the single column parked against the building, the white car that is 22nd on the 4th row.",
+        "In the One Stop parking lot, from the perspective of the long side of the building on the left and the short side at the top and the first row of cars being at the bottom and the first column on the left, ignoring the single column parked against the building, the silver car that is 4th in the 7th row."
+      ]
+    }
+  },
+  "examples": [
+    {
+      "split": "train_seen",
+      "episode_index": 23,
+      "instruction": "Perpendicular to Wellington Road and at the end of a string of houses with red roofs, this smaller, square buildinghas a gray roof and is adjacent to St Teresa of the Child Jesus Catholic Church.",
+      "target_type_offline": "Building",
+      "group": "OTHER",
+      "target_phrase": "Perpendicular to Wellington Road and at the end of a string of houses with red roofs",
+      "frame": {
+        "is_explicit": true,
+        "cues": [
+          {
+            "axis_source": "road_axis",
+            "reference_phrase": "road",
+            "direction": "unknown",
+            "span": "road axis"
+          }
+        ]
+      },
+      "layout_programs": []
+    },
+    {
+      "split": "train_seen",
+      "episode_index": 26,
+      "instruction": "The first building from the St. Teresa of the child Jesus Catholic Church along Wellington road/Grosvenor road.",
+      "target_type_offline": "Building",
+      "group": "OTHER",
+      "target_phrase": "The first building from the St. Teresa of the child Jesus Catholic Church along Wellington road/Grosvenor road.",
+      "frame": {
+        "is_explicit": true,
+        "cues": [
+          {
+            "axis_source": "road_axis",
+            "reference_phrase": "road",
+            "direction": "unknown",
+            "span": "road axis"
+          }
+        ]
+      },
+      "layout_programs": []
+    },
+    {
+      "split": "train_seen",
+      "episode_index": 28,
+      "instruction": "A building with white roof along the road named Celine Grove",
+      "target_type_offline": "Building",
+      "group": "OTHER",
+      "target_phrase": "A building with white roof along the road named Celine Grove",
+      "frame": {
+        "is_explicit": true,
+        "cues": [
+          {
+            "axis_source": "road_axis",
+            "reference_phrase": "road",
+            "direction": "unknown",
+            "span": "road axis"
+          }
+        ]
+      },
+      "layout_programs": []
+    },
+    {
+      "split": "train_seen",
+      "episode_index": 37,
+      "instruction": "Gray building that is second from the right on the row of buildings above Willmore Road, when viewed aerially with Wellington road to the right.",
+      "target_type_offline": "Building",
+      "group": "A",
+      "target_phrase": "Gray building that is second from the right on the row of buildings above Willmore Road",
+      "frame": {
+        "is_explicit": true,
+        "cues": [
+          {
+            "axis_source": "view_cue",
+            "reference_phrase": "wellington road",
+            "direction": "right",
+            "span": "when viewed aerially with wellington road to the right"
+          }
+        ]
+      },
+      "layout_programs": [
+        {
+          "type": "NTH_FROM_RIGHT",
+          "index": 2,
+          "scope": "object_line",
+          "span": "second from the right"
+        }
+      ]
+    },
+    {
+      "split": "train_seen",
+      "episode_index": 43,
+      "instruction": "The third building from top of the right lane along Willmore road. It has a black and a white car in front.",
+      "target_type_offline": "Building",
+      "group": "OTHER",
+      "target_phrase": "The third building from top of the right lane along Willmore road. It has a black and a white car in front.",
+      "frame": {
+        "is_explicit": true,
+        "cues": [
+          {
+            "axis_source": "road_axis",
+            "reference_phrase": "road",
+            "direction": "unknown",
+            "span": "road axis"
+          }
+        ]
+      },
+      "layout_programs": []
+    },
+    {
+      "split": "train_seen",
+      "episode_index": 45,
+      "instruction": "On the right side of Willmore Road, this building has a gray roof and is third one from the top.",
+      "target_type_offline": "Building",
+      "group": "B",
+      "target_phrase": "On the right side of Willmore Road",
+      "frame": {
+        "is_explicit": false,
+        "cues": []
+      },
+      "layout_programs": [
+        {
+          "type": "NTH_FROM_TOP",
+          "index": 3,
+          "scope": "object_line",
+          "span": "third one from the top"
+        }
+      ]
+    },
+    {
+      "split": "train_seen",
+      "episode_index": 50,
+      "instruction": "The last building on Willmore Road that has a small gray porch on the back and the next building has a green and black trampoline.",
+      "target_type_offline": "Building",
+      "group": "B",
+      "target_phrase": "The last building on Willmore Road that has a small gray porch on the back and the next building has a green and black trampoline.",
+      "frame": {
+        "is_explicit": false,
+        "cues": []
+      },
+      "layout_programs": [
+        {
+          "type": "ROAD_SEQUENCE_ORDER",
+          "index": -1,
+          "scope": "road_sequence",
+          "span": "last building on willmore road",
+          "reference_phrase": "willmore road"
+        }
+      ]
+    },
+    {
+      "split": "train_seen",
+      "episode_index": 65,
+      "instruction": "The second house away from St Teresa of the child Jesus Catholic church facing Wellington drive. It has a darker brown roof and a long green bin by the back door.",
+      "target_type_offline": "Building",
+      "group": "OTHER",
+      "target_phrase": "The second house away from St Teresa of the child Jesus Catholic church facing Wellington drive. It has a darker brown roof and a long green bin by the back door.",
+      "frame": {
+        "is_explicit": true,
+        "cues": [
+          {
+            "axis_source": "view_cue",
+            "reference_phrase": "wellington drive",
+            "direction": "top",
+            "span": "facing wellington drive."
+          }
+        ]
+      },
+      "layout_programs": []
+    },
+    {
+      "split": "train_seen",
+      "episode_index": 71,
+      "instruction": "A white and blue building with a light gray roof, rectangular in shape, next to three cars that are parked on the side of it, two white and one silver, near the edge of the map facing the corner of willmore Road and Celine Grove",
+      "target_type_offline": "Building",
+      "group": "OTHER",
+      "target_phrase": "A white and blue building with a light gray roof",
+      "frame": {
+        "is_explicit": true,
+        "cues": [
+          {
+            "axis_source": "view_cue",
+            "reference_phrase": "the corner of willmore road and celine grove",
+            "direction": "top",
+            "span": "facing the corner of willmore road and celine grove"
+          }
+        ]
+      },
+      "layout_programs": []
+    },
+    {
+      "split": "train_seen",
+      "episode_index": 73,
+      "instruction": "A multicolored blue and white long rectangular building with a light gray roof, that is facing the corner of Celine Grove and willmore Road",
+      "target_type_offline": "Building",
+      "group": "OTHER",
+      "target_phrase": "A multicolored blue and white long rectangular building with a light gray roof",
+      "frame": {
+        "is_explicit": true,
+        "cues": [
+          {
+            "axis_source": "view_cue",
+            "reference_phrase": "the corner of celine grove and willmore road",
+            "direction": "top",
+            "span": "facing the corner of celine grove and willmore road"
+          }
+        ]
+      },
+      "layout_programs": []
+    },
+    {
+      "split": "train_seen",
+      "episode_index": 74,
+      "instruction": "A rectangular white building near St Teresa\u2019s court building along wellington road. It is opposite Willmore road.",
+      "target_type_offline": "Building",
+      "group": "OTHER",
+      "target_phrase": "A rectangular white building near St Teresa\u2019s court building along wellington road. It is opposite Willmore road.",
+      "frame": {
+        "is_explicit": true,
+        "cues": [
+          {
+            "axis_source": "road_axis",
+            "reference_phrase": "road",
+            "direction": "unknown",
+            "span": "road axis"
+          }
+        ]
+      },
+      "layout_programs": []
+    },
+    {
+      "split": "train_seen",
+      "episode_index": 76,
+      "instruction": "A brick building with two residents each with a blue and gray trash bin back to back with each other in the front yard area. The building is facing Willmore Road and is the third building from the corner when looking down Willmore from Wellington Road.",
+      "target_type_offline": "Building",
+      "group": "B",
+      "target_phrase": "A brick building with two residents each with a blue and gray trash bin back to back with each other in the front yard area. The building is facing Willmore Road and is the third building from the corner when looking down Willmore from Wellington Road.",
+      "frame": {
+        "is_explicit": false,
+        "cues": []
+      },
+      "layout_programs": [
+        {
+          "type": "NTH_FROM_CORNER",
+          "index": 3,
+          "scope": "road_sequence",
+          "span": "third building from the corner"
+        }
+      ]
+    },
+    {
+      "split": "train_seen",
+      "episode_index": 79,
+      "instruction": "The third building with grey roof and brown wall situated at the right side of the road named Willmore road.",
+      "target_type_offline": "Building",
+      "group": "OTHER",
+      "target_phrase": "The third building with grey roof and brown wall situated at the right side of the road named Willmore road.",
+      "frame": {
+        "is_explicit": true,
+        "cues": [
+          {
+            "axis_source": "view_cue",
+            "reference_phrase": "grey roof and brown wall situated",
+            "direction": "right",
+            "span": "with grey roof and brown wall situated at the right"
+          }
+        ]
+      },
+      "layout_programs": []
+    },
+    {
+      "split": "train_seen",
+      "episode_index": 80,
+      "instruction": "On the right side of Willmore Road, this building with a gray roof is fourth from the top.",
+      "target_type_offline": "Building",
+      "group": "B",
+      "target_phrase": "On the right side of Willmore Road",
+      "frame": {
+        "is_explicit": false,
+        "cues": []
+      },
+      "layout_programs": [
+        {
+          "type": "NTH_FROM_TOP",
+          "index": 4,
+          "scope": "object_line",
+          "span": "fourth from the top"
+        }
+      ]
+    },
+    {
+      "split": "train_seen",
+      "episode_index": 83,
+      "instruction": "Two buildings red-lined, the right side of a multi-colored Brown, brick red and white building, with a multi-colored Brown and gray roof that has a silver van parked on his left side, in a multicolored brown and blue rectangular building with a white roof, facing the corner of Celine Grove and Willmore Road",
+      "target_type_offline": "Building",
+      "group": "OTHER",
+      "target_phrase": "Two buildings red-lined",
+      "frame": {
+        "is_explicit": true,
+        "cues": [
+          {
+            "axis_source": "view_cue",
+            "reference_phrase": "the corner of celine grove and willmore road",
+            "direction": "top",
+            "span": "facing the corner of celine grove and willmore road"
+          }
+        ]
+      },
+      "layout_programs": []
+    },
+    {
+      "split": "train_seen",
+      "episode_index": 84,
+      "instruction": "The fouth house away from the St. Teresa of the Child Jesus Catholic church facing Wellington Street. It has a brown roof and a blue car next to the detached building in the backyard and a vehicle covered with a blue tarp in front of it,",
+      "target_type_offline": "Building",
+      "group": "OTHER",
+      "target_phrase": "The fouth house away from the St. Teresa of the Child Jesus Catholic church facing Wellington Street. It has a brown roof and a blue car next to the detached building in the backyard and a vehicle covered with a blue tarp in front of it",
+      "frame": {
+        "is_explicit": true,
+        "cues": [
+          {
+            "axis_source": "view_cue",
+            "reference_phrase": "wellington street",
+            "direction": "top",
+            "span": "facing wellington street."
+          }
+        ]
+      },
+      "layout_programs": []
+    },
+    {
+      "split": "train_seen",
+      "episode_index": 86,
+      "instruction": "The left house on the third building from the St Teresas of the child Jesus building along Wellington road.",
+      "target_type_offline": "Building",
+      "group": "OTHER",
+      "target_phrase": "The left house on the third building from the St Teresas of the child Jesus building along Wellington road.",
+      "frame": {
+        "is_explicit": true,
+        "cues": [
+          {
+            "axis_source": "road_axis",
+            "reference_phrase": "road",
+            "direction": "unknown",
+            "span": "road axis"
+          }
+        ]
+      },
+      "layout_programs": []
+    },
+    {
+      "split": "train_seen",
+      "episode_index": 87,
+      "instruction": "The fifth building from left side with brown roof and white wall along the road named Wellington road.",
+      "target_type_offline": "Building",
+      "group": "OTHER",
+      "target_phrase": "The fifth building from left side with brown roof and white wall along the road named Wellington road.",
+      "frame": {
+        "is_explicit": true,
+        "cues": [
+          {
+            "axis_source": "road_axis",
+            "reference_phrase": "road",
+            "direction": "unknown",
+            "span": "road axis"
+          }
+        ]
+      },
+      "layout_programs": []
+    },
+    {
+      "split": "train_seen",
+      "episode_index": 89,
+      "instruction": "On Wellington Road south of Willmore Road near Celine Grove, this building with a gray roof is far to the left of Full Circle Events & Exhibitions Ltd and has a red car to its left.",
+      "target_type_offline": "Building",
+      "group": "OTHER",
+      "target_phrase": "On Wellington Road south of Willmore Road near Celine Grove",
+      "frame": {
+        "is_explicit": true,
+        "cues": [
+          {
+            "axis_source": "view_cue",
+            "reference_phrase": "a gray roof is far",
+            "direction": "left",
+            "span": "with a gray roof is far to the left"
+          }
+        ]
+      },
+      "layout_programs": []
+    },
+    {
+      "split": "train_seen",
+      "episode_index": 95,
+      "instruction": "The small gray cubic building near the end of the row of reddish brown houses behind the large row of trees along Wellington Road.",
+      "target_type_offline": "Building",
+      "group": "OTHER",
+      "target_phrase": "The small gray cubic building near the end of the row of reddish brown houses behind the large row of trees along Wellington Road.",
+      "frame": {
+        "is_explicit": true,
+        "cues": [
+          {
+            "axis_source": "road_axis",
+            "reference_phrase": "road",
+            "direction": "unknown",
+            "span": "road axis"
+          }
+        ]
+      },
+      "layout_programs": []
+    }
+  ]
+}
