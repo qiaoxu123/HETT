@@ -149,6 +149,17 @@ def between_geometry(candidate_xy, anchor_a_xy, anchor_b_xy,
     return t, perp
 
 
+def candidate_order(seed: int, n: int) -> np.ndarray:
+    """A deterministic permutation of ``n`` candidates.
+
+    The candidate list is built as ``[referenced] + distractors``, so the answer
+    sits at index 0 in the stored files and any score vector that ties is broken
+    by position -- in favour of the answer.  Every consumer permutes with this,
+    once, so that no downstream arm has to remember to.
+    """
+    return np.random.default_rng(int(seed) % (2 ** 31)).permutation(n)
+
+
 def build_relation_vocab(phrases) -> tuple:
     """A stable phrase -> index map with 0 reserved for "no relation"."""
     ordered = sorted(set(phrases))

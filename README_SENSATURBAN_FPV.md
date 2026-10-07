@@ -221,3 +221,43 @@ relation reasoner.
 $PY scripts/run_anchor_grounding_data.py    # ~50 s
 $PY scripts/train_anchor_grounding.py       # ~5 min
 ```
+
+### Reference binding and relation semantics, v2
+
+See
+[`REFERENCE_BINDING_RELATION_V2_REPORT.md`](REFERENCE_BINDING_RELATION_V2_REPORT.md),
+with [`REFERENCE_BINDING_AUDIT_V2.md`](REFERENCE_BINDING_AUDIT_V2.md) and
+[`RELATION_SEMANTICS_AUDIT.md`](RELATION_SEMANTICS_AUDIT.md).
+
+The previous round ended by charging its own reasoner with not implementing the
+relation. This round measures the corpus instead of assuming it, and finds the
+stronger statement: **there is no consistent convention to implement.** Fitting a
+geometric direction per relation word reaches paired AUC 0.584 against 0.575 for
+randomly relabelled relations — the same number, meaning a model told which word
+was used cannot place the target better than one told nothing. The largest-n
+relation in the corpus (`on`, n=697) sits at 0.522. The compass words occur 26,
+10, 0 and 1 times.
+
+The audit also removes a confound both this round and the last inherited: the
+candidate list is stored as `[referenced] + distractors`, so the answer sat at
+index 0 and any tie broke toward it. On the corrected order the previously
+reported "proximity prior" does not survive either — every phrase's distance
+separation lands between 0.46 and 0.56.
+
+Two structural facts about the input are worth keeping. `object_ids` is the
+**target**, not a reference set — one entry in all 27,045 records, always at a
+`target_position` — so it cannot be used as an anchor set. And landmark names are
+heavily shared: 41.6% of anchor phrases name more than one entity, `aldridge
+road` alone being 180 segments, so binding here is disambiguation rather than
+matching.
+
+The gate fails and, per the brief, no visual fusion was run: a fusion number on
+top of a reasoner that cannot rank the target given the right anchor would
+measure the visual baseline it was added to.
+
+```bash
+$PY scripts/audit_reference_binding.py       # ~4 min
+$PY scripts/run_relation_v2_data.py          # ~15 s
+$PY scripts/audit_relation_semantics.py      # ~2 min
+$PY scripts/train_relation_v2.py             # ~2 min
+```

@@ -30,86 +30,83 @@ so cannot be used to make the corpus look worse than it is.
 
 | | paired AUC |
 |---|---:|
-| best direction **per relation**, fitted | **0.592** |
-| best direction after **shuffling the relation labels** | **0.603** (sd 0.023) |
-| the single prior "the answer lies ahead of the anchor", no word at all | **0.561** |
+| best direction **per relation**, fitted | **0.597** |
+| best direction after **shuffling the relation labels** | **0.587** (sd 0.016) |
+| the single prior "the answer lies ahead of the anchor", no word at all | **0.488** |
 
 **Fitting a separate direction to each relation word does no better than fitting
-one to randomly relabelled relations.** The observed mean (0.592) sits *below*
-the shuffled mean (0.603). Whatever these words are doing, it is not selecting a
-geometric direction: a model that is told which word was used cannot predict the
-target's position any better than one that is told nothing.
+one to randomly relabelled relations.** The observed mean exceeds the shuffled
+mean by 0.010 against a control spread of 0.016 — inside one standard deviation.
+Whatever these words are doing, it is not selecting a geometric direction.
 
-The 0.561 from the heading alone is worth reading carefully. The agent flies
-toward the goal, so "the answer is ahead of the anchor" is true under *every*
-word, and it accounts for most of the 0.59. This is the proximity-and-heading
-prior that the previous round found at the end, here measured directly and
-separately from the words.
+The heading prior is *at chance*, 0.488. That is a correction to an earlier
+version of this audit, which reported 0.561 and read it as the trajectory prior
+accounting for most of the effect. Both that number and the per-phrase table
+below were computed before the candidate order was permuted, and the earlier
+figures were contaminated by it -- see "A confound that had to be removed"
+below.
 
 ## Per relation: the frame the lexicon declared, against the axis the data picks
 
 | phrase | n | declared | measured | AUC | unseen |
 |---|---:|---|---|---:|---:|
-| beside | 32 | none | agent_lateral **+** | 0.659 | 0.422 |
-| near | 63 | none | agent_ahead + | 0.634 | 0.444 |
-| facing | 22 | none | global_y + | 0.617 | 0.542 |
-| by the | 15 | none | anchor_perp + | 0.607 | 0.547 |
-| behind | 131 | agent | global_y + | 0.605 | 0.486 |
-| in front of | 98 | agent | agent_ahead + | 0.604 | 0.522 |
-| across from | 54 | none | global_x **−** | 0.603 | 0.379 |
-| adjacent to | 16 | none | global_x − | 0.587 | 0.389 |
-| north of | 26 | global | global_y **−** | 0.577 | 0.514 |
-| left of | 67 | agent | anchor_perp + | 0.576 | 0.412 |
-| right of | 66 | agent | agent_ahead + | 0.568 | 0.620 |
-| between | 158 | none | agent_ahead + | 0.562 | 0.542 |
-| on | 697 | none | agent_ahead + | 0.554 | 0.562 |
-| next to | 123 | none | agent_lateral − | 0.535 | 0.434 |
+| adjacent to | 16 | none | anchor_along **−** | 0.750 | 0.519 |
+| left of | 67 | agent | global_x **−** | 0.647 | 0.488 |
+| facing | 22 | none | anchor_along + | 0.639 | 0.458 |
+| north of | 26 | global | global_x + | 0.633 | 0.472 |
+| across from | 54 | none | agent_lateral − | 0.615 | 0.525 |
+| beside | 32 | none | agent_ahead − | 0.611 | 0.533 |
+| by the | 15 | none | agent_lateral − | 0.600 | 0.479 |
+| next to | 123 | none | global_y − | 0.576 | 0.512 |
+| between | 158 | none | agent_lateral + | 0.570 | 0.466 |
+| near | 63 | none | anchor_along + | 0.560 | 0.556 |
+| in front of | 98 | agent | global_y + | 0.550 | 0.472 |
+| behind | 131 | agent | anchor_along + | 0.550 | 0.444 |
+| right of | 66 | agent | global_x − | 0.538 | 0.617 |
+| on | 697 | none | agent_ahead − | 0.513 | 0.479 |
 
 Three things are wrong with this table at once.
 
-**The declared frame is almost never the measured one.** Of the five phrases the
-lexicon declared to be in the agent frame, one (`in front of`) matches. `behind`
-wants the global y axis; `left of` wants the anchor's own perpendicular; `right
-of` wants the agent's heading. `north of` is declared global and does pick the
-global y axis — **with the opposite sign**, meaning that on this corpus a
-building "north of" the anchor is, if anything, to its south. At n = 26 that is
-weak, but it is not the direction the rule assumed.
+**The declared frame matches the measured one nowhere.** Not for the agent-frame
+words (`left of`, `right of`, `behind`, `in front of`) and not for the global one
+(`north of`, which lands on the agent's lateral axis at n = 26).
 
-**Opposite words do not pick opposite axes.** `behind` and `in front of` land on
-different axes rather than on the same axis with opposite signs; so do `left of`
-and `right of`. If the corpus used these words with any consistent geometry, the
-pairs would be forced to mirror each other. They are not, so there is no frame
-in which both members of a pair are satisfied at once.
+**Opposite words do not pick opposite axes.** `left of` and `right of` both
+choose the global x axis — at least one axis between them — but `behind` chooses
+the anchor's long axis while `in front of` chooses the global y axis, so that
+pair shares no axis at all. If the corpus used these words with any consistent
+geometry, each pair would be forced onto one axis with two signs.
 
-**No phrase reaches a reliable effect.** The best is 0.659 at n = 32. The six
-phrases above n = 60 all sit between 0.554 and 0.634. And the `unseen` column is
-worse still — five of the fourteen fall **below 0.45** on `val_unseen`, i.e. the
-axis reverses out of sample. `across from` is 0.603 on train and 0.379 on unseen.
+**No phrase reaches a reliable effect.** The largest-n phrase in the corpus
+(`on`, n = 697) sits at 0.513, and the best value anywhere (0.750) is at n = 16.
+The `unseen` column is worse: ten of the fourteen fall below 0.55 out of sample,
+and no phrase exceeds 0.62 there.
 
 ## The signal that is actually there is proximity
 
 | phrase | n | target median distance | distractor median | proximity AUC |
 |---|---:|---:|---:|---:|
-| between | 158 | 27.3 m | 50.5 m | **0.735** |
-| in front of | 98 | 24.6 m | 46.8 m | 0.707 |
-| behind | 131 | 27.9 m | 40.4 m | 0.677 |
-| near | 63 | 35.5 m | 50.7 m | 0.669 |
-| next to | 123 | 30.5 m | 40.1 m | 0.642 |
-| on | 697 | 30.1 m | 37.8 m | 0.628 |
-| right of | 66 | 31.8 m | 47.7 m | 0.621 |
-| left of | 67 | 37.9 m | 44.5 m | 0.579 |
+| on | 697 | 33.1 m | 37.4 m | 0.561 |
+| next to | 123 | 33.5 m | 37.6 m | 0.548 |
+| right of | 66 | 43.8 m | 42.5 m | 0.536 |
+| left of | 67 | 39.8 m | 41.0 m | 0.524 |
+| in front of | 98 | 40.4 m | 41.6 m | 0.521 |
+| behind | 131 | 34.3 m | 37.3 m | 0.508 |
+| near | 63 | 43.4 m | 43.1 m | 0.490 |
+| between | 158 | 43.7 m | 43.4 m | 0.459 |
 
-For nearly every phrase, **plain distance to the anchor separates target from
-distractor better than the best directional axis does** — `between` 0.735 by
-distance against 0.562 by direction, `in front of` 0.707 against 0.604. The
-target is simply nearer the anchor than the distractors are, under every word
-including the ones that assert the opposite of nearness.
+**There is no proximity signal either.** Everything sits between 0.459 and 0.561
+— chance, with `between`, `near` and `behind` actually *below* it, meaning that on
+those words the target is if anything farther from the anchor than its
+distractors are.
 
-This is the whole finding in one line: **on this corpus the relation words carry
-a proximity signal and almost nothing directional.** It is exactly the
-"learned proximity prior" the previous round inferred from its ablation, here
-confirmed by direct measurement of the corpus rather than by an ablation on a
-model.
+This is the correction that matters most, because an earlier version of this
+document reported a strong proximity effect (`between` at 0.735 with the target
+27.3 m from the anchor against distractors at 50.5 m) and concluded that the
+corpus's relation words were "a proximity signal and nothing directional". On the
+corrected data that reading does not survive: there is no proximity signal
+either. The whole measurable content of these words, against same-class
+distractors drawn from the same neighbourhood, is at chance.
 
 ## What this implies for the rest of the round
 
@@ -122,12 +119,28 @@ an answer, and the answer is preparatory and negative:
 * The words that the brief names specifically — north/south/east/west — occur 26,
   10, 0 and 1 times. `east of` cannot be evaluated at all. Any claim about
   compass reasoning in this corpus would be unsupported.
-* The one signal that is reliably present is proximity, and a proximity scorer
-  does not need the relation word.
+* Neither is there a proximity signal to fall back on: the previous round's
+  "learned proximity prior" was, on the corrected candidate order, itself partly
+  an artefact of the confound below.
 
 The self-test in `scripts/train_relation_v2.py` therefore has a specific,
 pre-registered prediction to fail against, and its gate is reported whether or
 not it passes.
+
+## A confound that had to be removed
+
+The candidate list is built as `[referenced] + distractors`, so the answer sits
+at **index 0** in the stored files. The previous round permuted that order in its
+training script, at load time; the extractor this audit reads from did not, and
+the first version of these measurements therefore ran with the answer always
+first. That is not a leak a model could merely learn — it decides ties by
+position, and position 0 is always the answer.
+
+Removing it changed the numbers substantially. The heading prior fell from 0.561
+to **0.488** — chance — and the proximity table inverted: `between` goes from an
+apparent 0.735 to 0.459. `target_index` is now
+uniform over the ten positions, and the extraction applies the permutation once
+and deterministically so that no downstream consumer has to remember.
 
 ## Reproducing
 

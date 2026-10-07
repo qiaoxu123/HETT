@@ -283,3 +283,36 @@ def test_a_second_anchor_can_rescue_a_weak_first_one():
     # Committing to the first hypothesis would score 0; marginalising finds the
     # second, which is the whole reason the anchor set is not collapsed to one.
     assert values[0, 0, 0] == 0.0 and marg > 4.9
+
+
+# --------------------------------------------------------------------------
+# the confound that decided the round
+# --------------------------------------------------------------------------
+
+def test_the_answer_does_not_sit_at_index_zero():
+    """The stored candidate list is ``[referenced] + distractors``.
+
+    Every consumer permutes with ``candidate_order`` before scoring, because a
+    score vector that ties is broken by position and position 0 is always the
+    answer.  An earlier run of this round did not, and both the frame audit and
+    the proximity table came out materially different on the corrected order.
+    """
+    from sensaturban_fpv.relation_v2 import candidate_order
+    positions = [int(np.flatnonzero(candidate_order(seed, 10) == 0)[0])
+                 for seed in range(200)]
+    assert len(set(positions)) >= 9            # spread over the whole list
+    assert positions.count(0) < 60             # and not concentrated at the front
+
+
+def test_candidate_order_is_deterministic_and_a_permutation():
+    from sensaturban_fpv.relation_v2 import candidate_order
+    a = candidate_order(7, 10)
+    assert np.array_equal(a, candidate_order(7, 10))
+    assert sorted(a.tolist()) == list(range(10))
+
+
+def test_a_tied_score_vector_is_the_only_case_position_can_decide():
+    """Which is why the permutation, not the tie-break rule, is the fix."""
+    tied = np.zeros(10)
+    assert rank_metrics(tied, 0)["rank"] == 1
+    assert rank_metrics(tied, 5)["rank"] == 6

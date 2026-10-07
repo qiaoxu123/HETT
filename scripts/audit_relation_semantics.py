@@ -52,14 +52,16 @@ from sensaturban_fpv.anchor_parser import RELATIONS  # noqa: E402
 from sensaturban_fpv.config import artifact_dir, load_config, load_landmarks  # noqa: E402
 from sensaturban_fpv.entity_geometry import group_of  # noqa: E402
 
-# The six directions, as columns of the 18-dim geometry vector written by
-# run_relation_v2_data.py.
-AXES = {
-    "global_x": 0, "global_y": 1,
-    "agent_ahead": 6, "agent_lateral": 7,
-    "anchor_along": 10, "anchor_perp": 11,
-}
-DIST_COL, LOGDIST_COL = 3, 2
+# The six directions, read off the one definition of the geometry layout in
+# sensaturban_fpv.relation_v2.  An index written out a second time here would be
+# a second chance to read a relation off the wrong coordinate, which is the
+# defect this whole round is correcting.
+from sensaturban_fpv.relation_v2 import (  # noqa: E402
+    AXIS_COLUMNS as AXES, GEOM_COLUMNS,
+)
+
+DIST_COL = GEOM_COLUMNS.index("distance")
+LOGDIST_COL = GEOM_COLUMNS.index("log_distance")
 SELECT_SPLITS = ("train_seen", "val_seen")
 # Low enough that the compass words are reported rather than silently dropped:
 # the brief asks about north/south specifically, and "n = 17, no effect" is a

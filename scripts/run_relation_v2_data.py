@@ -53,7 +53,7 @@ from sensaturban_fpv import citynav  # noqa: E402
 from sensaturban_fpv.anchor_parser import normalise, parse_instruction  # noqa: E402
 from sensaturban_fpv.config import artifact_dir, load_config, load_landmarks  # noqa: E402
 from sensaturban_fpv.relation_v2 import (  # noqa: E402
-    GEOM_DIM, geometry, principal_axis,
+    GEOM_DIM, candidate_order, geometry, principal_axis,
 )
 
 SPLITS = ("train_seen", "val_seen", "val_unseen")
@@ -125,42 +125,13 @@ def bind(phrase: str, objects, by_name) -> list:
     return [i for _, i in scored[:MAX_ANCHOR_ENTITIES]]
 
 
-def geometry(cand_xy, anchor_xy, anchor_axis, uav_xy, yaw, cand_dim,
-             anchor_dim) -> np.ndarray:
-    """The 18 numbers a relation is read off, in three frames at once.
-
-    Kept as raw geometry rather than as a per-relation scalar so that the frame
-    comparison in the audit and the learned scorer see exactly the same input;
-    a scorer that had its features pre-chewed by one frame's rule could not be
-    compared against another frame fairly.
-    """
-    c = np.asarray(cand_xy, dtype=np.float64)[:2]
-    a = np.asarray(anchor_xy, dtype=np.float64)[:2]
-    u = np.asarray(uav_xy, dtype=np.float64)[:2]
-    heading = np.array([np.cos(yaw), np.sin(yaw)])
-    right = np.array([np.sin(yaw), -np.cos(yaw)])
-    delta = c - a
-    dist = float(np.linalg.norm(delta))
-    axis = np.asarray(anchor_axis, dtype=np.float64)[:2]
-    perp = np.array([-axis[1], axis[0]])
-    half_span = 0.5 * float(max(anchor_dim[0], anchor_dim[1]))
-    return np.array([
-        delta[0] / 100.0, delta[1] / 100.0,                 # global frame
-        float(np.log1p(dist)), dist / 200.0,
-        float(np.sin(np.arctan2(delta[1], delta[0]))),
-        float(np.cos(np.arctan2(delta[1], delta[0]))),
-        float(delta @ heading) / 100.0,                     # agent frame
-        float(delta @ right) / 100.0,
-        float(np.linalg.norm(c - u)) / 200.0,
-        (float(np.linalg.norm(a - u)) - float(np.linalg.norm(c - u))) / 100.0,
-        float(delta @ axis) / 100.0,                        # anchor frame
-        float(delta @ perp) / 100.0,
-        float(delta @ axis) / max(half_span, 1.0),          # in anchor half-widths
-        float(delta @ perp) / max(half_span, 1.0),
-        float(np.log1p(max(cand_dim[0] * cand_dim[1], 0.0))) / 5.0,
-        float(np.log1p(max(anchor_dim[0] * anchor_dim[1], 0.0))) / 5.0,
-        float(cand_dim[2]) / 20.0, float(np.log1p(half_span)) / 5.0,
-    ], dtype=np.float32)
+def name_index(objects) -> dict:
+    """Normalised entity name -> the ids carrying it, for one block."""
+    by_name = defaultdict(list)
+    for obj in objects.values():
+        if obj.name:
+            by_name[normalise(obj.name)].append(int(obj.id))
+    return by_name
 
 
 def main() -> None:
@@ -233,6 +204,18 @@ def main() -> None:
         assert candidate_ids[target_index] == target_id, (
             key, candidate_ids[target_index], target_id)
 
+        # The candidate list is built as ``[referenced] + distractors``, so the
+        # answer sits at index 0 in the stored files.  Permute it here, once and
+        # deterministically, rather than relying on each consumer to remember:
+        # a score vector that ties is broken by position, and position 0 is
+        # always the answer.  The earlier round applied this at load time in its
+        # trainer, which is why the stored files still had it at 0 and why this
+        # extractor had to notice.
+        order = candidate_order(hash((split, episode_index, step)),
+                                len(candidate_ids))
+        target_index = int(np.flatnonzero(order == target_index)[0])
+        candidate_ids = [candidate_ids[i] for i in order]
+
         uav_xy = np.asarray(episode.trajectory[step, :2], dtype=np.float64)
         yaw = float(episode.yaw()[step])
 
@@ -289,7 +272,9 @@ def main() -> None:
             payload[f"{path}_anchor_ids"] = anchor_ids.tolist()
             payload[f"{path}_anchor_xyz"] = anchor_xyz.tolist()
             payload[f"{path}_anchor_dim"] = anchor_dim.tolist()
-            payload[f"{path}_rel_geom"] = rel_geom.tolist()
+            # Permute the candidate axis with everything else, so that the
+            # stored geometry, ids and target row stay in one order.
+            payload[f"{path}_rel_geom"] = rel_geom[order].tolist()
             if path == "annotation":
                 # One relation per *annotation* phrase, matched by the phrase
                 # itself.  Not the parser's list: the two are different lengths.

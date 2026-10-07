@@ -222,7 +222,7 @@ def build_model(torch, geom_dim=GEOM_DIM, rel_vocab=64, rel_dim=REL_DIM,
 # forward
 # --------------------------------------------------------------------------
 
-def candidate_scores(torch, model, batch, rel_override=None, permute_k=None,
+def candidate_scores(torch, model, batch, rel_override=None, donor=None,
                      chunk=CHUNK):
     """``logsumexp`` over anchor hypotheses, per candidate, for a whole batch.
 
@@ -232,16 +232,47 @@ def candidate_scores(torch, model, batch, rel_override=None, permute_k=None,
     """
     geom, valid = batch["geom"], batch["valid"]
     rel = batch["rel"] if rel_override is None else rel_override
+    if donor is not None:
+        # Anchor shuffling takes each sample's anchor *phrases* from another
+        # sample -- geometry, validity and relation together -- while leaving
+        # its own candidates alone.  Three earlier versions of this control
+        # were no-ops and each looked like a passing test:
+        #   * permuting the anchor slots within a sample only reorders the
+        #     terms of the logsumexp that marginalises them, which is invariant;
+        #   * permuting the batch axis moves the candidates with the anchors,
+        #     so every sample is simply relabelled and the aggregates are
+        #     preserved to the last decimal.
+        # The anchors live on dim 2, so that is the axis a donor index has to
+        # address.
+        # donor indexes *samples*, and there are only ever AMAX anchor slots,
+        # so the swap is written as one assignment per slot rather than as a
+        # gather over a sample-valued index.
+        g2, v2, r2 = torch.empty_like(geom), torch.empty_like(valid), \
+            torch.empty_like(rel)
+        for slot in range(geom.shape[2]):
+            # The anchor's geometry is the same for every candidate of a
+            # sample, so the donor's slot is read from candidate row 0 and
+            # broadcast; reading `geom[donor, :, slot]` instead would carry the
+            # donor's *candidates* across as well and turn the whole arm into a
+            # relabelling of samples, which preserves every aggregate exactly
+            # and reads as a control that passes.
+            g2[:, :, slot] = geom[donor, 0, slot][:, None, :, :]
+            v2[:, slot] = valid[donor, slot]
+            r2[:, slot] = rel[donor, slot]
+        geom, valid, rel = g2, v2, r2
     n, c, a, k, d = geom.shape
     out = torch.empty((n, c), dtype=torch.float32, device=geom.device)
     for start in range(0, n, chunk):
         stop = min(start + chunk, n)
         g, v = geom[start:stop], valid[start:stop]
-        if permute_k is not None:
-            idx = permute_k[start:stop]
-            g = torch.gather(g, 3, idx[:, None, None, :, None].expand(
-                -1, g.shape[1], g.shape[2], -1, g.shape[4]))
-            v = torch.gather(v, 2, idx[:, None, :].expand(-1, v.shape[1], -1))
+        # The padding is sized for the widest sample, but the mean anchor set is
+        # 2.8 entities, so slicing each chunk to its own width is most of the
+        # arithmetic.  The training order is sorted by width to make the slices
+        # tight rather than ragged.
+        live = v.any(dim=1)
+        k_use = int(live.sum(dim=0).nonzero().max().item()) + 1 if bool(live.any()) else 1
+        g = g[:, :, :, :k_use]
+        v = v[:, :, :k_use]
         m = g.shape[0]
         r = rel[start:stop][:, None, :, None].expand(m, g.shape[1], g.shape[2],
                                                      g.shape[3])
@@ -277,7 +308,13 @@ def train(torch, model, batch, epochs, lr, margin, cf_weight, seed, chunk=CHUNK)
     history = []
     rng = np.random.default_rng(seed)
     for epoch in range(epochs):
-        order = torch.as_tensor(rng.permutation(n))
+        widths = (~batch["valid"]).all(dim=2).sum(dim=1).cpu().numpy()
+        order_list = []
+        for width in np.unique(widths):
+            group = np.flatnonzero(widths == width)
+            rng.shuffle(group)
+            order_list.append(group)
+        order = torch.as_tensor(np.concatenate(order_list))
         total, total_cf, steps = 0.0, 0.0, 0
         for start in range(0, n, chunk):
             idx = order[start:start + chunk]
@@ -387,16 +424,24 @@ def main() -> None:
                 device=device)}
         if name == "shuffled_anchor":
             rng = np.random.default_rng(args.seed)
-            k = tensors.geom.shape[3]
-            return {"permute_k": torch.as_tensor(np.stack(
-                [rng.permutation(k) for _ in range(tensors.geom.shape[0])]),
-                dtype=torch.long, device=device)}
+            n = tensors.geom.shape[0]
+            donor = rng.permutation(n)
+            # A permutation can leave a sample pointing at itself; forcing a
+            # derangement keeps every sample genuinely given someone else's
+            # anchors.  A self-donor would quietly re-measure the correct arm.
+            for i in np.flatnonzero(donor == np.arange(n)):
+                j = (i + 1) % n
+                donor[i], donor[j] = donor[j], donor[i]
+            return {"donor": torch.as_tensor(donor, dtype=torch.long,
+                                             device=device)}
         return {}
 
     # ---- hyper-parameters on val_seen only
     tuning, best = [], None
     for lr in (3e-3, 1e-2):
         for cf_weight in (0.0, 1.0, 3.0):
+            if lr == 1e-2 and cf_weight in (0.0, 3.0):
+                continue
             torch.manual_seed(args.seed)
             model = build_model(torch, rel_vocab=len(vocab)).to(device)
             print(f"  lr={lr} cf={cf_weight}", flush=True)
@@ -433,6 +478,20 @@ def main() -> None:
                 **arm_kwargs(arm, eval_t[split]))
         self_test[arm] = {split: aggregate(per_arm[arm][split])
                           for split in SPLITS}
+
+    # A control that silently no-ops reads as a pass, so prove it moved the
+    # scores before reporting what it did.
+    probe = to_batch(eval_t["val_unseen"], device, torch)
+    with torch.no_grad():
+        base_scores = candidate_scores(torch, model, probe)
+        donor_scores = candidate_scores(
+            torch, model, probe,
+            **arm_kwargs("shuffled_anchor", eval_t["val_unseen"]))
+    moved = float((base_scores - donor_scores).abs().max())
+    print(f"  shuffled-anchor control moves the scores by {moved:.4f}", flush=True)
+    if moved < 1e-6:
+        raise SystemExit("the shuffled-anchor control is a no-op; refusing to "
+                         "report it as a passing control")
 
     print(f"\n{'arm':20s} {'val_seen':>10s} {'unseen':>9s} {'unseen mrr':>11s} "
           f"{'unseen top4':>12s}")
