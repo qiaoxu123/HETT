@@ -15,6 +15,7 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel as DDP
+from torch.nn.utils.rnn import pad_sequence
 
 from torchvision import transforms
 
@@ -447,6 +448,84 @@ class NavCMTAgent:
         attention_mask = encoding['attention_mask'].cuda()
         lang_features, linear_cls, cls_hidden = self.lang_model(input_ids, attention_mask)
 
+        # Build referenced-landmark tokens once per rollout.  This uses exactly
+        # the same landmark names/centroids already used by the heatmap mask;
+        # no target IDs or GT coordinates are introduced.
+        selector_landmark_features = None
+        selector_landmark_xy = None
+        selector_landmark_mask = None
+        if getattr(self.args, 'candidate_selector', False):
+            landmark_name_lists = [
+                list(ob.get('referenced_landmark_names', ())) for ob in obs
+            ]
+            landmark_xy_lists = [
+                np.asarray(
+                    ob.get('referenced_landmark_xy', np.zeros((0, 2), dtype=np.float32)),
+                    dtype=np.float32,
+                ).reshape(-1, 2)
+                for ob in obs
+            ]
+            counts = [
+                min(len(names), len(xys))
+                for names, xys in zip(landmark_name_lists, landmark_xy_lists)
+            ]
+            flat_names = [
+                landmark_name_lists[b][j]
+                for b, count in enumerate(counts)
+                for j in range(count)
+            ]
+
+            if flat_names:
+                landmark_encoding = self.tokenizer(
+                    flat_names, padding=True, return_tensors="pt"
+                )
+                landmark_ids = landmark_encoding['input_ids'].cuda()
+                landmark_attention = landmark_encoding['attention_mask'].cuda()
+                _, _, flat_landmark_features = self.lang_model(
+                    landmark_ids, landmark_attention
+                )
+            else:
+                flat_landmark_features = lang_features.new_zeros(
+                    (0, lang_features.shape[-1])
+                )
+
+            feature_rows = []
+            xy_rows = []
+            offset = 0
+            for b, count in enumerate(counts):
+                if count:
+                    feature_rows.append(
+                        flat_landmark_features[offset:offset + count]
+                    )
+                    xy_rows.append(
+                        torch.as_tensor(
+                            landmark_xy_lists[b][:count],
+                            dtype=lang_features.dtype,
+                            device=lang_features.device,
+                        )
+                    )
+                    offset += count
+                else:
+                    feature_rows.append(
+                        lang_features.new_zeros((1, lang_features.shape[-1]))
+                    )
+                    xy_rows.append(lang_features.new_zeros((1, 2)))
+
+            selector_landmark_features = pad_sequence(
+                feature_rows, batch_first=True
+            )
+            selector_landmark_xy = pad_sequence(
+                xy_rows, batch_first=True
+            )
+            selector_landmark_mask = torch.zeros(
+                selector_landmark_xy.shape[:2],
+                dtype=torch.bool,
+                device=selector_landmark_xy.device,
+            )
+            for b, count in enumerate(counts):
+                if count:
+                    selector_landmark_mask[b, :count] = True
+
         # lang_features --> 768
         # linear_cls --> 49 (used to attend to img features)
         # c_0 = cls_hidden
@@ -545,6 +624,9 @@ class NavCMTAgent:
             input['candidate_visual_count'] = torch.zeros(
                 batch_size, selector_cells, device='cuda'
             )
+            input['selector_landmark_features'] = selector_landmark_features
+            input['selector_landmark_xy'] = selector_landmark_xy
+            input['selector_landmark_mask'] = selector_landmark_mask
 
         stage1_ended = np.array([False] * batch_size)
         stage2_recover_count = np.zeros(batch_size, dtype=np.int32)
@@ -650,6 +732,9 @@ class NavCMTAgent:
                     {
                         'candidate_visual_memory': input['candidate_visual_memory'],
                         'candidate_visual_count': input['candidate_visual_count'],
+                        'selector_landmark_features': input['selector_landmark_features'],
+                        'selector_landmark_xy': input['selector_landmark_xy'],
+                        'selector_landmark_mask': input['selector_landmark_mask'],
                     }
                     if getattr(self.args, 'candidate_selector', False)
                     else {}
