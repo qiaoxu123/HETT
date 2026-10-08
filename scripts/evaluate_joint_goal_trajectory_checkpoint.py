@@ -25,7 +25,7 @@ def main():
     ap.add_argument("--config", type=Path, required=True)
     ap.add_argument("--checkpoint", type=Path, required=True)
     ap.add_argument("--output", type=Path, required=True)
-    ap.add_argument("--variants", nargs="+", default=["C"])
+    ap.add_argument("--variants", nargs="+", default=None)
     ap.add_argument("--splits", nargs="+", default=None)
     opt = ap.parse_args()
     config_path = opt.config if opt.config.is_absolute() else START_DIR / opt.config
@@ -75,14 +75,15 @@ def main():
         for split in selected_splits
     }
     retry_cfg = dict(cfg)
-    retry_cfg["variants"] = {v: cfg["variants"][v] for v in opt.variants}
+    selected_variants = opt.variants or list(cfg["variants"])
+    retry_cfg["variants"] = {v: cfg["variants"][v] for v in selected_variants}
     retry_cfg["evaluation_splits"] = selected_splits
     retry_cfg["code_note"] = "full checkpoint eval retry after canonicalizing source punctuation"
     dump(out / "retry_manifest.json", {
         "checkpoint": str(checkpoint_path.resolve()),
         "checkpoint_epoch": checkpoint_epoch,
         "splits": {s: len(e.data) for s, e in envs.items()},
-        "variants": opt.variants,
+        "variants": selected_variants,
         "config": retry_cfg,
         "started_unix": time.time(),
     })
