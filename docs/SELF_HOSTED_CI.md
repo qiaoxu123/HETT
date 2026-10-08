@@ -32,6 +32,9 @@ manual dispatch from `main`. A `pull_request` trigger is intentionally absent.
 - Runner: `/home/20260922_1/.local/share/github-actions/hett`
 - Dedicated checkout/work: `/home/20260922_1/.local/share/github-actions/work/hett`
 - Service: `/home/20260922_1/.config/systemd/user/github-actions-hett.service`
+- Private service proxy environment: `/home/20260922_1/.local/share/github-actions/hett-service.env`.
+  This copies the existing terminal proxy settings; the user service starts after
+  the existing `clash-for-linux.service`. Proxy values are not committed.
 - Pre-job gate: `/home/20260922_1/.local/share/github-actions/hooks/hett-job-started.sh`
 - Python runtime (`HETT_CI_PYTHON`): existing CityNav environment at
   `/home/rental/20260922_1/Workspace/DATA/rsrefseg2/venv/bin/python`.
@@ -47,7 +50,8 @@ journalctl --user -u github-actions-hett.service -n 100 --no-pager
 systemctl --user disable --now github-actions-hett.service
 ```
 
-Registration credentials are machine-local, outside the repository. To remove
+Restart or stop the service only when it is idle; doing so during a job cancels
+that CI job. Registration credentials are machine-local, outside the repository. To remove
 the runner permanently, also remove its registration in GitHub Settings →
 Actions → Runners.
 
