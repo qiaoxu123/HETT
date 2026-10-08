@@ -3,6 +3,7 @@ import json
 import cv2
 import numpy as np
 import rasterio
+from PIL import Image
 from scipy.stats import spearmanr
 from multiagent.visual_goal.diagnosis_data import ROOT,OUT,DATASET,load_split,recover_poses,write_json,file_hash
 from multiagent.visual_goal.overlap import crop_transform,valid_mask,coverage,BINS,bin_mask
@@ -24,7 +25,7 @@ def main():
                     if name not in audit['maps']:
                         im=cv2.imread(str(ROOT/'data/rgbd'/f'{name}.png'))
                         assert im.shape[:2]==r.shape
-                        audit['maps'][name]={'affine':list(r.transform)[:6],'width':r.width,'height':r.height,'crs':str(r.crs),'png_tiff_shape_agree':True,'pixel_size_m':[abs(r.transform.a),abs(r.transform.e)]}
+                        audit['maps'][name]={'affine':list(r.transform)[:6],'width':r.width,'height':r.height,'crs':str(r.crs),'png_tiff_shape_agree':True,'png_source_mode':Image.open(ROOT/'data/rgbd'/f'{name}.png').mode,'pixel_size_m':[abs(r.transform.a),abs(r.transform.e)]}
                 xy=positions[i] if role=='q' else row['target_xy']
                 agl=row['altitude_agl_m'] if role=='q' else 20.
                 yaw=row['yaw_rad'] if role=='q' else 0.
