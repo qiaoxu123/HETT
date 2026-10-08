@@ -155,6 +155,10 @@ class CompactSpatialBelief(nn.Module):
             nn.Conv2d(128, hidden_dim, 3, stride=2, padding=1),
             nn.GELU(),
         )
+        # Initialize with a zero gate so legacy checkpoints retain their
+        # original belief predictions until the geometry branch learns.
+        self.geometry_projection = nn.Conv2d(13, hidden_dim, 1, bias=False)
+        self.geometry_gate = nn.Parameter(torch.tensor(0.0))
         self.language_projection = nn.Sequential(
             nn.Linear(language_dim, hidden_dim),
             nn.LayerNorm(hidden_dim),
@@ -178,6 +182,7 @@ class CompactSpatialBelief(nn.Module):
         maps: torch.Tensor,
         language_tokens: torch.Tensor,
         language_mask: torch.Tensor | None = None,
+        geometry: torch.Tensor | None = None,
     ) -> SpatialBeliefOutput:
         if maps.ndim != 4 or maps.shape[1] != 4:
             raise ValueError("belief maps must have shape [B,4,H,W]")
@@ -189,6 +194,11 @@ class CompactSpatialBelief(nn.Module):
             features, (self.field_size, self.field_size)
         )
         batch, channels, height, width = features.shape
+        if geometry is not None:
+            if geometry.shape != (batch, 13, height, width):
+                raise ValueError("geometry must have shape [B,13,field_size,field_size]")
+            geometry_features = self.geometry_projection(geometry.to(features.dtype))
+            features = features + torch.tanh(self.geometry_gate) * geometry_features
         spatial = features.flatten(2).transpose(1, 2)
         language = self.language_projection(language_tokens)
 
