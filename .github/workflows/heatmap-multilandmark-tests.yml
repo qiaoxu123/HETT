@@ -37,7 +37,7 @@ jobs:
           python -m pip install pytest numpy
       - name: Compile modified Python files
         run: |
-          python -m py_compile multiagent/models/heatmap_trajectory.py multiagent/models/multi_landmark.py multiagent/models/relative_geometry.py multiagent/models/spatial_belief.py multiagent/models/ET_haa.py multiagent/agent.py multiagent/env.py
+          python -m py_compile multiagent/models/heatmap_trajectory.py multiagent/models/multi_landmark.py multiagent/models/relative_geometry.py multiagent/models/spatial_belief.py multiagent/models/ET_haa.py multiagent/agent.py multiagent/env.py multiagent/main.py multiagent/parser.py
       - name: Run regression tests
         run: |
           python -m pytest -q tests/test_heatmap_trajectory.py tests/test_multi_landmark_relations.py tests/test_heatmap_relative_geometry.py tests/test_dense_spatial_belief.py
