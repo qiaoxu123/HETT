@@ -1,5 +1,9 @@
 # HETT
 
+## Visual goal abstraction experiment
+
+This research branch evaluates matching HETT orthographic trajectory-pose observations against target-centered goal templates, then stops at the Full RGB Gate if same-map retrieval is not reliable. The protocol, results, and limitations are documented in [VISUAL_GOAL_ABSTRACTION_REPORT.md](VISUAL_GOAL_ABSTRACTION_REPORT.md). Reproduce from the repository root with `bash multiagent/scripts/run_visual_goal_experiment.sh`. Dataset crops and the partial-tuned encoder checkpoint are generated locally and are not committed.
+
 ## Introduction
 
 The official repository for AAAI 2026 oral paper [History-Enhanced Two-Stage Transformer for Aerial Vision-and-Language Navigation](https://arxiv.org/abs/2512.14222).
