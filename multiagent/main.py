@@ -61,6 +61,12 @@ def heatmap_diagnostics_summary(logs, success_radius_m):
         stop_correct = sum(logs.get('trajectory_stop_correct', ()))
         values.append('trajectory_stop_precision=%.4f' % (stop_correct / stop_n))
         values.append('trajectory_stop_count=%d' % round(stop_n))
+    plan_steps = sum(logs.get('trajectory_plan_steps', ()))
+    if plan_steps > 0:
+        switches = sum(logs.get('trajectory_goal_switches', ()))
+        travel = sum(logs.get('trajectory_travel_distance_m', ()))
+        values.append('trajectory_goal_switch_rate=%.4f' % (switches / plan_steps))
+        values.append('trajectory_travel_distance_total_m=%.2f' % travel)
     reference_count = sum(logs.get('landmark_refs_total', ()))
     if reference_count > 0:
         matched_count = sum(logs.get('landmark_refs_name_matched', ()))
