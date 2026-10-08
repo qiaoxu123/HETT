@@ -1,0 +1,492 @@
+{
+  "n": 54,
+  "all_exact": true,
+  "samples": [
+    {
+      "split": "val_seen",
+      "map": "birmingham_block_1",
+      "role": "c",
+      "key": "00b9a744dadf628e885b",
+      "mae_after_same_jpeg_encoding": 0.0,
+      "max_error": 0.0,
+      "pixel_exact": true
+    },
+    {
+      "split": "val_seen",
+      "map": "birmingham_block_1",
+      "role": "q",
+      "key": "59adaf5380a0647b22f7",
+      "mae_after_same_jpeg_encoding": 0.0,
+      "max_error": 0.0,
+      "pixel_exact": true
+    },
+    {
+      "split": "val_seen",
+      "map": "birmingham_block_10",
+      "role": "c",
+      "key": "249cf439310af1cb91fa",
+      "mae_after_same_jpeg_encoding": 0.0,
+      "max_error": 0.0,
+      "pixel_exact": true
+    },
+    {
+      "split": "val_seen",
+      "map": "birmingham_block_10",
+      "role": "q",
+      "key": "3f5759dbf899d912e0d9",
+      "mae_after_same_jpeg_encoding": 0.0,
+      "max_error": 0.0,
+      "pixel_exact": true
+    },
+    {
+      "split": "val_seen",
+      "map": "birmingham_block_11",
+      "role": "c",
+      "key": "553961b17bc808c02240",
+      "mae_after_same_jpeg_encoding": 0.0,
+      "max_error": 0.0,
+      "pixel_exact": true
+    },
+    {
+      "split": "val_seen",
+      "map": "birmingham_block_11",
+      "role": "q",
+      "key": "bcde540b375f2a751b85",
+      "mae_after_same_jpeg_encoding": 0.0,
+      "max_error": 0.0,
+      "pixel_exact": true
+    },
+    {
+      "split": "val_seen",
+      "map": "birmingham_block_12",
+      "role": "c",
+      "key": "00b3ae5fa1262f9852cf",
+      "mae_after_same_jpeg_encoding": 0.0,
+      "max_error": 0.0,
+      "pixel_exact": true
+    },
+    {
+      "split": "val_seen",
+      "map": "birmingham_block_12",
+      "role": "q",
+      "key": "ceea41bd450538d55aaf",
+      "mae_after_same_jpeg_encoding": 0.0,
+      "max_error": 0.0,
+      "pixel_exact": true
+    },
+    {
+      "split": "val_seen",
+      "map": "birmingham_block_3",
+      "role": "c",
+      "key": "102888b6054e76dc4ec2",
+      "mae_after_same_jpeg_encoding": 0.0,
+      "max_error": 0.0,
+      "pixel_exact": true
+    },
+    {
+      "split": "val_seen",
+      "map": "birmingham_block_3",
+      "role": "q",
+      "key": "2c544876fc53b89ae594",
+      "mae_after_same_jpeg_encoding": 0.0,
+      "max_error": 0.0,
+      "pixel_exact": true
+    },
+    {
+      "split": "val_seen",
+      "map": "birmingham_block_4",
+      "role": "c",
+      "key": "071ed6b41fd2b365ab29",
+      "mae_after_same_jpeg_encoding": 0.0,
+      "max_error": 0.0,
+      "pixel_exact": true
+    },
+    {
+      "split": "val_seen",
+      "map": "birmingham_block_4",
+      "role": "q",
+      "key": "2331e457b02b3b62fb54",
+      "mae_after_same_jpeg_encoding": 0.0,
+      "max_error": 0.0,
+      "pixel_exact": true
+    },
+    {
+      "split": "val_seen",
+      "map": "birmingham_block_7",
+      "role": "c",
+      "key": "0544cdf2700d525b1906",
+      "mae_after_same_jpeg_encoding": 0.0,
+      "max_error": 0.0,
+      "pixel_exact": true
+    },
+    {
+      "split": "val_seen",
+      "map": "birmingham_block_7",
+      "role": "q",
+      "key": "01ac22c80e22a88567da",
+      "mae_after_same_jpeg_encoding": 0.0,
+      "max_error": 0.0,
+      "pixel_exact": true
+    },
+    {
+      "split": "val_seen",
+      "map": "birmingham_block_9",
+      "role": "c",
+      "key": "04ce9ced646614021463",
+      "mae_after_same_jpeg_encoding": 0.0,
+      "max_error": 0.0,
+      "pixel_exact": true
+    },
+    {
+      "split": "val_seen",
+      "map": "birmingham_block_9",
+      "role": "q",
+      "key": "21b2a0490bbe885af326",
+      "mae_after_same_jpeg_encoding": 0.0,
+      "max_error": 0.0,
+      "pixel_exact": true
+    },
+    {
+      "split": "val_seen",
+      "map": "cambridge_block_12",
+      "role": "c",
+      "key": "022667720468a523c454",
+      "mae_after_same_jpeg_encoding": 0.0,
+      "max_error": 0.0,
+      "pixel_exact": true
+    },
+    {
+      "split": "val_seen",
+      "map": "cambridge_block_12",
+      "role": "q",
+      "key": "134a473f13b3468860da",
+      "mae_after_same_jpeg_encoding": 0.0,
+      "max_error": 0.0,
+      "pixel_exact": true
+    },
+    {
+      "split": "val_seen",
+      "map": "cambridge_block_13",
+      "role": "c",
+      "key": "06553de7a32a0a50ceca",
+      "mae_after_same_jpeg_encoding": 0.0,
+      "max_error": 0.0,
+      "pixel_exact": true
+    },
+    {
+      "split": "val_seen",
+      "map": "cambridge_block_13",
+      "role": "q",
+      "key": "ca7ad4d9677065299613",
+      "mae_after_same_jpeg_encoding": 0.0,
+      "max_error": 0.0,
+      "pixel_exact": true
+    },
+    {
+      "split": "val_seen",
+      "map": "cambridge_block_17",
+      "role": "c",
+      "key": "0a7010b65dfd1ecc05c3",
+      "mae_after_same_jpeg_encoding": 0.0,
+      "max_error": 0.0,
+      "pixel_exact": true
+    },
+    {
+      "split": "val_seen",
+      "map": "cambridge_block_17",
+      "role": "q",
+      "key": "e6a63481caaeef6b5a66",
+      "mae_after_same_jpeg_encoding": 0.0,
+      "max_error": 0.0,
+      "pixel_exact": true
+    },
+    {
+      "split": "val_seen",
+      "map": "cambridge_block_18",
+      "role": "c",
+      "key": "0456892a1853e50f23eb",
+      "mae_after_same_jpeg_encoding": 0.0,
+      "max_error": 0.0,
+      "pixel_exact": true
+    },
+    {
+      "split": "val_seen",
+      "map": "cambridge_block_18",
+      "role": "q",
+      "key": "e52ef5ed7c1089f9bed2",
+      "mae_after_same_jpeg_encoding": 0.0,
+      "max_error": 0.0,
+      "pixel_exact": true
+    },
+    {
+      "split": "val_seen",
+      "map": "cambridge_block_19",
+      "role": "c",
+      "key": "0a0c9cd1a62c738379eb",
+      "mae_after_same_jpeg_encoding": 0.0,
+      "max_error": 0.0,
+      "pixel_exact": true
+    },
+    {
+      "split": "val_seen",
+      "map": "cambridge_block_19",
+      "role": "q",
+      "key": "1eacdabedcbc7e655355",
+      "mae_after_same_jpeg_encoding": 0.0,
+      "max_error": 0.0,
+      "pixel_exact": true
+    },
+    {
+      "split": "val_seen",
+      "map": "cambridge_block_20",
+      "role": "c",
+      "key": "009ef2f33b386ec8d527",
+      "mae_after_same_jpeg_encoding": 0.0,
+      "max_error": 0.0,
+      "pixel_exact": true
+    },
+    {
+      "split": "val_seen",
+      "map": "cambridge_block_20",
+      "role": "q",
+      "key": "b37cb7052e22bb3d3342",
+      "mae_after_same_jpeg_encoding": 0.0,
+      "max_error": 0.0,
+      "pixel_exact": true
+    },
+    {
+      "split": "val_seen",
+      "map": "cambridge_block_21",
+      "role": "c",
+      "key": "047a67fb8d206b44b2c9",
+      "mae_after_same_jpeg_encoding": 0.0,
+      "max_error": 0.0,
+      "pixel_exact": true
+    },
+    {
+      "split": "val_seen",
+      "map": "cambridge_block_21",
+      "role": "q",
+      "key": "b580681e7612da57e641",
+      "mae_after_same_jpeg_encoding": 0.0,
+      "max_error": 0.0,
+      "pixel_exact": true
+    },
+    {
+      "split": "val_seen",
+      "map": "cambridge_block_23",
+      "role": "c",
+      "key": "29a0fc0af1df9737cd74",
+      "mae_after_same_jpeg_encoding": 0.0,
+      "max_error": 0.0,
+      "pixel_exact": true
+    },
+    {
+      "split": "val_seen",
+      "map": "cambridge_block_23",
+      "role": "q",
+      "key": "c680fa6b426a3071a850",
+      "mae_after_same_jpeg_encoding": 0.0,
+      "max_error": 0.0,
+      "pixel_exact": true
+    },
+    {
+      "split": "val_seen",
+      "map": "cambridge_block_25",
+      "role": "c",
+      "key": "66d1a1452255947701b4",
+      "mae_after_same_jpeg_encoding": 0.0,
+      "max_error": 0.0,
+      "pixel_exact": true
+    },
+    {
+      "split": "val_seen",
+      "map": "cambridge_block_25",
+      "role": "q",
+      "key": "f513a0595fc2898482a1",
+      "mae_after_same_jpeg_encoding": 0.0,
+      "max_error": 0.0,
+      "pixel_exact": true
+    },
+    {
+      "split": "val_seen",
+      "map": "cambridge_block_28",
+      "role": "c",
+      "key": "01a66efd646d90ca305b",
+      "mae_after_same_jpeg_encoding": 0.0,
+      "max_error": 0.0,
+      "pixel_exact": true
+    },
+    {
+      "split": "val_seen",
+      "map": "cambridge_block_28",
+      "role": "q",
+      "key": "4abe061b6b58c6b28f76",
+      "mae_after_same_jpeg_encoding": 0.0,
+      "max_error": 0.0,
+      "pixel_exact": true
+    },
+    {
+      "split": "val_seen",
+      "map": "cambridge_block_33",
+      "role": "c",
+      "key": "0e918885f0a2710f70c5",
+      "mae_after_same_jpeg_encoding": 0.0,
+      "max_error": 0.0,
+      "pixel_exact": true
+    },
+    {
+      "split": "val_seen",
+      "map": "cambridge_block_33",
+      "role": "q",
+      "key": "8231a3245defe686d68e",
+      "mae_after_same_jpeg_encoding": 0.0,
+      "max_error": 0.0,
+      "pixel_exact": true
+    },
+    {
+      "split": "val_seen",
+      "map": "cambridge_block_4",
+      "role": "c",
+      "key": "17aa9da0c862205c0a5c",
+      "mae_after_same_jpeg_encoding": 0.0,
+      "max_error": 0.0,
+      "pixel_exact": true
+    },
+    {
+      "split": "val_seen",
+      "map": "cambridge_block_4",
+      "role": "q",
+      "key": "ce160deba117d8e36242",
+      "mae_after_same_jpeg_encoding": 0.0,
+      "max_error": 0.0,
+      "pixel_exact": true
+    },
+    {
+      "split": "val_seen",
+      "map": "cambridge_block_6",
+      "role": "c",
+      "key": "4b57f6c7e5f6482ca048",
+      "mae_after_same_jpeg_encoding": 0.0,
+      "max_error": 0.0,
+      "pixel_exact": true
+    },
+    {
+      "split": "val_seen",
+      "map": "cambridge_block_6",
+      "role": "q",
+      "key": "3211fec429a1e7ecb947",
+      "mae_after_same_jpeg_encoding": 0.0,
+      "max_error": 0.0,
+      "pixel_exact": true
+    },
+    {
+      "split": "val_seen",
+      "map": "cambridge_block_7",
+      "role": "c",
+      "key": "11d69efd580635104885",
+      "mae_after_same_jpeg_encoding": 0.0,
+      "max_error": 0.0,
+      "pixel_exact": true
+    },
+    {
+      "split": "val_seen",
+      "map": "cambridge_block_7",
+      "role": "q",
+      "key": "8e6791531fcfe957db38",
+      "mae_after_same_jpeg_encoding": 0.0,
+      "max_error": 0.0,
+      "pixel_exact": true
+    },
+    {
+      "split": "val_seen",
+      "map": "cambridge_block_9",
+      "role": "c",
+      "key": "061bd6deb3924d0784a7",
+      "mae_after_same_jpeg_encoding": 0.0,
+      "max_error": 0.0,
+      "pixel_exact": true
+    },
+    {
+      "split": "val_seen",
+      "map": "cambridge_block_9",
+      "role": "q",
+      "key": "d0b2baf631c2f3da2fcb",
+      "mae_after_same_jpeg_encoding": 0.0,
+      "max_error": 0.0,
+      "pixel_exact": true
+    },
+    {
+      "split": "val_unseen",
+      "map": "birmingham_block_5",
+      "role": "c",
+      "key": "00f8d10c05252f36f4fe",
+      "mae_after_same_jpeg_encoding": 0.0,
+      "max_error": 0.0,
+      "pixel_exact": true
+    },
+    {
+      "split": "val_unseen",
+      "map": "birmingham_block_5",
+      "role": "q",
+      "key": "2d99075f90647ef5b87f",
+      "mae_after_same_jpeg_encoding": 0.0,
+      "max_error": 0.0,
+      "pixel_exact": true
+    },
+    {
+      "split": "val_unseen",
+      "map": "cambridge_block_10",
+      "role": "c",
+      "key": "030c9cf0c862435b7d21",
+      "mae_after_same_jpeg_encoding": 0.0,
+      "max_error": 0.0,
+      "pixel_exact": true
+    },
+    {
+      "split": "val_unseen",
+      "map": "cambridge_block_10",
+      "role": "q",
+      "key": "58c5a291bfbeae3ce23f",
+      "mae_after_same_jpeg_encoding": 0.0,
+      "max_error": 0.0,
+      "pixel_exact": true
+    },
+    {
+      "split": "val_unseen",
+      "map": "cambridge_block_2",
+      "role": "c",
+      "key": "006d9e69a2d2c3f098ec",
+      "mae_after_same_jpeg_encoding": 0.0,
+      "max_error": 0.0,
+      "pixel_exact": true
+    },
+    {
+      "split": "val_unseen",
+      "map": "cambridge_block_2",
+      "role": "q",
+      "key": "c424d78effaaf93a7e40",
+      "mae_after_same_jpeg_encoding": 0.0,
+      "max_error": 0.0,
+      "pixel_exact": true
+    },
+    {
+      "split": "val_unseen",
+      "map": "cambridge_block_3",
+      "role": "c",
+      "key": "0036b8117938ced29122",
+      "mae_after_same_jpeg_encoding": 0.0,
+      "max_error": 0.0,
+      "pixel_exact": true
+    },
+    {
+      "split": "val_unseen",
+      "map": "cambridge_block_3",
+      "role": "q",
+      "key": "62521924c99c239bfcb5",
+      "mae_after_same_jpeg_encoding": 0.0,
+      "max_error": 0.0,
+      "pixel_exact": true
+    }
+  ]
+}

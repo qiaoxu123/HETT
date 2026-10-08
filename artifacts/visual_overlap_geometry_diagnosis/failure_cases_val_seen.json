@@ -1,0 +1,170 @@
+[
+  {
+    "category": "no_overlap_failure",
+    "query_index": 12,
+    "query_key": "53a4cf86930ca7d91f7a",
+    "positive_index": 90,
+    "negative_index": 114
+  },
+  {
+    "category": "no_overlap_failure",
+    "query_index": 23,
+    "query_key": "ee79d545a7d189735b94",
+    "positive_index": 309,
+    "negative_index": 114
+  },
+  {
+    "category": "no_overlap_failure",
+    "query_index": 29,
+    "query_key": "977626974462fdfe4739",
+    "positive_index": 309,
+    "negative_index": 228
+  },
+  {
+    "category": "no_overlap_failure",
+    "query_index": 33,
+    "query_key": "be5b2a3df8f4b81d7fcb",
+    "positive_index": 309,
+    "negative_index": 204
+  },
+  {
+    "category": "high_overlap_global_failure",
+    "query_index": 119,
+    "query_key": "d1157d8cc870b3cb4501",
+    "positive_index": 184,
+    "negative_index": 172
+  },
+  {
+    "category": "high_overlap_global_failure",
+    "query_index": 130,
+    "query_key": "0c8044027c8c718d077e",
+    "positive_index": 114,
+    "negative_index": 228
+  },
+  {
+    "category": "high_overlap_global_failure",
+    "query_index": 224,
+    "query_key": "85f85154f1ce09a92524",
+    "positive_index": 374,
+    "negative_index": 378
+  },
+  {
+    "category": "high_overlap_global_failure",
+    "query_index": 245,
+    "query_key": "4c4cd19ed3ab9afea306",
+    "positive_index": 391,
+    "negative_index": 415
+  },
+  {
+    "category": "rgb_fail_geometry_success",
+    "query_index": 9,
+    "query_key": "f3f9dbf742da8fd266e7",
+    "positive_index": 90,
+    "negative_index": 391
+  },
+  {
+    "category": "rgb_fail_geometry_success",
+    "query_index": 53,
+    "query_key": "9f021db1e588de270f9c",
+    "positive_index": 204,
+    "negative_index": 114
+  },
+  {
+    "category": "rgb_fail_geometry_success",
+    "query_index": 58,
+    "query_key": "18a0299d8bb77e565b29",
+    "positive_index": 204,
+    "negative_index": 228
+  },
+  {
+    "category": "rgb_fail_geometry_success",
+    "query_index": 60,
+    "query_key": "53eafca4739de70d6f50",
+    "positive_index": 204,
+    "negative_index": 228
+  },
+  {
+    "category": "geometry_fail_rgb_success",
+    "query_index": 11,
+    "query_key": "8109cd73e878b9cda4e4",
+    "positive_index": 90,
+    "negative_index": 415
+  },
+  {
+    "category": "geometry_fail_rgb_success",
+    "query_index": 25,
+    "query_key": "0a58ddc7416b5f5a9640",
+    "positive_index": 309,
+    "negative_index": 90
+  },
+  {
+    "category": "geometry_fail_rgb_success",
+    "query_index": 26,
+    "query_key": "5b94bdf31508dadd6b8d",
+    "positive_index": 309,
+    "negative_index": 181
+  },
+  {
+    "category": "geometry_fail_rgb_success",
+    "query_index": 31,
+    "query_key": "541701bb32a5a4930c91",
+    "positive_index": 309,
+    "negative_index": 415
+  },
+  {
+    "category": "both_fail",
+    "query_index": 0,
+    "query_key": "59adaf5380a0647b22f7",
+    "positive_index": 90,
+    "negative_index": 309
+  },
+  {
+    "category": "both_fail",
+    "query_index": 1,
+    "query_key": "08f6ffd141fab363451b",
+    "positive_index": 90,
+    "negative_index": 391
+  },
+  {
+    "category": "both_fail",
+    "query_index": 2,
+    "query_key": "4561b4ce91950e1db6c8",
+    "positive_index": 90,
+    "negative_index": 415
+  },
+  {
+    "category": "both_fail",
+    "query_index": 3,
+    "query_key": "875099a064f71c9ff7c5",
+    "positive_index": 90,
+    "negative_index": 415
+  },
+  {
+    "category": "similar_hard_negative",
+    "query_index": 68,
+    "query_key": "c052904c1eec23302653",
+    "positive_index": 305,
+    "negative_index": 184
+  },
+  {
+    "category": "similar_hard_negative",
+    "query_index": 69,
+    "query_key": "d85269b53eb65b5b0c18",
+    "positive_index": 305,
+    "negative_index": 184
+  },
+  {
+    "category": "similar_hard_negative",
+    "query_index": 73,
+    "query_key": "d66a2da8d051b0d52c8d",
+    "positive_index": 305,
+    "negative_index": 184
+  },
+  {
+    "category": "similar_hard_negative",
+    "query_index": 79,
+    "query_key": "8ba4792d501c8a76b531",
+    "positive_index": 305,
+    "negative_index": 184
+  }
+]

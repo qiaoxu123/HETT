@@ -1,0 +1,7 @@
+{
+  "status": "PASS",
+  "passed": 37,
+  "seconds": 12.56,
+  "command": "python -m pytest -q",
+  "original_21_tests_preserved": true
+}

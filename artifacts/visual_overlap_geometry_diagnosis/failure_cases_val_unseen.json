@@ -1,0 +1,170 @@
+[
+  {
+    "category": "no_overlap_failure",
+    "query_index": 5,
+    "query_key": "2e4149db544922fc342f",
+    "positive_index": 139,
+    "negative_index": 236
+  },
+  {
+    "category": "no_overlap_failure",
+    "query_index": 14,
+    "query_key": "eca741d6a48c6684d377",
+    "positive_index": 468,
+    "negative_index": 181
+  },
+  {
+    "category": "no_overlap_failure",
+    "query_index": 15,
+    "query_key": "ecadc7cd0f282844a652",
+    "positive_index": 468,
+    "negative_index": 230
+  },
+  {
+    "category": "no_overlap_failure",
+    "query_index": 36,
+    "query_key": "6431679cec45fa2fbee9",
+    "positive_index": 402,
+    "negative_index": 159
+  },
+  {
+    "category": "high_overlap_global_failure",
+    "query_index": 52,
+    "query_key": "8ef992cfdcceee651607",
+    "positive_index": 228,
+    "negative_index": 459
+  },
+  {
+    "category": "high_overlap_global_failure",
+    "query_index": 126,
+    "query_key": "389768b0d0b3def0852f",
+    "positive_index": 58,
+    "negative_index": 374
+  },
+  {
+    "category": "high_overlap_global_failure",
+    "query_index": 168,
+    "query_key": "9c19467eaab5bdfe812c",
+    "positive_index": 499,
+    "negative_index": 442
+  },
+  {
+    "category": "high_overlap_global_failure",
+    "query_index": 211,
+    "query_key": "1dd5d643fc377c8cb93f",
+    "positive_index": 389,
+    "negative_index": 442
+  },
+  {
+    "category": "rgb_fail_geometry_success",
+    "query_index": 154,
+    "query_key": "21dca83f42eeec6a17af",
+    "positive_index": 287,
+    "negative_index": 90
+  },
+  {
+    "category": "rgb_fail_geometry_success",
+    "query_index": 630,
+    "query_key": "6781163d6aa82b113831",
+    "positive_index": 421,
+    "negative_index": 334
+  },
+  {
+    "category": "rgb_fail_geometry_success",
+    "query_index": 638,
+    "query_key": "b4b8bdc1ea6d7f683099",
+    "positive_index": 421,
+    "negative_index": 119
+  },
+  {
+    "category": "rgb_fail_geometry_success",
+    "query_index": 639,
+    "query_key": "8c9ca9c2970d8cdca2b0",
+    "positive_index": 421,
+    "negative_index": 119
+  },
+  {
+    "category": "geometry_fail_rgb_success",
+    "query_index": 4,
+    "query_key": "51f01c893b2f58e65964",
+    "positive_index": 139,
+    "negative_index": 468
+  },
+  {
+    "category": "geometry_fail_rgb_success",
+    "query_index": 6,
+    "query_key": "4bfd59ad873dc5d79793",
+    "positive_index": 139,
+    "negative_index": 228
+  },
+  {
+    "category": "geometry_fail_rgb_success",
+    "query_index": 9,
+    "query_key": "35e725a777627182c19c",
+    "positive_index": 139,
+    "negative_index": 281
+  },
+  {
+    "category": "geometry_fail_rgb_success",
+    "query_index": 17,
+    "query_key": "6dd0422641a956b72e9f",
+    "positive_index": 468,
+    "negative_index": 139
+  },
+  {
+    "category": "both_fail",
+    "query_index": 0,
+    "query_key": "2d99075f90647ef5b87f",
+    "positive_index": 139,
+    "negative_index": 324
+  },
+  {
+    "category": "both_fail",
+    "query_index": 1,
+    "query_key": "afa156b014799b90c524",
+    "positive_index": 139,
+    "negative_index": 23
+  },
+  {
+    "category": "both_fail",
+    "query_index": 2,
+    "query_key": "5a338fb9de5d613f01fe",
+    "positive_index": 139,
+    "negative_index": 220
+  },
+  {
+    "category": "both_fail",
+    "query_index": 3,
+    "query_key": "56460e3c92fb06dc71a1",
+    "positive_index": 139,
+    "negative_index": 385
+  },
+  {
+    "category": "similar_hard_negative",
+    "query_index": 138,
+    "query_key": "86ec5f5136976fbd9cc7",
+    "positive_index": 143,
+    "negative_index": 381
+  },
+  {
+    "category": "similar_hard_negative",
+    "query_index": 139,
+    "query_key": "e280412e8c9781dc23d6",
+    "positive_index": 143,
+    "negative_index": 381
+  },
+  {
+    "category": "similar_hard_negative",
+    "query_index": 168,
+    "query_key": "9c19467eaab5bdfe812c",
+    "positive_index": 499,
+    "negative_index": 442
+  },
+  {
+    "category": "similar_hard_negative",
+    "query_index": 180,
+    "query_key": "7dee0b6534bd677c90c6",
+    "positive_index": 262,
+    "negative_index": 125
+  }
+]

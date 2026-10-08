@@ -1,0 +1,935 @@
+{
+  "base_commit": "856e8400246730554ee63e39731761e5fdf72973",
+  "maps": {
+    "birmingham_block_1": {
+      "affine": [
+        0.1,
+        0.0,
+        15.25,
+        0.0,
+        -0.1,
+        800.0
+      ],
+      "width": 3848,
+      "height": 4000,
+      "crs": "None",
+      "png_tiff_shape_agree": true,
+      "pixel_size_m": [
+        0.1,
+        0.1
+      ],
+      "png_source_mode": "RGB"
+    },
+    "birmingham_block_10": {
+      "affine": [
+        0.1,
+        0.0,
+        800.0,
+        0.0,
+        -0.1,
+        1285.1
+      ],
+      "width": 4000,
+      "height": 851,
+      "crs": "None",
+      "png_tiff_shape_agree": true,
+      "pixel_size_m": [
+        0.1,
+        0.1
+      ],
+      "png_source_mode": "RGB"
+    },
+    "birmingham_block_11": {
+      "affine": [
+        0.1,
+        0.0,
+        1200.0,
+        0.0,
+        -0.1,
+        800.0375
+      ],
+      "width": 655,
+      "height": 1796,
+      "crs": "None",
+      "png_tiff_shape_agree": true,
+      "pixel_size_m": [
+        0.1,
+        0.1
+      ],
+      "png_source_mode": "RGB"
+    },
+    "birmingham_block_12": {
+      "affine": [
+        0.1,
+        0.0,
+        1200.0,
+        0.0,
+        -0.1,
+        1200.0
+      ],
+      "width": 732,
+      "height": 4000,
+      "crs": "None",
+      "png_tiff_shape_agree": true,
+      "pixel_size_m": [
+        0.1,
+        0.1
+      ],
+      "png_source_mode": "RGB"
+    },
+    "birmingham_block_3": {
+      "affine": [
+        0.1,
+        0.0,
+        400.0,
+        0.0,
+        -0.1,
+        400.0
+      ],
+      "width": 4000,
+      "height": 4000,
+      "crs": "None",
+      "png_tiff_shape_agree": true,
+      "pixel_size_m": [
+        0.1,
+        0.1
+      ],
+      "png_source_mode": "RGB"
+    },
+    "birmingham_block_4": {
+      "affine": [
+        0.1,
+        0.0,
+        400.0,
+        0.0,
+        -0.1,
+        800.0
+      ],
+      "width": 4000,
+      "height": 4000,
+      "crs": "None",
+      "png_tiff_shape_agree": true,
+      "pixel_size_m": [
+        0.1,
+        0.1
+      ],
+      "png_source_mode": "RGB"
+    },
+    "birmingham_block_7": {
+      "affine": [
+        0.1,
+        0.0,
+        800.0,
+        0.0,
+        -0.1,
+        400.025
+      ],
+      "width": 3196,
+      "height": 1734,
+      "crs": "None",
+      "png_tiff_shape_agree": true,
+      "pixel_size_m": [
+        0.1,
+        0.1
+      ],
+      "png_source_mode": "RGB"
+    },
+    "birmingham_block_9": {
+      "affine": [
+        0.1,
+        0.0,
+        800.0,
+        0.0,
+        -0.1,
+        1200.0
+      ],
+      "width": 4000,
+      "height": 4000,
+      "crs": "None",
+      "png_tiff_shape_agree": true,
+      "pixel_size_m": [
+        0.1,
+        0.1
+      ],
+      "png_source_mode": "RGB"
+    },
+    "cambridge_block_12": {
+      "affine": [
+        0.1,
+        0.0,
+        800.0,
+        0.0,
+        -0.1,
+        400.00625
+      ],
+      "width": 4001,
+      "height": 3776,
+      "crs": "None",
+      "png_tiff_shape_agree": true,
+      "pixel_size_m": [
+        0.1,
+        0.1
+      ],
+      "png_source_mode": "RGB"
+    },
+    "cambridge_block_13": {
+      "affine": [
+        0.1,
+        0.0,
+        800.0,
+        0.0,
+        -0.1,
+        800.1
+      ],
+      "width": 4001,
+      "height": 4001,
+      "crs": "None",
+      "png_tiff_shape_agree": true,
+      "pixel_size_m": [
+        0.1,
+        0.1
+      ],
+      "png_source_mode": "RGB"
+    },
+    "cambridge_block_17": {
+      "affine": [
+        0.1,
+        0.0,
+        800.0,
+        0.0,
+        -0.1,
+        2137.0
+      ],
+      "width": 4001,
+      "height": 1370,
+      "crs": "None",
+      "png_tiff_shape_agree": true,
+      "pixel_size_m": [
+        0.1,
+        0.1
+      ],
+      "png_source_mode": "RGB"
+    },
+    "cambridge_block_18": {
+      "affine": [
+        0.1,
+        0.0,
+        1200.0,
+        0.0,
+        -0.1,
+        400.0375
+      ],
+      "width": 2901,
+      "height": 2536,
+      "crs": "None",
+      "png_tiff_shape_agree": true,
+      "pixel_size_m": [
+        0.1,
+        0.1
+      ],
+      "png_source_mode": "RGB"
+    },
+    "cambridge_block_19": {
+      "affine": [
+        0.1,
+        0.0,
+        1200.0,
+        0.0,
+        -0.1,
+        800.1
+      ],
+      "width": 4001,
+      "height": 4001,
+      "crs": "None",
+      "png_tiff_shape_agree": true,
+      "pixel_size_m": [
+        0.1,
+        0.1
+      ],
+      "png_source_mode": "RGB"
+    },
+    "cambridge_block_20": {
+      "affine": [
+        0.1,
+        0.0,
+        1200.0,
+        0.0,
+        -0.1,
+        1200.1
+      ],
+      "width": 4001,
+      "height": 4001,
+      "crs": "None",
+      "png_tiff_shape_agree": true,
+      "pixel_size_m": [
+        0.1,
+        0.1
+      ],
+      "png_source_mode": "RGB"
+    },
+    "cambridge_block_21": {
+      "affine": [
+        0.1,
+        0.0,
+        1200.0,
+        0.0,
+        -0.1,
+        1600.1
+      ],
+      "width": 4001,
+      "height": 4001,
+      "crs": "None",
+      "png_tiff_shape_agree": true,
+      "pixel_size_m": [
+        0.1,
+        0.1
+      ],
+      "png_source_mode": "RGB"
+    },
+    "cambridge_block_23": {
+      "affine": [
+        0.1,
+        0.0,
+        1200.0,
+        0.0,
+        -0.1,
+        2107.7
+      ],
+      "width": 2564,
+      "height": 1077,
+      "crs": "None",
+      "png_tiff_shape_agree": true,
+      "pixel_size_m": [
+        0.1,
+        0.1
+      ],
+      "png_source_mode": "RGB"
+    },
+    "cambridge_block_25": {
+      "affine": [
+        0.1,
+        0.0,
+        1600.0,
+        0.0,
+        -0.1,
+        800.053125
+      ],
+      "width": 2173,
+      "height": 2876,
+      "crs": "None",
+      "png_tiff_shape_agree": true,
+      "pixel_size_m": [
+        0.1,
+        0.1
+      ],
+      "png_source_mode": "RGB"
+    },
+    "cambridge_block_28": {
+      "affine": [
+        0.1,
+        0.0,
+        1600.0,
+        0.0,
+        -0.1,
+        1918.1
+      ],
+      "width": 4001,
+      "height": 3181,
+      "crs": "None",
+      "png_tiff_shape_agree": true,
+      "pixel_size_m": [
+        0.1,
+        0.1
+      ],
+      "png_source_mode": "RGB"
+    },
+    "cambridge_block_33": {
+      "affine": [
+        0.1,
+        0.0,
+        2000.0,
+        0.0,
+        -0.1,
+        1600.1
+      ],
+      "width": 1530,
+      "height": 4001,
+      "crs": "None",
+      "png_tiff_shape_agree": true,
+      "pixel_size_m": [
+        0.1,
+        0.1
+      ],
+      "png_source_mode": "RGB"
+    },
+    "cambridge_block_4": {
+      "affine": [
+        0.1,
+        0.0,
+        113.4375,
+        0.0,
+        -0.1,
+        1802.3
+      ],
+      "width": 2866,
+      "height": 2023,
+      "crs": "None",
+      "png_tiff_shape_agree": true,
+      "pixel_size_m": [
+        0.1,
+        0.1
+      ],
+      "png_source_mode": "RGB"
+    },
+    "cambridge_block_6": {
+      "affine": [
+        0.1,
+        0.0,
+        400.0,
+        0.0,
+        -0.1,
+        400.1
+      ],
+      "width": 4001,
+      "height": 4001,
+      "crs": "None",
+      "png_tiff_shape_agree": true,
+      "pixel_size_m": [
+        0.1,
+        0.1
+      ],
+      "png_source_mode": "RGB"
+    },
+    "cambridge_block_7": {
+      "affine": [
+        0.1,
+        0.0,
+        400.0,
+        0.0,
+        -0.1,
+        800.1
+      ],
+      "width": 4001,
+      "height": 4001,
+      "crs": "None",
+      "png_tiff_shape_agree": true,
+      "pixel_size_m": [
+        0.1,
+        0.1
+      ],
+      "png_source_mode": "RGB"
+    },
+    "cambridge_block_9": {
+      "affine": [
+        0.1,
+        0.0,
+        400.0,
+        0.0,
+        -0.1,
+        1600.1
+      ],
+      "width": 4001,
+      "height": 4001,
+      "crs": "None",
+      "png_tiff_shape_agree": true,
+      "pixel_size_m": [
+        0.1,
+        0.1
+      ],
+      "png_source_mode": "RGB"
+    },
+    "birmingham_block_5": {
+      "affine": [
+        0.1,
+        0.0,
+        400.0,
+        0.0,
+        -0.1,
+        1200.0
+      ],
+      "width": 4000,
+      "height": 4000,
+      "crs": "None",
+      "png_tiff_shape_agree": true,
+      "pixel_size_m": [
+        0.1,
+        0.1
+      ],
+      "png_source_mode": "RGB"
+    },
+    "cambridge_block_10": {
+      "affine": [
+        0.1,
+        0.0,
+        400.0,
+        0.0,
+        -0.1,
+        2013.6
+      ],
+      "width": 4001,
+      "height": 4136,
+      "crs": "None",
+      "png_tiff_shape_agree": true,
+      "pixel_size_m": [
+        0.1,
+        0.1
+      ],
+      "png_source_mode": "RGB"
+    },
+    "cambridge_block_2": {
+      "affine": [
+        0.1,
+        0.0,
+        0.0,
+        0.0,
+        -0.1,
+        1200.1
+      ],
+      "width": 4001,
+      "height": 4001,
+      "crs": "None",
+      "png_tiff_shape_agree": true,
+      "pixel_size_m": [
+        0.1,
+        0.1
+      ],
+      "png_source_mode": "RGB"
+    },
+    "cambridge_block_3": {
+      "affine": [
+        0.1,
+        0.0,
+        11.0,
+        0.0,
+        -0.1,
+        1600.1
+      ],
+      "width": 3891,
+      "height": 4001,
+      "crs": "None",
+      "png_tiff_shape_agree": true,
+      "pixel_size_m": [
+        0.1,
+        0.1
+      ],
+      "png_source_mode": "RGB"
+    }
+  },
+  "splits": {
+    "val_seen": {
+      "queries": 9105,
+      "candidates": 449,
+      "oracles": {
+        "query_coverage": {
+          "n": 9105,
+          "episodes": 2470,
+          "candidates": 449,
+          "R@1": 0.3084091620747992,
+          "R@1_ci95": [
+            0.30014316659884466,
+            0.3169274227313274
+          ],
+          "R@5": 0.6763782175831619,
+          "R@5_ci95": [
+            0.6664717245402272,
+            0.6861367752168132
+          ],
+          "R@10": 0.8033474008636399,
+          "R@10_ci95": [
+            0.7943721930917494,
+            0.8118405965373817
+          ],
+          "hard_accuracy": 0.25766399296780573,
+          "hard_accuracy_ci95": [
+            0.24797889274937954,
+            0.2672915119502627
+          ],
+          "margin": 0.03144668773689728,
+          "margin_ci95": [
+            0.025747922530730723,
+            0.037254255333299104
+          ],
+          "hard_tie": 0.25568618833095264,
+          "hard_tie_ci95": [
+            0.2427892906829882,
+            0.2691026023591268
+          ],
+          "pairwise_auc": 0.825655218486952,
+          "pairwise_auc_ci95": [
+            0.820892000444957,
+            0.8305295092736477
+          ],
+          "same_map_random_top1": 0.049265889212347196,
+          "same_map_random_top1_ci95": [
+            0.04751230089678498,
+            0.05110212402728804
+          ],
+          "auroc": 0.849002033477762,
+          "hardest_only_auroc": 0.47066610803245623,
+          "mean_distance_m": 48.93351467350145,
+          "auroc_ci95": [
+            0.8405882895949391,
+            0.8498933664790431
+          ]
+        },
+        "template_coverage": {
+          "n": 9105,
+          "episodes": 2470,
+          "candidates": 449,
+          "R@1": 0.31757088303886755,
+          "R@1_ci95": [
+            0.3090017634598148,
+            0.32607261067747295
+          ],
+          "R@5": 0.6795360172937457,
+          "R@5_ci95": [
+            0.6698763914638288,
+            0.6889511990043846
+          ],
+          "R@10": 0.8058339064127267,
+          "R@10_ci95": [
+            0.796954226350663,
+            0.8140235202026467
+          ],
+          "hard_accuracy": 0.25766399296780573,
+          "hard_accuracy_ci95": [
+            0.24766496712583871,
+            0.26655666904797304
+          ],
+          "margin": -0.12126973779866489,
+          "margin_ci95": [
+            -0.13080574103482864,
+            -0.11224287863662331
+          ],
+          "hard_tie": 0.3078782551367982,
+          "hard_tie_ci95": [
+            0.2945640493280777,
+            0.32101977957294797
+          ],
+          "pairwise_auc": 0.8280787581208549,
+          "pairwise_auc_ci95": [
+            0.823632782133453,
+            0.8327765068340746
+          ],
+          "same_map_random_top1": 0.049265889212347196,
+          "same_map_random_top1_ci95": [
+            0.04751230089678498,
+            0.05110212402728804
+          ],
+          "auroc": 0.7957955785871803,
+          "hardest_only_auroc": 0.4045604226029248,
+          "mean_distance_m": 48.93351467350145,
+          "auroc_ci95": [
+            0.7884418626479107,
+            0.8003981149681668
+          ]
+        },
+        "iou": {
+          "n": 9105,
+          "episodes": 2470,
+          "candidates": 449,
+          "R@1": 0.30973627172151347,
+          "R@1_ci95": [
+            0.30129202191759474,
+            0.31850372225639945
+          ],
+          "R@5": 0.6764880473470278,
+          "R@5_ci95": [
+            0.666552236489579,
+            0.6862733190642086
+          ],
+          "R@10": 0.8034572306275058,
+          "R@10_ci95": [
+            0.7944802950282188,
+            0.8119553384357824
+          ],
+          "hard_accuracy": 0.2609603340292276,
+          "hard_accuracy_ci95": [
+            0.25134001169558084,
+            0.27004583474150495
+          ],
+          "margin": -0.007309882623913336,
+          "margin_ci95": [
+            -0.010701394102743645,
+            -0.0039587711493564316
+          ],
+          "hard_tie": 0.2511811888803428,
+          "hard_tie_ci95": [
+            0.2383159047211875,
+            0.2645870437554969
+          ],
+          "pairwise_auc": 0.825872619890771,
+          "pairwise_auc_ci95": [
+            0.821074668130545,
+            0.8307455179859466
+          ],
+          "same_map_random_top1": 0.049265889212347196,
+          "same_map_random_top1_ci95": [
+            0.04751230089678498,
+            0.05110212402728804
+          ],
+          "auroc": 0.8437151037122608,
+          "hardest_only_auroc": 0.4531491031659615,
+          "mean_distance_m": 48.93351467350145,
+          "auroc_ci95": [
+            0.8351717666501446,
+            0.8448013921331696
+          ]
+        }
+      },
+      "overlap_distribution": {
+        "query_coverage": {
+          "0%": 985,
+          "(0,10]%": 4316,
+          "(10,30]%": 2013,
+          "(30,50]%": 311,
+          "(50,70]%": 293,
+          "(70,100]%": 1187
+        },
+        "template_coverage": {
+          "0%": 985,
+          "(0,10]%": 840,
+          "(10,30]%": 1046,
+          "(30,50]%": 878,
+          "(50,70]%": 828,
+          "(70,100]%": 4528
+        },
+        "iou": {
+          "0%": 985,
+          "(0,10]%": 4771,
+          "(10,30]%": 2365,
+          "(30,50]%": 606,
+          "(50,70]%": 373,
+          "(70,100]%": 5
+        }
+      },
+      "query_coverage_distance_rho": -0.8302679418045574,
+      "template_coverage_distance_rho": -0.17599671234009143,
+      "iou_distance_rho": -0.7467933760508849,
+      "no_intersection_fraction": 0.10818231740801758,
+      "valid_fraction_query": {
+        "min": 0.05537276254999886,
+        "median": 0.9999966677033808,
+        "max": 1.0000000000000004
+      },
+      "valid_fraction_candidate": {
+        "min": 0.3392625000000023,
+        "median": 1.0,
+        "max": 1.0
+      }
+    },
+    "val_unseen": {
+      "queries": 9898,
+      "candidates": 510,
+      "oracles": {
+        "query_coverage": {
+          "n": 9898,
+          "episodes": 2697,
+          "candidates": 510,
+          "R@1": 0.1191600930596128,
+          "R@1_ci95": [
+            0.113922706265933,
+            0.12483131543068245
+          ],
+          "R@5": 0.3413206286976466,
+          "R@5_ci95": [
+            0.33334515929159864,
+            0.3493643425124066
+          ],
+          "R@10": 0.48095946865220335,
+          "R@10_ci95": [
+            0.4721095116285945,
+            0.4890987302603533
+          ],
+          "hard_accuracy": 0.08971509395837543,
+          "hard_accuracy_ci95": [
+            0.08398926977811613,
+            0.0951425111356194
+          ],
+          "margin": -0.05632379682841794,
+          "margin_ci95": [
+            -0.06056022202629316,
+            -0.052366957640191766
+          ],
+          "hard_tie": 0.3017781369973732,
+          "hard_tie_ci95": [
+            0.28943825553311786,
+            0.3143375515043638
+          ],
+          "pairwise_auc": 0.8402516867377549,
+          "pairwise_auc_ci95": [
+            0.8365368964443571,
+            0.8438635324124598
+          ],
+          "same_map_random_top1": 0.007701963726496288,
+          "same_map_random_top1_ci95": [
+            0.007576221751780163,
+            0.007817580765346195
+          ],
+          "auroc": 0.8636424559517202,
+          "hardest_only_auroc": 0.3783613620701207,
+          "mean_distance_m": 49.21400848575416,
+          "auroc_ci95": [
+            0.8571820701787954,
+            0.8630070290740973
+          ]
+        },
+        "template_coverage": {
+          "n": 9898,
+          "episodes": 2697,
+          "candidates": 510,
+          "R@1": 0.12366746530692846,
+          "R@1_ci95": [
+            0.11817001448359675,
+            0.12941180945558767
+          ],
+          "R@5": 0.3514600038299294,
+          "R@5_ci95": [
+            0.3436548401193719,
+            0.35898923994127085
+          ],
+          "R@10": 0.4893851750117955,
+          "R@10_ci95": [
+            0.4810888731960729,
+            0.49725791351453197
+          ],
+          "hard_accuracy": 0.09335219236209336,
+          "hard_accuracy_ci95": [
+            0.08807273853997388,
+            0.09906665036401131
+          ],
+          "margin": -0.23451924478784122,
+          "margin_ci95": [
+            -0.24239217496192297,
+            -0.22664013891272863
+          ],
+          "hard_tie": 0.35057587391392203,
+          "hard_tie_ci95": [
+            0.3381554235620622,
+            0.36363682510383016
+          ],
+          "pairwise_auc": 0.843689676665972,
+          "pairwise_auc_ci95": [
+            0.8402936397308165,
+            0.8470099331225189
+          ],
+          "same_map_random_top1": 0.007701963726496288,
+          "same_map_random_top1_ci95": [
+            0.007576221751780163,
+            0.007817580765346195
+          ],
+          "auroc": 0.8142863083592425,
+          "hardest_only_auroc": 0.3095596604868548,
+          "mean_distance_m": 49.21400848575416,
+          "auroc_ci95": [
+            0.8081710065565176,
+            0.8158364850540993
+          ]
+        },
+        "iou": {
+          "n": 9898,
+          "episodes": 2697,
+          "candidates": 510,
+          "R@1": 0.11929351748077212,
+          "R@1_ci95": [
+            0.11374902511627981,
+            0.1251595099969144
+          ],
+          "R@5": 0.3429431305979825,
+          "R@5_ci95": [
+            0.33507401883494886,
+            0.3508128300865735
+          ],
+          "R@10": 0.4822728652979904,
+          "R@10_ci95": [
+            0.47321216328970683,
+            0.4903842199765184
+          ],
+          "hard_accuracy": 0.09315013133966459,
+          "hard_accuracy_ci95": [
+            0.08774020394273692,
+            0.09868400656137295
+          ],
+          "margin": -0.05624141350197078,
+          "margin_ci95": [
+            -0.05927787357990487,
+            -0.053264990720460745
+          ],
+          "hard_tie": 0.29157405536472014,
+          "hard_tie_ci95": [
+            0.27918345912007575,
+            0.30423477231862617
+          ],
+          "pairwise_auc": 0.8404154466693465,
+          "pairwise_auc_ci95": [
+            0.8366963600035722,
+            0.8440283545806975
+          ],
+          "same_map_random_top1": 0.007701963726496288,
+          "same_map_random_top1_ci95": [
+            0.007576221751780163,
+            0.007817580765346195
+          ],
+          "auroc": 0.8597488997936378,
+          "hardest_only_auroc": 0.35754049253486797,
+          "mean_distance_m": 49.21400848575416,
+          "auroc_ci95": [
+            0.8522407796732852,
+            0.8587396195611882
+          ]
+        }
+      },
+      "overlap_distribution": {
+        "query_coverage": {
+          "0%": 959,
+          "(0,10]%": 4997,
+          "(10,30]%": 1969,
+          "(30,50]%": 369,
+          "(50,70]%": 338,
+          "(70,100]%": 1266
+        },
+        "template_coverage": {
+          "0%": 959,
+          "(0,10]%": 906,
+          "(10,30]%": 1033,
+          "(30,50]%": 955,
+          "(50,70]%": 944,
+          "(70,100]%": 5101
+        },
+        "iou": {
+          "0%": 959,
+          "(0,10]%": 5461,
+          "(10,30]%": 2318,
+          "(30,50]%": 714,
+          "(50,70]%": 437,
+          "(70,100]%": 9
+        }
+      },
+      "query_coverage_distance_rho": -0.8319903942532575,
+      "template_coverage_distance_rho": -0.1613540059318345,
+      "iou_distance_rho": -0.7525061018575557,
+      "no_intersection_fraction": 0.09688826025459689,
+      "valid_fraction_query": {
+        "min": 0.27543450543963005,
+        "median": 0.9999999999999999,
+        "max": 1.0000000000000004
+      },
+      "valid_fraction_candidate": {
+        "min": 0.28209999999999924,
+        "median": 1.0,
+        "max": 1.0
+      }
+    }
+  },
+  "coordinate_convention": "world metres, local map-specific affine; OpenCV col,row pixel centres; yaw0 +X up,+Y left",
+  "old_mask_bug": "old world_to_template exchanges image row/column; preserved original files; new geometry uses exact RGB homography",
+  "support": "intersection with hull of raster pixel centres; excludes out-of-raster padding, bilinear half-pixel boundary conservative",
+  "internal_nodata": "TIFF is elevation, its nodata does not define RGB invalidity; RGB PNG has no alpha; internal unlabelled RGB void cannot be inferred reliably",
+  "source_hashes": {
+    "queries_val_seen": "6f11af721214b0d3b301722c51180244d824769762b533d84b317a1c10fd06ab",
+    "queries_val_unseen": "e69f5f94717ff865d4b032ea54b8396c181cc3eef4ad4ce1604673a8d950f7d1",
+    "templates_val_seen": "868164cb7a8e0c40ac0d01d02614f9a5febcb3bcdfa6ec33e347e42b7cf056d0",
+    "templates_val_unseen": "e3df2989378542e1c401028e9907e17c590ef21bdb38c3ad6c5278e0dd59cc97"
+  },
+  "numeric_zero_area_tolerance_m2": 1e-06
+}

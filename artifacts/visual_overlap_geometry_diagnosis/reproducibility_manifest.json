@@ -1,0 +1,366 @@
+{
+  "base_commit": "856e8400246730554ee63e39731761e5fdf72973",
+  "branch": "2027-CVPR/visual-overlap-geometry-diagnosis",
+  "python": "3.9.23 | packaged by conda-forge | (main, Jun  4 2025, 17:57:12) \n[GCC 13.3.0]",
+  "platform": "Linux-6.8.0-139-generic-x86_64-with-glibc2.39",
+  "gpu": "NVIDIA RTX PRO 6000 Blackwell Max-Q Workstation Edition",
+  "dependencies": {
+    "cv2": "4.11.0",
+    "torch": "2.8.0+cu128",
+    "transformers": "4.53.1",
+    "numpy": "1.26.4",
+    "rasterio": "1.4.3",
+    "scipy": "1.13.1",
+    "PIL": "11.3.0",
+    "shapely": "2.0.7"
+  },
+  "cache": [
+    {
+      "relative_path": "artifacts/visual_overlap_geometry_diagnosis/cache/footprints_val_seen.json",
+      "bytes": 9455178,
+      "sha256": "4fce574f91b1bdb1d1e4fc12fc4f380bc1412db6d4b5dc13ad254b48edcb9ae1"
+    },
+    {
+      "relative_path": "artifacts/visual_overlap_geometry_diagnosis/cache/footprints_val_unseen.json",
+      "bytes": 10203196,
+      "sha256": "6dbc9b96475120dab77c88ff7741c7e110b61bdbc784ca2ee4d50e30908933c0"
+    },
+    {
+      "relative_path": "artifacts/visual_overlap_geometry_diagnosis/cache/fusion_scores_val_seen.npy",
+      "bytes": 32705288,
+      "sha256": "2af658e197613c95f5b1de2c5d85c2977afa318698ef8cb57c67145152205f83"
+    },
+    {
+      "relative_path": "artifacts/visual_overlap_geometry_diagnosis/cache/fusion_scores_val_unseen.npy",
+      "bytes": 40383968,
+      "sha256": "cc107926c45b3fdf2429648bf9106a6318945870428c94b311df6972c44444dc"
+    },
+    {
+      "relative_path": "artifacts/visual_overlap_geometry_diagnosis/cache/geometry_controls_map_val_seen.npz",
+      "bytes": 25270658,
+      "sha256": "e489f2b8d597a2662fea1c25d59eb289b19162dbec56112b94a47a60e1e2e9ca"
+    },
+    {
+      "relative_path": "artifacts/visual_overlap_geometry_diagnosis/cache/geometry_controls_map_val_unseen.npz",
+      "bytes": 30640304,
+      "sha256": "e812b58eb39be8c224a6b554b18b69b31773fa7d616b2d01bab15ad3f10961c9"
+    },
+    {
+      "relative_path": "artifacts/visual_overlap_geometry_diagnosis/cache/geometry_controls_observed_val_seen.npz",
+      "bytes": 26318595,
+      "sha256": "58762f33c2a37cb6c5080f2e8decc89a476a989b13884b680254ace208bbf77e"
+    },
+    {
+      "relative_path": "artifacts/visual_overlap_geometry_diagnosis/cache/geometry_controls_observed_val_unseen.npz",
+      "bytes": 32678324,
+      "sha256": "1ca7725819b2d6f30af273ccdb003302e44aa2aeda5fac9952fa62d22cfeaffc"
+    },
+    {
+      "relative_path": "artifacts/visual_overlap_geometry_diagnosis/cache/geometry_inputs_val_seen.npz",
+      "bytes": 3367353,
+      "sha256": "e4f2f002472d3953e89cf94da1df9b6d772b5b005a1fa2e970d5728a3c9ca14f"
+    },
+    {
+      "relative_path": "artifacts/visual_overlap_geometry_diagnosis/cache/geometry_inputs_val_unseen.npz",
+      "bytes": 3727542,
+      "sha256": "4a93384c2a3a8b872974642fb1cfec9242d838838c0bea27747ecb104ef16e43"
+    },
+    {
+      "relative_path": "artifacts/visual_overlap_geometry_diagnosis/cache/global_val_seen_c.json",
+      "bytes": 25811,
+      "sha256": "8b77b0b954a6a5b732e7181ec783d7f418363a69b29d2897ecdd3589b87d1c6f"
+    },
+    {
+      "relative_path": "artifacts/visual_overlap_geometry_diagnosis/cache/global_val_seen_c.npy",
+      "bytes": 2069120,
+      "sha256": "3f1b9825ffb8cdb34ba48ac3a0ec87bcb2e06c101035e8d5bce4c21fce506aaf"
+    },
+    {
+      "relative_path": "artifacts/visual_overlap_geometry_diagnosis/cache/global_val_seen_q.json",
+      "bytes": 546518,
+      "sha256": "e2a6a13696493d0099f2cc743f582b1218e8dbf6d2e8a0cb76d8b8332b0d8b6b"
+    },
+    {
+      "relative_path": "artifacts/visual_overlap_geometry_diagnosis/cache/global_val_seen_q.npy",
+      "bytes": 41955968,
+      "sha256": "d750a8a88ade4f770d9680647363a53ffbad007e8b73f1b9d3e85e52b345e6ec"
+    },
+    {
+      "relative_path": "artifacts/visual_overlap_geometry_diagnosis/cache/global_val_unseen_c.json",
+      "bytes": 30308,
+      "sha256": "6403814762259a5cc257de8a3c4211b947c5ec215bb2f96d39b2fb4a33701914"
+    },
+    {
+      "relative_path": "artifacts/visual_overlap_geometry_diagnosis/cache/global_val_unseen_c.npy",
+      "bytes": 2350208,
+      "sha256": "e7d2b13655e69a8189fc7597733a84b5bb5eb81c8d71801e7367cef1aa826056"
+    },
+    {
+      "relative_path": "artifacts/visual_overlap_geometry_diagnosis/cache/global_val_unseen_q.json",
+      "bytes": 613894,
+      "sha256": "41adb300ada8c8005f97df05a74906e81d64879397eba97fdb013e069caa4623"
+    },
+    {
+      "relative_path": "artifacts/visual_overlap_geometry_diagnosis/cache/global_val_unseen_q.npy",
+      "bytes": 45610112,
+      "sha256": "3ee727120bd1ea2702f9b37a2047a15c04795256598e0c87c345b8ca6189ca72"
+    },
+    {
+      "relative_path": "artifacts/visual_overlap_geometry_diagnosis/cache/local_scores_val_seen.npz",
+      "bytes": 47193722,
+      "sha256": "13fac13d47db83b5e5181a05bfc566a3f133fbdc9b4994bf75cd0803d5303048"
+    },
+    {
+      "relative_path": "artifacts/visual_overlap_geometry_diagnosis/cache/local_scores_val_unseen.npz",
+      "bytes": 59100836,
+      "sha256": "23d0b5556ca53bf6fd05a215659c823507b2f8962027825d42bffa28a1ce6aee"
+    },
+    {
+      "relative_path": "artifacts/visual_overlap_geometry_diagnosis/cache/map_scores_val_seen.npz",
+      "bytes": 13275026,
+      "sha256": "a36f961cc83068fe75e8975157098d290dda1424325977a14c817d5835f69361"
+    },
+    {
+      "relative_path": "artifacts/visual_overlap_geometry_diagnosis/cache/map_scores_val_unseen.npz",
+      "bytes": 16203317,
+      "sha256": "d2bcd2da3f31eb2a856f101e9edfe2be5ebbceb1de73635a31d19f3cd3d07275"
+    },
+    {
+      "relative_path": "artifacts/visual_overlap_geometry_diagnosis/cache/observed_scores_val_seen.npz",
+      "bytes": 13262483,
+      "sha256": "bdb268579ca7d17146af01cf31dc00e59a2eacc5ca1670f32e75bd4243e07955"
+    },
+    {
+      "relative_path": "artifacts/visual_overlap_geometry_diagnosis/cache/observed_scores_val_unseen.npz",
+      "bytes": 16374756,
+      "sha256": "3cc18ac93a7a143a30bacb95f6c9b6f9f0e8566297a0fda82b509fb75706b296"
+    },
+    {
+      "relative_path": "artifacts/visual_overlap_geometry_diagnosis/cache/overlap_val_seen.npz",
+      "bytes": 1677703,
+      "sha256": "3ccaf74c9947b94c9905cb03b5edc6c94a50418e7929ba11f35a0b165478daef"
+    },
+    {
+      "relative_path": "artifacts/visual_overlap_geometry_diagnosis/cache/overlap_val_unseen.npz",
+      "bytes": 6589217,
+      "sha256": "da6a784f5b6b851229468a0399fded271760c5e54d20149c6e1f1e5187ab08aa"
+    },
+    {
+      "relative_path": "artifacts/visual_overlap_geometry_diagnosis/cache/patch_val_seen_c.json",
+      "bytes": 25887,
+      "sha256": "93d4babe749d2fe770c8231d7941e97f2b9d239c64e4afd3a4825394ce811ac3"
+    },
+    {
+      "relative_path": "artifacts/visual_overlap_geometry_diagnosis/cache/patch_val_seen_c.npy",
+      "bytes": 88277120,
+      "sha256": "63d62350930a1555324d04a10e34bd4616bbb67047bb8c301e8a3a762d167b29"
+    },
+    {
+      "relative_path": "artifacts/visual_overlap_geometry_diagnosis/cache/patch_val_seen_q.json",
+      "bytes": 546594,
+      "sha256": "929bb7651993b65cbc5f34fb4299566a312cae596450b21d1cb7a0d7e5695600"
+    },
+    {
+      "relative_path": "artifacts/visual_overlap_geometry_diagnosis/cache/patch_val_seen_q.npy",
+      "bytes": 1790115968,
+      "sha256": "ec591cbe117497f968361a715a26278d174b3ccb4ed924798331a7c990a964ea"
+    },
+    {
+      "relative_path": "artifacts/visual_overlap_geometry_diagnosis/cache/patch_val_unseen_c.json",
+      "bytes": 30384,
+      "sha256": "d7f2e687ee5cf6146e338bec16fec91659f65a82dff2e562ae2a2ca770061c8f"
+    },
+    {
+      "relative_path": "artifacts/visual_overlap_geometry_diagnosis/cache/patch_val_unseen_c.npy",
+      "bytes": 100270208,
+      "sha256": "1c6ae4da379ec9591a0395fae4c8d619b4c0c74f15e8d34a84a4a0dc19e4b5df"
+    },
+    {
+      "relative_path": "artifacts/visual_overlap_geometry_diagnosis/cache/patch_val_unseen_q.json",
+      "bytes": 613970,
+      "sha256": "8bf7c7c5f0cb7af6888a63c6d680e6363dcc9e1768996ce7a3a0ab91a925f945"
+    },
+    {
+      "relative_path": "artifacts/visual_overlap_geometry_diagnosis/cache/patch_val_unseen_q.npy",
+      "bytes": 1946026112,
+      "sha256": "ccf774a1d6cfca0c4fed8257e457442d7ed0c680afafe19c4941c357279d9b6d"
+    },
+    {
+      "relative_path": "artifacts/visual_overlap_geometry_diagnosis/cache/ransac_scores_val_seen.npz",
+      "bytes": 16472010,
+      "sha256": "4622be2a7e308e91bbaea0afb526fcdf6c91a3ee15295de4e744be14bc6fe07b"
+    },
+    {
+      "relative_path": "artifacts/visual_overlap_geometry_diagnosis/cache/ransac_scores_val_unseen.npz",
+      "bytes": 20724823,
+      "sha256": "1ea844af8c3899686c19b4cf6377c524e2ba5d5da99a3938a45aadc818976ace"
+    },
+    {
+      "relative_path": "artifacts/visual_overlap_geometry_diagnosis/cache/sift_features_val_seen_c.npz",
+      "bytes": 9004922,
+      "sha256": "ef3632066a5c40997f8a7fc3ded349aca36554e8123fc0528b1bf19a963617ab"
+    },
+    {
+      "relative_path": "artifacts/visual_overlap_geometry_diagnosis/cache/sift_features_val_seen_q.npz",
+      "bytes": 182031389,
+      "sha256": "bb3239450102c17326711a63ef68fdd1508d67a9f150c5b4bbc6185cd07be6d7"
+    },
+    {
+      "relative_path": "artifacts/visual_overlap_geometry_diagnosis/cache/sift_features_val_unseen_c.npz",
+      "bytes": 10029720,
+      "sha256": "04b5e23abfb3e130b3ffb1a6a3cc502e697bb86eb070bac4138c2fb0a1f120b6"
+    },
+    {
+      "relative_path": "artifacts/visual_overlap_geometry_diagnosis/cache/sift_features_val_unseen_q.npz",
+      "bytes": 198135552,
+      "sha256": "b25e100e9516b15cc2054fe4c85dc23cd8b220d0c3c1f77892c77c8fbebf6d84"
+    },
+    {
+      "relative_path": "artifacts/visual_overlap_geometry_diagnosis/cache/sift_scores_val_seen.npz",
+      "bytes": 956268,
+      "sha256": "b5d7b416a18849d2545177c29f390704c85043dd10d4d60a0ed92a460b39e6ff"
+    },
+    {
+      "relative_path": "artifacts/visual_overlap_geometry_diagnosis/cache/sift_scores_val_unseen.npz",
+      "bytes": 1338622,
+      "sha256": "3c5aae7f169d63f9ec31067bbdd6c92c644281641ba3ebaa933a67495f1f12a9"
+    },
+    {
+      "relative_path": "artifacts/visual_overlap_geometry_diagnosis/cache/valid_masks_val_seen.npz",
+      "bytes": 1767349,
+      "sha256": "274483ebf494b9ccfd4216ac68ce8364b8e8d1a24355477f72aab6cc48363f80"
+    },
+    {
+      "relative_path": "artifacts/visual_overlap_geometry_diagnosis/cache/valid_masks_val_unseen.npz",
+      "bytes": 1561384,
+      "sha256": "2a6c5cdff839b6f5dea9fc4589f6ed59719ad1725c3903f00d5b0f1dd5ed80ef"
+    }
+  ],
+  "source_metadata": {
+    "artifacts/visual_goal_abstraction/dataset_v2/templates_train_seen.jsonl": "6525c42593a046690122d0e0e5d87dfbdd8fa067bac1dd656603d763e02582e6",
+    "artifacts/visual_goal_abstraction/dataset_v2/queries_train_seen.jsonl": "172932666bed05c589d4be936e765a35597711ed14c477868a87e57865cfa733",
+    "artifacts/visual_goal_abstraction/dataset_v2/templates_val_seen.jsonl": "868164cb7a8e0c40ac0d01d02614f9a5febcb3bcdfa6ec33e347e42b7cf056d0",
+    "artifacts/visual_goal_abstraction/dataset_v2/queries_val_seen.jsonl": "6f11af721214b0d3b301722c51180244d824769762b533d84b317a1c10fd06ab",
+    "artifacts/visual_goal_abstraction/dataset_v2/templates_val_unseen.jsonl": "e3df2989378542e1c401028e9907e17c590ef21bdb38c3ad6c5278e0dd59cc97",
+    "artifacts/visual_goal_abstraction/dataset_v2/queries_val_unseen.jsonl": "e69f5f94717ff865d4b032ea54b8396c181cc3eef4ad4ce1604673a8d950f7d1"
+  },
+  "old_report_sha256": "14d1a6217a475e272cc475ae2277640522e7f872a3974795f646f3126400def1",
+  "old_metrics_sha256": "67d5489c238cab5ecbd8b6927950751474ec2c696fac597ac12fb6ec94a48f00",
+  "split_usage": {
+    "train_seen": "original partial fine-tuning only; no new training",
+    "val_seen": "fixed model replication, diagnostics and alpha development",
+    "val_unseen": "held-out evaluation, all fixed methods reported; no parameter fit",
+    "test_unseen": "not accessed"
+  },
+  "cache_policy": "large local caches excluded from git; metrics, query metric records, figures and source scripts committed",
+  "orthophoto_sources": {
+    "birmingham_block_1": {
+      "png": "2e67b4ebea2776fe2e4ca05edc9144dc30e65ff99e1ed7b83a7a1784d389fb80",
+      "tif": "2744217f68592fcc36fbfb0b7ac2c77bef83bc5006d803132dae68dddb9475b1"
+    },
+    "birmingham_block_10": {
+      "png": "11c0c8370cf77f8d98d9bc8889c2b20e2b8da6d76b9469a4055481aa85a8dfd8",
+      "tif": "3619cd962f92b70136e07bb34b36e2bc0348e208137eba04af3ee11664a02321"
+    },
+    "birmingham_block_11": {
+      "png": "e89759908384494dbab2ddfc809c834659b35b973ba1b57719de6f5e1672414e",
+      "tif": "0bb5d9b580b095e1b5b9756d5156c49d8a4a62e4db4983d72b0470372c3fd116"
+    },
+    "birmingham_block_12": {
+      "png": "e7ced0d8f4e0d008e46ce0e440d3d33e0f93a2dbca8bad43a4180bcfc978d2e6",
+      "tif": "b6e089ee3b8074fd479840031dadcd84ab7682c47c990e8588a148fb80052ab2"
+    },
+    "birmingham_block_3": {
+      "png": "2f7fd80b8f3d4019cbdeb8936edd8322914cdff4aade12cacbff66f27308df92",
+      "tif": "3a6f1b84e6ad74f15d701c9be8ca6e4fa5f88db1ea482f8321bfab41038e90e0"
+    },
+    "birmingham_block_4": {
+      "png": "a8fd1284ecb75d835657c173c305989cabb31c332415699301881ce6069a50ff",
+      "tif": "829fe147a4c9ba6662bee49c3cd52d1ab19f164e2d112664c02da46a12166d55"
+    },
+    "birmingham_block_7": {
+      "png": "bfa0920a5eb14f8a7762666c8ee073366818e16c17455ff0eea93b00831f0c61",
+      "tif": "0eeb0485b0c5889b04a9039ff2fea77f6502d8f1c02c71cec95bbb8488b9562a"
+    },
+    "birmingham_block_9": {
+      "png": "3973f821dec844098f6074f5cc03f016618b7d187262297f8d4e3f9a16102f43",
+      "tif": "1fc8b83a3e7312b435d5fd43f1d5ec231b3cd37532a4ba237c87860935defbb7"
+    },
+    "cambridge_block_12": {
+      "png": "c8cc47bc4f14f92fbee2503030752695e94763a9e38aeddf706a1f049317d1dc",
+      "tif": "e8cec6db2ef3ea3f67dd3faf0ee083db23d29ed01d96d88e2319350bd668e263"
+    },
+    "cambridge_block_13": {
+      "png": "0e63db060779540899d347d1b0b2a2cc7874fe483794f285d3ddf46e7aafa17c",
+      "tif": "4a0f9738fdb7d7f0614da773bb704f6e131f3fc9366ba13b157616319d438eed"
+    },
+    "cambridge_block_17": {
+      "png": "acc10e966cf4d01722647e7ba0e690aec67736c7c92ffff52fc2f4b671446055",
+      "tif": "d9d89fa710d339a41284e3eebcc0a9c8129c53e59e397a2b855623caf7a5805b"
+    },
+    "cambridge_block_18": {
+      "png": "c5d754f2de7adba6931e5d3271a1c1cada95ddc364c37e8fe5f26f2f14f6cb73",
+      "tif": "f50240ee6ff8c474c570f9c611a8fc39b05876e7e6fb49aeb96bb5c17fe78448"
+    },
+    "cambridge_block_19": {
+      "png": "70589624aa0a2979dafe8fd899a9fb1f1ec6641677d42a7aa6cc1318c23a0cc6",
+      "tif": "35ff53db1b804d2508433d595f2c42346929b3e4f8403cd437887b5d776e7f5b"
+    },
+    "cambridge_block_20": {
+      "png": "b7f74c4c0d7bad555caab6710ee1fe47a4cc9faf88b6ad2ab224c434afa26a69",
+      "tif": "f8a2a8010e2f912b4c64e745f692fc454e5fc8b2726eedec6308fa3bbd737709"
+    },
+    "cambridge_block_21": {
+      "png": "3552f3f91ea5e69c992e5839f2e3406e96b3220f45b0944bc17967c3c30c1e98",
+      "tif": "f9207637c697b3771175e6f5f4a1aa3a9034ebcb887b980b7d3aeb105e659616"
+    },
+    "cambridge_block_23": {
+      "png": "9e3768689321750391991f66758f6fa5bc4734441f5b6c9e3087e8934eab7d21",
+      "tif": "13347ea4c5d0de619a11bd6f2558ec04e571072078e6e47db8e9e2bf69bdaff0"
+    },
+    "cambridge_block_25": {
+      "png": "a8384aa8a07a39f8ad303a417f0447e2d62048d0ef0b268d2d45740b70a9016a",
+      "tif": "167c0b02af94f70875e474a81ebe3868a55d2c1d55d0f10d9c756913adfa4e1b"
+    },
+    "cambridge_block_28": {
+      "png": "cb8bdeafe1d0819303fd7091971fd7abed6709b9a678b51fc7b931c1860e3f46",
+      "tif": "ebd628893d8bd5a862a5c95a76f0e39143bc5062e4899ce93031c3ca3fca2699"
+    },
+    "cambridge_block_33": {
+      "png": "d9cb318939108805204bfdc2de4259f942fa899800278d8c004c88dbad0de3a2",
+      "tif": "d442b4235a6549c3af730b5186a73206ee3b72cded2eda5ba81c17aa438e9a11"
+    },
+    "cambridge_block_4": {
+      "png": "995a3bfe32c2af462e513bf5d4def5f97980e9e8f97485a08863baced289e4f2",
+      "tif": "b3a4344b27d289f996542dba1315eba421d2fc643d4a3b6092e5f933a1230373"
+    },
+    "cambridge_block_6": {
+      "png": "ab033fff78583865593c59ea7b64557d6390eb026eeaed6874c16371f54226fa",
+      "tif": "810febb6950106b8d610554e65c17e4b36713d87e3ebfbe5bc5d01ad76953529"
+    },
+    "cambridge_block_7": {
+      "png": "76065f80954cbc545e1ad8f536c8961ca72753856b522feeb301ec616cf4bc76",
+      "tif": "0a3f6aff7d89936a9707f733d208159d802ffd600c4756efd319ab72872c6e20"
+    },
+    "cambridge_block_9": {
+      "png": "f9736a1b272bd1e4ca23c883ffdc2e6d005e13aede831312ac66f3a0d68f3cd7",
+      "tif": "0a56df771f4c795c23df7ac74f0e151905f52bf32b2a0eacb6fcc6c541ce5045"
+    },
+    "birmingham_block_5": {
+      "png": "704b8ec728ca370530fed120eebd02498f02e4102558a600f7eed7e850176301",
+      "tif": "795e1a742a9809b87c1be6e8ae636bb85890b0dfd429e2162df7f35af75123a6"
+    },
+    "cambridge_block_10": {
+      "png": "92d458c7b3d1012422c2f2bedf7716b0c6b888d0927b88ffb910dc4e4a97b0f8",
+      "tif": "6b19b74ccd3e4fbb44a0076a05ef87c556b8fcdbdcb2b8002d725a1fbd67da5c"
+    },
+    "cambridge_block_2": {
+      "png": "ff593afb7008d2caf9b9ec50d77c55caf394a693e97aff1ca7aa5b3336493cbd",
+      "tif": "f6012ded86907a25484c540dd846052288dd705a701f130c2b8e6415b346e0c8"
+    },
+    "cambridge_block_3": {
+      "png": "a8cd5dbb2a19b24ad54fc4a3c98b4fc719aed226a6ce605c9ed27f388fd75b3d",
+      "tif": "99bd6f087b87f50d5e16c042c30193f317af063170c9d3a61bc0962ae33a1c28"
+    }
+  }
+}
