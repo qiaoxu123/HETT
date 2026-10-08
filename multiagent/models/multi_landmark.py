@@ -198,7 +198,7 @@ class MultiLandmarkRelationHead(nn.Module):
         temperature = 0.5
         minimum = -temperature * (
             torch.logsumexp(
-                (-anchor_scores / temperature).masked_fill(~present_flat, -torch.inf),
+                (-anchor_scores / temperature).masked_fill(~safe, -torch.inf),
                 dim=-1,
             ) - counts.log()
         )
