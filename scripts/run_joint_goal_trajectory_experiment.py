@@ -190,7 +190,8 @@ def main():
         record.update(checkpoint=str(ckpt),sha256=sha(ckpt))
         dump(out/f'train_epoch{epoch:02d}.json',record);print('TRAIN_COMPLETE',json.dumps(clean(record)),flush=True)
         epochs_completed=epoch
-        if epoch == 1 or epoch == cfg['epochs']:
+        if (epoch == 1 or epoch == cfg['epochs'] or
+                epoch % max(1, int(cfg.get('evaluate_every', cfg['epochs']))) == 0):
             rows=evaluate(agent,envs,cfg,out,epoch)
             allrows.extend(rows);dump(out/'results.json',allrows)
             subprocess.run([sys.executable,str(ROOT/'scripts/report_joint_goal_trajectory.py'),str(out)],check=True,cwd=ROOT)
