@@ -183,6 +183,17 @@ def main():
         record=dict(epoch=epoch,train_seconds=elapsed,episodes=len(train.data),batches=math.ceil(len(train.data)/train.batch_size),
             peak_vram_allocated_bytes=torch.cuda.max_memory_allocated(),peak_vram_reserved_bytes=torch.cuda.max_memory_reserved(),gradients=audit.rows,
             losses={k:float(np.mean(v)) for k,v in agent.logs.items() if 'loss' in k and len(v)})
+        record['training_diagnostics']={k:float(sum(agent.logs.get(k,()))) for k in (
+                'trajectory_stop_positive_count',
+                'trajectory_stop_supervised_count',
+                'trajectory_arrival_gate_blocked',
+                'trajectory_plan_steps',
+                'trajectory_stop_decisions',
+                'trajectory_ranking_valid_count',
+                'trajectory_candidate_eval_count',
+                'landmark_refs_total',
+                'landmark_refs_name_matched',
+                'landmark_refs_truncated')}
         if not all(math.isfinite(v) for v in record['losses'].values()):raise RuntimeError('Nonfinite epoch loss')
         ckpt=out/'checkpoints'/f'epoch{epoch:02d}.pt';tmp=ckpt.with_suffix('.tmp')
         agent.save(epoch-1,str(tmp));tmp.replace(ckpt)
