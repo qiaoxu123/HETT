@@ -491,6 +491,9 @@ class NavCMTAgent:
         trajectory_joint_fde_sum_m = 0.0
         trajectory_stop_decisions = 0
         trajectory_stop_correct = 0
+        trajectory_stop_positive_sum = torch.zeros((), device='cuda')
+        trajectory_stop_active_sum = torch.zeros((), device='cuda')
+        trajectory_arrival_gate_blocked = 0
         trajectory_plan_steps = 0
         trajectory_goal_switches = 0
         trajectory_travel_distance_m = 0.0
@@ -876,6 +879,9 @@ class NavCMTAgent:
                         map_meters=self.args.map_meters,
                         success_radius_m=self.args.success_dist,
                     )
+                    trajectory_stop_positive_sum += (
+                        stop_target.detach() * valid_trajectory).sum()
+                    trajectory_stop_active_sum += valid_trajectory.sum()
                     trajectory_stop_loss = trajectory_stop_loss + stop_supervision_loss(
                         trajectory_predictions.stop_logits, stop_target,
                         active=valid_trajectory, pos_weight=2.,
@@ -1037,6 +1043,11 @@ class NavCMTAgent:
                     # switching. Execute only a short local waypoint and
                     # replan from the next observation. Never use GT here.
                     endpoint_dist = dst.dist_to(poses[i].xy)
+                    # GT is diagnostics only and never changes the action.
+                    if ('test' not in self.env_name
+                            and poses[i].xy.dist_to(obs[i]['goal']) <= self.args.success_dist
+                            and endpoint_dist > self.args.success_dist):
+                        trajectory_arrival_gate_blocked += 1
                     if (not getattr(self.args, 'trajectory_disable_learned_stop', False)
                             and selected_stop_probs[i] >= self.args.trajectory_stop_threshold
                             and endpoint_dist <= self.args.success_dist):
@@ -1284,6 +1295,9 @@ class NavCMTAgent:
         self.logs['trajectory_joint_fde_sum_m'].append(trajectory_joint_fde_sum_m)
         self.logs['trajectory_stop_decisions'].append(float(trajectory_stop_decisions))
         self.logs['trajectory_stop_correct'].append(float(trajectory_stop_correct))
+        self.logs['trajectory_stop_positive_count'].append(float(trajectory_stop_positive_sum.item()))
+        self.logs['trajectory_stop_supervised_count'].append(float(trajectory_stop_active_sum.item()))
+        self.logs['trajectory_arrival_gate_blocked'].append(float(trajectory_arrival_gate_blocked))
         self.logs['trajectory_plan_steps'].append(float(trajectory_plan_steps))
         self.logs['trajectory_goal_switches'].append(float(trajectory_goal_switches))
         self.logs['trajectory_travel_distance_m'].append(float(trajectory_travel_distance_m))
