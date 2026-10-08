@@ -35,7 +35,7 @@ def heatmap_diagnostics_summary(logs, success_radius_m):
         'n_steps=%d' % round(count),
         'success_radius_m=%.1f' % success_radius_m,
     ]
-    for k in (1, 4, 8, 16):
+    for k in (1, 4, 5, 8, 16, 20):
         hits = sum(logs.get('heatmap_coverage_%d_hits' % k, ()))
         values.append('coverage@%d=%.4f' % (k, hits / count))
     values.extend((
