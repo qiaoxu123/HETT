@@ -113,6 +113,22 @@ def parse_args():
                         help='Disable per-landmark relation head for a single-centroid ablation')
     parser.add_argument('--heatmap_max_landmarks', type=int, default=16,
                         help='Maximum distinct named landmarks per instruction for relation reasoning')
+    parser.add_argument('--heatmap_trajectory_enabled', action='store_true', default=True,
+                        help='Predict multiple endpoint-conditioned paths from HETT heatmap')
+    parser.add_argument('--no_heatmap_trajectory', action='store_false',
+                        dest='heatmap_trajectory_enabled', help='Disable trajectory head')
+    parser.add_argument('--trajectory_goal_k', type=int, default=5,
+                        help='Top-k heatmap goal hypotheses used by trajectory planner')
+    parser.add_argument('--trajectory_modes', type=int, default=3,
+                        help='Path anchors per goal hypothesis')
+    parser.add_argument('--trajectory_waypoints', type=int, default=8,
+                        help='Predicted waypoints per path')
+    parser.add_argument('--trajectory_loss_weight', type=float, default=0.5)
+    parser.add_argument('--trajectory_stop_weight', type=float, default=0.05)
+    parser.add_argument('--trajectory_stop_threshold', type=float, default=0.8,
+                        help='Conservative learned stop threshold; only near predicted goal')
+    parser.add_argument('--trajectory_use_for_control', action='store_true', default=False,
+                        help='Opt-in closed-loop execution of learned trajectory waypoints')
     parser.add_argument('--heatmap_loss_weight', type=float, default=0.1,
                         help='Weight of the Stage-1 heatmap loss')
     parser.add_argument('--stage1_switch_dist', type=float, default=25.0,

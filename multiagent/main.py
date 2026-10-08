@@ -38,6 +38,14 @@ def heatmap_diagnostics_summary(logs, success_radius_m):
     for k in (1, 4, 5, 8, 16, 20):
         hits = sum(logs.get('heatmap_coverage_%d_hits' % k, ()))
         values.append('coverage@%d=%.4f' % (k, hits / count))
+    trajectory_count = sum(logs.get('trajectory_eval_count', ()))
+    if trajectory_count > 0:
+        values.append('trajectory_minADE_m=%.3f' % (
+            sum(logs.get('trajectory_minade_sum_m', ())) / trajectory_count
+        ))
+        values.append('trajectory_minFDE_m=%.3f' % (
+            sum(logs.get('trajectory_minfde_sum_m', ())) / trajectory_count
+        ))
     reference_count = sum(logs.get('landmark_refs_total', ()))
     if reference_count > 0:
         matched_count = sum(logs.get('landmark_refs_name_matched', ()))

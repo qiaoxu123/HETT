@@ -12,6 +12,7 @@ import numpy as np
 from .goal_predictor import MapEncoder
 from .spatial_belief import CompactSpatialBelief
 from .relative_geometry import dense_relative_geometry
+from .heatmap_trajectory import HeatmapTrajectoryHead
 
 
 def aggregate_history_grid(grid_fts, grid_indices, text_fts, grid_proj, cell_count):
@@ -149,6 +150,11 @@ class ET(nn.Module):
             language_dim=self.args.demb,
             attention_heads=8,
             dropout=0.1,
+        )
+        self.trajectory_head = HeatmapTrajectoryHead(
+            feature_dim=256,
+            modes=getattr(args, 'trajectory_modes', 3),
+            waypoints=getattr(args, 'trajectory_waypoints', 8),
         )
         self.decoder_2_goal_full = nn.Sequential(
             nn.Linear(self.args.demb, 512),
@@ -322,8 +328,23 @@ class ET(nn.Module):
         )
         target_logits = belief.logits.flatten(1)
 
-        # print(encoder_out_candidates.shape)
-
-        # print(direction, progress, goal_logits)
+        if getattr(self.args, 'heatmap_trajectory_enabled', False):
+            pose = inputs['directions'][:, -1]
+            proposals = self.trajectory_head(
+                belief.spatial_features, belief.probabilities,
+                pose[:, 2:4], pose[:, :2],
+                top_k=getattr(self.args, 'trajectory_goal_k', 5),
+                nms_kernel=self.args.heatmap_nms_kernel,
+                teacher_goal=inputs.get('trajectory_teacher_goal'),
+            )
+            generated, supervision = proposals
+            # Return plain nested tensors for torch DDP graph discovery.
+            # Custom dataclass outputs are not reliably traversed by all
+            # find_unused_parameters versions in distributed training.
+            tensors = (generated.trajectories, generated.mode_logits,
+                       generated.joint_logits, generated.goal_xy,
+                       generated.goal_ids, generated.stop_logits)
+            return (direction, progress, pred_goals, target_logits,
+                    emb_frames + emb_directions, (tensors, supervision))
 
         return direction, progress, pred_goals, target_logits, emb_frames + emb_directions
