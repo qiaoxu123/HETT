@@ -1,0 +1,15 @@
+{
+  "checkpoint": "/home/rental/20260922_1/Workspace/SBFNav-CityNav-Reproduction/runs/sbfnav_main_e20_bs16_s0_20260929/training/checkpoints/best_val_unseen.pt",
+  "sha256": "e991b4e46ebc20b9cf7a1e350a0993c75028e863b10b55df166acd4e59510885",
+  "epoch": 14,
+  "loaded_selector_tensors": 43,
+  "missing_disabled_spatial": [
+    "spatial_gate",
+    "spatial_encoder.0.weight",
+    "spatial_encoder.0.bias",
+    "spatial_encoder.2.weight",
+    "spatial_encoder.2.bias",
+    "spatial_norm.weight",
+    "spatial_norm.bias"
+  ]
+}

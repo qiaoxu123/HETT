@@ -1,0 +1,15 @@
+{
+  "pid": 3993429,
+  "command": [
+    "/home/20260922_1/miniconda3/envs/AirVLN39/bin/python",
+    "-u",
+    "/home/rental/20260922_1/Workspace/hett-frozen-sbf-selector/scripts/diagnose_candidate_controller.py",
+    "--config",
+    "/home/rental/20260922_1/Workspace/hett-frozen-sbf-selector/configs/diagnostics/frozen_sbf_selector.json",
+    "--output",
+    "/home/rental/20260922_1/Workspace/hett-frozen-sbf-selector/artifacts/frozen_sbf_smoke",
+    "--limit",
+    "8"
+  ],
+  "started": "2026-10-08T19:20:17.487891+08:00"
+}

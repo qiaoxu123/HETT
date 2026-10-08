@@ -604,6 +604,21 @@ class NavCMTAgent:
                 reranked_scores = reranker(candidate_features)
                 chosen = reranked_scores.argmax(-1)
                 heatmap_goal_ids = heatmap_topk_ids.gather(1, chosen[:,None]).squeeze(1)
+            transferred = getattr(self, 'frozen_sbf_selector', None)
+            if transferred is not None:
+                refined_candidates = local_soft_argmax_xy(
+                    heatmap_probs.reshape(batch_size, self.args.heatmap_grid_size, self.args.heatmap_grid_size)
+                    .repeat_interleave(heatmap_topk_ids.shape[1], 0),
+                    heatmap_topk_ids.flatten(), window_size=self.args.heatmap_local_window
+                ).reshape(batch_size, -1, 2).detach().cpu().numpy()
+                world_candidates = [[list(self.env.unnormalize_position(q, ob['map_name'], self.args.map_meters))
+                                     for q in refined_candidates[i]] for i, ob in enumerate(obs)]
+                choices = transferred.choose(
+                    episode_ids=[ob['id'] for ob in obs], instructions=[ob['instruction'] for ob in obs],
+                    histories=[traj[i]['trajectory'] for i in range(batch_size)],
+                    candidate_world_xy=world_candidates, split=self.env_name, active=~ended)
+                choices = torch.as_tensor(choices, device=heatmap_topk_ids.device)
+                heatmap_goal_ids = heatmap_topk_ids.gather(1, choices[:, None]).squeeze(1)
             heatmap_goal_rows = torch.div(
                 heatmap_goal_ids,
                 self.args.heatmap_grid_size,

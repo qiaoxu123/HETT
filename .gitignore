@@ -219,3 +219,6 @@ __marimo__/
 /artifacts/reranker_training/*/val_*.json
 /artifacts/reranker_training/*/*.log
 /artifacts/reranker_cache_smoke/cache/
+
+/artifacts/frozen_sbf_smoke/val_*.json
+/artifacts/frozen_sbf_selector/val_*.json

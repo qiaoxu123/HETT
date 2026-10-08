@@ -31,6 +31,7 @@ def main():
  cli.add_argument('--config',type=Path,default=ROOT/'configs/diagnostics/candidate_controller.json')
  cli.add_argument('--output',type=Path,default=OUT)
  cli.add_argument('--full',action='store_true')
+ cli.add_argument('--limit',type=int,default=None)
  options=cli.parse_args();OUT=options.output.resolve()
  cfg=json.loads(options.config.read_text())
  sys.argv=['diagnostic'];args=parse_args()
@@ -50,6 +51,7 @@ def main():
   env=CityNavBatch(split,args,batch_size=8,seed=0,rank=0,world_size=1)
   wanted=json.loads((SBF/'artifacts/sbfnav_hett_ablation/episode_ids'/f'{split}.json').read_text())
   if options.full: wanted=[list(e.id) for e in env.data]
+  if options.limit: wanted=wanted[:options.limit]
   byid={tuple(e.id):e for e in env.data};env.data=[byid[tuple(i)] for i in wanted]
   base=None
   for name,variant in cfg['variants'].items():
@@ -61,6 +63,11 @@ def main():
    args.diagnostic=variant
    args.heatmap_execution=variant.get('execution','two_stage')
    args.stage1_switch_dist=variant.get('switch_dist',25.0)
+   agent.frozen_sbf_selector = None
+   if variant.get('sbf_selector'):
+    from multiagent.models.frozen_sbf_selector import FrozenSBFSelector
+    agent.frozen_sbf_selector = FrozenSBFSelector(**cfg['sbf_selector'])
+    (OUT/'sbf_selector_weights.json').write_text(json.dumps(agent.frozen_sbf_selector.metadata,indent=2)+'\n')
    agent.candidate_reranker = None
    if variant.get('reranker_checkpoint'):
     from multiagent.models.candidate_reranker import CandidateReranker, install_candidate_features
