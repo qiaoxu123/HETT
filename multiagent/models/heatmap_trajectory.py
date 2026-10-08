@@ -88,7 +88,7 @@ def _gather_heatmap_features(features, xy):
 
 class HeatmapTrajectoryHead(nn.Module):
     def __init__(self, *, feature_dim=256, hidden_dim=128, modes=3, waypoints=8,
-                 curve_scale=0.25):
+                 curve_scale=0.25, language_dim=768):
         super().__init__()
         if modes < 1 or waypoints < 2:
             raise ValueError("modes >= 1 and waypoints >= 2 are required")
@@ -115,7 +115,7 @@ class HeatmapTrajectoryHead(nn.Module):
         # instruction + individually matched landmark geometry + UAV history.
         # A zero-initialized gate preserves all old checkpoint behaviors.
         self.candidate_relation = CandidateRelationSelector(
-            feature_dim=feature_dim, language_dim=768, hidden_dim=96,
+            feature_dim=feature_dim, language_dim=language_dim, hidden_dim=96,
             attention_heads=4)
         self.relation_gate = nn.Parameter(torch.tensor(0.0))
         self.stop = nn.Sequential(nn.Linear(feature_dim + 3, hidden_dim // 2),
