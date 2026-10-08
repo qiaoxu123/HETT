@@ -389,6 +389,9 @@ class NavCMTAgent:
 
         # rollout_start_time = time.time()
 
+        if (getattr(self.args, 'trajectory_use_for_control', False)
+                and not getattr(self.args, 'heatmap_trajectory_enabled', False)):
+            raise ValueError("trajectory control requires an enabled trajectory head")
         obs = self.env._get_obs(random_direction=(self.feedback == 'teacher'))
         batch_size = len(obs)
 
@@ -655,6 +658,19 @@ class NavCMTAgent:
                 heatmap_goal_ids.unsqueeze(1),
                 heatmap_probs.gather(1, heatmap_goal_ids.unsqueeze(1)),
             ), dim=1).detach().cpu().numpy()
+            selected_trajectory_paths = None
+            selected_trajectory_goals = None
+            selected_stop_probs = None
+            if (trajectory_predictions is not None and self.feedback == 'student'
+                    and getattr(self.args, 'trajectory_use_for_control', False)):
+                scores = trajectory_predictions.joint_logits.flatten(1)
+                selected_ids = scores.argmax(dim=1)
+                plans = trajectory_predictions.trajectories.flatten(1, 2)
+                chosen = plans[torch.arange(batch_size, device=plans.device), selected_ids]
+                selected_trajectory_paths = chosen.detach().cpu().numpy()
+                selected_trajectory_goals = selected_trajectory_paths[:, -1]
+                selected_stop_probs = torch.sigmoid(
+                    trajectory_predictions.stop_logits).detach().cpu().numpy()
             pred_progress_t = host_predictions[:, 0]
             at_direction = host_predictions[:, 1]
             # for i in range(len(a_t_next_pos_ratio)):
@@ -853,7 +869,9 @@ class NavCMTAgent:
             elif self.feedback == 'student':  # student
                 a_t = at_direction
                 # Use the highest-probability heatmap cell as the coarse Stage-1 goal.
-                cpu_goal = host_predictions[:, 2:4]
+                cpu_goal = (selected_trajectory_goals
+                            if selected_trajectory_goals is not None
+                            else host_predictions[:, 2:4])
 
                 # _, at_goal = pred_logits.max(1)
                 # at_goal = at_goal.squeeze(1)
@@ -874,6 +892,29 @@ class NavCMTAgent:
                 #                                     self.args.map_meters)
                 # dst = Point2D(obs[i]['centroid_goal'][0], obs[i]['centroid_goal'][1])
                 if ended[i]:
+                    continue
+
+                if selected_trajectory_paths is not None:
+                    # Fully trajectory-based option: no Stage-1/Stage-2
+                    # switching. Execute only a short local waypoint and
+                    # replan from the next observation. Never use GT here.
+                    endpoint_dist = dst.dist_to(poses[i].xy)
+                    if (selected_stop_probs[i] >= self.args.trajectory_stop_threshold
+                            and endpoint_dist <= self.args.success_dist):
+                        ended[i] = True
+                        continue
+                    local_xy = selected_trajectory_paths[i, 0]
+                    local_dst = self.env.unnormalize_position(
+                        local_xy, obs[i]['map_name'], self.args.map_meters)
+                    remaining = local_dst.dist_to(poses[i].xy)
+                    steps = min(self.args.move_iteration,
+                                max(1, int(math.ceil(remaining / 5.0))))
+                    poses[i] = self.move(poses[i], local_dst, steps)
+                    traj[i]['pred_goal'].append(dst)
+                    traj[i]['trajectory_local_waypoint_xy'].append(
+                        [float(local_xy[0]), float(local_xy[1])])
+                    traj[i]['stage1_trajectory'].append(poses[i])
+                    stage1_step += 1
                     continue
 
                 coarse_goal_dist = dst.dist_to(poses[i].xy)
