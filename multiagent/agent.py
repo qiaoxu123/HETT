@@ -485,6 +485,10 @@ class NavCMTAgent:
         trajectory_joint_fde_sum_m = 0.0
         trajectory_stop_decisions = 0
         trajectory_stop_correct = 0
+        trajectory_plan_steps = 0
+        trajectory_goal_switches = 0
+        trajectory_travel_distance_m = 0.0
+        previous_plan_goal_id = np.full(batch_size, -1, dtype=np.int64)
         trajectory_supervision_count = 0
         trajectory_minade_sum = 0.0
         trajectory_minfde_sum = 0.0
@@ -675,6 +679,7 @@ class NavCMTAgent:
             selected_trajectory_paths = None
             selected_trajectory_goals = None
             selected_stop_probs = None
+            selected_plan_goal_ids = None
             if (trajectory_predictions is not None and self.feedback == 'student'
                     and getattr(self.args, 'trajectory_use_for_control', False)):
                 if getattr(self.args, 'trajectory_selector_mode', 'prior') == 'joint':
@@ -692,6 +697,13 @@ class NavCMTAgent:
                 chosen = plans[torch.arange(batch_size, device=plans.device), selected_ids]
                 selected_trajectory_paths = chosen.detach().cpu().numpy()
                 selected_trajectory_goals = selected_trajectory_paths[:, -1]
+                selected_goal_index = torch.div(
+                    selected_ids, trajectory_predictions.mode_logits.shape[-1],
+                    rounding_mode='floor'
+                )
+                selected_plan_goal_ids = trajectory_predictions.goal_ids.gather(
+                    1, selected_goal_index.unsqueeze(1)
+                ).squeeze(1).detach().cpu().numpy()
                 selected_stop_probs = torch.sigmoid(
                     trajectory_predictions.stop_logits).detach().cpu().numpy()
             pred_progress_t = host_predictions[:, 0]
@@ -975,6 +987,11 @@ class NavCMTAgent:
                     continue
 
                 if selected_trajectory_paths is not None:
+                    trajectory_plan_steps += 1
+                    goal_id = int(selected_plan_goal_ids[i])
+                    if previous_plan_goal_id[i] != -1 and previous_plan_goal_id[i] != goal_id:
+                        trajectory_goal_switches += 1
+                    previous_plan_goal_id[i] = goal_id
                     # Fully trajectory-based option: no Stage-1/Stage-2
                     # switching. Execute only a short local waypoint and
                     # replan from the next observation. Never use GT here.
@@ -993,7 +1010,9 @@ class NavCMTAgent:
                     remaining = local_dst.dist_to(poses[i].xy)
                     steps = min(self.args.move_iteration,
                                 max(1, int(math.ceil(remaining / 5.0))))
+                    old_xy = poses[i].xy
                     poses[i] = self.move(poses[i], local_dst, steps)
+                    trajectory_travel_distance_m += old_xy.dist_to(poses[i].xy)
                     traj[i]['pred_goal'].append(dst)
                     traj[i]['trajectory_local_waypoint_xy'].append(
                         [float(local_xy[0]), float(local_xy[1])])
@@ -1182,6 +1201,9 @@ class NavCMTAgent:
         self.logs['trajectory_joint_fde_sum_m'].append(trajectory_joint_fde_sum_m)
         self.logs['trajectory_stop_decisions'].append(float(trajectory_stop_decisions))
         self.logs['trajectory_stop_correct'].append(float(trajectory_stop_correct))
+        self.logs['trajectory_plan_steps'].append(float(trajectory_plan_steps))
+        self.logs['trajectory_goal_switches'].append(float(trajectory_goal_switches))
+        self.logs['trajectory_travel_distance_m'].append(float(trajectory_travel_distance_m))
         diagnostic_values = torch.stack((
             heatmap_diag_count,
             *(heatmap_coverage_hits[k] for k in (1, 4, 5, 8, 16, 20)),
