@@ -538,6 +538,9 @@ class NavCMTAgent:
             'gt40': 0,
         }
 
+        # Only previously observed student/teacher poses; never future states.
+        # Keep a short causal window to support revisits/progress evidence.
+        trajectory_pose_history = torch.empty((batch_size, 0, 2), device='cuda')
         for t in range(self.args.max_action_len):
 
             # print("- action rollingout takes %s seconds ---" % (time.time() - rollingout_action_start_time))
@@ -559,6 +562,10 @@ class NavCMTAgent:
 
             current_direct = direction_t.view(-1, 1).cuda()
             current_pos = position_t.view(-1, 2).cuda()
+            trajectory_pose_history = torch.cat(
+                (trajectory_pose_history, current_pos[:, None, :].detach()), dim=1
+            )[:, -10:]
+            input['trajectory_history_xy'] = trajectory_pose_history
             direction = torch.concat(
                 (torch.sin(current_direct), torch.cos(current_direct), current_pos), axis=1)
 
@@ -606,6 +613,7 @@ class NavCMTAgent:
                 maps=input['maps'],
                 lang=input['lang'],
                 lang_mask=input['lang_mask'],
+                trajectory_history_xy=input['trajectory_history_xy'],
                 candidates=input['candidates'],
                 centroids=input['centroids'],
                 lang_cls=input['lang_cls'],
