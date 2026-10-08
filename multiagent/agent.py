@@ -399,6 +399,12 @@ class NavCMTAgent:
         if (getattr(self.args, 'trajectory_use_for_control', False)
                 and not getattr(self.args, 'heatmap_trajectory_enabled', False)):
             raise ValueError("trajectory control requires an enabled trajectory head")
+        if (getattr(self.args, 'trajectory_use_for_control', False)
+                and getattr(self.args, 'heatmap_execution', 'two_stage') == 'waypoint'):
+            raise ValueError(
+                "trajectory_use_for_control and heatmap_execution=waypoint "
+                "are mutually exclusive: waypoint execution otherwise "
+                "silently bypasses the trajectory planner")
         obs = self.env._get_obs(random_direction=(self.feedback == 'teacher'))
         batch_size = len(obs)
 
