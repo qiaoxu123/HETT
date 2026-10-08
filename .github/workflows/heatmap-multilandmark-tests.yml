@@ -5,6 +5,7 @@ on:
     branches:
       - '2027-CVPR/heatmap-sbf-relative-geometry-top20'
       - '2027-CVPR/hett-heatmap-multitrajectory'
+      - '2027-CVPR/heatmap-joint-goal-trajectory'
   pull_request:
     paths:
       - 'multiagent/models/multi_landmark.py'
