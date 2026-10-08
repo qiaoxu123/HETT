@@ -13,6 +13,8 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 
+from .candidate_relation_selector import CandidateRelationSelector
+
 
 @dataclass
 class TrajectoryProposals:
@@ -109,6 +111,13 @@ class HeatmapTrajectoryHead(nn.Module):
         )
         nn.init.zeros_(self.goal_scorer[-1].weight)
         nn.init.zeros_(self.goal_scorer[-1].bias)
+        # SBF-inspired mechanism: per-candidate evidence from contextual
+        # instruction + individually matched landmark geometry + UAV history.
+        # A zero-initialized gate preserves all old checkpoint behaviors.
+        self.candidate_relation = CandidateRelationSelector(
+            feature_dim=feature_dim, language_dim=768, hidden_dim=96,
+            attention_heads=4)
+        self.relation_gate = nn.Parameter(torch.tensor(0.0))
         self.stop = nn.Sequential(nn.Linear(feature_dim + 3, hidden_dim // 2),
                                   nn.GELU(), nn.Linear(hidden_dim // 2, 1))
         # Starting with zeros preserves the simple straight/curved anchor paths.
@@ -150,7 +159,11 @@ class HeatmapTrajectoryHead(nn.Module):
         return paths, mode_logits, context
 
     def forward(self, features, goal_probabilities, current_xy, heading_sc,
-                *, top_k=5, nms_kernel=3, teacher_goal=None):
+                *, top_k=5, nms_kernel=3, teacher_goal=None,
+                language_tokens=None, language_mask=None, landmark_xy=None,
+                landmark_extent=None, landmark_valid=None,
+                landmark_text_mask=None, history_xy=None,
+                relation_enabled=True):
         if current_xy.ndim != 2 or current_xy.shape[-1] != 2:
             raise ValueError("current_xy must be [B,2]")
         if heading_sc.shape != current_xy.shape:
@@ -162,6 +175,27 @@ class HeatmapTrajectoryHead(nn.Module):
         candidate_logits = self.goal_scorer(
             torch.cat((context, relative_xy, log_goal.unsqueeze(-1)), dim=-1)
         ).squeeze(-1)
+        # Do not infer landmark identity from an aggregate mask. Matching
+        # named-anchor geometry is required for relation-conditioned scores.
+        if relation_enabled and landmark_xy is not None:
+            required = (language_tokens, landmark_extent, landmark_valid,
+                        landmark_text_mask)
+            if any(value is None for value in required):
+                raise ValueError("relation selector needs language + complete named-landmark inputs")
+            evidence = self.candidate_relation(
+                goal_xy=goals,
+                goal_features=_gather_heatmap_features(features, goals),
+                current_xy=current_xy,
+                heading_sc=heading_sc,
+                language_tokens=language_tokens,
+                language_mask=language_mask,
+                landmark_xy=landmark_xy,
+                landmark_extent=landmark_extent,
+                landmark_valid=landmark_valid,
+                landmark_text_mask=landmark_text_mask,
+                history_xy=history_xy,
+            )
+            candidate_logits = candidate_logits + torch.tanh(self.relation_gate) * evidence
         # Joint goal/path log-probabilities; no oracle target is used here.
         goal_log_probs = F.log_softmax(log_goal + candidate_logits, dim=-1)
         joint = goal_log_probs[:, :, None] + F.log_softmax(logits, dim=-1)
