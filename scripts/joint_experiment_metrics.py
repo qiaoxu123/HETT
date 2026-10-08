@@ -32,7 +32,14 @@ def observe(agent, obs, poses, trajectories, ended, t, goals, heatmap_ids,
         plan_control=agent.args.trajectory_use_for_control
         selected_goal_id=(int(proposals.goal_ids[i,idx//modes]) if plan_control
                           else int(selected_ids[i]))
-        steps.append(dict(t=t,pose=list(ob['pose']),next_pose=list(poses[i]),gt_distance_m=float(pre),
+        macro_moved_m=float(np.linalg.norm(
+            np.asarray(poses[i][:2], dtype=float) - np.asarray(ob['pose'][:2], dtype=float)))
+        macro_yaw_delta=float(np.arctan2(
+            np.sin(poses[i].yaw - ob['pose'].yaw),
+            np.cos(poses[i].yaw - ob['pose'].yaw)))
+        steps.append(dict(t=t,pose=list(ob['pose']),next_pose=list(poses[i]),
+            macro_displacement_m=macro_moved_m, macro_yaw_delta_rad=macro_yaw_delta,
+            gt_distance_m=float(pre),
             endpoint_xy=list(endpoint),goal_id=selected_goal_id,
             goal_switch=bool(steps and steps[-1]['goal_id']!=selected_goal_id),
             heatmap_hits={str(k):bool(dist[:min(k,len(dist))].min()<=radius) for k in (1,5,16,20)},
@@ -63,7 +70,10 @@ def summarize(env,predictions,variant,epoch,seconds):
             teacher_xy=[list(q) for q in gt],goal_xy=list(p['goal']),steps=steps,
             entered_then_left=bool(min(d)<=env.args.success_dist and d[-1]>env.args.success_dist),
             path_length_m=float(sum(a.dist_to(b) for a,b in zip(path[:-1],path[1:]))),
-            termination=termination))
+            termination=termination,initial_distance_m=float(d[0]),
+            progress_m=float(d[0]-d[-1]),
+            success_from_outside=bool(d[0]>env.args.success_dist and d[-1]<=env.args.success_dist),
+            reached_from_outside=bool(d[0]>env.args.success_dist and min(d)<=env.args.success_dist)))
     steps=[s for e in episodes for s in e['steps']]
     action_count=max(1, sum(max(0, len(e['path_xy'])-1) for e in episodes))
     def mean(key):
@@ -76,6 +86,14 @@ def summarize(env,predictions,variant,epoch,seconds):
         seconds=seconds,episode_seconds=seconds/len(episodes),step_seconds=seconds/max(1,len(steps) or action_count),
         entered_then_left=sum(e['entered_then_left'] for e in episodes),
         path_length_m=float(np.mean([e['path_length_m'] for e in episodes])),
+        initial_distance_m=float(np.mean([e['initial_distance_m'] for e in episodes])),
+        mean_goal_progress_m=float(np.mean([e['progress_m'] for e in episodes])),
+        initial_already_successful=sum(e['initial_distance_m']<=env.args.success_dist for e in episodes),
+        reached_from_outside=sum(e['reached_from_outside'] for e in episodes),
+        success_from_outside=sum(e['success_from_outside'] for e in episodes),
+        macro_zero_translation_rate=float(np.mean([
+            s['macro_displacement_m']<1e-4 for s in steps if not s['stopped']
+        ])) if steps and any(not s['stopped'] for s in steps) else None,
         stop_TP=tp,stop_FP=fp,stop_FN=fn,stop_TN=tn,
         stop_precision=tp/(tp+fp) if tp+fp else None,stop_recall=tp/(tp+fn) if tp+fn else None,
         stop_accuracy=(tp+tn)/len(steps) if steps else None,
