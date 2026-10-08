@@ -106,6 +106,13 @@ def parse_args():
                         help='Enable current pose and referenced-landmark geometry in the belief field')
     parser.add_argument('--no_heatmap_relative_geometry', action='store_false', dest='heatmap_relative_geometry',
                         help='Disable geometry injection for a map-only ablation')
+    parser.add_argument('--heatmap_multi_landmark', action='store_true', default=True,
+                        help='Jointly reason over individually named reference landmarks')
+    parser.add_argument('--no_heatmap_multi_landmark', action='store_false',
+                        dest='heatmap_multi_landmark',
+                        help='Disable per-landmark relation head for a single-centroid ablation')
+    parser.add_argument('--heatmap_max_landmarks', type=int, default=16,
+                        help='Maximum distinct named landmarks per instruction for relation reasoning')
     parser.add_argument('--heatmap_loss_weight', type=float, default=0.1,
                         help='Weight of the Stage-1 heatmap loss')
     parser.add_argument('--stage1_switch_dist', type=float, default=25.0,
