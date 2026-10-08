@@ -6,10 +6,11 @@ ROOT=Path(__file__).resolve().parents[1]
 ART=ROOT/'artifacts'
 def load(p):return json.loads(p.read_text())
 def main():
- for name in ['candidate_controller','full_validation','handoff_control']:
+ for name in ['candidate_controller','full_validation','handoff_control','progress_stop_control']:
   if not (ART/name/'COMPLETE.json').exists():raise RuntimeError(f'{name} is incomplete')
  diag=load(ART/'candidate_controller/results.json');full=load(ART/'full_validation/results.json');handoff=load(ART/'handoff_control/results.json')
- assert len(diag)==22 and len(full)==4 and len(handoff)==4
+ progress=load(ART/'progress_stop_control/results.json')
+ assert len(diag)==22 and len(full)==4 and len(handoff)==4 and len(progress)==4
  for split,n in [('val_seen',2470),('val_unseen',2697)]:
   rows=[r for r in full if r['split']==split];assert all(r['episodes']==n for r in rows)
   base=next(r for r in rows if r['variant']=='baseline')
@@ -17,7 +18,7 @@ def main():
   a=load(ART/'candidate_controller'/f'{split}_direct_bounded.json')['episodes']
   b=load(ART/'candidate_controller'/f'{split}_waypoint_api.json')['episodes']
   assert a==b
- report={'diagnostic_runs':diag,'full_validation':full,'handoff_control':handoff,
+ report={'diagnostic_runs':diag,'full_validation':full,'handoff_control':handoff,'progress_stop_control':progress,'stop_analysis':load(ART/'diagnosis_summary/stop_analysis.json'),
   'sbf_candidate_comparison':load(ART/'candidate_controller/sbf_candidate_comparison.json'),
   'failure_analysis':load(ART/'candidate_controller/failure_analysis.json'),
   'checks':{'unit_tests_passed':28,'full_baseline_matches_original_rounded_metrics':True,'deployable_api_matches_diagnostic_traces':True,'test_unseen_used':False,'training_restarted':False},
@@ -27,12 +28,13 @@ def main():
  fields=['scope','split','variant','episodes','sr','oracle_sr','spl','ne','delta_sr_pp','gained','lost','privileged']
  with (dest/'results.csv').open('w') as f:
   w=csv.DictWriter(f,fieldnames=fields);w.writeheader()
-  for scope,rows in [('subset256',diag),('full',full),('handoff256',handoff)]:
+  for scope,rows in [('subset256',diag),('full',full),('handoff256',handoff),('progress_stop256',progress)]:
    for row in rows:w.writerow({k:scope if k=='scope' else row.get(k) for k in fields})
  lines=['HETT HEATMAP CANDIDATE / CONTROLLER DIAGNOSIS','',
  'Frozen checkpoint: epoch 1, best_val_unseen from heatmap_relative_geometry_top20_688e981_b8_s0_2e_20261008.',
  'No training, no Test-Unseen. Original worktree and checkpoints preserved.','',
  'MAIN FINDING: The two-stage execution path loses much of the benefit of correct proposals. Candidate ranking remains a separate bottleneck.',
+ 'Progress target is clip(1 - distance_m / 100, 0, 1); stopping at >0.95 corresponds to <5m even for a perfect predictor, while success is defined at 20m. The learned head is also poorly calibrated: see stop_analysis.json.',
  'The multi-landmark branch is already active; disabling it sharply degrades both candidate recall and navigation.','',
  'FULL VALIDATION (SR, OSR, SPL are percentages; NE is meters):']
  for r in full:lines.append(f"{r['split']} {r['variant']}: N={r['episodes']}, SR={r['sr']:.4f}, OSR={r['oracle_sr']:.4f}, SPL={r['spl']:.4f}, NE={r['ne']:.4f}, delta SR={r['delta_sr_pp']:.4f} pp, paired CI95={r['delta_sr_ci95']}")
@@ -45,6 +47,7 @@ def main():
  'python scripts/diagnose_candidate_controller.py',
  'python scripts/diagnose_candidate_controller.py --config <absolute>/configs/diagnostics/full_validation.json --output <fresh absolute output> --full',
  'python scripts/diagnose_candidate_controller.py --config <absolute>/configs/diagnostics/handoff_control.json --output <fresh absolute output>',
+ 'python scripts/diagnose_candidate_controller.py --config <absolute>/configs/diagnostics/progress_stop_control.json --output <fresh absolute output>',
  'python -m unittest tests.test_heatmap_execution tests.test_heatmap_relative_geometry tests.test_multi_landmark_relations tests.test_dense_spatial_belief -q','',
  'Measurement fixes: Top16 distance now slices the first 16 candidates; Stage2 entry distance uses obs[i] instead of a stale batch variable. These do not change baseline decisions.','',*report['limitations']]
  (dest/'REPORT.txt').write_text('\n'.join(lines)+'\n')

@@ -1,0 +1,13 @@
+{
+  "pid": 3970211,
+  "command": [
+    "/home/20260922_1/miniconda3/envs/AirVLN39/bin/python",
+    "-u",
+    "/home/rental/20260922_1/Workspace/hett-heatmap-diagnosis/scripts/diagnose_candidate_controller.py",
+    "--config",
+    "/home/rental/20260922_1/Workspace/hett-heatmap-diagnosis/configs/diagnostics/full_validation.json",
+    "--output",
+    "/home/rental/20260922_1/Workspace/hett-heatmap-diagnosis/artifacts/full_validation",
+    "--full"
+  ]
+}

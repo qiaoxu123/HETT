@@ -213,3 +213,4 @@ __marimo__/
 /artifacts/*/*.log
 /artifacts/*/*.pid
 /artifacts/*/*.incomplete
+/artifacts/progress_stop_control/val_*.json

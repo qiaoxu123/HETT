@@ -1,0 +1,1 @@
+{"splits":["val_unseen","val_seen"],"variants":{"baseline":{"record":true},"progress08":{"record":true,"progress_stop":0.8}}}

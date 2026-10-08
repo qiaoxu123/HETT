@@ -68,6 +68,7 @@ def main():
    print('START',split,name,flush=True);start=time.time()
    agent.test(DataLoader(env,batch_size=1),env_name=split,feedback='student')
    predictions=agent.get_results();summary,_=env.eval_metrics(predictions)
+   summary={k:None if isinstance(v,(float,np.floating)) and not np.isfinite(v) else v for k,v in summary.items()}
    episodes=[]
    for eid in wanted:
     p=predictions[tuple(eid)];pathxy=[q.xy for q in p['trajectory']];goal=p['goal']

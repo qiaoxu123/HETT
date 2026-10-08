@@ -1,0 +1,56 @@
+{
+  "val_seen": {
+    "stage2_entry_events": 261,
+    "stage2_entry_mean_m": 51.97444040992153,
+    "stage2_entry_le20": 50,
+    "stage2_entry_gt40": 143,
+    "episodes_with_stage2": 256,
+    "initial_top1_hit": {
+      "episodes": 66,
+      "successes": 17.0
+    },
+    "initial_top16_hit": {
+      "episodes": 229,
+      "successes": 54.0
+    },
+    "entered_then_left": {
+      "episodes": 79,
+      "successes": 0.0
+    },
+    "progress_stop": {
+      "episodes": 15,
+      "successes": 8.0
+    },
+    "first_stage2_entry_gt40": {
+      "episodes": 141,
+      "successes": 29.0
+    }
+  },
+  "val_unseen": {
+    "stage2_entry_events": 262,
+    "stage2_entry_mean_m": 57.31260148977483,
+    "stage2_entry_le20": 36,
+    "stage2_entry_gt40": 172,
+    "episodes_with_stage2": 256,
+    "initial_top1_hit": {
+      "episodes": 51,
+      "successes": 17.0
+    },
+    "initial_top16_hit": {
+      "episodes": 226,
+      "successes": 41.0
+    },
+    "entered_then_left": {
+      "episodes": 61,
+      "successes": 0.0
+    },
+    "progress_stop": {
+      "episodes": 4,
+      "successes": 2.0
+    },
+    "first_stage2_entry_gt40": {
+      "episodes": 169,
+      "successes": 27.0
+    }
+  }
+}

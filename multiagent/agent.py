@@ -861,7 +861,7 @@ class NavCMTAgent:
                         stage2_recover_count[i] = 0
                         stage2_recoveries += 1
 
-                if pred_progress_t[i] > 0.95 and self.feedback == 'student' and stage1_ended[i]:
+                if pred_progress_t[i] > diagnostic.get('progress_stop', 0.95) and self.feedback == 'student' and stage1_ended[i]:
                     if diagnostic:
                         traj[i]['stop_reason'].append('progress_stop')
                     ended[i] = True

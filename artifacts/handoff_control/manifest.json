@@ -1,0 +1,27 @@
+{
+  "started_at": "2026-10-08T18:35:15.537719+08:00",
+  "commit": "f29d65a9b4af8511216727ef4b9bc170e8f09ef4",
+  "checkpoint": "/home/rental/20260922_1/Workspace/hett-heatmap-sbf-relative-geometry-top20/checkpoints/heatmap_relative_geometry_top20_688e981_b8_s0_2e_20261008/best_val_unseen",
+  "checkpoint_sha256": "22016785d214f9b2e1f709f0b5da5fefcf35b04131ec577ec4d1b4ec073ec49a",
+  "config": {
+    "splits": [
+      "val_unseen",
+      "val_seen"
+    ],
+    "variants": {
+      "baseline": {
+        "record": true
+      },
+      "handoff5": {
+        "record": true,
+        "switch_dist": 5.0
+      }
+    }
+  },
+  "full_split": false,
+  "code_sha256": {
+    "multiagent/agent.py": "456acb862f3a97efdfe7acdf926bfb9028b683c54c78692b483936f79933c9ce",
+    "multiagent/heatmap_execution.py": "7b919fddcb3d5ed41a119e952a3db9b2c265461965b9c113cc3a1337a45907e4",
+    "scripts/diagnose_candidate_controller.py": "46f96f91f259882cca0dd17785b366ed436b545e572c77630fdecc3e17e4cbb2"
+  }
+}

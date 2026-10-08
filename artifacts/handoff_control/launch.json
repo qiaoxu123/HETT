@@ -1,0 +1,13 @@
+{
+  "pid": 3973215,
+  "command": [
+    "/home/20260922_1/miniconda3/envs/AirVLN39/bin/python",
+    "-u",
+    "/home/rental/20260922_1/Workspace/hett-heatmap-diagnosis/scripts/diagnose_candidate_controller.py",
+    "--config",
+    "/home/rental/20260922_1/Workspace/hett-heatmap-diagnosis/configs/diagnostics/handoff_control.json",
+    "--output",
+    "/home/rental/20260922_1/Workspace/hett-heatmap-diagnosis/artifacts/handoff_control"
+  ],
+  "baseline_source": "/home/rental/20260922_1/Workspace/hett-heatmap-diagnosis/artifacts/candidate_controller"
+}

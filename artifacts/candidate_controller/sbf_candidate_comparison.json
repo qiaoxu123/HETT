@@ -1,0 +1,22 @@
+[
+  {
+    "split": "val_seen",
+    "same_episode_order_verified": true,
+    "hett_epoch": 1,
+    "sbf_epoch": 14,
+    "hett_initial_top1_hit20": 25.78125,
+    "sbf_initial_field_top1_hit20": 46.09375,
+    "hett_initial_top16_hit20": 89.453125,
+    "sbf_initial_field_top16_hit20": 91.015625
+  },
+  {
+    "split": "val_unseen",
+    "same_episode_order_verified": true,
+    "hett_epoch": 1,
+    "sbf_epoch": 14,
+    "hett_initial_top1_hit20": 19.921875,
+    "sbf_initial_field_top1_hit20": 18.359375,
+    "hett_initial_top16_hit20": 88.28125,
+    "sbf_initial_field_top16_hit20": 81.25
+  }
+]
