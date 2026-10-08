@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import torch
+
+from .multi_landmark import MultiLandmarkRelationHead
 import torch.nn.functional as F
 from torch import nn
 
@@ -159,6 +161,13 @@ class CompactSpatialBelief(nn.Module):
         # original belief predictions until the geometry branch learns.
         self.geometry_projection = nn.Conv2d(13, hidden_dim, 1, bias=False)
         self.geometry_gate = nn.Parameter(torch.tensor(0.0))
+        self.multi_landmark_relation = MultiLandmarkRelationHead(
+            map_dim=hidden_dim, language_dim=language_dim,
+            hidden_dim=96, attention_heads=4, dropout=dropout,
+        )
+        # Zero at initialization: loading a previous checkpoint does not
+        # immediately perturb its heatmap; supervised training learns the gate.
+        self.multi_landmark_gate = nn.Parameter(torch.tensor(0.0))
         self.language_projection = nn.Sequential(
             nn.Linear(language_dim, hidden_dim),
             nn.LayerNorm(hidden_dim),
@@ -183,6 +192,10 @@ class CompactSpatialBelief(nn.Module):
         language_tokens: torch.Tensor,
         language_mask: torch.Tensor | None = None,
         geometry: torch.Tensor | None = None,
+        landmark_xy: torch.Tensor | None = None,
+        landmark_extent: torch.Tensor | None = None,
+        landmark_valid: torch.Tensor | None = None,
+        landmark_text_mask: torch.Tensor | None = None,
     ) -> SpatialBeliefOutput:
         if maps.ndim != 4 or maps.shape[1] != 4:
             raise ValueError("belief maps must have shape [B,4,H,W]")
@@ -220,5 +233,15 @@ class CompactSpatialBelief(nn.Module):
             batch, channels, height, width
         )
         logits = self.decoder(conditioned).squeeze(1)
+        if landmark_xy is not None:
+            if any(value is None for value in (
+                landmark_extent, landmark_valid, landmark_text_mask
+            )):
+                raise ValueError("multi-landmark relation requires complete landmark inputs")
+            relation_logits = self.multi_landmark_relation(
+                conditioned, language_tokens, landmark_xy, landmark_extent,
+                landmark_valid, landmark_text_mask, language_mask,
+            )
+            logits = logits + torch.tanh(self.multi_landmark_gate) * relation_logits
         probabilities = torch.softmax(logits.flatten(1), dim=-1).reshape_as(logits)
         return SpatialBeliefOutput(logits, probabilities, conditioned)
