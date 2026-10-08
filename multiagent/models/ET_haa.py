@@ -289,17 +289,36 @@ class ET(nn.Module):
             ref_x = (reference_mask * coord.view(1, 1, -1)).sum(dim=(1, 2)) / ref_mass.clamp_min(1e-6)
             ref_y = (reference_mask * coord.view(1, -1, 1)).sum(dim=(1, 2)) / ref_mass.clamp_min(1e-6)
             ref_centroid = torch.stack((ref_x, ref_y), dim=-1)
+            # In the multi-landmark experiment, do not fuse all reference
+            # contours into a single anonymous center. Keep the UAV geometry,
+            # and delegate landmark-specific geometry to the relation head.
+            if getattr(self.args, 'heatmap_multi_landmark', False):
+                ref_centroid = torch.zeros_like(ref_centroid)
+                reference_present = torch.zeros_like(ref_mass, dtype=torch.bool)
+            else:
+                reference_present = ref_mass > 1e-6
             geometry = dense_relative_geometry(
                 current_pose[:, 2:4], current_pose[:, :2],
-                ref_centroid, ref_mass > 1e-6,
+                ref_centroid, reference_present,
                 field_size=self.args.heatmap_grid_size,
                 map_meters=self.args.map_meters,
             )
+        multi_inputs = {}
+        if getattr(self.args, 'heatmap_multi_landmark', False):
+            # Missing keys must fail loudly: silently falling back to the
+            # aggregate mask would invalidate the multi-landmark experiment.
+            names = ('landmark_xy', 'landmark_extent', 'landmark_valid',
+                     'landmark_text_mask')
+            for name in names:
+                if name not in inputs:
+                    raise ValueError(f"multi-landmark mode requires {name}")
+                multi_inputs[name] = inputs[name]
         belief = self.spatial_belief(
             maps,
             emb_lang,
             inputs.get("lang_mask"),
             geometry=geometry,
+            **multi_inputs,
         )
         target_logits = belief.logits.flatten(1)
 
