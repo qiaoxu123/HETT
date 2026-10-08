@@ -26,6 +26,7 @@ from multiagent.models.CLIP import CLIP
 # from direction.models.ddppo.resenet_encoders import TorchVisionResNet50
 from multiagent.models.goal_predictor import GoalPredictor, MapEncoder
 from multiagent.models.spatial_belief import metric_gaussian_target, greedy_nms_topk, local_soft_argmax_xy
+from multiagent.models.multi_landmark import build_landmark_batch
 from multiagent.observation import cropclient
 from multiagent.space import Pose4D, Point2D, Point3D
 from multiagent.teacher.algorithm.lookahead import lookahead_discrete_action
@@ -398,6 +399,23 @@ class NavCMTAgent:
         input_ids = encoding['input_ids'].cuda()
         attention_mask = encoding['attention_mask'].cuda()
         lang_features, linear_cls, cls_hidden = self.lang_model(input_ids, attention_mask)
+        # Compute static landmark/text alignment ONCE per episode batch.
+        # Dynamic UAV pose still updates at every rollout step.
+        multi_landmarks = None
+        if getattr(self.args, 'heatmap_multi_landmark', False):
+            multi_landmarks = build_landmark_batch(
+                obs, self.tokenizer, input_ids,
+                max_landmarks=self.args.heatmap_max_landmarks,
+            )
+            matched = multi_landmarks['landmark_text_mask'].any(-1)
+            real = multi_landmarks['landmark_valid']
+            self.logs['landmark_refs_total'].append(float(real.sum().item()))
+            self.logs['landmark_refs_name_matched'].append(
+                float((matched & real).sum().item())
+            )
+            self.logs['landmark_refs_truncated'].append(
+                float(multi_landmarks['landmark_truncated'])
+            )
 
         # lang_features --> 768
         # linear_cls --> 49 (used to attend to img features)
@@ -473,6 +491,11 @@ class NavCMTAgent:
             'map_fts': torch.zeros(batch_size, 0, 512, 49).cuda(),
         }
 
+        if multi_landmarks is not None:
+            for key in ('landmark_xy', 'landmark_extent', 'landmark_valid',
+                        'landmark_text_mask'):
+                input[key] = multi_landmarks[key]
+
         stage1_ended = np.array([False] * batch_size)
         stage2_recover_count = np.zeros(batch_size, dtype=np.int32)
         stage2_recoveries = 0
@@ -547,7 +570,11 @@ class NavCMTAgent:
                 lang_mask=input['lang_mask'],
                 candidates=input['candidates'],
                 centroids=input['centroids'],
-                lang_cls=input['lang_cls']
+                lang_cls=input['lang_cls'],
+                **({key: input[key] for key in (
+                    'landmark_xy', 'landmark_extent', 'landmark_valid',
+                    'landmark_text_mask'
+                )} if multi_landmarks is not None else {})
             )
 
             # Dense Stage-1 spatial belief: softmax -> greedy NMS Top-K.
