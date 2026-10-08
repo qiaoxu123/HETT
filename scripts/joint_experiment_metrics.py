@@ -25,7 +25,7 @@ def observe(agent, obs, poses, trajectories, ended, t, goals, heatmap_ids,
         endpoint=agent.env.unnormalize_position(goals[i],ob['map_name'],scale)
         pre=ob['pose'].xy.dist_to(ob['goal'])
         reason=trajectories[i].get('stop_reason', [])
-        stop=bool(ended[i] and (not reason or reason[-1] != 'horizon')); near=bool(pre<=radius)
+        stop=bool(ended[i] and reason and reason[-1] in ('learned_stop','progress_stop')); near=bool(pre<=radius)
         idx=int(ji[i] if agent.args.trajectory_selector_mode=='joint' else pi[i])
         plan_control=agent.args.trajectory_use_for_control
         selected_goal_id=(int(proposals.goal_ids[i,idx//modes]) if plan_control
@@ -52,10 +52,10 @@ def summarize(env,predictions,variant,epoch,seconds):
         path=[q.xy for q in p['trajectory']];gt=[q.xy for q in p['gt_trajectory']]
         m=env._eval_item(gt,path,p['goal']);steps=p.get('experiment_steps',[])
         d=[q.dist_to(p['goal']) for q in path]
-        termination='unreported'
-        if steps:
-            termination=('learned_stop' if steps[-1]['stopped'] and variant!='A'
-                         else ('progress_stop' if steps[-1]['stopped'] else 'horizon'))
+        # Read the controller's actual end reason; a horizon or a
+        # stagnation termination must never count as a learned stop.
+        reasons=p.get('stop_reason', [])
+        termination=reasons[-1] if reasons else 'unreported'
         episodes.append(dict(episode_id=list(eid),success=float(m['success']),osr=float(m['oracle_success']),
             spl=float(m['spl']),ne=float(m['ne']),path_xy=[list(q) for q in path],
             teacher_xy=[list(q) for q in gt],goal_xy=list(p['goal']),steps=steps,
@@ -81,7 +81,9 @@ def summarize(env,predictions,variant,epoch,seconds):
         goal_switch_rate=sum(s['goal_switch'] for s in steps)/max(1,len(steps)-len(episodes)),
         rank_eligible_rate=mean('trajectory_pool_hit'),
         policy_stops=sum(e['termination'] in ('learned_stop','progress_stop') for e in episodes),
-        horizon_timeouts=sum(e['termination']=='horizon' for e in episodes))
+        horizon_timeouts=sum(e['termination']=='horizon' for e in episodes),
+        trajectory_stagnations=sum(e['termination']=='trajectory_stagnation' for e in episodes),
+        unreported_terminations=sum(e['termination']=='unreported' for e in episodes))
     for k in (1,5,16,20):
         summary[f'heatmap_top{k}_hit20']=(
             float(np.mean([s['heatmap_hits'][str(k)] for s in steps])) if steps else None
