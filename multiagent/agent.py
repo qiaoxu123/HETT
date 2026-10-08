@@ -34,6 +34,7 @@ from multiagent.models.heatmap_trajectory import (
     select_goal_mode_indices, arrival_stop_targets,
 )
 from multiagent.heatmap_execution import bounded_heatmap_step
+from multiagent.trajectory_rollout_utils import should_record_pose
 from multiagent.mapdata import MAP_BOUNDS
 from multiagent.observation import cropclient
 from multiagent.space import Pose4D, Point2D, Point3D
@@ -1179,11 +1180,12 @@ class NavCMTAgent:
                     selected_goal_ids=heatmap_goal_ids,
                 )
 
-            # Save trajectory output
+            # Save every executed displacement, including a terminal action.
+            # Previously an action on the final time step could move the UAV,
+            # set ended=True and then be omitted from official SR/NE/SPL/OSR.
             for i, ob in enumerate(obs):
-                if not ended[i]:
+                if should_record_pose(traj[i]['trajectory'][-1], poses[i], ended=ended[i]):
                     traj[i]['trajectory'].append(poses[i])
-                    # Update the status
             # Refresh the environment first, then use the resulting pose/state
             # as the spatial input for the next navigation step.
             obs = self.env._get_obs(poses, random_direction=(self.feedback == 'teacher'))
