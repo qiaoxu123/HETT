@@ -31,6 +31,7 @@ from multiagent.models.heatmap_trajectory import (
     TrajectoryProposals, resample_teacher_suffix,
     trajectory_imitation_loss, stop_supervision_loss,
     candidate_ranking_loss, candidate_trajectory_imitation_loss,
+    select_goal_mode_indices, arrival_stop_targets,
 )
 from multiagent.heatmap_execution import bounded_heatmap_step
 from multiagent.mapdata import MAP_BOUNDS
@@ -704,7 +705,7 @@ class NavCMTAgent:
                     scores = (candidate_prior[:, :, None] + F.log_softmax(
                         trajectory_predictions.mode_logits, dim=-1
                     )).flatten(1)
-                selected_ids = scores.argmax(dim=1)
+                selected_ids = select_goal_mode_indices(scores.view(batch_size, *trajectory_predictions.mode_logits.shape[1:]))
                 plans = trajectory_predictions.trajectories.flatten(1, 2)
                 chosen = plans[torch.arange(batch_size, device=plans.device), selected_ids]
                 selected_trajectory_paths = chosen.detach().cpu().numpy()
@@ -864,13 +865,16 @@ class NavCMTAgent:
                             device=pred_logits.device
                         ) - current_pos
                     ).norm(dim=-1) * self.args.map_meters
-                    remaining_length_m = (
-                        targets[:, 0] - targets[:, -1]
-                    ).norm(dim=-1) * self.args.map_meters
-                    stop_target = (
-                        (goal_distance_m <= 0.5 * self.args.success_dist)
-                        & (remaining_length_m <= 0.5 * self.args.success_dist)
-                    ).float()
+                    # Align stop labels to the actual evaluation success
+                    # criterion. Teacher suffix distance was an unrelated
+                    # extra constraint that suppressed valid positive labels.
+                    stop_target = arrival_stop_targets(
+                        current_pos,
+                        torch.as_tensor(gt_goal_np, dtype=current_pos.dtype,
+                                        device=current_pos.device),
+                        map_meters=self.args.map_meters,
+                        success_radius_m=self.args.success_dist,
+                    )
                     trajectory_stop_loss = trajectory_stop_loss + stop_supervision_loss(
                         trajectory_predictions.stop_logits, stop_target,
                         active=valid_trajectory, pos_weight=2.,
@@ -927,8 +931,9 @@ class NavCMTAgent:
                     ).clamp_min(1e-8).log()
                     prior_scores = p_log[:, :, None] + F.log_softmax(
                         trajectory_predictions.mode_logits, dim=-1)
-                    prior_indices = prior_scores.flatten(1).argmax(dim=-1)
-                    joint_indices = trajectory_predictions.joint_logits.flatten(1).argmax(-1)
+                    prior_indices = select_goal_mode_indices(prior_scores)
+                    joint_indices = select_goal_mode_indices(
+                        trajectory_predictions.joint_logits)
                     modes = trajectory_predictions.mode_logits.shape[-1]
                     prior_goals = torch.div(prior_indices, modes, rounding_mode='floor')
                     joint_goals = torch.div(joint_indices, modes, rounding_mode='floor')
@@ -1040,7 +1045,17 @@ class NavCMTAgent:
                         ended[i] = True
                         traj[i]['stop_reason'].append('learned_stop')
                         continue
-                    local_xy = selected_trajectory_paths[i, 0]
+                    # Short arclength-spaced paths often put the first point
+                    # inside the discrete lookahead controller's 5m STOP
+                    # radius. Skip already reached points and use a farther
+                    # valid waypoint; fall back to the predicted endpoint.
+                    local_xy = selected_trajectory_paths[i, -1]
+                    for candidate_xy in selected_trajectory_paths[i]:
+                        candidate_dst = self.env.unnormalize_position(
+                            candidate_xy, obs[i]['map_name'], self.args.map_meters)
+                        if candidate_dst.dist_to(poses[i].xy) >= 5.0:
+                            local_xy = candidate_xy
+                            break
                     local_dst = self.env.unnormalize_position(
                         local_xy, obs[i]['map_name'], self.args.map_meters)
                     remaining = local_dst.dist_to(poses[i].xy)
@@ -1048,7 +1063,18 @@ class NavCMTAgent:
                                 max(1, int(math.ceil(remaining / 5.0))))
                     old_xy = poses[i].xy
                     poses[i] = self.move(poses[i], local_dst, steps)
-                    trajectory_travel_distance_m += old_xy.dist_to(poses[i].xy)
+                    moved_m = old_xy.dist_to(poses[i].xy)
+                    trajectory_travel_distance_m += moved_m
+                    waypoint_stagnant_steps[i] = (
+                        waypoint_stagnant_steps[i] + 1 if moved_m < 1e-4 else 0
+                    )
+                    if waypoint_stagnant_steps[i] >= getattr(
+                            self.args, 'heatmap_waypoint_stagnation_steps', 5):
+                        ended[i] = True
+                        traj[i]['stop_reason'].append('trajectory_stagnation')
+                    elif t >= self.args.max_action_len - 1:
+                        ended[i] = True
+                        traj[i]['stop_reason'].append('horizon')
                     traj[i]['pred_goal'].append(dst)
                     traj[i]['trajectory_local_waypoint_xy'].append(
                         [float(local_xy[0]), float(local_xy[1])])
