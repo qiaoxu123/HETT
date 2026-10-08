@@ -39,6 +39,33 @@ def heatmap_endpoints(probabilities, top_k, *, nms_kernel=3):
     return xy, ids
 
 
+def select_goal_mode_indices(goal_mode_logits):
+    """Select the most likely GOAL first, then the best mode for that goal.
+
+    Flat argmax over [goal, mode] is incorrect for goal selection: it
+    unfairly favors goals with peaked mode distributions, even when their
+    total goal probability is lower. This accepts normalized joint log
+    probabilities or unnormalized goal+conditional-mode scores.
+    """
+    if goal_mode_logits.ndim != 3:
+        raise ValueError("goal/mode scores must have shape [B,K,M]")
+    _, _, modes = goal_mode_logits.shape
+    goals = torch.logsumexp(goal_mode_logits, dim=-1).argmax(-1)
+    rows = torch.arange(goals.shape[0], device=goals.device)
+    modes_selected = goal_mode_logits[rows, goals].argmax(-1)
+    return goals * modes + modes_selected
+
+
+def arrival_stop_targets(current_xy, target_xy, *, map_meters, success_radius_m):
+    """Label arrival consistently with CityNav's official success radius."""
+    if map_meters <= 0 or success_radius_m <= 0:
+        raise ValueError("map_meters and success_radius_m must be positive")
+    if current_xy.shape != target_xy.shape or current_xy.ndim != 2 or current_xy.shape[-1] != 2:
+        raise ValueError("current and target positions must be [B,2]")
+    return ((current_xy - target_xy).norm(dim=-1) * map_meters
+            <= success_radius_m).to(current_xy.dtype)
+
+
 def resample_teacher_suffix(trajectory, current_xy, *, map_name, bounds,
                             map_meters, steps, goal_xy=None):
     """Resample the *future teacher label* by arclength from nearest pose.
@@ -166,7 +193,7 @@ class HeatmapTrajectoryHead(nn.Module):
                 language_tokens=None, language_mask=None, landmark_xy=None,
                 landmark_extent=None, landmark_valid=None,
                 landmark_text_mask=None, history_xy=None,
-                relation_enabled=True):
+                relation_enabled=True, selector_mode='joint'):
         if current_xy.ndim != 2 or current_xy.shape[-1] != 2:
             raise ValueError("current_xy must be [B,2]")
         if heading_sc.shape != current_xy.shape:
@@ -204,7 +231,17 @@ class HeatmapTrajectoryHead(nn.Module):
         joint = goal_log_probs[:, :, None] + F.log_softmax(logits, dim=-1)
         here = _gather_heatmap_features(features, current_xy[:, None])[:, 0]
         current_confidence = goal_probabilities.flatten(1).amax(-1, keepdim=True)
-        near_goal = (goals[:, 0] - current_xy).norm(dim=-1, keepdim=True)
+        if selector_mode == 'joint':
+            stop_goal_scores = goal_log_probs
+        elif selector_mode == 'prior':
+            stop_goal_scores = F.log_softmax(log_goal, dim=-1)
+        else:
+            raise ValueError("selector_mode must be prior or joint")
+        # The arrival head must see the endpoint actually chosen by the
+        # controller, not Top-1 if joint reranking selected another goal.
+        chosen_goal = goals[torch.arange(goals.shape[0], device=goals.device),
+                            stop_goal_scores.argmax(-1)]
+        near_goal = (chosen_goal - current_xy).norm(dim=-1, keepdim=True)
         stop = self.stop(torch.cat((here, current_confidence, near_goal,
                                     heading_sc[:, :1]), dim=-1)).squeeze(-1)
         result = TrajectoryProposals(paths, logits, joint, goals, ids, stop, candidate_logits)
