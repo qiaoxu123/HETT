@@ -153,6 +153,9 @@ class CandidateRelationSelector(nn.Module):
         minimum = -temperature * (
             torch.logsumexp((-per_anchor / temperature).masked_fill(
                 ~active, -torch.inf), dim=-1) - counts.to(per_anchor.dtype).log())
+        # Some episodes have no matched landmarks even when others in the
+        # batch do. Avoid inf * 0 -> NaN for their masked soft-min.
+        minimum = torch.where(active.any(-1), minimum, torch.zeros_like(minimum))
         # Learned attention over valid anchored evidence (not raw camera pixels).
         attn = torch.einsum("bkd,bkmd->bkm", query, pair) / math.sqrt(pair.shape[-1])
         attn = F.softmax(attn.masked_fill(~active, -1e4), dim=-1)
