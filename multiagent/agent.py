@@ -447,7 +447,7 @@ class NavCMTAgent:
         heatmap_loss = torch.tensor(0.).cuda()
         heatmap_diag_count = torch.zeros((), device='cuda')
         heatmap_coverage_hits = {
-            k: torch.zeros((), device='cuda') for k in (1, 4, 8, 16)
+            k: torch.zeros((), device='cuda') for k in (1, 4, 5, 8, 16, 20)
         }
         heatmap_top1_distance_sum = torch.zeros((), device='cuda')
         heatmap_refined_top1_distance_sum = torch.zeros((), device='cuda')
@@ -696,7 +696,7 @@ class NavCMTAgent:
                 )
                 active_count = active_bool.sum()
                 heatmap_diag_count += active_count
-                for k in (1, 4, 8, 16):
+                for k in (1, 4, 5, 8, 16, 20):
                     coverage_k = min(k, candidate_distances_m.shape[1])
                     covered = (
                         candidate_distances_m[:, :coverage_k].min(dim=1).values
@@ -923,7 +923,7 @@ class NavCMTAgent:
 
         diagnostic_values = torch.stack((
             heatmap_diag_count,
-            *(heatmap_coverage_hits[k] for k in (1, 4, 8, 16)),
+            *(heatmap_coverage_hits[k] for k in (1, 4, 5, 8, 16, 20)),
             heatmap_top1_distance_sum,
             heatmap_refined_top1_distance_sum,
             heatmap_top16_nearest_distance_sum,
@@ -933,8 +933,10 @@ class NavCMTAgent:
             'heatmap_diag_count',
             'heatmap_coverage_1_hits',
             'heatmap_coverage_4_hits',
+            'heatmap_coverage_5_hits',
             'heatmap_coverage_8_hits',
             'heatmap_coverage_16_hits',
+            'heatmap_coverage_20_hits',
             'heatmap_top1_distance_sum_m',
             'heatmap_refined_top1_distance_sum_m',
             'heatmap_top16_nearest_distance_sum_m',
