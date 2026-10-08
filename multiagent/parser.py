@@ -96,12 +96,16 @@ def parse_args():
                         help='Dense spatial-belief field size')
     parser.add_argument('--heatmap_sigma_m', type=float, default=20.0,
                         help='Metric Gaussian sigma in meters for belief supervision')
-    parser.add_argument('--heatmap_top_k', type=int, default=16,
+    parser.add_argument('--heatmap_top_k', type=int, default=20,
                         help='Number of NMS belief hypotheses retained per step')
     parser.add_argument('--heatmap_nms_kernel', type=int, default=3,
                         help='Odd NMS suppression kernel on the dense belief field')
     parser.add_argument('--heatmap_local_window', type=int, default=3,
                         help='Odd local window for soft-argmax refinement around Top-1')
+    parser.add_argument('--heatmap_relative_geometry', action='store_true', default=True,
+                        help='Enable current pose and referenced-landmark geometry in the belief field')
+    parser.add_argument('--no_heatmap_relative_geometry', action='store_false', dest='heatmap_relative_geometry',
+                        help='Disable geometry injection for a map-only ablation')
     parser.add_argument('--heatmap_loss_weight', type=float, default=0.1,
                         help='Weight of the Stage-1 heatmap loss')
     parser.add_argument('--stage1_switch_dist', type=float, default=25.0,
