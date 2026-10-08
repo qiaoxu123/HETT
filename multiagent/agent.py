@@ -28,7 +28,8 @@ from multiagent.models.goal_predictor import GoalPredictor, MapEncoder
 from multiagent.models.spatial_belief import metric_gaussian_target, greedy_nms_topk, local_soft_argmax_xy
 from multiagent.models.multi_landmark import build_landmark_batch
 from multiagent.models.heatmap_trajectory import (
-    resample_teacher_suffix, trajectory_imitation_loss, stop_supervision_loss
+    TrajectoryProposals, resample_teacher_suffix,
+    trajectory_imitation_loss, stop_supervision_loss
 )
 from multiagent.mapdata import MAP_BOUNDS
 from multiagent.observation import cropclient
@@ -603,7 +604,8 @@ class NavCMTAgent:
             teacher_trajectory_predictions = None
             if len(model_outputs) == 6:
                 pred_direction, pred_progress, pred_goals, pred_logits, grid_ft, traj_pair = model_outputs
-                trajectory_predictions, teacher_trajectory_predictions = traj_pair
+                proposal_tensors, teacher_trajectory_predictions = traj_pair
+                trajectory_predictions = TrajectoryProposals(*proposal_tensors)
             else:
                 pred_direction, pred_progress, pred_goals, pred_logits, grid_ft = model_outputs
 
