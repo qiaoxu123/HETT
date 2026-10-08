@@ -1,6 +1,6 @@
 # Visual Goal Abstraction / Minimal Sufficient Visual Template
 
-Branch: `2027-CVPR/visual-goal-abstraction` (base `a9d95e3`).
+Branch: `2027-CVPR/visual-goal-abstraction-gate1` (base `a9d95e3`).
 
 ## Protocol and input audit
 
