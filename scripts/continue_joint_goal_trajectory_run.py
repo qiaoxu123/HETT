@@ -62,8 +62,11 @@ def main():
         if key.startswith("trajectory_"):
             setattr(args, key, value)
     args.trajectory_goal_k = cfg.get("trajectory_goal_k", 20)
-    args.trajectory_selector_mode = "prior"
-    args.trajectory_disable_learned_stop = False
+    # On-policy student rollouts must use the same trajectory controller
+    # and selector as validation, rather than legacy two-stage control.
+    train_policy = cfg["variants"][cfg["first_epoch_gate"]["variant"]]
+    for key, value in train_policy.items():
+        setattr(args, key, value)
 
     agent, loadreport = new_agent(args, cfg)
     agent.load(str(checkpoint_path))
