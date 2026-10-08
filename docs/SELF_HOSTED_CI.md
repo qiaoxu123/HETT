@@ -30,7 +30,7 @@ manual dispatch from `main`. A `pull_request` trigger is intentionally absent.
 ## Installation and operations
 
 - Runner: `/home/20260922_1/.local/share/github-actions/hett`
-- Dedicated checkout/work: `/home/rental/20260922_1/Workspace/ci/hett/_work`
+- Dedicated checkout/work: `/home/20260922_1/.local/share/github-actions/work/hett`
 - Service: `/home/20260922_1/.config/systemd/user/github-actions-hett.service`
 - Pre-job gate: `/home/20260922_1/.local/share/github-actions/hooks/hett-job-started.sh`
 - Python runtime (`HETT_CI_PYTHON`): existing CityNav environment at
