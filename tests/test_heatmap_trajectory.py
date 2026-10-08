@@ -2,10 +2,12 @@ import unittest
 from dataclasses import dataclass
 import numpy as np
 import torch
+from torch.nn import functional as F
 
 from multiagent.models.heatmap_trajectory import (
     HeatmapTrajectoryHead, heatmap_endpoints, resample_teacher_suffix,
     trajectory_imitation_loss, stop_supervision_loss,
+    candidate_ranking_loss, candidate_trajectory_imitation_loss,
 )
 
 
@@ -103,6 +105,65 @@ class HeatmapTrajectoryTest(unittest.TestCase):
             trajectory_imitation_loss(
                 (torch.zeros(1,3,8,2), torch.zeros(1,3)), torch.zeros(1,7,2)
             )
+
+
+    def test_joint_scorer_starts_identical_to_prior_goal_ranking(self):
+        head = HeatmapTrajectoryHead(feature_dim=16, hidden_dim=32,
+                                     modes=3, waypoints=6)
+        feature = torch.randn(2, 16, 9, 9)
+        prob = torch.softmax(torch.randn(2, 81), dim=-1).reshape(2, 9, 9)
+        here = torch.tensor([[.2, .2], [.7, .2]])
+        heading = torch.tensor([[0., 1.], [1., 0.]])
+        pred, teacher = head(feature, prob, here, heading, top_k=4)
+        self.assertIsNone(teacher)
+        self.assertEqual(tuple(pred.candidate_logits.shape), (2, 4))
+        log_prior = prob.flatten(1).gather(1, pred.goal_ids).log()
+        baseline = (F.log_softmax(log_prior, dim=-1)[:, :, None]
+                    + F.log_softmax(pred.mode_logits, dim=-1))
+        self.assertTrue(torch.allclose(pred.joint_logits, baseline, atol=1e-6))
+
+    def test_predicted_goal_ranking_loss_updates_scorer(self):
+        head = HeatmapTrajectoryHead(feature_dim=16, hidden_dim=32,
+                                     modes=3, waypoints=6)
+        feature = torch.randn(2, 16, 9, 9, requires_grad=True)
+        prob = torch.ones(2, 9, 9) / 81
+        here = torch.tensor([[.2, .2], [.2, .2]])
+        heading = torch.tensor([[0., 1.], [0., 1.]])
+        pred, _ = head(feature, prob, here, heading, top_k=4)
+        target = pred.goal_xy[:, 1].detach().clone()
+        loss = candidate_ranking_loss(
+            pred, target, map_meters=410., positive_radius_m=20.)
+        self.assertTrue(torch.isfinite(loss))
+        loss.backward()
+        self.assertIsNotNone(head.goal_scorer[-1].weight.grad)
+        self.assertGreater(float(head.goal_scorer[-1].weight.grad.abs().sum()), 0.)
+
+    def test_candidate_path_supervision_and_invalid_candidate_mask(self):
+        head = HeatmapTrajectoryHead(feature_dim=16, hidden_dim=32,
+                                     modes=3, waypoints=6)
+        feature = torch.randn(1, 16, 9, 9)
+        prob = torch.zeros(1, 9, 9)
+        prob[0, 3, 4] = .8
+        prob[0, 7, 7] = .2
+        here = torch.tensor([[.2, .2]])
+        heading = torch.tensor([[0., 1.]])
+        pred, _ = head(feature, prob, here, heading, top_k=2)
+        target = pred.goal_xy[:, 0].detach()
+        steps = torch.linspace(1 / 6., 1., 6)[None, :, None]
+        teacher = here[:, None] + steps * (target[:, None] - here[:, None])
+        path_loss = candidate_trajectory_imitation_loss(
+            pred, target, teacher, map_meters=410., positive_radius_m=20.)
+        self.assertTrue(torch.isfinite(path_loss))
+        path_loss.backward()
+        self.assertIsNotNone(head.residual[-1].weight.grad)
+        self.assertGreater(float(head.residual[-1].weight.grad.abs().sum()), 0.)
+        far = torch.tensor([[0., 0.]])
+        no_positive = candidate_ranking_loss(
+            pred, far, map_meters=410., positive_radius_m=1.)
+        self.assertAlmostEqual(float(no_positive), 0.)
+        no_path_positive = candidate_trajectory_imitation_loss(
+            pred, far, teacher, map_meters=410., positive_radius_m=1.)
+        self.assertAlmostEqual(float(no_path_positive), 0.)
 
 if __name__ == "__main__":
     unittest.main()
