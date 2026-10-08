@@ -153,6 +153,7 @@ class ET(nn.Module):
         )
         self.trajectory_head = HeatmapTrajectoryHead(
             feature_dim=256,
+            language_dim=args.demb,
             modes=getattr(args, 'trajectory_modes', 3),
             waypoints=getattr(args, 'trajectory_waypoints', 8),
         )
@@ -336,6 +337,14 @@ class ET(nn.Module):
                 top_k=getattr(self.args, 'trajectory_goal_k', 5),
                 nms_kernel=self.args.heatmap_nms_kernel,
                 teacher_goal=inputs.get('trajectory_teacher_goal'),
+                language_tokens=emb_lang,
+                language_mask=inputs.get('lang_mask'),
+                landmark_xy=inputs.get('landmark_xy'),
+                landmark_extent=inputs.get('landmark_extent'),
+                landmark_valid=inputs.get('landmark_valid'),
+                landmark_text_mask=inputs.get('landmark_text_mask'),
+                history_xy=inputs.get('trajectory_history_xy'),
+                relation_enabled=getattr(self.args, 'trajectory_relation_selector', True),
             )
             generated, supervision = proposals
             # Return plain nested tensors for torch DDP graph discovery.
