@@ -98,8 +98,9 @@ def evaluate(agent,envs,cfg,out,epoch):
             rows.append(r['summary']);print('EVAL_COMPLETE',json.dumps(clean(r['summary'])),flush=True)
     agent.experiment_step_callback=None
     random.setstate(saved[0]);np.random.set_state(saved[1]);torch.set_rng_state(saved[2]);torch.cuda.set_rng_state_all(saved[3])
-    baseline_flags = cfg['variants'].get('A', next(iter(cfg['variants'].values())))
-    for k,v in baseline_flags.items():
+    # Preserve the declared training policy across epoch evaluations.
+    policy_flags = cfg['variants'][cfg['first_epoch_gate']['variant']]
+    for k,v in policy_flags.items():
         setattr(agent.args,k,v)
     return rows
 
