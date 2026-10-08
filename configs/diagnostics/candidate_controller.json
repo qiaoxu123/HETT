@@ -1,0 +1,1 @@
+{"splits":["val_unseen","val_seen"],"variants":{"baseline":{"record":true},"oracle_candidate":{"oracle_candidate":true},"oracle_stop":{"oracle_stop":true},"direct_discrete":{"direct":"discrete"},"direct_bounded":{"direct":"bounded"},"oracle_direct_bounded":{"oracle_candidate":true,"direct":"bounded"},"gates_off":{"record":true,"gates_off":true}}}

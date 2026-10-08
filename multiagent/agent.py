@@ -497,6 +497,7 @@ class NavCMTAgent:
                 input[key] = multi_landmarks[key]
 
         stage1_ended = np.array([False] * batch_size)
+        diag_stagnant = np.zeros(batch_size, dtype=np.int32)
         stage2_recover_count = np.zeros(batch_size, dtype=np.int32)
         stage2_recoveries = 0
         stage2_entry_count = 0
@@ -741,10 +742,10 @@ class NavCMTAgent:
                     refined_top1_distance_m * active_mask
                 ).sum()
                 heatmap_top16_nearest_distance_sum += (
-                    candidate_distances_m.min(dim=1).values * active_mask
+                    candidate_distances_m[:, :16].min(dim=1).values * active_mask
                 ).sum()
                 heatmap_top16_candidate_distance_sum += (
-                    candidate_distances_m.mean(dim=1) * active_mask
+                    candidate_distances_m[:, :16].mean(dim=1) * active_mask
                 ).sum()
                 # print(pred_logits.shape)
             # Log the trajectory
@@ -782,6 +783,30 @@ class NavCMTAgent:
 
             # print(cpu_goal)
 
+            diagnostic = getattr(self.args, 'diagnostic', {})
+            if diagnostic:
+                points = candidate_xy.detach().cpu().numpy()
+                distances = candidate_distances_m.detach().cpu().numpy()
+                for i in range(len(obs)):
+                    if ended[i]:
+                        continue
+                    refined = self.env.unnormalize_position(cpu_goal[i], obs[i]['map_name'], self.args.map_meters)
+                    entry = {
+                        't': t, 'pose_xy': list(poses[i].xy),
+                        'gt_distance': poses[i].xy.dist_to(obs[i]['goal']),
+                        'top1_distance': float(distances[i, 0]),
+                        'top16_distance': float(distances[i, :16].min()),
+                        'top20_distance': float(distances[i].min()),
+                        'refined_distance': refined.dist_to(obs[i]['goal']),
+                        'stage2_before': bool(stage1_ended[i]),
+                        'progress': float(pred_progress_t[i]),
+                        'candidate_xy': [list(self.env.unnormalize_position(q, obs[i]['map_name'], self.args.map_meters)) for q in points[i]],
+                    }
+                    if diagnostic.get('oracle_candidate'):
+                        cpu_goal[i] = points[i, distances[i].argmin()]
+                    entry['selected_xy'] = list(self.env.unnormalize_position(cpu_goal[i], obs[i]['map_name'], self.args.map_meters))
+                    traj[i]['diagnostics'].append(entry)
+
             # Interact with the simulator with actions
             for i in range(len(obs)):
 
@@ -792,6 +817,30 @@ class NavCMTAgent:
                 #                                     self.args.map_meters)
                 # dst = Point2D(obs[i]['centroid_goal'][0], obs[i]['centroid_goal'][1])
                 if ended[i]:
+                    continue
+
+                if diagnostic.get('oracle_stop') and poses[i].xy.dist_to(obs[i]['goal']) <= self.args.success_dist:
+                    ended[i] = True
+                    traj[i]['stop_reason'].append('oracle_stop')
+                    continue
+                if diagnostic.get('direct'):
+                    old_pose = poses[i]
+                    if diagnostic['direct'] == 'bounded':
+                        delta = np.asarray(dst) - np.asarray(poses[i].xy)
+                        length = float(np.linalg.norm(delta))
+                        step = delta * min(1.0, 50.0 / max(length, 1e-9))
+                        yaw = float(np.arctan2(delta[1], delta[0])) if length > 1e-9 else poses[i].yaw
+                        poses[i] = Pose4D(poses[i].x + step[0], poses[i].y + step[1], poses[i].z, yaw)
+                    else:
+                        poses[i] = self.move(poses[i], dst, self.args.move_iteration)
+                    moved = poses[i].xy.dist_to(old_pose.xy)
+                    diag_stagnant[i] = diag_stagnant[i] + 1 if moved < 1e-4 else 0
+                    traj[i]['stage1_trajectory'].append(poses[i])
+                    traj[i]['pred_goal'].append(dst)
+                    if diag_stagnant[i] >= 5:
+                        ended[i] = True
+                        traj[i]['stop_reason'].append('stagnation')
+                        traj[i]['trajectory'].append(poses[i])
                     continue
 
                 coarse_goal_dist = dst.dist_to(poses[i].xy)
@@ -812,6 +861,8 @@ class NavCMTAgent:
                         stage2_recoveries += 1
 
                 if pred_progress_t[i] > 0.95 and self.feedback == 'student' and stage1_ended[i]:
+                    if diagnostic:
+                        traj[i]['stop_reason'].append('progress_stop')
                     ended[i] = True
                     continue
                 elif t == self.args.max_action_len:
@@ -840,7 +891,9 @@ class NavCMTAgent:
 
                 elif abs(a_t[i]) < np.pi / 12:
                     if not stage1_ended[i]:
-                        gt_entry_dist = poses[i].xy.dist_to(ob['goal'])
+                        gt_entry_dist = poses[i].xy.dist_to(obs[i]['goal'])
+                        if diagnostic:
+                            traj[i]['stage2_entry_distances'].append(float(gt_entry_dist))
                         stage2_entry_count += 1
                         stage2_entry_gt_distance_sum += float(gt_entry_dist)
                         if gt_entry_dist <= 20:
@@ -860,7 +913,9 @@ class NavCMTAgent:
                         traj[i]['stage2_trajectory'].append(poses[i])
                 else:
                     if not stage1_ended[i]:
-                        gt_entry_dist = poses[i].xy.dist_to(ob['goal'])
+                        gt_entry_dist = poses[i].xy.dist_to(obs[i]['goal'])
+                        if diagnostic:
+                            traj[i]['stage2_entry_distances'].append(float(gt_entry_dist))
                         stage2_entry_count += 1
                         stage2_entry_gt_distance_sum += float(gt_entry_dist)
                         if gt_entry_dist <= 20:
