@@ -131,6 +131,11 @@ def parse_args():
                         help='Opt-in closed-loop execution of learned trajectory waypoints')
     parser.add_argument('--trajectory_selector_mode', choices=['prior', 'joint'], default='prior',
                         help='Prior replicates original heatmap+mode choice; joint enables learned goal reranking')
+    parser.add_argument('--trajectory_relation_selector', action='store_true', default=True,
+                        help='Enable explicit candidate-language/named-landmark/history evidence in joint ranking')
+    parser.add_argument('--no_trajectory_relation_selector', action='store_false',
+                        dest='trajectory_relation_selector',
+                        help='Ablate SBF-inspired candidate relation reasoning without changing the heatmap')
     parser.add_argument('--trajectory_ranking_loss_weight', type=float, default=0.2,
                         help='Weight for training goal ranking when a predicted proposal covers the GT')
     parser.add_argument('--trajectory_candidate_loss_weight', type=float, default=0.3,
