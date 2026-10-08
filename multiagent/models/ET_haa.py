@@ -345,6 +345,7 @@ class ET(nn.Module):
                 landmark_text_mask=inputs.get('landmark_text_mask'),
                 history_xy=inputs.get('trajectory_history_xy'),
                 relation_enabled=getattr(self.args, 'trajectory_relation_selector', True),
+                selector_mode=getattr(self.args, 'trajectory_selector_mode', 'prior'),
             )
             generated, supervision = proposals
             # Return plain nested tensors for torch DDP graph discovery.
