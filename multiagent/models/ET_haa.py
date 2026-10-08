@@ -343,7 +343,8 @@ class ET(nn.Module):
             # find_unused_parameters versions in distributed training.
             tensors = (generated.trajectories, generated.mode_logits,
                        generated.joint_logits, generated.goal_xy,
-                       generated.goal_ids, generated.stop_logits)
+                       generated.goal_ids, generated.stop_logits,
+                       generated.candidate_logits)
             return (direction, progress, pred_goals, target_logits,
                     emb_frames + emb_directions, (tensors, supervision))
 
