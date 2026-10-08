@@ -214,3 +214,8 @@ __marimo__/
 /artifacts/*/*.pid
 /artifacts/*/*.incomplete
 /artifacts/progress_stop_control/val_*.json
+/artifacts/reranker_training/cache/
+/artifacts/reranker_training/*.pt
+/artifacts/reranker_training/*/val_*.json
+/artifacts/reranker_training/*/*.log
+/artifacts/reranker_cache_smoke/cache/

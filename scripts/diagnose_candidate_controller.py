@@ -61,6 +61,15 @@ def main():
    args.diagnostic=variant
    args.heatmap_execution=variant.get('execution','two_stage')
    args.stage1_switch_dist=variant.get('switch_dist',25.0)
+   agent.candidate_reranker = None
+   if variant.get('reranker_checkpoint'):
+    from multiagent.models.candidate_reranker import CandidateReranker, install_candidate_features
+    state=torch.load(variant['reranker_checkpoint'],map_location='cpu')
+    if state['base_checkpoint_sha256'] != metadata['checkpoint_sha256']:
+     raise ValueError('reranker/base checkpoint hash mismatch')
+    agent.candidate_reranker=CandidateReranker().cuda().eval()
+    agent.candidate_reranker.load_state_dict(state['state_dict'],strict=True)
+    install_candidate_features(agent)
    with torch.no_grad():
     for k,v in agent.vln_model.named_parameters():
      if k in weights:v.copy_(torch.zeros_like(v) if variant.get('gates_off') or any(k.endswith(g) for g in variant.get('disable_gates',[])) else weights[k])

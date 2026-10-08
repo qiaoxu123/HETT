@@ -590,7 +590,20 @@ class NavCMTAgent:
                 top_k=self.args.heatmap_top_k,
                 kernel_size=self.args.heatmap_nms_kernel,
             )
+            reranker = getattr(self, 'candidate_reranker', None)
+            collector = getattr(self, 'candidate_feature_collector', None)
+            candidate_features = None
+            if reranker is not None or (collector is not None and t in self.candidate_collect_steps):
+                from multiagent.models.candidate_reranker import extract_candidate_features
+                candidate_features = extract_candidate_features(
+                    self._candidate_belief, heatmap_topk_ids, lang_features,
+                    attention_mask.bool(), direction, multi_landmarks,
+                    self.vln_model_without_ddp.spatial_belief.multi_landmark_relation)
             heatmap_goal_ids = heatmap_topk_ids[:, 0]
+            if reranker is not None:
+                reranked_scores = reranker(candidate_features)
+                chosen = reranked_scores.argmax(-1)
+                heatmap_goal_ids = heatmap_topk_ids.gather(1, chosen[:,None]).squeeze(1)
             heatmap_goal_rows = torch.div(
                 heatmap_goal_ids,
                 self.args.heatmap_grid_size,
@@ -723,6 +736,13 @@ class NavCMTAgent:
                     (candidate_xy - gt_xy.unsqueeze(1)) * self.args.map_meters,
                     dim=-1,
                 )
+                if collector is not None and candidate_features is not None:
+                    # Supervision matches the continuous waypoint actually executed.
+                    all_refined = local_soft_argmax_xy(
+                        heatmap_probs.reshape(batch_size, self.args.heatmap_grid_size, self.args.heatmap_grid_size).repeat_interleave(heatmap_topk_ids.shape[1],0),
+                        heatmap_topk_ids.flatten(), window_size=self.args.heatmap_local_window).reshape(batch_size,-1,2)
+                    labels = torch.linalg.vector_norm((all_refined-gt_xy[:,None,:])*self.args.map_meters,dim=-1)
+                    collector(candidate_features, labels, active_bool, [ob['id'] for ob in obs], t)
                 active_count = active_bool.sum()
                 heatmap_diag_count += active_count
                 for k in (1, 4, 5, 8, 16, 20):

@@ -1,0 +1,16 @@
+[W1008 18:57:58.894360716 NNPACK.cpp:56] Could not initialize NNPACK! Reason: Unsupported hardware.
+[W1008 18:57:58.895096622 NNPACK.cpp:56] Could not initialize NNPACK! Reason: Unsupported hardware.
+[W1008 18:57:58.895251503 NNPACK.cpp:56] Could not initialize NNPACK! Reason: Unsupported hardware.
+/home/rental/20260922_1/Workspace/hett-heatmap-top20-reranker/tests/test_heatmap_relative_geometry.py:50: UserWarning: Converting a tensor with requires_grad=True to a scalar may lead to unexpected behavior.
+Consider using tensor.detach() first. (Triggered internally at /pytorch/torch/csrc/autograd/generated/python_variable_methods.cpp:835.)
+  self.assertAlmostEqual(float(out.probabilities.sum()), 1., places=5)
+[W1008 18:57:58.895734035 NNPACK.cpp:56] Could not initialize NNPACK! Reason: Unsupported hardware.
+[W1008 18:57:58.895882904 NNPACK.cpp:56] Could not initialize NNPACK! Reason: Unsupported hardware.
+[W1008 18:57:58.896463379 NNPACK.cpp:56] Could not initialize NNPACK! Reason: Unsupported hardware.
+[W1008 18:57:58.910188008 NNPACK.cpp:56] Could not initialize NNPACK! Reason: Unsupported hardware.
+[W1008 18:57:58.121198661 NNPACK.cpp:56] Could not initialize NNPACK! Reason: Unsupported hardware.
+[W1008 18:57:58.177535906 NNPACK.cpp:56] Could not initialize NNPACK! Reason: Unsupported hardware.
+----------------------------------------------------------------------
+Ran 34 tests in 0.529s
+
+OK
