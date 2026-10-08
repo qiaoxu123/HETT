@@ -22,6 +22,7 @@ class TrajectoryProposals:
     goal_xy: torch.Tensor        # [B,K,2], normalized CityNav xy
     goal_ids: torch.Tensor       # [B,K]
     stop_logits: torch.Tensor   # [B]
+    candidate_logits: torch.Tensor  # [B,K], learned goal evidence before prior fusion
 
 
 def heatmap_endpoints(probabilities, top_k, *, nms_kernel=3):
@@ -99,6 +100,15 @@ class HeatmapTrajectoryHead(nn.Module):
         self.residual = nn.Sequential(nn.Linear(hidden_dim, hidden_dim), nn.GELU(),
                                       nn.Linear(hidden_dim, waypoints * 2))
         self.mode_score = nn.Linear(hidden_dim, 1)
+        # Residual candidate scorer: initialized to zero, so existing HETT
+        # heatmap priorities are unchanged until this head is trained.
+        self.goal_scorer = nn.Sequential(
+            nn.Linear(hidden_dim + 3, hidden_dim // 2),
+            nn.GELU(),
+            nn.Linear(hidden_dim // 2, 1),
+        )
+        nn.init.zeros_(self.goal_scorer[-1].weight)
+        nn.init.zeros_(self.goal_scorer[-1].bias)
         self.stop = nn.Sequential(nn.Linear(feature_dim + 3, hidden_dim // 2),
                                   nn.GELU(), nn.Linear(hidden_dim // 2, 1))
         # Starting with zeros preserves the simple straight/curved anchor paths.
@@ -137,7 +147,7 @@ class HeatmapTrajectoryHead(nn.Module):
         # Final waypoint is always the proposed goal: makes endpoint semantics explicit.
         paths = torch.cat((paths[..., :-1, :], goal_xy[:, :, None, None, :].expand(
             -1, -1, self.modes, 1, -1)), dim=-2)
-        return paths, mode_logits
+        return paths, mode_logits, context
 
     def forward(self, features, goal_probabilities, current_xy, heading_sc,
                 *, top_k=5, nms_kernel=3, teacher_goal=None):
@@ -146,20 +156,26 @@ class HeatmapTrajectoryHead(nn.Module):
         if heading_sc.shape != current_xy.shape:
             raise ValueError("heading sin/cos must be [B,2]")
         goals, ids = heatmap_endpoints(goal_probabilities, top_k, nms_kernel=nms_kernel)
-        paths, logits = self._generate(features, current_xy, heading_sc, goals)
+        paths, logits, context = self._generate(features, current_xy, heading_sc, goals)
         log_goal = torch.log(goal_probabilities.flatten(1).gather(1, ids).clamp_min(1e-8))
-        joint = log_goal[:, :, None] + F.log_softmax(logits, dim=-1)
+        relative_xy = goals - current_xy[:, None, :]
+        candidate_logits = self.goal_scorer(
+            torch.cat((context, relative_xy, log_goal.unsqueeze(-1)), dim=-1)
+        ).squeeze(-1)
+        # Joint goal/path log-probabilities; no oracle target is used here.
+        goal_log_probs = F.log_softmax(log_goal + candidate_logits, dim=-1)
+        joint = goal_log_probs[:, :, None] + F.log_softmax(logits, dim=-1)
         here = _gather_heatmap_features(features, current_xy[:, None])[:, 0]
         current_confidence = goal_probabilities.flatten(1).amax(-1, keepdim=True)
         near_goal = (goals[:, 0] - current_xy).norm(dim=-1, keepdim=True)
         stop = self.stop(torch.cat((here, current_confidence, near_goal,
                                     heading_sc[:, :1]), dim=-1)).squeeze(-1)
-        result = TrajectoryProposals(paths, logits, joint, goals, ids, stop)
+        result = TrajectoryProposals(paths, logits, joint, goals, ids, stop, candidate_logits)
         if teacher_goal is None:
             return result, None
         if teacher_goal.shape != current_xy.shape:
             raise ValueError("teacher_goal must have shape [B,2]")
-        teacher_paths, teacher_logits = self._generate(
+        teacher_paths, teacher_logits, _ = self._generate(
             features, current_xy, heading_sc, teacher_goal[:, None])
         return result, (teacher_paths[:, 0], teacher_logits[:, 0])
 
@@ -188,3 +204,49 @@ def stop_supervision_loss(predicted, target, *, active=None, pos_weight=1.):
         return loss.mean()
     valid = active.to(loss.dtype)
     return (loss * valid).sum() / valid.sum().clamp_min(1)
+
+
+def candidate_ranking_loss(proposals, target_xy, *, map_meters,
+                           positive_radius_m, active=None):
+    """Learn which predicted HETT candidate matches the goal (train only).
+
+    Targets label the nearest candidate ONLY if it lies within the success
+    radius; otherwise the sample has no positive candidate and is ignored.
+    This avoids teaching the selector that an arbitrary far-away goal is valid.
+    """
+    if map_meters <= 0 or positive_radius_m <= 0:
+        raise ValueError("map_meters and positive_radius_m must be positive")
+    if target_xy.shape != (proposals.goal_xy.shape[0], 2):
+        raise ValueError("target_xy must be [B,2]")
+    d_m = (proposals.goal_xy - target_xy[:, None]).norm(dim=-1) * map_meters
+    nearest_distance, nearest_id = d_m.min(dim=-1)
+    valid = nearest_distance <= positive_radius_m
+    if active is not None:
+        valid = valid & active.to(device=valid.device, dtype=torch.bool)
+    # logsumexp over modes recovers learned goal probability.
+    log_probs = torch.logsumexp(proposals.joint_logits, dim=-1)
+    per_sample = F.nll_loss(log_probs, nearest_id, reduction="none")
+    return (per_sample * valid.to(per_sample.dtype)).sum() / valid.sum().clamp_min(1)
+
+
+def candidate_trajectory_imitation_loss(proposals, target_xy, teacher_points,
+                                        *, map_meters, positive_radius_m,
+                                        active=None):
+    """Train predicted-goal paths, never GT-conditioned paths, when covered."""
+    if teacher_points.shape != (proposals.goal_xy.shape[0],
+                                proposals.trajectories.shape[-2], 2):
+        raise ValueError("teacher_points must be [B,T,2]")
+    if target_xy.shape != (proposals.goal_xy.shape[0], 2):
+        raise ValueError("target_xy must be [B,2]")
+    if map_meters <= 0 or positive_radius_m <= 0:
+        raise ValueError("map_meters and positive_radius_m must be positive")
+    d_m = (proposals.goal_xy - target_xy[:, None]).norm(dim=-1) * map_meters
+    nearest_distance, nearest_id = d_m.min(dim=-1)
+    valid = nearest_distance <= positive_radius_m
+    if active is not None:
+        valid = valid & active.to(device=valid.device, dtype=torch.bool)
+    rows = torch.arange(nearest_id.shape[0], device=nearest_id.device)
+    paths = proposals.trajectories[rows, nearest_id]
+    mode_logits = proposals.mode_logits[rows, nearest_id]
+    return trajectory_imitation_loss((paths, mode_logits),
+                                     teacher_points, active=valid)
