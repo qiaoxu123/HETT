@@ -337,7 +337,14 @@ class ET(nn.Module):
                 nms_kernel=self.args.heatmap_nms_kernel,
                 teacher_goal=inputs.get('trajectory_teacher_goal'),
             )
+            generated, supervision = proposals
+            # Return plain nested tensors for torch DDP graph discovery.
+            # Custom dataclass outputs are not reliably traversed by all
+            # find_unused_parameters versions in distributed training.
+            tensors = (generated.trajectories, generated.mode_logits,
+                       generated.joint_logits, generated.goal_xy,
+                       generated.goal_ids, generated.stop_logits)
             return (direction, progress, pred_goals, target_logits,
-                    emb_frames + emb_directions, proposals)
+                    emb_frames + emb_directions, (tensors, supervision))
 
         return direction, progress, pred_goals, target_logits, emb_frames + emb_directions
