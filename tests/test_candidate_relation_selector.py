@@ -1,5 +1,6 @@
 """SBF-inspired candidate-relation evidence unit tests (CPU only)."""
 import unittest
+import math
 
 import torch
 
@@ -115,7 +116,7 @@ class CandidateRelationTest(unittest.TestCase):
         self.assertGreater(float(feature.grad.abs().sum()), 0.)
         self.assertIsNotNone(self.selector.geometry_proj[0].weight.grad)
 
-    def test_relation_gate_preserves_prior_at_initialization_and_can_change_ranking(self):
+    def test_relation_gate_starts_small_and_relation_encoder_learns_immediately(self):
         head = HeatmapTrajectoryHead(
             feature_dim=16, language_dim=12, hidden_dim=32,
             modes=3, waypoints=6).eval()
@@ -131,10 +132,11 @@ class CandidateRelationTest(unittest.TestCase):
         with torch.no_grad():
             original, _ = head(field, belief, self.current, self.heading,
                                relation_enabled=False, **arguments)
-            zero_gated, _ = head(field, belief, self.current, self.heading,
-                                 relation_enabled=True, **arguments)
-            self.assertTrue(torch.allclose(original.joint_logits,
-                                            zero_gated.joint_logits, atol=1e-6))
+            active, _ = head(field, belief, self.current, self.heading,
+                             relation_enabled=True, **arguments)
+            self.assertAlmostEqual(float(torch.tanh(head.relation_gate)), 0.1, places=5)
+            self.assertTrue(torch.isfinite(active.joint_logits).all())
+            self.assertLess(float((active.joint_logits - original.joint_logits).abs().max()), 1.0)
             head.relation_gate.fill_(1.)
             active, _ = head(field, belief, self.current, self.heading,
                              relation_enabled=True, **arguments)
@@ -142,6 +144,15 @@ class CandidateRelationTest(unittest.TestCase):
             self.assertGreater(
                 float((active.joint_logits - original.joint_logits).abs().max()),
                 1e-7)
+        head.relation_gate.data.fill_(math.atanh(0.1))
+        active, _ = head(field, belief, self.current, self.heading,
+                         relation_enabled=True, **arguments)
+        loss = active.joint_logits[0, 0, 0] - active.joint_logits[0, 1, 0]
+        loss.backward()
+        relation_grads = [p.grad for p in head.candidate_relation.parameters()
+                          if p.grad is not None]
+        self.assertTrue(relation_grads)
+        self.assertGreater(sum(float(g.abs().sum()) for g in relation_grads), 0.0)
 
 
 if __name__ == "__main__":

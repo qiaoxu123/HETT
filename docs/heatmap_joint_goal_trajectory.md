@@ -14,7 +14,7 @@ Start point: `2027-CVPR/hett-heatmap-multitrajectory`. This branch already gener
 4. The joint goal/path distribution is
    `log_softmax(log P_heatmap(goal) + goal_residual + tanh(relation_gate) * relation_evidence)` +
    `log_softmax(mode_logits | goal)`.
-   Both the residual goal scorer and relation gate initialize to zero to preserve prior ordering until trained.
+   The goal scorer and path residual initialize to preserve their HETT prior behavior. The relation gate starts at `tanh(gate)=0.1` so relation-encoder parameters receive gradients on the first update.
 4. Predicted-goal ranking **is supervised only when at least one predicted candidate is within success_dist of the GT**; otherwise no false-positive candidate is labeled.
 5. A separate predicted-candidate imitation loss uses the teacher suffix as a **label**, selecting the closest covered predicted goal; the GT-conditioned auxiliary imitation from Phase 1 is retained. GT coordinates/teacher future are **never** inference inputs.
 6. Independent Stop Head is unchanged by default; `--trajectory_disable_learned_stop` isolates controller/arrival effects. Learned stop still requires predicted endpoint proximity.
@@ -24,7 +24,7 @@ Start point: `2027-CVPR/hett-heatmap-multitrajectory`. This branch already gener
 - `--trajectory_selector_mode prior` (default): legacy HETT heatmap + path-mode choice, for paired baseline.
 - `--trajectory_selector_mode joint`: learned joint goal/path scoring. Only affects trajectory-based control when `--trajectory_use_for_control` is enabled.
 - `--trajectory_relation_selector` (default enabled) / `--no_trajectory_relation_selector`: include/ablate candidate-specific language/landmark/history evidence **without changing the heatmap or candidate pool**.
-- `--trajectory_goal_k 5` (default; try 8 after ensuring training/eval consistency).
+- `--trajectory_goal_k 20` (default for the current candidate-ranking run).
 - `--trajectory_ranking_loss_weight 0.2`, `--trajectory_candidate_loss_weight 0.3` (initial hypotheses; not validated optimum).
 - `--trajectory_disable_learned_stop`: disable stop-only action for failure decomposition.
 
@@ -35,7 +35,7 @@ Start point: `2027-CVPR/hett-heatmap-multitrajectory`. This branch already gener
 - The relation scorer binds each referenced landmark name to its own contour centroid/extent using instruction token masks, not an aggregate centroid. The short pose history is recorded online from observations only; the last pose is excluded from visited-history distance.
 - The learned relation score is **not** the official SBF selector or a faithful SBF reimplementation; only its candidate-specific multi-evidence reasoning principle is adopted. Treat seen/unseen generalization as an empirical question.
 - Candidate ranking is trained on nearest covered goal (20m default success radius), using *student* goal hypotheses. Off-pool examples are masked and must be reported.
-- Zero initialization of goal scorer preserves original ranking *before training*; learned rankings must be benchmarked on unseen data. Selection on Val Unseen cannot be used for weight tuning.
+- Zero initialization of the final goal-scorer layer preserves original ranking before training. The small nonzero relation gate lets its encoder learn immediately; learned rankings must be benchmarked on unseen data. Selection on Val Unseen cannot be used for weight tuning.
 - Candidates are still **not** obstacle-validated. Predicted curves are hypotheses; do not claim collision safety.
 - Dataset uses normalized map coordinates with world X=columns and Y=rows. Physical distance = normalized distance x `map_meters`.
 

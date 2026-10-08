@@ -117,7 +117,10 @@ class HeatmapTrajectoryHead(nn.Module):
         self.candidate_relation = CandidateRelationSelector(
             feature_dim=feature_dim, language_dim=language_dim, hidden_dim=96,
             attention_heads=4)
-        self.relation_gate = nn.Parameter(torch.tensor(0.0))
+        # A small nonzero gate lets the relation encoder receive gradients on
+        # the very first optimizer step. Exact zero delayed all encoder
+        # learning until the scalar gate moved away from zero.
+        self.relation_gate = nn.Parameter(torch.tensor(math.atanh(0.1)))
         self.stop = nn.Sequential(nn.Linear(feature_dim + 3, hidden_dim // 2),
                                   nn.GELU(), nn.Linear(hidden_dim // 2, 1))
         # Starting with zeros preserves the simple straight/curved anchor paths.

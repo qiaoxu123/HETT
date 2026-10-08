@@ -32,6 +32,7 @@ from multiagent.models.heatmap_trajectory import (
     trajectory_imitation_loss, stop_supervision_loss,
     candidate_ranking_loss, candidate_trajectory_imitation_loss,
 )
+from multiagent.heatmap_execution import bounded_heatmap_step
 from multiagent.mapdata import MAP_BOUNDS
 from multiagent.observation import cropclient
 from multiagent.space import Pose4D, Point2D, Point3D
@@ -357,6 +358,8 @@ class NavCMTAgent:
                 # torch.autograd.set_detect_anomaly(True)
 
                 self.loss.backward()
+                if hasattr(self, 'experiment_gradient_callback') and self.experiment_gradient_callback:
+                    self.experiment_gradient_callback(self, idx)
                 # print('suc')
 
                 torch.nn.utils.clip_grad_norm_(self.vln_model.parameters(), 40.)
@@ -465,6 +468,7 @@ class NavCMTAgent:
 
         # Initialization the finishing status
         ended = np.array([False] * batch_size)
+        waypoint_stagnant_steps = np.zeros(batch_size, dtype=np.int32)
 
         # Init the logs
         # ml_loss = 0.
@@ -994,6 +998,29 @@ class NavCMTAgent:
                 if ended[i]:
                     continue
 
+                if (self.feedback == 'student'
+                        and getattr(self.args, 'heatmap_execution', 'two_stage') == 'waypoint'):
+                    old_pose = poses[i]
+                    poses[i] = bounded_heatmap_step(
+                        poses[i], dst,
+                        max_step_m=getattr(self.args, 'heatmap_waypoint_step_m', 50.0),
+                    )
+                    moved = poses[i].xy.dist_to(old_pose.xy)
+                    waypoint_stagnant_steps[i] = (
+                        waypoint_stagnant_steps[i] + 1 if moved < 1e-4 else 0
+                    )
+                    traj[i]['pred_goal'].append(dst)
+                    traj[i]['stage1_trajectory'].append(poses[i])
+                    stage1_step += 1
+                    if t >= self.args.max_action_len - 1:
+                        ended[i] = True
+                        traj[i]['stop_reason'].append('horizon')
+                    if waypoint_stagnant_steps[i] >= getattr(
+                            self.args, 'heatmap_waypoint_stagnation_steps', 5):
+                        ended[i] = True
+                        traj[i]['stop_reason'].append('waypoint_stagnation')
+                    continue
+
                 if selected_trajectory_paths is not None:
                     trajectory_plan_steps += 1
                     goal_id = int(selected_plan_goal_ids[i])
@@ -1011,6 +1038,7 @@ class NavCMTAgent:
                         if poses[i].xy.dist_to(obs[i]['goal']) <= self.args.success_dist:
                             trajectory_stop_correct += 1
                         ended[i] = True
+                        traj[i]['stop_reason'].append('learned_stop')
                         continue
                     local_xy = selected_trajectory_paths[i, 0]
                     local_dst = self.env.unnormalize_position(
@@ -1047,9 +1075,11 @@ class NavCMTAgent:
 
                 if pred_progress_t[i] > 0.95 and self.feedback == 'student' and stage1_ended[i]:
                     ended[i] = True
+                    traj[i]['stop_reason'].append('progress_stop')
                     continue
-                elif t == self.args.max_action_len:
+                elif t >= self.args.max_action_len - 1:
                     ended[i] = True
+                    traj[i]['stop_reason'].append('horizon')
                     continue
 
                 # Stage 1 only needs to enter the coarse target neighborhood;
@@ -1112,6 +1142,16 @@ class NavCMTAgent:
                         traj[i]['stage2_trajectory'].append(traj[i]['stage1_trajectory'][-1])
                     if not ended[i]:
                         traj[i]['stage2_trajectory'].append(poses[i])
+
+            observer = getattr(self, 'experiment_step_callback', None)
+            if observer is not None and trajectory_predictions is not None and 'test' not in self.env_name:
+                observer(
+                    self, obs, poses, traj, ended, t,
+                    selected_trajectory_goals if selected_trajectory_goals is not None else heatmap_goals,
+                    heatmap_topk_ids, trajectory_predictions, ade, fde,
+                    prior_indices, joint_indices, selected_stop_probs,
+                    selected_goal_ids=heatmap_goal_ids,
+                )
 
             # Save trajectory output
             for i, ob in enumerate(obs):

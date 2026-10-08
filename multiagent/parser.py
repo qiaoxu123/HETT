@@ -117,7 +117,7 @@ def parse_args():
                         help='Predict multiple endpoint-conditioned paths from HETT heatmap')
     parser.add_argument('--no_heatmap_trajectory', action='store_false',
                         dest='heatmap_trajectory_enabled', help='Disable trajectory head')
-    parser.add_argument('--trajectory_goal_k', type=int, default=5,
+    parser.add_argument('--trajectory_goal_k', type=int, default=20,
                         help='Top-k heatmap goal hypotheses used by trajectory planner')
     parser.add_argument('--trajectory_modes', type=int, default=3,
                         help='Path anchors per goal hypothesis')
@@ -140,6 +140,13 @@ def parse_args():
                         help='Weight for training goal ranking when a predicted proposal covers the GT')
     parser.add_argument('--trajectory_candidate_loss_weight', type=float, default=0.3,
                         help='Weight for imitating teacher suffix through predicted (non-oracle) goals')
+    parser.add_argument('--heatmap_execution', choices=['two_stage', 'waypoint'],
+                        default='two_stage',
+                        help='Use legacy two-stage actions or direct bounded execution of the selected heatmap waypoint')
+    parser.add_argument('--heatmap_waypoint_step_m', type=float, default=50.0,
+                        help='Maximum horizontal displacement per bounded waypoint update')
+    parser.add_argument('--heatmap_waypoint_stagnation_steps', type=int, default=5,
+                        help='Stop after this many consecutive zero-motion waypoint updates')
     parser.add_argument('--trajectory_disable_learned_stop', action='store_true', default=False,
                         help='Ablate learned arrival decision while retaining trajectory control')
     parser.add_argument('--heatmap_loss_weight', type=float, default=0.1,
