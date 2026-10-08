@@ -54,7 +54,7 @@ class FrozenSBFSelector:
         states, batches, texts = [], [], []
         for i in indices:
             record = self.records[(split, tuple(episode_ids[i]))]
-            if instructions[i] != record.instruction:
+            if ' '.join(instructions[i].split()) != ' '.join(record.instruction.split()):
                 raise ValueError('HETT/SBF instruction mismatch')
             states.append(self.builder.build_from_poses(record, histories[i]))
             batches.append([Candidate(np.asarray(xy), ('hett_heatmap',)) for xy in candidate_world_xy[i]])

@@ -41,3 +41,7 @@ HF_HUB_OFFLINE=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 \
 `artifacts/frozen_sbf_selector/results.json` and `.csv`: SR, SPL, OSR, NE, candidate coverage, selected/refined waypoint distances, paired episode-bootstrap delta-SR confidence intervals, gained/lost episodes, runtime. These confidence intervals are episode based, not scene clustered.
 
 Raw episode traces remain local. Original baseline files, training results and checkpoint weights are not edited.
+
+### Input text audit
+
+Full fixed-subset preflight found 5/256 seen and 6/256 unseen strings differ between CityRefer object descriptions (used by HETT) and processed CityNav descriptions (used by SBF). All differences are repeated whitespace only. The adapter validates equality after whitespace normalization and passes the unchanged HETT instruction to SigLIP; no semantic mismatches are accepted. The first formal attempt stopped on this strict equality check and was restarted after correcting validation. Completed baseline results are reused.
