@@ -29,7 +29,8 @@ from multiagent.models.spatial_belief import metric_gaussian_target, greedy_nms_
 from multiagent.models.multi_landmark import build_landmark_batch
 from multiagent.models.heatmap_trajectory import (
     TrajectoryProposals, resample_teacher_suffix,
-    trajectory_imitation_loss, stop_supervision_loss
+    trajectory_imitation_loss, stop_supervision_loss,
+    candidate_ranking_loss, candidate_trajectory_imitation_loss,
 )
 from multiagent.mapdata import MAP_BOUNDS
 from multiagent.observation import cropclient
@@ -473,6 +474,17 @@ class NavCMTAgent:
         heatmap_loss = torch.tensor(0.).cuda()
         trajectory_loss = torch.tensor(0.).cuda()
         trajectory_stop_loss = torch.tensor(0.).cuda()
+        trajectory_ranking_loss = torch.tensor(0.).cuda()
+        trajectory_candidate_loss = torch.tensor(0.).cuda()
+        trajectory_ranking_valid_count = 0
+        trajectory_candidate_eval_count = 0
+        trajectory_prior_goal_hits = 0
+        trajectory_joint_goal_hits = 0
+        trajectory_oracle_goal_hits = 0
+        trajectory_prior_fde_sum_m = 0.0
+        trajectory_joint_fde_sum_m = 0.0
+        trajectory_stop_decisions = 0
+        trajectory_stop_correct = 0
         trajectory_supervision_count = 0
         trajectory_minade_sum = 0.0
         trajectory_minfde_sum = 0.0
@@ -665,7 +677,16 @@ class NavCMTAgent:
             selected_stop_probs = None
             if (trajectory_predictions is not None and self.feedback == 'student'
                     and getattr(self.args, 'trajectory_use_for_control', False)):
-                scores = trajectory_predictions.joint_logits.flatten(1)
+                if getattr(self.args, 'trajectory_selector_mode', 'prior') == 'joint':
+                    scores = trajectory_predictions.joint_logits.flatten(1)
+                else:
+                    # Original behavior: heatmap goal prior + mode probability.
+                    candidate_prior = heatmap_probs.gather(
+                        1, trajectory_predictions.goal_ids
+                    ).clamp_min(1e-8).log()
+                    scores = (candidate_prior[:, :, None] + F.log_softmax(
+                        trajectory_predictions.mode_logits, dim=-1
+                    )).flatten(1)
                 selected_ids = scores.argmax(dim=1)
                 plans = trajectory_predictions.trajectories.flatten(1, 2)
                 chosen = plans[torch.arange(batch_size, device=plans.device), selected_ids]
@@ -831,6 +852,31 @@ class NavCMTAgent:
                         active=valid_trajectory, pos_weight=2.,
                     ) * valid_trajectory.sum()
                     trajectory_supervision_count += int(valid_trajectory.sum().item())
+                    # Predicted-goal supervision: a sample is labeled only if
+                    # its predicted candidate pool has a GT-nearby proposal.
+                    # Neither GT positions nor teacher paths enter the scorer.
+                    target_xy = torch.as_tensor(
+                        gt_goal_np, dtype=pred_logits.dtype, device=pred_logits.device)
+                    nearest_candidate_m = (
+                        trajectory_predictions.goal_xy - target_xy[:, None]
+                    ).norm(dim=-1).min(dim=-1).values * self.args.map_meters
+                    rank_valid = (nearest_candidate_m <= self.args.success_dist) & valid_trajectory
+                    rank_count = int(rank_valid.sum().item())
+                    trajectory_ranking_valid_count += rank_count
+                    trajectory_ranking_loss = trajectory_ranking_loss + candidate_ranking_loss(
+                        trajectory_predictions, target_xy,
+                        map_meters=self.args.map_meters,
+                        positive_radius_m=self.args.success_dist,
+                        active=valid_trajectory,
+                    ) * rank_count
+                    trajectory_candidate_loss = trajectory_candidate_loss + (
+                        candidate_trajectory_imitation_loss(
+                            trajectory_predictions, target_xy, targets,
+                            map_meters=self.args.map_meters,
+                            positive_radius_m=self.args.success_dist,
+                            active=valid_trajectory,
+                        ) * rank_count
+                    )
                 # Oracle-best of all generated proposals: diagnostic ONLY,
                 # never used to choose an online student action.
                 with torch.no_grad():
@@ -846,6 +892,38 @@ class NavCMTAgent:
                         (fde.min(-1).values * valid_trajectory).sum().item()
                     ) * self.args.map_meters
                     trajectory_eval_count += int(valid_trajectory.sum().item())
+                    # Fair prior-vs-joint per-step candidate diagnostic. Both
+                    # use the same predicted proposals and never GT selection.
+                    # Oracle only checks if any candidate is within the radius.
+                    d_goal = (trajectory_predictions.goal_xy - torch.as_tensor(
+                        gt_goal_np, dtype=pred_logits.dtype, device=pred_logits.device
+                    )[:, None]).norm(dim=-1) * self.args.map_meters
+                    p_log = heatmap_probs.gather(
+                        1, trajectory_predictions.goal_ids
+                    ).clamp_min(1e-8).log()
+                    prior_scores = p_log[:, :, None] + F.log_softmax(
+                        trajectory_predictions.mode_logits, dim=-1)
+                    prior_indices = prior_scores.flatten(1).argmax(dim=-1)
+                    joint_indices = trajectory_predictions.joint_logits.flatten(1).argmax(-1)
+                    modes = trajectory_predictions.mode_logits.shape[-1]
+                    prior_goals = torch.div(prior_indices, modes, rounding_mode='floor')
+                    joint_goals = torch.div(joint_indices, modes, rounding_mode='floor')
+                    prior_dist = d_goal.gather(1, prior_goals[:, None]).squeeze(1)
+                    joint_dist = d_goal.gather(1, joint_goals[:, None]).squeeze(1)
+                    trajectory_prior_goal_hits += int(
+                        ((prior_dist <= self.args.success_dist) & valid_trajectory).sum().item())
+                    trajectory_joint_goal_hits += int(
+                        ((joint_dist <= self.args.success_dist) & valid_trajectory).sum().item())
+                    trajectory_oracle_goal_hits += int(
+                        ((d_goal.min(-1).values <= self.args.success_dist) & valid_trajectory).sum().item())
+                    rows = torch.arange(batch_size, device=pred_logits.device)
+                    trajectory_prior_fde_sum_m += float((
+                        fde[rows, prior_indices] * valid_trajectory
+                    ).sum().item()) * self.args.map_meters
+                    trajectory_joint_fde_sum_m += float((
+                        fde[rows, joint_indices] * valid_trajectory
+                    ).sum().item()) * self.args.map_meters
+                    trajectory_candidate_eval_count += int(valid_trajectory.sum().item())
 
             # Log the trajectory
             # print(at_direction, gt_direction)
@@ -901,8 +979,12 @@ class NavCMTAgent:
                     # switching. Execute only a short local waypoint and
                     # replan from the next observation. Never use GT here.
                     endpoint_dist = dst.dist_to(poses[i].xy)
-                    if (selected_stop_probs[i] >= self.args.trajectory_stop_threshold
+                    if (not getattr(self.args, 'trajectory_disable_learned_stop', False)
+                            and selected_stop_probs[i] >= self.args.trajectory_stop_threshold
                             and endpoint_dist <= self.args.success_dist):
+                        trajectory_stop_decisions += 1
+                        if poses[i].xy.dist_to(obs[i]['goal']) <= self.args.success_dist:
+                            trajectory_stop_correct += 1
                         ended[i] = True
                         continue
                     local_xy = selected_trajectory_paths[i, 0]
@@ -1048,7 +1130,9 @@ class NavCMTAgent:
             ml_loss = (direction_loss + 0.1 * progress_loss + 2 * goal_predict_loss
                        + self.args.heatmap_loss_weight * heatmap_loss
                        + self.args.trajectory_loss_weight * trajectory_loss
-                       + self.args.trajectory_stop_weight * trajectory_stop_loss)
+                       + self.args.trajectory_stop_weight * trajectory_stop_loss
+                       + self.args.trajectory_ranking_loss_weight * trajectory_ranking_loss
+                       + self.args.trajectory_candidate_loss_weight * trajectory_candidate_loss)
             # ml_loss = progress_loss + goal_predict_loss
             self.loss += ml_loss * train_ml / batch_size
 
@@ -1063,6 +1147,10 @@ class NavCMTAgent:
                     (trajectory_loss * train_ml / batch_size).item())
                 self.logs['trajectory_stop_loss'].append(
                     (trajectory_stop_loss * train_ml / batch_size).item())
+                self.logs['trajectory_ranking_loss'].append(
+                    (trajectory_ranking_loss * train_ml / batch_size).item())
+                self.logs['trajectory_candidate_loss'].append(
+                    (trajectory_candidate_loss * train_ml / batch_size).item())
             self.logs['IL_loss'].append((ml_loss * train_ml / batch_size).item())
 
         if type(self.loss) is int:  # For safety, it will be activated if no losses are added
@@ -1085,6 +1173,15 @@ class NavCMTAgent:
         self.logs['trajectory_minfde_sum_m'].append(trajectory_minfde_sum)
         self.logs['trajectory_eval_count'].append(float(trajectory_eval_count))
         self.logs['trajectory_teacher_samples'].append(float(trajectory_supervision_count))
+        self.logs['trajectory_ranking_valid_count'].append(float(trajectory_ranking_valid_count))
+        self.logs['trajectory_candidate_eval_count'].append(float(trajectory_candidate_eval_count))
+        self.logs['trajectory_prior_goal_hits'].append(float(trajectory_prior_goal_hits))
+        self.logs['trajectory_joint_goal_hits'].append(float(trajectory_joint_goal_hits))
+        self.logs['trajectory_oracle_goal_hits'].append(float(trajectory_oracle_goal_hits))
+        self.logs['trajectory_prior_fde_sum_m'].append(trajectory_prior_fde_sum_m)
+        self.logs['trajectory_joint_fde_sum_m'].append(trajectory_joint_fde_sum_m)
+        self.logs['trajectory_stop_decisions'].append(float(trajectory_stop_decisions))
+        self.logs['trajectory_stop_correct'].append(float(trajectory_stop_correct))
         diagnostic_values = torch.stack((
             heatmap_diag_count,
             *(heatmap_coverage_hits[k] for k in (1, 4, 5, 8, 16, 20)),
