@@ -151,6 +151,12 @@ class HeatmapTrajectoryTest(unittest.TestCase):
         target = pred.goal_xy[:, 0].detach()
         steps = torch.linspace(1 / 6., 1., 6)[None, :, None]
         teacher = here[:, None] + steps * (target[:, None] - here[:, None])
+        # Keep a small nonzero curve: a perfectly straight teacher equals the
+        # zero-initialized straight mode, yielding legitimately zero residual grad.
+        teacher = teacher + torch.cat((
+            .02 * torch.sin(torch.pi * steps),
+            torch.zeros_like(steps)
+        ), dim=-1)
         path_loss = candidate_trajectory_imitation_loss(
             pred, target, teacher, map_meters=410., positive_radius_m=20.)
         self.assertTrue(torch.isfinite(path_loss))
