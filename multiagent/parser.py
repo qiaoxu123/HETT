@@ -129,6 +129,14 @@ def parse_args():
                         help='Conservative learned stop threshold; only near predicted goal')
     parser.add_argument('--trajectory_use_for_control', action='store_true', default=False,
                         help='Opt-in closed-loop execution of learned trajectory waypoints')
+    parser.add_argument('--trajectory_selector_mode', choices=['prior', 'joint'], default='prior',
+                        help='Prior replicates original heatmap+mode choice; joint enables learned goal reranking')
+    parser.add_argument('--trajectory_ranking_loss_weight', type=float, default=0.2,
+                        help='Weight for training goal ranking when a predicted proposal covers the GT')
+    parser.add_argument('--trajectory_candidate_loss_weight', type=float, default=0.3,
+                        help='Weight for imitating teacher suffix through predicted (non-oracle) goals')
+    parser.add_argument('--trajectory_disable_learned_stop', action='store_true', default=False,
+                        help='Ablate learned arrival decision while retaining trajectory control')
     parser.add_argument('--heatmap_loss_weight', type=float, default=0.1,
                         help='Weight of the Stage-1 heatmap loss')
     parser.add_argument('--stage1_switch_dist', type=float, default=25.0,
