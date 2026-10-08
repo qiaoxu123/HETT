@@ -19,7 +19,9 @@ def observe(agent, obs, poses, trajectories, ended, t, goals, heatmap_ids,
     modes=proposals.mode_logits.shape[-1]
     for i,ob in enumerate(obs):
         steps=trajectories[i]['experiment_steps']
-        if steps and steps[-1]['stopped']:continue
+        # Do not keep counting ended episodes while other batch members run.
+        if steps and steps[-1].get('ended', steps[-1]['stopped']):
+            continue
         gt=np.asarray(ob['normalized_goal']);dist=np.linalg.norm((cand[i]-gt)*scale,axis=-1)
         pd=np.linalg.norm((pool[i]-gt)*scale,axis=-1)
         endpoint=agent.env.unnormalize_position(goals[i],ob['map_name'],scale)
@@ -41,7 +43,7 @@ def observe(agent, obs, poses, trajectories, ended, t, goals, heatmap_ids,
             minADE_m=float(ade[i].min()),minFDE_m=float(fde[i].min()),
             selected_plan_ADE_m=float(ade[i,idx]) if plan_control else None,
             selected_plan_FDE_m=float(fde[i,idx]) if plan_control else None,
-            stopped=stop,stop_correct=bool(stop and near),in_success_radius=near,
+            stopped=stop,ended=bool(ended[i]),stop_correct=bool(stop and near),in_success_radius=near,
             stop_probability=float(stop_probs[i]) if stop_probs is not None else None))
 
 
