@@ -38,6 +38,14 @@ def heatmap_diagnostics_summary(logs, success_radius_m):
     for k in (1, 4, 5, 8, 16, 20):
         hits = sum(logs.get('heatmap_coverage_%d_hits' % k, ()))
         values.append('coverage@%d=%.4f' % (k, hits / count))
+    reference_count = sum(logs.get('landmark_refs_total', ()))
+    if reference_count > 0:
+        matched_count = sum(logs.get('landmark_refs_name_matched', ()))
+        truncated_count = sum(logs.get('landmark_refs_truncated', ()))
+        values.append('landmark_name_match_rate=%.4f' % (
+            matched_count / reference_count
+        ))
+        values.append('landmark_truncated=%d' % int(truncated_count))
     values.extend((
         'top1_distance_m=%.3f' % (
             sum(logs.get('heatmap_top1_distance_sum_m', ())) / count
