@@ -1,0 +1,21 @@
+{
+  "splits": [
+    "val_seen",
+    "val_unseen"
+  ],
+  "variants": {
+    "baseline": {
+      "execution": "waypoint"
+    },
+    "bounded_sbf_fusion": {
+      "execution": "waypoint",
+      "sbf_selector": true,
+      "fusion_weight": 0.25
+    }
+  },
+  "sbf_selector": {
+    "source": "/home/rental/20260922_1/Workspace/SBFNav-CityNav-Reproduction",
+    "checkpoint": "/home/rental/20260922_1/Workspace/SBFNav-CityNav-Reproduction/runs/sbfnav_main_e20_bs16_s0_20260929/training/checkpoints/best_val_unseen.pt",
+    "data_root": "/home/rental/20260922_1/Workspace/DATA/sbfnav-data"
+  }
+}

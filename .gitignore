@@ -222,3 +222,5 @@ __marimo__/
 
 /artifacts/frozen_sbf_smoke/val_*.json
 /artifacts/frozen_sbf_selector/val_*.json
+
+/artifacts/bounded_sbf_fusion/val_*.json

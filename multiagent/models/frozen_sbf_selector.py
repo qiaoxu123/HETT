@@ -8,7 +8,8 @@ import torch
 
 
 class FrozenSBFSelector:
-    def __init__(self, source, checkpoint, data_root):
+    def __init__(self, source, checkpoint, data_root, fusion_weight=None):
+        self.fusion_weight = fusion_weight
         sys.path.insert(0, str(Path(source).resolve()))
         from sbfnav.model_factory import build_backbone, build_model
         from sbfnav.dataset import CityReferCatalog, CityNavDataset
@@ -43,7 +44,7 @@ class FrozenSBFSelector:
                            for p in (Path(source)/'sbfnav').rglob('*.py')})
 
     @torch.no_grad()
-    def choose(self, *, episode_ids, instructions, histories, candidate_world_xy, split, active):
+    def choose(self, *, episode_ids, instructions, histories, candidate_world_xy, split, active, field_logits=None):
         # Only IDs, language, executed poses and predicted candidate coordinates enter this API.
         from sbfnav.candidate_proposal import Candidate
         from sbfnav.runtime import build_selector_inputs
@@ -66,5 +67,10 @@ class FrozenSBFSelector:
         scores = self.selector(inputs)
         if not torch.isfinite(scores).all():
             raise ValueError('Nonfinite transferred selector logits')
+        if self.fusion_weight is not None:
+            from multiagent.models.selector_fusion import bounded_selector_fusion
+            if field_logits is None:
+                raise ValueError('Heatmap scores are required for bounded fusion')
+            scores = bounded_selector_fusion(field_logits[indices].to(scores.device), scores, self.fusion_weight)
         chosen[indices] = scores.argmax(-1).cpu().numpy()
         return chosen

@@ -66,7 +66,7 @@ def main():
    agent.frozen_sbf_selector = None
    if variant.get('sbf_selector'):
     from multiagent.models.frozen_sbf_selector import FrozenSBFSelector
-    agent.frozen_sbf_selector = FrozenSBFSelector(**cfg['sbf_selector'])
+    agent.frozen_sbf_selector = FrozenSBFSelector(**cfg['sbf_selector'], fusion_weight=variant.get('fusion_weight'))
     (OUT/'sbf_selector_weights.json').write_text(json.dumps(agent.frozen_sbf_selector.metadata,indent=2)+'\n')
    agent.candidate_reranker = None
    if variant.get('reranker_checkpoint'):

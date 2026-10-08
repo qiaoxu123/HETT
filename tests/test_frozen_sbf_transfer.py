@@ -9,7 +9,7 @@ class TransferContracts(unittest.TestCase):
         tree=ast.parse((ROOT/'multiagent/models/frozen_sbf_selector.py').read_text())
         method=next(x for x in ast.walk(tree) if isinstance(x,ast.FunctionDef) and x.name=='choose')
         self.assertEqual({x.arg for x in method.args.kwonlyargs},
-            {'episode_ids','instructions','histories','candidate_world_xy','split','active'})
+            {'episode_ids','instructions','histories','candidate_world_xy','split','active','field_logits'})
     def test_builder_record_excludes_target_and_teacher(self):
         tree=ast.parse((ROOT/'multiagent/models/frozen_sbf_selector.py').read_text())
         record=next(x for x in ast.walk(tree) if isinstance(x,ast.Call) and isinstance(x.func,ast.Name) and x.func.id=='SimpleNamespace')

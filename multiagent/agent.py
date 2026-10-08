@@ -616,7 +616,8 @@ class NavCMTAgent:
                 choices = transferred.choose(
                     episode_ids=[ob['id'] for ob in obs], instructions=[ob['instruction'] for ob in obs],
                     histories=[traj[i]['trajectory'] for i in range(batch_size)],
-                    candidate_world_xy=world_candidates, split=self.env_name, active=~ended)
+                    candidate_world_xy=world_candidates, split=self.env_name, active=~ended,
+                    field_logits=pred_logits.gather(1, heatmap_topk_ids).detach())
                 choices = torch.as_tensor(choices, device=heatmap_topk_ids.device)
                 heatmap_goal_ids = heatmap_topk_ids.gather(1, choices[:, None]).squeeze(1)
             heatmap_goal_rows = torch.div(
