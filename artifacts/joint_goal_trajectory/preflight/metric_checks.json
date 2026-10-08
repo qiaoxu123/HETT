@@ -1,0 +1,14 @@
+{
+  "val_seen": {
+    "paired_ids": true,
+    "official_metrics_match": true,
+    "initial_candidates_match": true,
+    "D_stop_disabled": true
+  },
+  "val_unseen": {
+    "paired_ids": true,
+    "official_metrics_match": true,
+    "initial_candidates_match": true,
+    "D_stop_disabled": true
+  }
+}

@@ -1,0 +1,9 @@
+...............................                                          [100%]
+=============================== warnings summary ===============================
+tests/test_heatmap_relative_geometry.py::RelativeGeometryTest::test_dense_belief_geometry_gradient_and_probabilities
+  /home/rental/20260922_1/Workspace/hett-heatmap-joint-goal-trajectory/tests/test_heatmap_relative_geometry.py:50: UserWarning: Converting a tensor with requires_grad=True to a scalar may lead to unexpected behavior.
+  Consider using tensor.detach() first. (Triggered internally at /pytorch/torch/csrc/autograd/generated/python_variable_methods.cpp:835.)
+    self.assertAlmostEqual(float(out.probabilities.sum()), 1., places=5)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+31 passed, 1 warning in 1.66s

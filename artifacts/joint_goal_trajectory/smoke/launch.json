@@ -1,0 +1,14 @@
+{
+  "pid": 4013206,
+  "command": [
+    "/home/20260922_1/miniconda3/envs/AirVLN39/bin/python",
+    "-u",
+    "/home/rental/20260922_1/Workspace/hett-heatmap-joint-goal-trajectory/scripts/run_joint_goal_trajectory_experiment.py",
+    "--config",
+    "/home/rental/20260922_1/Workspace/hett-heatmap-joint-goal-trajectory/configs/experiments/joint_goal_trajectory_10e.json",
+    "--output",
+    "/home/rental/20260922_1/Workspace/hett-heatmap-joint-goal-trajectory/artifacts/joint_goal_trajectory/smoke",
+    "--smoke"
+  ],
+  "time": 1791461150.2008305
+}

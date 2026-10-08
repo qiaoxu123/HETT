@@ -357,6 +357,8 @@ class NavCMTAgent:
                 # torch.autograd.set_detect_anomaly(True)
 
                 self.loss.backward()
+                if getattr(self, 'experiment_gradient_callback', None) is not None:
+                    self.experiment_gradient_callback(self, idx)
                 # print('suc')
 
                 torch.nn.utils.clip_grad_norm_(self.vln_model.parameters(), 40.)
@@ -1104,6 +1106,13 @@ class NavCMTAgent:
                         traj[i]['stage2_trajectory'].append(traj[i]['stage1_trajectory'][-1])
                     if not ended[i]:
                         traj[i]['stage2_trajectory'].append(poses[i])
+
+            # Read-only experiment diagnostics, after actions have been selected/executed.
+            if getattr(self, 'experiment_step_callback', None) is not None:
+                self.experiment_step_callback(
+                    self, obs, poses, traj, ended, t, cpu_goal, heatmap_topk_ids,
+                    trajectory_predictions, ade, fde, prior_indices, joint_indices,
+                    selected_stop_probs)
 
             # Save trajectory output
             for i, ob in enumerate(obs):

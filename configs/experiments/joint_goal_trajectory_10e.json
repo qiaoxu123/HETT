@@ -1,0 +1,44 @@
+{
+  "seed": 0,
+  "epochs": 10,
+  "batch_size": 8,
+  "initial_checkpoint": "/home/rental/20260922_1/Workspace/hett-heatmap-sbf-relative-geometry-top20/checkpoints/heatmap_relative_geometry_top20_688e981_b8_s0_2e_20261008/best_val_unseen",
+  "base_arguments": "/home/rental/20260922_1/Workspace/hett-heatmap-sbf-relative-geometry-top20/checkpoints/heatmap_relative_geometry_top20_688e981_b8_s0_2e_20261008/training_args.json",
+  "evaluation_splits": [
+    "val_seen",
+    "val_unseen"
+  ],
+  "evaluate_every": 1,
+  "selection_policy": "epoch10_fixed_no_validation_selection",
+  "trajectory_goal_k": 5,
+  "trajectory_modes": 3,
+  "trajectory_waypoints": 8,
+  "trajectory_ranking_loss_weight": 0.2,
+  "trajectory_candidate_loss_weight": 0.3,
+  "trajectory_loss_weight": 0.5,
+  "trajectory_stop_weight": 0.05,
+  "trajectory_stop_threshold": 0.8,
+  "training_control": "legacy_default_as_documented",
+  "variants": {
+    "A": {
+      "trajectory_use_for_control": false,
+      "trajectory_selector_mode": "prior",
+      "trajectory_disable_learned_stop": false
+    },
+    "B": {
+      "trajectory_use_for_control": true,
+      "trajectory_selector_mode": "prior",
+      "trajectory_disable_learned_stop": false
+    },
+    "C": {
+      "trajectory_use_for_control": true,
+      "trajectory_selector_mode": "joint",
+      "trajectory_disable_learned_stop": false
+    },
+    "D": {
+      "trajectory_use_for_control": true,
+      "trajectory_selector_mode": "joint",
+      "trajectory_disable_learned_stop": true
+    }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "status": "passed",
+  "files": [
+    "multiagent/models/heatmap_trajectory.py",
+    "multiagent/models/ET_haa.py",
+    "multiagent/agent.py",
+    "multiagent/main.py",
+    "multiagent/parser.py",
+    "scripts/run_joint_goal_trajectory_experiment.py",
+    "scripts/joint_experiment_metrics.py",
+    "scripts/report_joint_goal_trajectory.py"
+  ]
+}

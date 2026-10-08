@@ -1,0 +1,70 @@
+{
+  "batch_size": 2,
+  "optimizer_steps": 2,
+  "seconds": 7.135365894064307,
+  "seconds_per_batch": 3.5676829470321536,
+  "peak_vram_allocated_bytes": 14871055872,
+  "peak_vram_reserved_bytes": 15382609920,
+  "gradients": [
+    {
+      "batch": 1,
+      "loss": 16.18896484375,
+      "gradient_norms": {
+        "base": 38.791229248046875,
+        "trajectory.context": 6.006441566341891e-08,
+        "trajectory.mode_embedding": 0.1678188443183899,
+        "trajectory.residual": 0.15158040821552277,
+        "trajectory.mode_score": 3.2466917037963867,
+        "trajectory.goal_scorer": 0.1474323868751526,
+        "trajectory.stop": 0.15009671449661255
+      }
+    },
+    {
+      "batch": 2,
+      "loss": 20.06844711303711,
+      "gradient_norms": {
+        "base": 88.8590087890625,
+        "trajectory.context": 0.0003284809354227036,
+        "trajectory.mode_embedding": 0.10041802376508713,
+        "trajectory.residual": 0.10218830406665802,
+        "trajectory.mode_score": 1.956817388534546,
+        "trajectory.goal_scorer": 0.05338713899254799,
+        "trajectory.stop": 0.020036252215504646
+      }
+    }
+  ],
+  "head_update_norms": {
+    "context.0.weight": 0.011680539697408676,
+    "context.0.bias": 0.0008449138840660453,
+    "context.1.weight": 0.0007011393317952752,
+    "context.1.bias": 0.0007248874753713608,
+    "context.3.weight": 0.008142407052218914,
+    "context.3.bias": 0.000803409784566611,
+    "mode_embedding.weight": 0.0035480207297950983,
+    "residual.0.weight": 0.008844295516610146,
+    "residual.0.bias": 0.0007988280849531293,
+    "residual.2.weight": 0.00621752580627799,
+    "residual.2.bias": 0.0005078211543150246,
+    "mode_score.weight": 0.0020577358081936836,
+    "mode_score.bias": 9.374693036079407e-05,
+    "goal_scorer.0.weight": 0.006092352326959372,
+    "goal_scorer.0.bias": 0.0005357316113077104,
+    "goal_scorer.2.weight": 0.0012650928692892194,
+    "goal_scorer.2.bias": 9.763572597876191e-05,
+    "stop.0.weight": 0.020525796338915825,
+    "stop.0.bias": 0.0013546247500926256,
+    "stop.2.weight": 0.0013131884625181556,
+    "stop.2.bias": 0.00016942620277404785
+  },
+  "losses": {
+    "direction_loss": 5.163932204246521,
+    "progress_loss": 0.2690382953733206,
+    "goal_predict_loss": 0.1257589440792799,
+    "heatmap_loss": 23.171345472335815,
+    "trajectory_loss": 0.5705397874116898,
+    "trajectory_stop_loss": 3.228020966053009,
+    "trajectory_ranking_loss": 3.7721667289733887,
+    "trajectory_candidate_loss": 0.34586833231151104,
+    "IL_loss": 9.064353346824646
+  }
+}
