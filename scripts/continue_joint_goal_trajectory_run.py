@@ -132,7 +132,18 @@ def main():
             "batches": math.ceil(len(train.data) / train.batch_size),
             "peak_vram_allocated_bytes": torch.cuda.max_memory_allocated(),
             "peak_vram_reserved_bytes": torch.cuda.max_memory_reserved(),
-            "losses": losses, "checkpoint": str(checkpoint),
+            "losses": losses, "training_diagnostics": {k:float(sum(agent.logs.get(k,()))) for k in (
+                'trajectory_stop_positive_count',
+                'trajectory_stop_supervised_count',
+                'trajectory_arrival_gate_blocked',
+                'trajectory_plan_steps',
+                'trajectory_stop_decisions',
+                'trajectory_ranking_valid_count',
+                'trajectory_candidate_eval_count',
+                'landmark_refs_total',
+                'landmark_refs_name_matched',
+                'landmark_refs_truncated')},
+            "checkpoint": str(checkpoint),
             "checkpoint_sha256": sha(checkpoint),
         }
         dump(out / f"train_epoch{epoch:02d}.json", row)
