@@ -30,6 +30,7 @@ from multiagent.models.multi_landmark import build_landmark_batch
 from multiagent.observation import cropclient
 from multiagent.space import Pose4D, Point2D, Point3D
 from multiagent.teacher.algorithm.lookahead import lookahead_discrete_action
+from multiagent.heatmap_execution import bounded_heatmap_step
 from multiagent.teacher.trajectory import _moved_pose
 from models.vln_model import CustomBERTModel
 from models.ET_haa import ET
@@ -823,21 +824,21 @@ class NavCMTAgent:
                     ended[i] = True
                     traj[i]['stop_reason'].append('oracle_stop')
                     continue
-                if diagnostic.get('direct'):
+                direct_execution = diagnostic.get('direct')
+                if getattr(self.args, 'heatmap_execution', 'two_stage') == 'waypoint':
+                    direct_execution = 'bounded'
+                if direct_execution:
                     old_pose = poses[i]
-                    if diagnostic['direct'] == 'bounded':
-                        delta = np.asarray(dst) - np.asarray(poses[i].xy)
-                        length = float(np.linalg.norm(delta))
-                        step = delta * min(1.0, 50.0 / max(length, 1e-9))
-                        yaw = float(np.arctan2(delta[1], delta[0])) if length > 1e-9 else poses[i].yaw
-                        poses[i] = Pose4D(poses[i].x + step[0], poses[i].y + step[1], poses[i].z, yaw)
+                    if direct_execution == 'bounded':
+                        poses[i] = bounded_heatmap_step(poses[i], dst,
+                            getattr(self.args, 'heatmap_waypoint_step_m', 50.0))
                     else:
                         poses[i] = self.move(poses[i], dst, self.args.move_iteration)
                     moved = poses[i].xy.dist_to(old_pose.xy)
                     diag_stagnant[i] = diag_stagnant[i] + 1 if moved < 1e-4 else 0
                     traj[i]['stage1_trajectory'].append(poses[i])
                     traj[i]['pred_goal'].append(dst)
-                    if diag_stagnant[i] >= 5:
+                    if diag_stagnant[i] >= getattr(self.args, 'heatmap_waypoint_stagnation_steps', 5):
                         ended[i] = True
                         traj[i]['stop_reason'].append('stagnation')
                         traj[i]['trajectory'].append(poses[i])

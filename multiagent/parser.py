@@ -117,6 +117,10 @@ def parse_args():
                         help='Weight of the Stage-1 heatmap loss')
     parser.add_argument('--stage1_switch_dist', type=float, default=25.0,
                         help='Distance in meters for switching from coarse Stage 1 to fine Stage 2')
+    parser.add_argument('--heatmap_execution', choices=['two_stage', 'waypoint'], default='two_stage',
+                        help='waypoint directly executes predicted heatmap coordinates without the fine direction/progress head')
+    parser.add_argument('--heatmap_waypoint_step_m', type=float, default=50.0)
+    parser.add_argument('--heatmap_waypoint_stagnation_steps', type=int, default=5)
     parser.add_argument('--stage2_recover_dist', type=float, default=40.0,
                         help='Distance in meters for returning from Stage 2 to coarse Stage 1')
     parser.add_argument('--stage2_recover_patience', type=int, default=2,

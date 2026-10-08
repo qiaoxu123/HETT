@@ -1,0 +1,1 @@
+{"splits":["val_unseen","val_seen"],"variants":{"baseline":{"record":true},"waypoint_execution":{"record":true,"execution":"waypoint"}}}

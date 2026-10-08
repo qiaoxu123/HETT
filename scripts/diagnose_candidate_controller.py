@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Frozen checkpoint paired diagnostics. Oracle variants are privileged only."""
-import os,sys,json,time,hashlib
+import os,sys,json,time,hashlib,argparse
 from pathlib import Path
 from collections import defaultdict
 import numpy as np
@@ -26,11 +26,21 @@ from parser import parse_args
 from torch.utils.data import DataLoader
 
 def main():
- cfg=json.loads((ROOT/'configs/diagnostics/candidate_controller.json').read_text())
+ global OUT
+ cli=argparse.ArgumentParser()
+ cli.add_argument('--config',type=Path,default=ROOT/'configs/diagnostics/candidate_controller.json')
+ cli.add_argument('--output',type=Path,default=OUT)
+ cli.add_argument('--full',action='store_true')
+ options=cli.parse_args();OUT=options.output.resolve()
+ cfg=json.loads(options.config.read_text())
  sys.argv=['diagnostic'];args=parse_args()
  for k,v in json.loads((RUN/'training_args.json').read_text()).items():setattr(args,k,v)
  args.mode='eval';args.resume_optimizer=False;args.batch_size=8
  OUT.mkdir(parents=True,exist_ok=True)
+ checkpoint=RUN/'best_val_unseen'
+ import subprocess,datetime
+ metadata={'started_at':datetime.datetime.now().astimezone().isoformat(),'commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'checkpoint':str(checkpoint),'checkpoint_sha256':hashlib.sha256(checkpoint.read_bytes()).hexdigest(),'config':cfg,'full_split':options.full,'code_sha256':{str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in [ROOT/'multiagent/agent.py',ROOT/'multiagent/heatmap_execution.py',Path(__file__)]}}
+ (OUT/'manifest.json').write_text(json.dumps(metadata,indent=2)+'\n')
  torch.manual_seed(0);np.random.seed(0)
  agent=NavCMTAgent(args,allow_ngpus=False,rank=0)
  agent.load(str(RUN/'best_val_unseen'))
@@ -39,6 +49,7 @@ def main():
  for split in cfg['splits']:
   env=CityNavBatch(split,args,batch_size=8,seed=0,rank=0,world_size=1)
   wanted=json.loads((SBF/'artifacts/sbfnav_hett_ablation/episode_ids'/f'{split}.json').read_text())
+  if options.full: wanted=[list(e.id) for e in env.data]
   byid={tuple(e.id):e for e in env.data};env.data=[byid[tuple(i)] for i in wanted]
   base=None
   for name,variant in cfg['variants'].items():
@@ -48,9 +59,10 @@ def main():
     if name=='baseline':base=r['episodes']
     continue
    args.diagnostic=variant
+   args.heatmap_execution=variant.get('execution','two_stage')
    with torch.no_grad():
     for k,v in agent.vln_model.named_parameters():
-     if k in weights:v.copy_(torch.zeros_like(v) if variant.get('gates_off') else weights[k])
+     if k in weights:v.copy_(torch.zeros_like(v) if variant.get('gates_off') or any(k.endswith(g) for g in variant.get('disable_gates',[])) else weights[k])
    agent.env=env;agent.logs=defaultdict(list)
    print('START',split,name,flush=True);start=time.time()
    agent.test(DataLoader(env,batch_size=1),env_name=split,feedback='student')
