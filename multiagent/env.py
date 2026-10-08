@@ -274,6 +274,29 @@ class CityNavBatch(torch.utils.data.IterableDataset):
                                                             self.args.map_meters) for centroid in centroids]
             # normalized_centroids
             # print(landmarks, centroids)
+            # Keep each instruction-referenced landmark separate, retaining
+            # the processed-description name <-> matched map contour pairing.
+            # These are map annotations available at inference, not GT targets.
+            reference_landmarks = []
+            referenced = self.nav_maps[i].referenced_landmark_map.landmarks
+            names = self.nav_maps[i].referenced_landmark_map.landmark_names
+            for name, landmark in zip(names, referenced):
+                if not landmark.contour:
+                    continue
+                norm_contour = np.asarray([
+                    self.normalize_position(point, episode.map_name, self.args.map_meters)
+                    for point in landmark.contour
+                ], dtype=np.float32)
+                if norm_contour.ndim != 2 or norm_contour.shape[1] != 2:
+                    continue
+                if not np.isfinite(norm_contour).all():
+                    continue
+                reference_landmarks.append({
+                    'name': name,
+                    'center_xy': norm_contour.mean(axis=0).tolist(),
+                    'extent_xy': np.ptp(norm_contour, axis=0).tolist(),
+                })
+
             pred_goal_xy = np.mean(centroids, axis=0) if centroids else np.array([0, 0])
 
             rgb = cropclient.crop_image(episode.map_name, poses[i], (224, 224), 'rgb')
@@ -294,6 +317,7 @@ class CityNavBatch(torch.utils.data.IterableDataset):
                 'cur_grid': normalized_pos_id,
                 'trajectory': episode.trajectory,
                 'progress': progress,
+                'reference_landmarks': reference_landmarks,
                 'centroids': np.mean(normalized_centroids, axis=0) if normalized_centroids else np.array([0, 0]),
                 'centroid_goal': pred_goal_xy,
                 'normalized_goal': normalized_goal_xys,

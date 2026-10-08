@@ -11,6 +11,7 @@ import numpy as np
 
 from .goal_predictor import MapEncoder
 from .spatial_belief import CompactSpatialBelief
+from .relative_geometry import dense_relative_geometry
 
 
 def aggregate_history_grid(grid_fts, grid_indices, text_fts, grid_proj, cell_count):
@@ -272,10 +273,52 @@ class ET(nn.Module):
 
         # Dense language-conditioned spatial belief. This path is independent
         # of the legacy 7x7 candidate/history tokens used by the controller.
+        geometry = None
+        if getattr(self.args, 'heatmap_relative_geometry', True):
+            if 'directions' not in inputs:
+                raise ValueError('relative geometry requires current pose and yaw')
+            current_pose = inputs['directions'][:, -1, :]
+            if current_pose.shape[-1] != 4:
+                raise ValueError('direction tokens must contain sin/cos yaw and normalized xy')
+            # Landmark centroids from the instruction-referenced map channel.
+            reference_mask = F.adaptive_avg_pool2d(
+                maps[:, 3:4], (self.args.heatmap_grid_size, self.args.heatmap_grid_size)
+            ).squeeze(1).clamp_min(0)
+            coord = (torch.arange(self.args.heatmap_grid_size, device=maps.device, dtype=maps.dtype) + 0.5) / self.args.heatmap_grid_size
+            ref_mass = reference_mask.sum(dim=(1, 2))
+            ref_x = (reference_mask * coord.view(1, 1, -1)).sum(dim=(1, 2)) / ref_mass.clamp_min(1e-6)
+            ref_y = (reference_mask * coord.view(1, -1, 1)).sum(dim=(1, 2)) / ref_mass.clamp_min(1e-6)
+            ref_centroid = torch.stack((ref_x, ref_y), dim=-1)
+            # In the multi-landmark experiment, do not fuse all reference
+            # contours into a single anonymous center. Keep the UAV geometry,
+            # and delegate landmark-specific geometry to the relation head.
+            if getattr(self.args, 'heatmap_multi_landmark', False):
+                ref_centroid = torch.zeros_like(ref_centroid)
+                reference_present = torch.zeros_like(ref_mass, dtype=torch.bool)
+            else:
+                reference_present = ref_mass > 1e-6
+            geometry = dense_relative_geometry(
+                current_pose[:, 2:4], current_pose[:, :2],
+                ref_centroid, reference_present,
+                field_size=self.args.heatmap_grid_size,
+                map_meters=self.args.map_meters,
+            )
+        multi_inputs = {}
+        if getattr(self.args, 'heatmap_multi_landmark', False):
+            # Missing keys must fail loudly: silently falling back to the
+            # aggregate mask would invalidate the multi-landmark experiment.
+            names = ('landmark_xy', 'landmark_extent', 'landmark_valid',
+                     'landmark_text_mask')
+            for name in names:
+                if name not in inputs:
+                    raise ValueError(f"multi-landmark mode requires {name}")
+                multi_inputs[name] = inputs[name]
         belief = self.spatial_belief(
             maps,
             emb_lang,
             inputs.get("lang_mask"),
+            geometry=geometry,
+            **multi_inputs,
         )
         target_logits = belief.logits.flatten(1)
 
