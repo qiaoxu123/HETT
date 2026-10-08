@@ -60,6 +60,7 @@ def main():
     continue
    args.diagnostic=variant
    args.heatmap_execution=variant.get('execution','two_stage')
+   args.stage1_switch_dist=variant.get('switch_dist',25.0)
    with torch.no_grad():
     for k,v in agent.vln_model.named_parameters():
      if k in weights:v.copy_(torch.zeros_like(v) if variant.get('gates_off') or any(k.endswith(g) for g in variant.get('disable_gates',[])) else weights[k])

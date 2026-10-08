@@ -202,6 +202,10 @@ def parse_args():
     return args
 
 def postprocess_args(args):
+    if args.heatmap_waypoint_step_m <= 0 or args.heatmap_waypoint_stagnation_steps < 1:
+        raise ValueError('waypoint step and stagnation count must be positive')
+    if args.mode == 'train' and args.heatmap_execution != 'two_stage':
+        raise ValueError('heatmap_execution=waypoint is currently an inference-only option')
     # ROOTDIR = args.root_dir
 
     args.map_shape = (args.map_size, args.map_size)

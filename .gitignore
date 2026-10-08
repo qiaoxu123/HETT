@@ -205,3 +205,11 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# Local episode traces for frozen candidate/controller diagnostics.
+/artifacts/candidate_controller/val_*.json
+/artifacts/full_validation/val_*.json
+/artifacts/handoff_control/val_*.json
+/artifacts/*/*.log
+/artifacts/*/*.pid
+/artifacts/*/*.incomplete

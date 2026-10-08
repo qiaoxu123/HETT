@@ -24,4 +24,25 @@ class ExecutionTest(unittest.TestCase):
         p=Pose4D(0,0,50,0)
         for _ in range(10):p=bounded_heatmap_step(p,[123,234])
         np.testing.assert_allclose(p[:2],[123,234])
+
+class ExecutionConfigTest(unittest.TestCase):
+    def test_default_preserves_two_stage(self):
+        import sys
+        from unittest.mock import patch
+        from multiagent.parser import parse_args
+        with patch.object(sys,'argv',['test']):
+            self.assertEqual(parse_args().heatmap_execution,'two_stage')
+    def test_eval_enables_waypoint(self):
+        import sys
+        from unittest.mock import patch
+        from multiagent.parser import parse_args
+        with patch.object(sys,'argv',['test','--mode','eval','--heatmap_execution','waypoint']):
+            self.assertEqual(parse_args().heatmap_execution,'waypoint')
+    def test_training_rejects_inference_only_mode(self):
+        import sys
+        from unittest.mock import patch
+        from multiagent.parser import parse_args
+        with patch.object(sys,'argv',['test','--heatmap_execution','waypoint']):
+            with self.assertRaises(ValueError):parse_args()
+
 if __name__=='__main__':unittest.main()

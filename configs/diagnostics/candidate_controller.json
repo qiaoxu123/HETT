@@ -1,1 +1,53 @@
-{"splits":["val_unseen","val_seen"],"variants":{"baseline":{"record":true},"oracle_candidate":{"oracle_candidate":true},"oracle_stop":{"oracle_stop":true},"direct_discrete":{"direct":"discrete"},"direct_bounded":{"direct":"bounded"},"oracle_direct_bounded":{"oracle_candidate":true,"direct":"bounded"},"gates_off":{"record":true,"gates_off":true}}}
+{
+  "splits": [
+    "val_unseen",
+    "val_seen"
+  ],
+  "variants": {
+    "baseline": {
+      "record": true
+    },
+    "oracle_candidate": {
+      "oracle_candidate": true
+    },
+    "oracle_stop": {
+      "oracle_stop": true
+    },
+    "direct_discrete": {
+      "direct": "discrete"
+    },
+    "direct_bounded": {
+      "direct": "bounded"
+    },
+    "oracle_direct_bounded": {
+      "oracle_candidate": true,
+      "direct": "bounded"
+    },
+    "gates_off": {
+      "record": true,
+      "gates_off": true
+    },
+    "geometry_gate_off": {
+      "record": true,
+      "disable_gates": [
+        "geometry_gate"
+      ]
+    },
+    "landmark_gate_off": {
+      "record": true,
+      "disable_gates": [
+        "multi_landmark_gate"
+      ]
+    },
+    "language_gate_off": {
+      "record": true,
+      "disable_gates": [
+        "language_gate"
+      ]
+    },
+    "waypoint_api": {
+      "record": true,
+      "execution": "waypoint"
+    }
+  }
+}
