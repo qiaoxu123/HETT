@@ -1,0 +1,10 @@
+{
+  "pid": 4017751,
+  "command": [
+    "/home/20260922_1/miniconda3/envs/AirVLN39/bin/python",
+    "-u",
+    "/home/rental/20260922_1/Workspace/hett-heatmap-joint-goal-trajectory/scripts/run_joint_experiment_pipeline.py"
+  ],
+  "started": "2026-10-08T20:15:36.761581+08:00",
+  "epochs": 1
+}

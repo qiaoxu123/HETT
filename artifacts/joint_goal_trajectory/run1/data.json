@@ -1,0 +1,13 @@
+{
+  "load_seconds": 161.54253935813904,
+  "train_count": 21877,
+  "validation_counts": {
+    "val_seen": 2470,
+    "val_unseen": 2697
+  },
+  "annotation_sha256": {
+    "train_seen": "c24a16ddaab820d32bb6ce44a373bc2e2b8f6d88e8d08fdff9ba165f190388b2",
+    "val_seen": "df3b5a27a6c6d05e90fd3c6618e2676a3ed5fa3214dc5594485e206e9ea37a06",
+    "val_unseen": "73720c81ad9ca38dd5f54dbe0d992c57072ad0bf85182e15d92252998977cfac"
+  }
+}

@@ -1,0 +1,134 @@
+[
+  {
+    "split": "val_seen",
+    "category": "joint_rescue",
+    "episode_id": [
+      "cambridge_block_23",
+      40,
+      3
+    ],
+    "instruction": "The gray house on Ferry Path that is 4 houses to the left of the Old Spring building.",
+    "figure": "val_seen_00_joint_rescue.png"
+  },
+  {
+    "split": "val_seen",
+    "category": "joint_rescue",
+    "episode_id": [
+      "cambridge_block_18",
+      56,
+      5
+    ],
+    "instruction": "Black car, parked on the end of a group of six cars on the grass section of a parking lot toward the edge of the map off drosier Road",
+    "figure": "val_seen_01_joint_rescue.png"
+  },
+  {
+    "split": "val_seen",
+    "category": "joint_regression",
+    "episode_id": [
+      "cambridge_block_23",
+      11,
+      0
+    ],
+    "instruction": "Multi-unit and multi-colored beige, gray and light gray building on the edge of the map on the corner of Chesterton Road and Trafalgar Road, across from the Nelson court building",
+    "figure": "val_seen_02_joint_regression.png"
+  },
+  {
+    "split": "val_seen",
+    "category": "joint_regression",
+    "episode_id": [
+      "cambridge_block_18",
+      284,
+      4
+    ],
+    "instruction": "The parking lot on Hills Road between two large trees and the Cathollic Church of Our Lady and the English Martyrs.",
+    "figure": "val_seen_03_joint_regression.png"
+  },
+  {
+    "split": "val_seen",
+    "category": "entered_then_left",
+    "episode_id": [
+      "cambridge_block_21",
+      193,
+      0
+    ],
+    "instruction": "A dark blue car next to an empty spot with a black car across from it, in the parking lot of the Grafton West building, in the center row nearest to the tree that is next to a lower level parking lot",
+    "figure": "val_seen_04_entered_then_left.png"
+  },
+  {
+    "split": "val_seen",
+    "category": "entered_then_left",
+    "episode_id": [
+      "cambridge_block_12",
+      223,
+      3
+    ],
+    "instruction": "The white car under the tree behind the James Dyson Building and is beside another white car.",
+    "figure": "val_seen_05_entered_then_left.png"
+  },
+  {
+    "split": "val_unseen",
+    "category": "joint_rescue",
+    "episode_id": [
+      "cambridge_block_3",
+      13,
+      1
+    ],
+    "instruction": "Front section of a beige house with a large tree in front of it, on the corner of Northampton Street and Pound Hill road",
+    "figure": "val_unseen_00_joint_rescue.png"
+  },
+  {
+    "split": "val_unseen",
+    "category": "joint_rescue",
+    "episode_id": [
+      "cambridge_block_10",
+      2,
+      0
+    ],
+    "instruction": "A narrow building with blue roof situated at the left side of the building named Braeside , the other building in front of is named Hillside .The road nearby to the building is Chesterton Lane.",
+    "figure": "val_unseen_01_joint_rescue.png"
+  },
+  {
+    "split": "val_unseen",
+    "category": "joint_regression",
+    "episode_id": [
+      "cambridge_block_3",
+      63,
+      3
+    ],
+    "instruction": "The white car parked by itself in the parking lot behind the Art Room building.",
+    "figure": "val_unseen_02_joint_regression.png"
+  },
+  {
+    "split": "val_unseen",
+    "category": "joint_regression",
+    "episode_id": [
+      "cambridge_block_10",
+      10,
+      4
+    ],
+    "instruction": "The gray house on Park Parade that is 4 houses to the left of the La Mimosa building.",
+    "figure": "val_unseen_03_joint_regression.png"
+  },
+  {
+    "split": "val_unseen",
+    "category": "entered_then_left",
+    "episode_id": [
+      "cambridge_block_10",
+      69,
+      3
+    ],
+    "instruction": "A large wing of Edward's Court that runs along Magrath Avenue with a row of houses with gray roofs across the street.",
+    "figure": "val_unseen_04_entered_then_left.png"
+  },
+  {
+    "split": "val_unseen",
+    "category": "entered_then_left",
+    "episode_id": [
+      "birmingham_block_5",
+      196,
+      2
+    ],
+    "instruction": "The blue car that parked in front of the building on corner of the Teddington Grove, between the red car and the white car.",
+    "figure": "val_unseen_05_entered_then_left.png"
+  }
+]
