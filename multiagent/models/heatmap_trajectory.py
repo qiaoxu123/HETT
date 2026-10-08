@@ -37,7 +37,7 @@ def heatmap_endpoints(probabilities, top_k, *, nms_kernel=3):
 
 
 def resample_teacher_suffix(trajectory, current_xy, *, map_name, bounds,
-                            map_meters, steps):
+                            map_meters, steps, goal_xy=None):
     """Resample the *future teacher label* by arclength from nearest pose.
 
     This function must ONLY be invoked in the training target pipeline.
@@ -53,6 +53,10 @@ def resample_teacher_suffix(trajectory, current_xy, *, map_name, bounds,
     pos = np.asarray(current_xy, dtype=np.float32)
     nearest = int(np.linalg.norm(xy - pos, axis=-1).argmin())
     suffix = np.concatenate((pos[None], xy[nearest + 1:]), axis=0)
+    if goal_xy is not None:
+        goal = np.asarray(goal_xy, dtype=np.float32).reshape(1, 2)
+        if np.linalg.norm(suffix[-1] - goal[0]) > 1e-5:
+            suffix = np.concatenate((suffix, goal), axis=0)
     if len(suffix) == 1:
         suffix = np.concatenate((suffix, suffix), axis=0)
     lengths = np.linalg.norm(np.diff(suffix, axis=0), axis=1)
