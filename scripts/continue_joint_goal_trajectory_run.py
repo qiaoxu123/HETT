@@ -137,7 +137,8 @@ def main():
         }
         dump(out / f"train_epoch{epoch:02d}.json", row)
         print("TRAIN_COMPLETE", json.dumps(clean(row)), flush=True)
-        if epoch == cfg["epochs"]:
+        if (epoch == cfg["epochs"] or
+                epoch % max(1, int(cfg.get("evaluate_every", cfg["epochs"]))) == 0):
             rows = evaluate(agent, envs, cfg, out, epoch)
             all_rows.extend(rows)
             dump(out / "results.json", all_rows)
