@@ -100,8 +100,8 @@ def main():
     for v,r in u.items():lines.append(f"- {v}: OSR−SR={r['osr_sr_gap_pp']:.2f}pp；进入成功区后离开 {r['entered_then_left']}；停止 TP/FP/FN={r['stop_TP']}/{r['stop_FP']}/{r['stop_FN']}；超时 {r['horizon_timeouts']}。")
     lines+=['','## 口径与限制',
         '- ADE/FDE：每个实际 rollout 状态的预测计划对人类剩余轨迹（按路程重采样）的误差；偏离人类轨迹时它是诊断代理，不等于最优恢复路线。',
-        '- Top-K Hit@20 同时保存 initial-state 与 all-active-step 两种口径；all-step 因策略路径不同不能当作同状态纯排序因果对比。轨迹池 K=5，热图候选另报告 K=1/5/16/20。',
-        '- Stop precision/recall/accuracy 按实际评估决策状态、GT 20m 成功半径计算；关闭 Stop 的 precision 为 N/A。Accuracy 可能被大量负例主导，必须同时查看 TP/FP/FN。',
+        f'- Top-K Hit@20 同时保存 initial-state 与 all-active-step 两种口径；all-step 因策略路径不同不能当作同状态纯排序因果对比。实际轨迹候选池 K={manifest.get("config", {}).get("trajectory_goal_k", "unknown")}，热图候选另报告 K=1/5/16/20。',
+        '- Stop precision/recall/accuracy 按逐步决策状态、GT 20m 成功半径计算；Stop FN 是逐步可停止机会数，不是失败 episode 数。关闭 Stop 的 precision 为 N/A。',
         '- Switch rate：相邻有效计划的候选 cell ID 改变次数 / 可比较相邻步数。路径长度为 evaluator 的宏观状态路径长度；不是微动作连续路径长度。',
         '- 单 seed、单初始 checkpoint；episode bootstrap 不处理场景相关性，不代表跨 seed 稳健性。没有读取 Test-Unseen；Oracle 仅指标，无动作决策。',
         '', '## 下一步建议',
