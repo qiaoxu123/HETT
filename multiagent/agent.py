@@ -1062,12 +1062,19 @@ class NavCMTAgent:
                     remaining = local_dst.dist_to(poses[i].xy)
                     steps = min(self.args.move_iteration,
                                 max(1, int(math.ceil(remaining / 5.0))))
-                    old_xy = poses[i].xy
+                    old_pose = poses[i]
+                    old_xy = old_pose.xy
                     poses[i] = self.move(poses[i], local_dst, steps)
                     moved_m = old_xy.dist_to(poses[i].xy)
+                    rotated_rad = abs(np.arctan2(
+                        np.sin(poses[i].yaw - old_pose.yaw),
+                        np.cos(poses[i].yaw - old_pose.y)))
                     trajectory_travel_distance_m += moved_m
+                    # Rotation-only actions are genuine controller progress
+                    # and must not count as a frozen simulator.
+                    no_action_progress = moved_m < 1e-4 and rotated_rad < 1e-4
                     waypoint_stagnant_steps[i] = (
-                        waypoint_stagnant_steps[i] + 1 if moved_m < 1e-4 else 0
+                        waypoint_stagnant_steps[i] + 1 if no_action_progress else 0
                     )
                     if waypoint_stagnant_steps[i] >= getattr(
                             self.args, 'heatmap_waypoint_stagnation_steps', 5):
