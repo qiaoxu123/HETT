@@ -1,0 +1,122 @@
+name: HETT self-hosted CI
+
+on:
+  push:
+    branches: [main, ci/hett-self-hosted-runner]
+    paths:
+      - '.github/workflows/self-hosted-ci.yml'
+      - '**.py'
+      - 'requirements*.txt'
+      - 'pyproject.toml'
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'HETT branch to check (main, 2027-CVPR/*, experiment/*, ci/*)'
+        required: true
+        default: '2027-CVPR/visual-overlap-geometry-diagnosis'
+        type: string
+      run_tests:
+        description: 'Run existing pytest suite on CPU'
+        default: false
+        type: boolean
+      gpu_check:
+        description: 'Check CUDA availability without training or model download'
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hett-self-hosted-${{ github.workflow }}-${{ inputs.ref || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  ci:
+    if: github.repository == 'qiaoxu123/HETT' && github.actor == 'qiaoxu123' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: [self-hosted, Linux, X64, hett, rental-5001]
+    timeout-minutes: 20
+    env:
+      GIT_CONFIG_NOSYSTEM: '1'
+      OMP_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+      HF_HUB_OFFLINE: '1'
+      TARGET_REF: ${{ inputs.ref || github.sha }}
+    steps:
+      - name: Validate target ref
+        shell: bash
+        env:
+          EVENT_KIND: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          if [[ "$EVENT_KIND" == workflow_dispatch ]]; then
+            git check-ref-format --branch "$TARGET_REF" >/dev/null
+            case "$TARGET_REF" in
+              main|2027-CVPR/*|experiment/*|ci/*) ;;
+              *) echo 'Only trusted branches from this repository are allowed'; exit 1 ;;
+            esac
+          fi
+
+      - name: Checkout selected HETT revision
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ env.TARGET_REF }}
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: Runtime and machine check
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -x "$HETT_CI_PYTHON"
+          mkdir -p ci-results
+          "$HETT_CI_PYTHON" - <<'PY' | tee ci-results/runtime.txt
+          import platform, sys, torch
+          print('Python:', sys.version)
+          print('Platform:', platform.platform())
+          print('PyTorch:', torch.__version__)
+          PY
+          git rev-parse HEAD | tee ci-results/checked-out-sha.txt
+
+      - name: CUDA availability check
+        if: github.event_name == 'workflow_dispatch' && inputs.gpu_check
+        shell: bash
+        run: |
+          set -euo pipefail
+          nvidia-smi --query-gpu=name,driver_version,memory.total --format=csv | tee ci-results/gpu.txt
+          "$HETT_CI_PYTHON" - <<'PY' | tee -a ci-results/gpu.txt
+          import torch
+          assert torch.cuda.is_available(), 'CUDA unavailable'
+          print('CUDA:', torch.version.cuda)
+          print('GPU:', torch.cuda.get_device_name(0))
+          PY
+
+      - name: Compile Python sources
+        shell: bash
+        run: |
+          "$HETT_CI_PYTHON" - <<'PY' | tee ci-results/compile.txt
+          import pathlib, py_compile
+          files = sorted(p for p in pathlib.Path('.').rglob('*.py')
+                         if '.git' not in p.parts and 'ci-results' not in p.parts)
+          for path in files:
+              py_compile.compile(str(path), doraise=True)
+          print(f'Compiled {len(files)} Python files')
+          PY
+
+      - name: Existing unit tests (optional, CPU only)
+        if: github.event_name == 'workflow_dispatch' && inputs.run_tests
+        shell: bash
+        env:
+          CUDA_VISIBLE_DEVICES: ''
+        run: |
+          set -euo pipefail
+          "$HETT_CI_PYTHON" -m pytest -q --junitxml=ci-results/pytest.xml | tee ci-results/pytest.txt
+
+      - name: Upload CI logs
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: hett-ci-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ci-results/
+          retention-days: 14
+          if-no-files-found: warn
