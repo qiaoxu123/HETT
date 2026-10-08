@@ -46,6 +46,21 @@ def heatmap_diagnostics_summary(logs, success_radius_m):
         values.append('trajectory_minFDE_m=%.3f' % (
             sum(logs.get('trajectory_minfde_sum_m', ())) / trajectory_count
         ))
+    candidate_count = sum(logs.get('trajectory_candidate_eval_count', ()))
+    if candidate_count > 0:
+        for key in ('prior', 'joint', 'oracle'):
+            hits = sum(logs.get('trajectory_%s_goal_hits' % key, ()))
+            values.append('trajectory_%s_hit@20=%.4f' % (key, hits / candidate_count))
+        for key in ('prior', 'joint'):
+            total_fde = sum(logs.get('trajectory_%s_fde_sum_m' % key, ()))
+            values.append('trajectory_%s_FDE_m=%.3f' % (key, total_fde / candidate_count))
+        ranked = sum(logs.get('trajectory_ranking_valid_count', ()))
+        values.append('trajectory_rank_supervision_rate=%.4f' % (ranked / candidate_count))
+    stop_n = sum(logs.get('trajectory_stop_decisions', ()))
+    if stop_n > 0:
+        stop_correct = sum(logs.get('trajectory_stop_correct', ()))
+        values.append('trajectory_stop_precision=%.4f' % (stop_correct / stop_n))
+        values.append('trajectory_stop_count=%d' % round(stop_n))
     reference_count = sum(logs.get('landmark_refs_total', ()))
     if reference_count > 0:
         matched_count = sum(logs.get('landmark_refs_name_matched', ()))
