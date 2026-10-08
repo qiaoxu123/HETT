@@ -124,7 +124,10 @@ def main():
         if k.startswith('trajectory_'):setattr(args,k,v)
     if 'trajectory_goal_k' not in cfg:
         args.trajectory_goal_k = 20
-    args.trajectory_selector_mode='prior';args.trajectory_disable_learned_stop=False
+    # Student rollouts and evaluation must use the same controller and
+    # candidate selector; legacy train/eval mismatch caused severe shift.
+    train_policy=cfg['variants'][cfg['first_epoch_gate']['variant']]
+    for key,value in train_policy.items():setattr(args,key,value)
     dump(out/'manifest.json',dict(config=cfg,args=vars(args),smoke=opt.smoke,initial_sha256=sha(cfg['initial_checkpoint']),
         commit=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),
         started=time.time(),code_sha256={str(p.relative_to(ROOT)):sha(p) for p in [
