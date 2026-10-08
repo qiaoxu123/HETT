@@ -1,0 +1,106 @@
+{
+  "val_seen": {
+    "n": 256,
+    "episode_ids_source": "/home/rental/20260922_1/Workspace/SBFNav-CityNav-Reproduction/artifacts/sbfnav_hett_ablation/episode_ids/val_seen.json",
+    "all_groups_same_ids": true,
+    "metrics": {
+      "HETT bounded-waypoint baseline": {
+        "SR": 27.34375,
+        "SPL": 22.654399984199447,
+        "OSR": 45.3125,
+        "NE_m": 41.44131678587538
+      },
+      "Frozen SBF selector + HETT bounded waypoint": {
+        "SR": 40.625,
+        "SPL": 21.902464564370277,
+        "OSR": 69.53125,
+        "NE_m": 35.75325327583518
+      },
+      "Joint experiment A, subset": {
+        "SR": 26.953125,
+        "SPL": 23.278008023893214,
+        "OSR": 50.0,
+        "NE_m": 39.65138734033528
+      },
+      "Joint experiment B, subset": {
+        "SR": 6.25,
+        "SPL": 6.208404059470441,
+        "OSR": 7.421875,
+        "NE_m": 59.97154650448907
+      },
+      "Joint experiment C, subset": {
+        "SR": 6.640625,
+        "SPL": 6.6067837887971494,
+        "OSR": 8.59375,
+        "NE_m": 57.25941801152585
+      },
+      "Joint experiment D, subset": {
+        "SR": 6.640625,
+        "SPL": 6.6067837887971494,
+        "OSR": 8.59375,
+        "NE_m": 57.25941801152585
+      },
+      "_paired_direct_SBF_delta": {
+        "delta_SR_pp": 13.28125,
+        "ci95_pp": [
+          6.25,
+          20.3125
+        ],
+        "gained": 61,
+        "lost": 27
+      }
+    }
+  },
+  "val_unseen": {
+    "n": 256,
+    "episode_ids_source": "/home/rental/20260922_1/Workspace/SBFNav-CityNav-Reproduction/artifacts/sbfnav_hett_ablation/episode_ids/val_unseen.json",
+    "all_groups_same_ids": true,
+    "metrics": {
+      "HETT bounded-waypoint baseline": {
+        "SR": 25.390625,
+        "SPL": 20.28407705407818,
+        "OSR": 39.84375,
+        "NE_m": 43.80882412020046
+      },
+      "Frozen SBF selector + HETT bounded waypoint": {
+        "SR": 19.140625,
+        "SPL": 10.972626361634147,
+        "OSR": 43.359375,
+        "NE_m": 47.55671852533518
+      },
+      "Joint experiment A, subset": {
+        "SR": 17.578125,
+        "SPL": 15.805341567275894,
+        "OSR": 35.15625,
+        "NE_m": 53.0741963760564
+      },
+      "Joint experiment B, subset": {
+        "SR": 3.90625,
+        "SPL": 3.875333093854347,
+        "OSR": 5.859375,
+        "NE_m": 66.04287709650986
+      },
+      "Joint experiment C, subset": {
+        "SR": 3.90625,
+        "SPL": 3.85984825660213,
+        "OSR": 5.859375,
+        "NE_m": 63.577779253753796
+      },
+      "Joint experiment D, subset": {
+        "SR": 3.90625,
+        "SPL": 3.85984825660213,
+        "OSR": 5.859375,
+        "NE_m": 63.577779253753796
+      },
+      "_paired_direct_SBF_delta": {
+        "delta_SR_pp": -6.25,
+        "ci95_pp": [
+          -12.109375,
+          -0.390625
+        ],
+        "gained": 22,
+        "lost": 38
+      }
+    }
+  }
+}

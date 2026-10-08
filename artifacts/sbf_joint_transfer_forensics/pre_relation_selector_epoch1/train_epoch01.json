@@ -1,0 +1,49 @@
+{
+  "epoch": 1,
+  "train_seconds": 7175.817911281018,
+  "episodes": 21877,
+  "batches": 2735,
+  "peak_vram_allocated_bytes": 63238577152,
+  "peak_vram_reserved_bytes": 64120422400,
+  "gradients": [
+    {
+      "batch": 1,
+      "loss": 17.372201919555664,
+      "gradient_norms": {
+        "base": 26.42629051208496,
+        "trajectory.context": 4.32376978665161e-08,
+        "trajectory.mode_embedding": 0.08372088521718979,
+        "trajectory.residual": 0.034032199531793594,
+        "trajectory.mode_score": 1.6772629022598267,
+        "trajectory.goal_scorer": 0.06056788191199303,
+        "trajectory.stop": 0.031803928315639496
+      }
+    },
+    {
+      "batch": 2,
+      "loss": 15.575815200805664,
+      "gradient_norms": {
+        "base": 23.561782836914062,
+        "trajectory.context": 0.00020270132517907768,
+        "trajectory.mode_embedding": 0.08457265049219131,
+        "trajectory.residual": 0.042202796787023544,
+        "trajectory.mode_score": 1.7521706819534302,
+        "trajectory.goal_scorer": 0.04522206634283066,
+        "trajectory.stop": 0.1047864705324173
+      }
+    }
+  ],
+  "losses": {
+    "direction_loss": 4.310824321044211,
+    "progress_loss": 0.27099576040666545,
+    "goal_predict_loss": 0.029241724698029634,
+    "heatmap_loss": 16.50078123596512,
+    "trajectory_loss": 0.44020765799436534,
+    "trajectory_stop_loss": 3.13741529242866,
+    "trajectory_ranking_loss": 3.4780683311836373,
+    "trajectory_candidate_loss": 0.3757827609178135,
+    "IL_loss": 7.23180858766357
+  },
+  "checkpoint": "/home/rental/20260922_1/Workspace/hett-heatmap-joint-goal-trajectory/artifacts/joint_goal_trajectory/run1/checkpoints/epoch01.pt",
+  "sha256": "06d5e26474dea2bed92f995c4a46d8a0e87416282c8753d37421b05324d21758"
+}

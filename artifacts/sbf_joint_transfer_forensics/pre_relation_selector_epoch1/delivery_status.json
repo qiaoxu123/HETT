@@ -1,0 +1,7 @@
+{
+  "commit": "adcb64fdfd4124e1a69e3a28215991493883e53c",
+  "branch": "2027-CVPR/heatmap-joint-goal-trajectory",
+  "push_returncode": 1,
+  "time": 1791471088.4702477,
+  "push_output": "To https://github.com/qiaoxu123/HETT.git\n ! [rejected]        HEAD -> 2027-CVPR/heatmap-joint-goal-trajectory (non-fast-forward)\nerror: failed to push some refs to 'https://github.com/qiaoxu123/HETT.git'\nhint: Updates were rejected because the tip of your current branch is behind\nhint: its remote counterpart. If you want to integrate the remote changes,\nhint: use 'git pull' before pushing again.\nhint: See the 'Note about fast-forwards' in 'git push --help' for details.\n"
+}

@@ -1,0 +1,39 @@
+{
+  "lang_model": {
+    "missing_new_parameters": [],
+    "unexpected": [],
+    "loaded_tensors": 203
+  },
+  "vision_model": {
+    "missing_new_parameters": [],
+    "unexpected": [],
+    "loaded_tensors": 318
+  },
+  "vln_model": {
+    "missing_new_parameters": [
+      "trajectory_head.context.0.weight",
+      "trajectory_head.context.0.bias",
+      "trajectory_head.context.1.weight",
+      "trajectory_head.context.1.bias",
+      "trajectory_head.context.3.weight",
+      "trajectory_head.context.3.bias",
+      "trajectory_head.mode_embedding.weight",
+      "trajectory_head.residual.0.weight",
+      "trajectory_head.residual.0.bias",
+      "trajectory_head.residual.2.weight",
+      "trajectory_head.residual.2.bias",
+      "trajectory_head.mode_score.weight",
+      "trajectory_head.mode_score.bias",
+      "trajectory_head.goal_scorer.0.weight",
+      "trajectory_head.goal_scorer.0.bias",
+      "trajectory_head.goal_scorer.2.weight",
+      "trajectory_head.goal_scorer.2.bias",
+      "trajectory_head.stop.0.weight",
+      "trajectory_head.stop.0.bias",
+      "trajectory_head.stop.2.weight",
+      "trajectory_head.stop.2.bias"
+    ],
+    "unexpected": [],
+    "loaded_tensors": 123
+  }
+}
