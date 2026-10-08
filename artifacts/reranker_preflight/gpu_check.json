@@ -1,0 +1,8 @@
+{
+  "cache_episodes": 16,
+  "cache_samples": 80,
+  "gpu_zero_init_scores_exact": true,
+  "gpu_backward_finite": true,
+  "optimizer_steps": 0,
+  "parameters": 196354
+}

@@ -1,0 +1,29 @@
+{
+  "config": {
+    "epochs": 2,
+    "seed": 0,
+    "collection_batch_size": 8,
+    "collect_steps": [
+      0,
+      3,
+      7,
+      11,
+      19
+    ],
+    "shard_samples": 1024,
+    "batch_size": 128,
+    "learning_rate": 0.0001,
+    "weight_decay": 0.0001,
+    "temperature_m": 20.0,
+    "soft_loss_weight": 0.5,
+    "hard_loss_weight": 0.5,
+    "max_train_episodes": 16
+  },
+  "base_checkpoint": "/home/rental/20260922_1/Workspace/hett-heatmap-sbf-relative-geometry-top20/checkpoints/heatmap_relative_geometry_top20_688e981_b8_s0_2e_20261008/best_val_unseen",
+  "base_checkpoint_sha256": "22016785d214f9b2e1f709f0b5da5fefcf35b04131ec577ec4d1b4ec073ec49a",
+  "train_split": "train_seen",
+  "training_budget_epochs": 2,
+  "frozen_backbone": true,
+  "started_at": 1791457121.7964396,
+  "git_commit": "e81cc38bbba3bf595b83d1677fc08ec0305f2204"
+}

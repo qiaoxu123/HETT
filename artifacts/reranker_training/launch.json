@@ -1,0 +1,19 @@
+{
+  "pid": 3985399,
+  "command": [
+    "/home/20260922_1/miniconda3/envs/AirVLN39/bin/python",
+    "-u",
+    "/home/rental/20260922_1/Workspace/hett-heatmap-top20-reranker/scripts/train_candidate_reranker.py",
+    "--config",
+    "/home/rental/20260922_1/Workspace/hett-heatmap-top20-reranker/configs/diagnostics/train_reranker.json",
+    "--output",
+    "/home/rental/20260922_1/Workspace/hett-heatmap-top20-reranker/artifacts/reranker_training"
+  ],
+  "started_at": "2026-10-08T19:02:10.570908+08:00",
+  "maximum_epochs": 2,
+  "environment": {
+    "HF_HUB_OFFLINE": "1",
+    "OMP_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1"
+  }
+}
