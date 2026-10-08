@@ -125,6 +125,8 @@ def parse_args():
                         help='Predicted waypoints per path')
     parser.add_argument('--trajectory_loss_weight', type=float, default=0.5)
     parser.add_argument('--trajectory_stop_weight', type=float, default=0.05)
+    parser.add_argument('--trajectory_stop_threshold', type=float, default=0.8,
+                        help='Conservative learned stop threshold; only near predicted goal')
     parser.add_argument('--trajectory_use_for_control', action='store_true', default=False,
                         help='Opt-in closed-loop execution of learned trajectory waypoints')
     parser.add_argument('--heatmap_loss_weight', type=float, default=0.1,
