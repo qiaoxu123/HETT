@@ -45,3 +45,20 @@ Raw episode traces remain local. Original baseline files, training results and c
 ### Input text audit
 
 Full fixed-subset preflight found 5/256 seen and 6/256 unseen strings differ between CityRefer object descriptions (used by HETT) and processed CityNav descriptions (used by SBF). All differences are repeated whitespace only. The adapter validates equality after whitespace normalization and passes the unchanged HETT instruction to SigLIP; no semantic mismatches are accepted. The first formal attempt stopped on this strict equality check and was restarted after correcting validation. Completed baseline results are reused.
+
+## Completed fixed-subset results (2026-10-08)
+
+Both splits completed; 256 identical episode IDs each. Previous baseline trajectories reproduced exactly in both splits (`BASELINE_PARITY.json`). No training.
+
+| Split | Selection | SR (%) | SPL (%) | OSR (%) | NE (m) |
+|---|---|---:|---:|---:|---:|
+| val_seen | baseline | 27.34 | 22.65 | 45.31 | 41.44 |
+| val_seen | sbf_selector | 40.62 | 21.90 | 69.53 | 35.75 |
+| val_unseen | baseline | 25.39 | 20.28 | 39.84 | 43.81 |
+| val_unseen | sbf_selector | 19.14 | 10.97 | 43.36 | 47.56 |
+
+Seen SR improves by 13.28 pp (paired episode-bootstrap 95% CI [6.25, 20.31]); unseen SR decreases by 6.25 pp (CI [-12.50, -0.39]). Unseen SPL decreases by 9.31 pp. Do not replace the repaired baseline with this frozen transfer.
+
+Initial selected refined-waypoint Hit@20 improves from 25.39% to 36.72% on seen; unseen is 21.88% vs 21.48%. Higher OSR with lower SPL/final SR indicates that reaching the success region and ending there remain different problems. Candidate-distribution shift is a hypothesis, not established causality.
+
+Selector inference took 286.31s (seen) and 263.07s (unseen), compared with 25.46s and 22.41s baseline. Concurrent GPU workload was present; these wall times are not an isolated throughput benchmark.

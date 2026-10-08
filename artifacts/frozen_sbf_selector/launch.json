@@ -1,0 +1,10 @@
+{
+  "pid": 3996086,
+  "command": [
+    "/home/20260922_1/miniconda3/envs/AirVLN39/bin/python",
+    "-u",
+    "/home/rental/20260922_1/Workspace/hett-frozen-sbf-selector/scripts/run_frozen_sbf_transfer.py",
+    "3993429"
+  ],
+  "started": "2026-10-08T19:25:41.819985+08:00"
+}

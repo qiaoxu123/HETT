@@ -1,0 +1,32 @@
+{
+  "started_at": "2026-10-08T19:25:44.490101+08:00",
+  "commit": "e1e4c43fc0545322c081d611dae2b59069d88136",
+  "checkpoint": "/home/rental/20260922_1/Workspace/hett-heatmap-sbf-relative-geometry-top20/checkpoints/heatmap_relative_geometry_top20_688e981_b8_s0_2e_20261008/best_val_unseen",
+  "checkpoint_sha256": "22016785d214f9b2e1f709f0b5da5fefcf35b04131ec577ec4d1b4ec073ec49a",
+  "config": {
+    "splits": [
+      "val_seen",
+      "val_unseen"
+    ],
+    "variants": {
+      "baseline": {
+        "execution": "waypoint"
+      },
+      "sbf_selector": {
+        "execution": "waypoint",
+        "sbf_selector": true
+      }
+    },
+    "sbf_selector": {
+      "source": "/home/rental/20260922_1/Workspace/SBFNav-CityNav-Reproduction",
+      "checkpoint": "/home/rental/20260922_1/Workspace/SBFNav-CityNav-Reproduction/runs/sbfnav_main_e20_bs16_s0_20260929/training/checkpoints/best_val_unseen.pt",
+      "data_root": "/home/rental/20260922_1/Workspace/DATA/sbfnav-data"
+    }
+  },
+  "full_split": false,
+  "code_sha256": {
+    "multiagent/agent.py": "eff4fa512b9af6a43a82e5415aa75ad0d9253cc3df0df899bce7244f80741973",
+    "multiagent/heatmap_execution.py": "7b919fddcb3d5ed41a119e952a3db9b2c265461965b9c113cc3a1337a45907e4",
+    "scripts/diagnose_candidate_controller.py": "ae1698ac8f774b04c0c0109e6001cf01dc23d1dcab275922f85c82ffd02422a9"
+  }
+}
