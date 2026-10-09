@@ -137,10 +137,12 @@ def fixed_local_anchor_paths(current_xy, goal_xy, *, modes=3, waypoints=8,
                        device=goal_xy.device, dtype=goal_xy.dtype)
     # Ramp up the lateral displacement gradually, avoiding a discontinuity
     # in the first control step. Coordinates remain in normalized map units.
-    base = current_xy[:, None, None, None] + straight[:, :, None, None] * t[None, None, :, None]
-    side = lateral[:, :, None, None] * (travel[:, :, None, None] * offsets[None, None, :, None])
-    side = side.unsqueeze(-2) * torch.sin(t * (math.pi / 2))[None, None, None, :, None]
-    return (base[:, :, None] + side).clamp(0., 1.)
+    base = (current_xy[:, None, None, None, :]
+            + straight[:, :, None, None, :] * t[None, None, None, :, None])
+    side = (lateral[:, :, None, None, :] * travel[:, :, None, None, :]
+            * offsets[None, None, :, None, None]
+            * torch.sin(t * (math.pi / 2))[None, None, None, :, None])
+    return (base + side).clamp(0., 1.)
 
 
 def goal_distance_soft_ranking_loss(proposals, target_xy, *, map_meters,
