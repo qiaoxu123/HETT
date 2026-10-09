@@ -116,11 +116,13 @@ def _gather_heatmap_features(features, xy):
 
 def fixed_local_anchor_paths(current_xy, goal_xy, *, modes=3, waypoints=8,
                              local_step_norm=20.0 / 410.0):
-    """GT-free CoverNet-like fixed local path anchors, [B,K,M,T,2].
+    """GT-free fixed local path anchors with a matched metric action budget.
 
-    All anchors start at the current position. Endpoints differ laterally,
-    giving the path selector a meaningful choice under bounded waypoint
-    execution. No learned heading, residual or stop prediction is involved.
+    For goals farther than the common waypoint step, each path ends exactly
+    one full step from the UAV (except map-boundary clipping). The three
+    modes steer by -0.30/0/+0.30 rad; they differ in direction but NOT maximum
+    distance. For goals within one step they all terminate at that goal to
+    avoid near-goal detours. The fixed controller executes ONLY the endpoint.
     """
     if modes != 3 or waypoints < 2 or local_step_norm <= 0:
         raise ValueError("compact controller requires 3 modes, >=2 waypoints and a positive step")
@@ -130,19 +132,33 @@ def fixed_local_anchor_paths(current_xy, goal_xy, *, modes=3, waypoints=8,
     distance = delta.norm(dim=-1, keepdim=True)
     direction = delta / distance.clamp_min(1e-6)
     travel = distance.clamp(max=local_step_norm)
-    straight = direction * travel
     lateral = torch.stack((-direction[..., 1], direction[..., 0]), dim=-1)
-    offsets = torch.tensor((-0.30, 0.0, 0.30), dtype=goal_xy.dtype, device=goal_xy.device)
+    angles = torch.tensor((-0.30, 0.0, 0.30),
+                          dtype=goal_xy.dtype, device=goal_xy.device)
+    # No detour near the goal: all anchors must reach the SAME goal whenever
+    # it is within one controller step. This also prevents overshooting.
+    angles = torch.where(
+        distance[:, :, None, :] > local_step_norm,
+        angles[None, None, :, None],
+        torch.zeros_like(angles[None, None, :, None]),
+    )
+    forward = direction[:, :, None, :] * torch.cos(angles)
+    sideways = lateral[:, :, None, :] * torch.sin(angles)
+    endpoint_delta = (forward + sideways) * travel[:, :, None, :]
     t = torch.linspace(1 / waypoints, 1., waypoints,
                        device=goal_xy.device, dtype=goal_xy.dtype)
-    # Ramp up the lateral displacement gradually, avoiding a discontinuity
-    # in the first control step. Coordinates remain in normalized map units.
-    base = (current_xy[:, None, None, None, :]
-            + straight[:, :, None, None, :] * t[None, None, None, :, None])
-    side = (lateral[:, :, None, None, :] * travel[:, :, None, None, :]
-            * offsets[None, None, :, None, None]
-            * torch.sin(t * (math.pi / 2))[None, None, None, :, None])
-    return (base + side).clamp(0., 1.)
+    # Use a curved intermediate shape, but preserve identical metric
+    # endpoint displacement in all three modes. Inference uses endpoint only.
+    path = (current_xy[:, None, None, None, :]
+            + forward[:, :, :, None, :] * travel[:, :, None, None, :]
+              * t[None, None, None, :, None]
+            + sideways[:, :, :, None, :] * travel[:, :, None, None, :]
+              * torch.sin(t * math.pi / 2)[None, None, None, :, None])
+    path = torch.cat(
+        (path[..., :-1, :],
+         (current_xy[:, None, None, :] + endpoint_delta).unsqueeze(-2)),
+        dim=-2)
+    return path.clamp(0., 1.)
 
 
 def goal_distance_soft_ranking_loss(proposals, target_xy, *, map_meters,
@@ -287,7 +303,11 @@ class HeatmapTrajectoryHead(nn.Module):
             pose[:, None, :].expand(-1, k, -1)
         ), dim=-1))
         modes = torch.arange(self.modes, device=goal_xy.device)
-        mode_features = context[:, :, None] + self.mode_embedding(modes)[None, None]
+        # A linear score of context + mode_embedding cancels the context
+        # under the mode softmax and cannot learn state-dependent path choice.
+        # Elementwise interaction creates genuine goal/pose-dependent logits.
+        mode_features = (context[:, :, None] *
+                         torch.tanh(self.mode_embedding(modes))[None, None])
         logits = self.mode_score(mode_features).squeeze(-1)
         paths = fixed_local_anchor_paths(
             current_xy, goal_xy, modes=self.modes,
