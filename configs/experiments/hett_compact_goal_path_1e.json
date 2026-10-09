@@ -20,7 +20,6 @@
   "trajectory_waypoints": 8,
   "trajectory_compact_mode": true,
   "trajectory_compact_enable_path": true,
-  "trajectory_local_step_m": 20,
   "trajectory_goal_soft_temperature_m": 20,
   "trajectory_path_soft_temperature_m": 5,
   "trajectory_ranking_loss_weight": 1,
@@ -56,5 +55,7 @@
       "trajectory_disable_learned_stop": true,
       "heatmap_execution": "waypoint"
     }
-  }
+  },
+  "heatmap_waypoint_step_m": 50,
+  "max_action_len": 20
 }
