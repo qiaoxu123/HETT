@@ -140,6 +140,8 @@ def parse_args():
                         help='Weight for training goal ranking when a predicted proposal covers the GT')
     parser.add_argument('--trajectory_candidate_loss_weight', type=float, default=0.3,
                         help='Weight for imitating teacher suffix through predicted (non-oracle) goals')
+    parser.add_argument('--trajectory_sequential_backward', action='store_true',
+                        help='Accumulate teacher and student gradients in sequence; one optimizer step, less peak activation memory')
     parser.add_argument('--trajectory_train_diagnostics', action='store_true',
                         help='Compute expensive oracle ADE/FDE statistics in every training step (profiling only)')
     parser.add_argument('--trajectory_fast_eval', action='store_true',
