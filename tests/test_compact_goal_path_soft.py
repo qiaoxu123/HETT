@@ -45,7 +45,7 @@ class CompactGoalPathTests(unittest.TestCase):
     def test_soft_goal_loss_trains_all_far_samples_and_selector_only(self):
         head = HeatmapTrajectoryHead(feature_dim=16, hidden_dim=32, modes=3, waypoints=8)
         feature = torch.randn(2, 16, 9, 9, requires_grad=True)
-        probabilities = torch.ones(2, 9, 9, requires_grad=True) / 81
+        probabilities = torch.full((2, 9, 9), 1.0/81.0, requires_grad=True)
         here = torch.tensor([[.3, .2], [.6, .8]])
         output, _ = head(feature.detach(), probabilities.detach(), here,
                          torch.tensor([[0., 1.], [0., 1.]]), compact=True, top_k=5)
