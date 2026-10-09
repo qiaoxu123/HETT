@@ -41,7 +41,9 @@ def build_landmark_batch(observations, tokenizer, instruction_ids, *, max_landma
         sequence = ids_cpu[row]
         for item in obs.get("reference_landmarks", ()):
             name = str(item["name"])
-            name_ids = _cached_landmark_token_ids(tokenizer, name)
+            # Input IDs are Python lists; keep list slicing semantics (a list
+            # compared with the cached tuple would never match a name span).
+            name_ids = list(_cached_landmark_token_ids(tokenizer, name))
             start = -1
             if name_ids and len(name_ids) <= seq_len:
                 start = next(
