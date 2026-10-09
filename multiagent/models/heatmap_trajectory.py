@@ -115,7 +115,7 @@ def _gather_heatmap_features(features, xy):
 
 
 def fixed_local_anchor_paths(current_xy, goal_xy, *, modes=3, waypoints=8,
-                             local_step_norm=20.0 / 410.0):
+                             local_step_norm=50.0 / 410.0):
     """GT-free fixed local path anchors with a matched metric action budget.
 
     For goals farther than the common waypoint step, each path ends exactly
@@ -185,7 +185,7 @@ def goal_distance_soft_ranking_loss(proposals, target_xy, *, map_meters,
 def local_path_soft_ranking_loss(proposals, target_xy, current_xy,
                                 teacher_next_xy, *, map_meters,
                                 temperature_m=5.0, positive_radius_m=20.0,
-                                local_step_m=20.0, active=None):
+                                local_step_m=50.0, active=None):
     """Soft path classification for GT-near GOALS, not full GT-conditioned paths.
 
     Fixed anchors are scored by their local endpoint proximity to a causal
@@ -320,7 +320,7 @@ class HeatmapTrajectoryHead(nn.Module):
                 landmark_extent=None, landmark_valid=None,
                 landmark_text_mask=None, history_xy=None,
                 relation_enabled=True, selector_mode='joint', compact=False,
-                local_step_m=20.0, map_meters=410.0):
+                local_step_m=50.0, map_meters=410.0):
         if current_xy.ndim != 2 or current_xy.shape[-1] != 2:
             raise ValueError("current_xy must be [B,2]")
         if heading_sc.shape != current_xy.shape:
