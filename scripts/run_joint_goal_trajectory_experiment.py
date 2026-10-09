@@ -128,6 +128,19 @@ def main():
         if hasattr(args,k):setattr(args,k,v)
     args.mode='train';args.resume_optimizer=False;args.batch_size=cfg['batch_size'];args.seed=cfg['seed'];args.benchmark_batches=0
     args.epochs=cfg['epochs'];args.heatmap_trajectory_enabled=True;args.trajectory_use_for_control=False
+    # Resolve the SINGLE action budget before building the model/manifest.
+    # The compact path horizon, bounded controller and B baseline all read
+    # args.heatmap_waypoint_step_m. Training and validation use the same 20
+    # macro-step limit for every variant.
+    args.heatmap_waypoint_step_m=float(
+        cfg.get('heatmap_waypoint_step_m', args.heatmap_waypoint_step_m))
+    args.max_action_len=int(cfg.get('max_action_len', args.max_action_len))
+    if not math.isfinite(args.heatmap_waypoint_step_m) or args.heatmap_waypoint_step_m <= 0:
+        raise ValueError('heatmap_waypoint_step_m must be finite and positive')
+    if args.max_action_len <= 0:
+        raise ValueError('max_action_len must be positive')
+    if 'trajectory_local_step_m' in cfg:
+        raise ValueError('trajectory_local_step_m is obsolete: use heatmap_waypoint_step_m for A/B/C')
     args.profile_rollout=bool(cfg.get('profile_rollout', False))
     for k,v in cfg.items():
         if k.startswith('trajectory_'):setattr(args,k,v)
