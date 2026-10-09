@@ -94,7 +94,8 @@ def summarize(env,predictions,variant,epoch,seconds):
         macro_zero_translation_rate=float(np.mean([
             s['macro_displacement_m']<1e-4 for s in steps if not s['stopped']
         ])) if steps and any(not s['stopped'] for s in steps) else None,
-        stop_TP=tp,stop_FP=fp,stop_FN=fn,stop_TN=tn,
+        stop_TP=tp if steps else None,stop_FP=fp if steps else None,
+        stop_FN=fn if steps else None,stop_TN=tn if steps else None,
         stop_precision=tp/(tp+fp) if tp+fp else None,stop_recall=tp/(tp+fn) if tp+fn else None,
         stop_accuracy=(tp+tn)/len(steps) if steps else None,
         goal_switch_count=sum(s['goal_switch'] for s in steps),
