@@ -140,6 +140,14 @@ def parse_args():
                         help='Weight for training goal ranking when a predicted proposal covers the GT')
     parser.add_argument('--trajectory_candidate_loss_weight', type=float, default=0.3,
                         help='Weight for imitating teacher suffix through predicted (non-oracle) goals')
+    parser.add_argument('--trajectory_compact_mode', action='store_true',
+                        help='Train hierarchical soft goal/path selector without learned stop or residual path')
+    parser.add_argument('--trajectory_compact_enable_path', action='store_true',
+                        help='Use the highest-ranked fixed local anchor as a bounded waypoint')
+    parser.add_argument('--trajectory_local_step_m', type=float, default=20.0,
+                        help='Metric horizon of fixed local anchor waypoint')
+    parser.add_argument('--trajectory_goal_soft_temperature_m', type=float, default=20.0)
+    parser.add_argument('--trajectory_path_soft_temperature_m', type=float, default=5.0)
     parser.add_argument('--trajectory_sequential_backward', action='store_true',
                         help='Accumulate teacher and student gradients in sequence; one optimizer step, less peak activation memory')
     parser.add_argument('--trajectory_train_diagnostics', action='store_true',
