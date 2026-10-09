@@ -144,8 +144,6 @@ def parse_args():
                         help='Train hierarchical soft goal/path selector without learned stop or residual path')
     parser.add_argument('--trajectory_compact_enable_path', action='store_true',
                         help='Use the highest-ranked fixed local anchor as a bounded waypoint')
-    parser.add_argument('--trajectory_local_step_m', type=float, default=20.0,
-                        help='Metric horizon of fixed local anchor waypoint')
     parser.add_argument('--trajectory_goal_soft_temperature_m', type=float, default=20.0)
     parser.add_argument('--trajectory_path_soft_temperature_m', type=float, default=5.0)
     parser.add_argument('--trajectory_sequential_backward', action='store_true',
