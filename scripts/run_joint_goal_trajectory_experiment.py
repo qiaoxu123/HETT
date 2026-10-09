@@ -128,6 +128,7 @@ def main():
         if hasattr(args,k):setattr(args,k,v)
     args.mode='train';args.resume_optimizer=False;args.batch_size=cfg['batch_size'];args.seed=cfg['seed'];args.benchmark_batches=0
     args.epochs=cfg['epochs'];args.heatmap_trajectory_enabled=True;args.trajectory_use_for_control=False
+    args.profile_rollout=bool(cfg.get('profile_rollout', False))
     for k,v in cfg.items():
         if k.startswith('trajectory_'):setattr(args,k,v)
     if 'trajectory_goal_k' not in cfg:
@@ -170,7 +171,8 @@ def main():
             if not all(math.isfinite(x) for x in delta.values()) or not any(x>0 for x in delta.values()):raise RuntimeError('Missing/nonfinite head updates')
             r=dict(batch_size=batch,optimizer_steps=2,seconds=elapsed,seconds_per_batch=elapsed/2,
                 peak_vram_allocated_bytes=torch.cuda.max_memory_allocated(),peak_vram_reserved_bytes=torch.cuda.max_memory_reserved(),
-                gradients=audit.rows,head_update_norms=delta,losses={k:float(np.mean(v)) for k,v in agent.logs.items() if 'loss' in k and len(v)})
+                gradients=audit.rows,head_update_norms=delta,losses={k:float(np.mean(v)) for k,v in agent.logs.items() if 'loss' in k and len(v)},
+                profile_seconds={k:float(sum(v)) for k,v in agent.logs.items() if k.startswith('profile_')})
             dump(out/f'gpu_batch{batch}.json',r);print('GPU_SMOKE',json.dumps(r),flush=True)
         args.benchmark_batches=0
         rows=evaluate(agent,envs,cfg,out,0);dump(out/'results.json',rows)
@@ -189,7 +191,8 @@ def main():
         torch.cuda.synchronize();elapsed=time.perf_counter()-start
         record=dict(epoch=epoch,train_seconds=elapsed,episodes=len(train.data),batches=math.ceil(len(train.data)/train.batch_size),
             peak_vram_allocated_bytes=torch.cuda.max_memory_allocated(),peak_vram_reserved_bytes=torch.cuda.max_memory_reserved(),gradients=audit.rows,
-            losses={k:float(np.mean(v)) for k,v in agent.logs.items() if 'loss' in k and len(v)})
+            losses={k:float(np.mean(v)) for k,v in agent.logs.items() if 'loss' in k and len(v)},
+            profile_seconds={k:float(sum(v)) for k,v in agent.logs.items() if k.startswith('profile_')})
         record['training_diagnostics']={k:float(sum(agent.logs.get(k,()))) for k in (
                 'trajectory_stop_positive_count',
                 'trajectory_stop_supervised_count',
