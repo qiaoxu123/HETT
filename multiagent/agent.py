@@ -353,8 +353,9 @@ class NavCMTAgent:
                     loss.backward()
                     if profile_backward:
                         torch.cuda.synchronize()
-                        self.logs['profile_backward_seconds'].append(
-                            time.perf_counter() - backward_started)
+                        duration = time.perf_counter() - backward_started
+                        self.logs['profile_backward_seconds'].append(duration)
+                        self.logs[f'profile_{self.feedback}_backward_seconds'].append(duration)
 
                 if sequential:
                     # The teacher and student rollouts construct independent
@@ -1288,6 +1289,7 @@ class NavCMTAgent:
         if profile_enabled:
             for phase, seconds in phase_seconds.items():
                 self.logs[f'profile_{phase}_seconds'].append(float(seconds))
+                self.logs[f'profile_{self.feedback}_{phase}_seconds'].append(float(seconds))
         # print(visualize)
         if visualize:
             for i, ob in enumerate(obs):
