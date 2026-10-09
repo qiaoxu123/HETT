@@ -32,6 +32,12 @@ class LandmarkNavMap(Map):
         )
         # Backward-compatible alias used by existing visualization code.
         self.landmark_map = self.referenced_landmark_map
+        # Global/referenced raster maps never change after construction;
+        # avoid two conversions and repeated channel concatenation per step.
+        self._static_channels = np.concatenate((
+            self.global_landmark_map.to_array(np.float32),
+            self.referenced_landmark_map.to_array(np.float32),
+        ), axis=0)
 
     def update_observations(
             self,
@@ -40,11 +46,10 @@ class LandmarkNavMap(Map):
         self.tracking_map.mark_current_view_area(camera_pose)
 
     def to_array(self, dtype=np.float32) -> np.ndarray:
-        return np.concatenate([
+        return np.concatenate((
             self.tracking_map.to_array(dtype),
-            self.global_landmark_map.to_array(dtype),
-            self.referenced_landmark_map.to_array(dtype),
-        ])
+            self._static_channels.astype(dtype, copy=False),
+        ), axis=0)
 
     @classmethod
     def generate_maps_for_a_trajectory(
