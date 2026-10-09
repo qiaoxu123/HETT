@@ -797,8 +797,21 @@ class NavCMTAgent:
                         1, trajectory_predictions.goal_ids).clamp_min(1e-8).log()
                 goal_index = goal_scores.argmax(-1)
                 rows = torch.arange(batch_size, device=goal_index.device)
-                selected_trajectory_goals = trajectory_predictions.goal_xy[
-                    rows, goal_index].detach().cpu().numpy()
+                if getattr(self.args, 'trajectory_compact_refine_goal', False):
+                    # Execute the SELECTED candidate with the same local
+                    # soft-argmax refinement as the historical baseline:
+                    # NMS cell centres cost up to ~10 m of the 20 m radius.
+                    selected_ids = trajectory_predictions.goal_ids[rows, goal_index]
+                    selected_trajectory_goals = local_soft_argmax_xy(
+                        heatmap_probs.reshape(
+                            -1, self.args.heatmap_grid_size,
+                            self.args.heatmap_grid_size),
+                        selected_ids,
+                        window_size=self.args.heatmap_local_window,
+                    ).detach().cpu().numpy()
+                else:
+                    selected_trajectory_goals = trajectory_predictions.goal_xy[
+                        rows, goal_index].detach().cpu().numpy()
                 if getattr(self.args, 'trajectory_compact_enable_path', False):
                     mode_index = trajectory_predictions.mode_logits[
                         rows, goal_index].argmax(-1)
@@ -961,7 +974,13 @@ class NavCMTAgent:
             if (trajectory_predictions is not None and 'test' not in self.env_name
                     and (train_ml is not None or collect_traj_diagnostics)):
                 valid_trajectory = torch.as_tensor(~ended, device=pred_logits.device)
-                targets = torch.stack([
+                # Compact goal-only training never reads the teacher suffix:
+                # skip the per-sample CPU resampling when path loss is off.
+                need_targets = not (
+                    train_ml is not None and compact_mode
+                    and float(self.args.trajectory_candidate_loss_weight) == 0.0
+                    and not collect_traj_diagnostics)
+                targets = None if not need_targets else torch.stack([
                     resample_teacher_suffix(
                         ob['trajectory'], ob['position'],
                         map_name=ob['map_name'], bounds=MAP_BOUNDS,
@@ -984,14 +1003,15 @@ class NavCMTAgent:
                     ).norm(dim=-1).min(-1).values * self.args.map_meters
                     rank_mask = (nearest_goal_distance_m <= self.args.success_dist) & valid_trajectory
                     trajectory_ranking_valid_count += rank_mask.sum()
-                    path_loss, path_valid_count = local_path_soft_ranking_loss(
-                        trajectory_predictions, target_xy, current_pos, targets[:, 0],
-                        map_meters=self.args.map_meters,
-                        temperature_m=self.args.trajectory_path_soft_temperature_m,
-                        positive_radius_m=self.args.success_dist,
-                        local_step_m=self.args.heatmap_waypoint_step_m,
-                        active=valid_trajectory)
-                    trajectory_candidate_loss += path_loss * path_valid_count
+                    if targets is not None:
+                        path_loss, path_valid_count = local_path_soft_ranking_loss(
+                            trajectory_predictions, target_xy, current_pos, targets[:, 0],
+                            map_meters=self.args.map_meters,
+                            temperature_m=self.args.trajectory_path_soft_temperature_m,
+                            positive_radius_m=self.args.success_dist,
+                            local_step_m=self.args.heatmap_waypoint_step_m,
+                            active=valid_trajectory)
+                        trajectory_candidate_loss += path_loss * path_valid_count
                     trajectory_supervision_count += active_count
                 elif train_ml is not None and teacher_trajectory_predictions is not None:
                     trajectory_loss = trajectory_loss + trajectory_imitation_loss(
@@ -1225,7 +1245,7 @@ class NavCMTAgent:
                     moved_m = old_xy.dist_to(poses[i].xy)
                     rotated_rad = abs(np.arctan2(
                         np.sin(poses[i].yaw - old_pose.yaw),
-                        np.cos(poses[i].yaw - old_pose.y)))
+                        np.cos(poses[i].yaw - old_pose.yaw)))
                     trajectory_travel_distance_m += moved_m
                     # Rotation-only actions are genuine controller progress
                     # and must not count as a frozen simulator.
@@ -1412,10 +1432,10 @@ class NavCMTAgent:
 
             # self.logs['ml_loss'].append((ml_loss * train_ml / batch_size).item())
 
-            self.logs['direction_loss'].append((direction_loss * train_ml / batch_size).item())
-            self.logs['progress_loss'].append((progress_loss * train_ml / batch_size).item())
-            self.logs['goal_predict_loss'].append((goal_predict_loss * train_ml / batch_size).item())
-            self.logs['heatmap_loss'].append((heatmap_loss * train_ml / batch_size).item())
+            self.logs['direction_loss'].append(float(direction_loss) * train_ml / batch_size)
+            self.logs['progress_loss'].append(float(progress_loss) * train_ml / batch_size)
+            self.logs['goal_predict_loss'].append(float(goal_predict_loss) * train_ml / batch_size)
+            self.logs['heatmap_loss'].append(float(heatmap_loss) * train_ml / batch_size)
             if train_ml is not None and getattr(self.args, 'heatmap_trajectory_enabled', False):
                 self.logs['trajectory_loss'].append(
                     (trajectory_loss * train_ml / batch_size).item())
@@ -1425,7 +1445,7 @@ class NavCMTAgent:
                     (trajectory_ranking_loss * train_ml / batch_size).item())
                 self.logs['trajectory_candidate_loss'].append(
                     (trajectory_candidate_loss * train_ml / batch_size).item())
-            self.logs['IL_loss'].append((ml_loss * train_ml / batch_size).item())
+            self.logs['IL_loss'].append(float(ml_loss) * train_ml / batch_size)
 
         if type(self.loss) is int:  # For safety, it will be activated if no losses are added
             self.losses.append(0.)

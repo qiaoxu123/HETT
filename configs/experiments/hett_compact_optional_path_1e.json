@@ -37,7 +37,8 @@
       "trajectory_use_for_control": false,
       "trajectory_selector_mode": "prior",
       "trajectory_disable_learned_stop": true,
-      "heatmap_execution": "waypoint"
+      "heatmap_execution": "waypoint",
+      "trajectory_compact_refine_goal": false
     },
     "A_nms_waypoint": {
       "trajectory_compact_mode": true,
@@ -45,7 +46,8 @@
       "trajectory_use_for_control": false,
       "trajectory_selector_mode": "prior",
       "trajectory_disable_learned_stop": true,
-      "heatmap_execution": "waypoint"
+      "heatmap_execution": "waypoint",
+      "trajectory_compact_refine_goal": false
     },
     "B_goal_soft": {
       "trajectory_compact_mode": true,
@@ -53,7 +55,8 @@
       "trajectory_use_for_control": false,
       "trajectory_selector_mode": "joint",
       "trajectory_disable_learned_stop": true,
-      "heatmap_execution": "waypoint"
+      "heatmap_execution": "waypoint",
+      "trajectory_compact_refine_goal": false
     },
     "C_goal_path_soft": {
       "trajectory_compact_mode": true,
@@ -61,7 +64,8 @@
       "trajectory_use_for_control": false,
       "trajectory_selector_mode": "joint",
       "trajectory_disable_learned_stop": true,
-      "heatmap_execution": "waypoint"
+      "heatmap_execution": "waypoint",
+      "trajectory_compact_refine_goal": false
     }
   },
   "heatmap_waypoint_step_m": 50,

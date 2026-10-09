@@ -148,7 +148,10 @@ class CompactGoalPathTests(unittest.TestCase):
         self.assertEqual(primary["trajectory_candidate_loss_weight"], 0.0)
         self.assertEqual(primary["first_epoch_gate"]["variant"], "B_goal_soft")
         self.assertEqual(set(primary["variants"]), {
-            "A_refined_waypoint", "A_nms_waypoint", "B_goal_soft"})
+            "A_refined_waypoint", "A_nms_waypoint", "B_goal_soft",
+            "B_goal_soft_refined"})
+        self.assertTrue(primary["variants"]["B_goal_soft_refined"]["trajectory_compact_refine_goal"])
+        self.assertFalse(primary["variants"]["B_goal_soft"]["trajectory_compact_refine_goal"])
         self.assertFalse(primary["variants"]["A_refined_waypoint"]["trajectory_compact_mode"])
         self.assertTrue(primary["variants"]["A_nms_waypoint"]["trajectory_compact_mode"])
         self.assertEqual(primary["variants"]["A_nms_waypoint"]["trajectory_selector_mode"], "prior")
