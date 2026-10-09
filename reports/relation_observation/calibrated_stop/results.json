@@ -1,0 +1,26 @@
+[
+  {
+    "threshold": 1.01,
+    "episodes": 2470,
+    "sr": 30.121457489878544,
+    "spl": 24.480444297335346,
+    "stop_TP": 0,
+    "stop_FP": 0,
+    "stops": 0,
+    "precision": null,
+    "false_stop_episode_rate": 0.0,
+    "split": "val_seen"
+  },
+  {
+    "threshold": 1.01,
+    "episodes": 2697,
+    "sr": 25.027808676307007,
+    "spl": 20.755653588353383,
+    "stop_TP": 0,
+    "stop_FP": 0,
+    "stops": 0,
+    "precision": null,
+    "false_stop_episode_rate": 0.0,
+    "split": "val_unseen"
+  }
+]

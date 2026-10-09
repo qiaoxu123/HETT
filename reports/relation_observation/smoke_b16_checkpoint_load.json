@@ -1,0 +1,42 @@
+{
+  "lang_model": {
+    "missing_new_parameters": [],
+    "unexpected": [],
+    "loaded_tensors": 203
+  },
+  "vision_model": {
+    "missing_new_parameters": [],
+    "unexpected": [],
+    "loaded_tensors": 318
+  },
+  "vln_model": {
+    "missing_new_parameters": [
+      "trajectory_head.relation_observation.text.weight",
+      "trajectory_head.relation_observation.text.bias",
+      "trajectory_head.relation_observation.text_context.0.weight",
+      "trajectory_head.relation_observation.text_context.0.bias",
+      "trajectory_head.relation_observation.text_context.2.weight",
+      "trajectory_head.relation_observation.text_context.2.bias",
+      "trajectory_head.relation_observation.visual.weight",
+      "trajectory_head.relation_observation.visual.bias",
+      "trajectory_head.relation_observation.map.weight",
+      "trajectory_head.relation_observation.map.bias",
+      "trajectory_head.relation_observation.edges.0.weight",
+      "trajectory_head.relation_observation.edges.0.bias",
+      "trajectory_head.relation_observation.edges.2.weight",
+      "trajectory_head.relation_observation.edges.2.bias",
+      "trajectory_head.relation_observation.norm.weight",
+      "trajectory_head.relation_observation.norm.bias",
+      "trajectory_head.relation_observation.score.weight",
+      "trajectory_head.relation_observation.score.bias",
+      "trajectory_head.relation_observation.feature.weight",
+      "trajectory_head.relation_observation.feature.bias",
+      "trajectory_head.relation_observation.arrival.0.weight",
+      "trajectory_head.relation_observation.arrival.0.bias",
+      "trajectory_head.relation_observation.arrival.2.weight",
+      "trajectory_head.relation_observation.arrival.2.bias"
+    ],
+    "unexpected": [],
+    "loaded_tensors": 169
+  }
+}

@@ -1,0 +1,26 @@
+[
+  {
+    "split": "val_seen",
+    "states": 49400,
+    "positive_rate": 0.23838056680161943,
+    "auc": 0.7286961783326323,
+    "ap": 0.4239803541890991,
+    "accuracy05": 0.5665182186234817,
+    "majority_accuracy": 0.7616194331983805,
+    "balanced_accuracy05": 0.656760440765723,
+    "random_auc": 0.5,
+    "random_ap": 0.23838056680161943
+  },
+  {
+    "split": "val_unseen",
+    "states": 53940,
+    "positive_rate": 0.1950500556173526,
+    "auc": 0.715009908281625,
+    "ap": 0.3137887887193595,
+    "accuracy05": 0.5582313681868744,
+    "majority_accuracy": 0.8049499443826473,
+    "balanced_accuracy05": 0.6627579925513182,
+    "random_auc": 0.5,
+    "random_ap": 0.1950500556173526
+  }
+]

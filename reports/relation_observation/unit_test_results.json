@@ -1,0 +1,7 @@
+{
+  "command": "OMP_NUM_THREADS=1 python -m unittest discover -s tests -v",
+  "tests_run": 103,
+  "seconds": 1.208,
+  "passed": true,
+  "exit_code": 0
+}

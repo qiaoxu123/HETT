@@ -1,0 +1,62 @@
+{
+  "epoch": 1,
+  "train_seconds": 3607.0633953139186,
+  "episodes": 21877,
+  "batches": 1368,
+  "peak_vram_allocated_bytes": 3522882048,
+  "peak_vram_reserved_bytes": 3695181824,
+  "gradients": [
+    {
+      "batch": 1,
+      "loss": 27.450660705566406,
+      "gradient_norms": {
+        "trajectory.relation_gate": 0.7748067378997803,
+        "trajectory.context": 1.9309641122817993,
+        "trajectory.mode_embedding": 1.2226657464253776e-09,
+        "trajectory.mode_score": 2.6064977731721228e-08,
+        "trajectory.goal_scorer": 2.062791585922241,
+        "trajectory.candidate_relation": 4.6319899559021,
+        "trajectory.relation_observation": 5.8987507820129395
+      }
+    },
+    {
+      "batch": 2,
+      "loss": 26.66476058959961,
+      "gradient_norms": {
+        "trajectory.relation_gate": 1.5298528671264648,
+        "trajectory.context": 1.4236735105514526,
+        "trajectory.mode_embedding": 2.0692194624416516e-09,
+        "trajectory.mode_score": 4.7839723293918723e-08,
+        "trajectory.goal_scorer": 1.1042132377624512,
+        "trajectory.candidate_relation": 2.5764424800872803,
+        "trajectory.relation_observation": 5.107120037078857
+      }
+    }
+  ],
+  "losses": {
+    "direction_loss": 0.0,
+    "progress_loss": 0.0,
+    "goal_predict_loss": 0.0,
+    "heatmap_loss": 17.506517170465482,
+    "trajectory_loss": 0.0,
+    "trajectory_stop_loss": 2.5786508431995823,
+    "trajectory_ranking_loss": 11.010942636526119,
+    "trajectory_candidate_loss": 0.0,
+    "IL_loss": 12.890526730554148
+  },
+  "profile_seconds": {},
+  "training_diagnostics": {
+    "trajectory_stop_positive_count": 369313.0,
+    "trajectory_stop_supervised_count": 875520.0,
+    "trajectory_arrival_gate_blocked": 0.0,
+    "trajectory_plan_steps": 0.0,
+    "trajectory_stop_decisions": 0.0,
+    "trajectory_ranking_valid_count": 817153.0,
+    "trajectory_candidate_eval_count": 0.0,
+    "landmark_refs_total": 68200.0,
+    "landmark_refs_name_matched": 60450.0,
+    "landmark_refs_truncated": 0.0
+  },
+  "checkpoint": "/home/rental/20260922_1/Workspace/hett-arrival-aware-navigation/artifacts/relation_observation/epoch1_b16_lr2e-4_frozen_eval/checkpoints/epoch01.pt",
+  "sha256": "64c7d1f81b33b9a22532c2e4a10e07b87ed95fa813f9c593de7c488dcbb520f7"
+}

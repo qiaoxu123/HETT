@@ -1,0 +1,62 @@
+{
+  "val_seen_relations_no_stop": {
+    "success": 744,
+    "entered_then_left": 400,
+    "never_entered": 1326,
+    "never_entered_no_correct_selected_goal": 1207,
+    "never_entered_despite_correct_selected_goal": 119,
+    "selected_goal_hits": 14425,
+    "selected_goal_states": 49400,
+    "episodes_with_reentry": 303
+  },
+  "val_seen_relations_stop95": {
+    "success": 744,
+    "entered_then_left": 400,
+    "never_entered": 1326,
+    "never_entered_no_correct_selected_goal": 1207,
+    "never_entered_despite_correct_selected_goal": 119,
+    "selected_goal_hits": 14425,
+    "selected_goal_states": 49400,
+    "episodes_with_reentry": 303
+  },
+  "val_seen_relations_disabled": {
+    "success": 638,
+    "entered_then_left": 440,
+    "never_entered": 1392,
+    "never_entered_no_correct_selected_goal": 1234,
+    "never_entered_despite_correct_selected_goal": 158,
+    "selected_goal_hits": 12445,
+    "selected_goal_states": 49400,
+    "episodes_with_reentry": 380
+  },
+  "val_unseen_relations_no_stop": {
+    "success": 675,
+    "entered_then_left": 428,
+    "never_entered": 1594,
+    "never_entered_no_correct_selected_goal": 1483,
+    "never_entered_despite_correct_selected_goal": 111,
+    "selected_goal_hits": 13252,
+    "selected_goal_states": 53940,
+    "episodes_with_reentry": 268
+  },
+  "val_unseen_relations_stop95": {
+    "success": 675,
+    "entered_then_left": 428,
+    "never_entered": 1594,
+    "never_entered_no_correct_selected_goal": 1483,
+    "never_entered_despite_correct_selected_goal": 111,
+    "selected_goal_hits": 13252,
+    "selected_goal_states": 53940,
+    "episodes_with_reentry": 268
+  },
+  "val_unseen_relations_disabled": {
+    "success": 603,
+    "entered_then_left": 437,
+    "never_entered": 1657,
+    "never_entered_no_correct_selected_goal": 1494,
+    "never_entered_despite_correct_selected_goal": 163,
+    "selected_goal_hits": 11867,
+    "selected_goal_states": 53940,
+    "episodes_with_reentry": 362
+  }
+}

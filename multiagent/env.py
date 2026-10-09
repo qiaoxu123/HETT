@@ -15,7 +15,7 @@ from multiagent.dataset.generate import generate_episodes_from_mturk_trajectorie
 from multiagent.dataset.mturk_trajectory import load_mturk_trajectories
 from multiagent.mapdata import MAP_BOUNDS
 from multiagent.maps.landmark_nav_map import LandmarkNavMap
-from multiagent.static_observation import build_static_landmark_observation
+from multiagent.static_observation import build_static_landmark_observation, build_uav_landmark_observation
 from multiagent.observation import cropclient
 from multiagent.space import Pose4D, modulo_radians, Point2D
 from typing import List, Dict, Callable, Tuple
@@ -297,6 +297,8 @@ class CityNavBatch(torch.utils.data.IterableDataset):
                 'trajectory': episode.trajectory,
                 'progress': progress,
                 'reference_landmarks': static_landmarks['reference_landmarks'],
+                'uav_landmark_relations': build_uav_landmark_observation(
+                    static_landmarks['reference_landmarks'], normalized_position, poses[i].yaw, self.args.map_meters),
                 'centroids': static_landmarks['centroids'],
                 'centroid_goal': static_landmarks['centroid_goal'],
                 'normalized_goal': normalized_goal_xys,

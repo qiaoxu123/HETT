@@ -43,3 +43,18 @@ def build_static_landmark_observation(nav_map, map_name, map_meters, normalize_p
                          if centroids else np.array([0, 0]),
         'reference_landmarks': refs,
     }
+
+
+def build_uav_landmark_observation(reference_landmarks, position, yaw, map_meters):
+    """Known named anchors relative to current UAV, metric east/north axes."""
+    result = []
+    for landmark in reference_landmarks:
+        delta = (np.asarray(landmark['center_xy']) - np.asarray(position)) * map_meters
+        east, north = float(delta[0]), float(-delta[1])
+        distance = float(np.hypot(east, north))
+        result.append(dict(name=landmark['name'], distance_m=distance,
+                           east_m=east, north_m=north,
+                           relative_bearing_rad=float(np.arctan2(
+                               np.sin(np.arctan2(north,east)-yaw),
+                               np.cos(np.arctan2(north,east)-yaw)))))
+    return result

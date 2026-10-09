@@ -157,6 +157,9 @@ class ET(nn.Module):
             modes=getattr(args, 'trajectory_modes', 3),
             waypoints=getattr(args, 'trajectory_waypoints', 8),
         )
+        if getattr(args, 'trajectory_relation_observation', False):
+            from .relation_observation import RelationObservation
+            self.trajectory_head.relation_observation = RelationObservation(language_dim=args.demb)
         self.decoder_2_goal_full = nn.Sequential(
             nn.Linear(self.args.demb, 512),
             nn.ReLU(),
@@ -328,6 +331,17 @@ class ET(nn.Module):
             **multi_inputs,
         )
         target_logits = belief.logits.flatten(1)
+        relation_state = None
+        if getattr(self.args, 'trajectory_relation_observation', False):
+            pose = inputs['directions'][:, -1]
+            relation_state = self.trajectory_head.relation_observation(
+                belief.spatial_features.detach(), pose[:, 2:4], pose[:, :2],
+                inputs['relation_language_tokens'], inputs['lang_mask'],
+                inputs['frames'][:, -1].mean(-1).detach(),
+                inputs['landmark_xy'], inputs['landmark_extent'],
+                inputs['landmark_valid'], inputs['landmark_text_mask'],
+                inputs.get('trajectory_history_xy'))
+            target_logits = target_logits + relation_state[0].flatten(1)
 
         if getattr(self.args, 'heatmap_trajectory_enabled', False):
             pose = inputs['directions'][:, -1]
@@ -336,6 +350,9 @@ class ET(nn.Module):
             compact_mode = getattr(self.args, 'trajectory_compact_mode', False)
             proposal_features = belief.spatial_features.detach() if compact_mode else belief.spatial_features
             proposal_probs = belief.probabilities.detach() if compact_mode else belief.probabilities
+            if relation_state is not None:
+                proposal_features = belief.spatial_features.detach() + relation_state[1]
+                proposal_probs = torch.softmax(target_logits, -1).reshape_as(belief.probabilities)
             proposals = self.trajectory_head(
                 proposal_features, proposal_probs,
                 pose[:, 2:4], pose[:, :2],
@@ -358,6 +375,15 @@ class ET(nn.Module):
                 map_meters=self.args.map_meters,
             )
             generated, supervision = proposals
+            if relation_state is not None:
+                rows = torch.arange(pose.shape[0], device=pose.device)
+                if getattr(self.args, 'trajectory_selector_mode', 'joint') == 'prior':
+                    selected = proposal_probs.flatten(1).gather(1, generated.goal_ids).argmax(-1)
+                else:
+                    selected = generated.joint_logits.logsumexp(-1).argmax(-1)
+                cell_ids = generated.goal_ids[rows, selected]
+                generated.stop_logits = self.trajectory_head.relation_observation.stop(
+                    relation_state[2], relation_state[3], cell_ids, proposal_probs)
             # Return plain nested tensors for torch DDP graph discovery.
             # Custom dataclass outputs are not reliably traversed by all
             # find_unused_parameters versions in distributed training.

@@ -140,6 +140,8 @@ def parse_args():
                         help='Weight for training goal ranking when a predicted proposal covers the GT')
     parser.add_argument('--trajectory_candidate_loss_weight', type=float, default=0.3,
                         help='Weight for imitating teacher suffix through predicted (non-oracle) goals')
+    parser.add_argument('--trajectory_relation_observation', action='store_true',
+                        help='Fuse UAV/landmark, candidate/landmark and UAV/candidate observations')
     parser.add_argument('--trajectory_compact_mode', action='store_true',
                         help='Train hierarchical soft goal/path selector without learned stop or residual path')
     parser.add_argument('--trajectory_compact_enable_path', action='store_true',

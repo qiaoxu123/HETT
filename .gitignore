@@ -209,3 +209,6 @@ artifacts/arrival/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# Local one-epoch relation observation checkpoints and rollout caches.
+artifacts/relation_observation/

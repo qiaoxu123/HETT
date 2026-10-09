@@ -70,6 +70,11 @@ class GradientAudit:
 def new_agent(args,cfg):
     seed(cfg['seed']);agent=NavCMTAgent(args,allow_ngpus=False,rank=0)
     report=strict_init(agent,cfg['initial_checkpoint'])
+    if cfg.get('trajectory_relation_observation'):
+        for entry in report.values():
+            if any(not name.startswith('trajectory_head.relation_observation.')
+                   for name in entry['missing_new_parameters']):
+                raise RuntimeError('Relation experiment must load all inherited model parameters')
     def inference_guard(module,inputs,kwargs):
         if not module.training and kwargs.get('trajectory_teacher_goal') is not None:
             raise RuntimeError('GT-conditioned forward forbidden in evaluation')
@@ -78,6 +83,10 @@ def new_agent(args,cfg):
 
 def evaluate(agent,envs,cfg,out,epoch):
     rows=[]
+    # Match standalone frozen-checkpoint evaluation, including kernel dispatch.
+    grad_flags = [(p, p.requires_grad) for model in (agent.lang_model, agent.vision_model, agent.vln_model)
+                  for p in model.parameters()]
+    for p, _ in grad_flags: p.requires_grad_(False)
     # Fast validation intentionally keeps official metrics but omits
     # expensive per-step teacher-path/Oracle diagnostics.
     fast_eval = bool(cfg.get('fast_eval', False))
@@ -109,6 +118,7 @@ def evaluate(agent,envs,cfg,out,epoch):
     policy_flags = cfg['variants'][cfg['first_epoch_gate']['variant']]
     for k,v in policy_flags.items():
         setattr(agent.args,k,v)
+    for p, enabled in grad_flags: p.requires_grad_(enabled)
     return rows
 
 def main():
@@ -119,6 +129,8 @@ def main():
     cfg=json.loads(config_path.read_text())
     cfg['initial_checkpoint'] = str(resolve_config_path(cfg['initial_checkpoint']).resolve())
     cfg['base_arguments'] = str(resolve_config_path(cfg['base_arguments']).resolve())
+    if cfg.get('expected_initial_sha256') and sha(cfg['initial_checkpoint']) != cfg['expected_initial_sha256']:
+        raise RuntimeError('Initial checkpoint SHA-256 mismatch')
     out=output_path.resolve();out.mkdir(parents=True,exist_ok=True)
     if (out/'manifest.json').exists():raise RuntimeError('Use a new output; existing experiment will not be overwritten')
     if cfg['evaluation_splits']!=['val_seen','val_unseen']:raise ValueError('Development splits must be seen/unseen validation only')
@@ -141,6 +153,7 @@ def main():
         raise ValueError('max_action_len must be positive')
     if 'trajectory_local_step_m' in cfg:
         raise ValueError('trajectory_local_step_m is obsolete: use heatmap_waypoint_step_m for A/B/C')
+    torch.set_num_threads(1)
     args.profile_rollout=bool(cfg.get('profile_rollout', False))
     for k,v in cfg.items():
         if k.startswith('trajectory_'):setattr(args,k,v)
@@ -157,9 +170,16 @@ def main():
             ROOT/'multiagent/heatmap_execution.py',
             ROOT/'multiagent/models/heatmap_trajectory.py',
             ROOT/'multiagent/models/candidate_relation_selector.py',
+            ROOT/'multiagent/models/relation_observation.py',
+            ROOT/'multiagent/models/ET_haa.py', ROOT/'multiagent/env.py',
+            ROOT/'multiagent/static_observation.py',
             Path(__file__), ROOT/'scripts/joint_experiment_metrics.py',
             ROOT/'scripts/report_joint_goal_trajectory.py'] if p.exists()}))
     agent,loadreport=new_agent(args,cfg);dump(out/'checkpoint_load.json',loadreport)
+    if cfg.get('freeze_before_initial_eval'):
+        for model in (agent.lang_model, agent.vision_model, agent.vln_model):
+            model.eval()
+            for parameter in model.parameters(): parameter.requires_grad_(False)
     start=time.time();train=CityNavBatch('train_seen',args,batch_size=args.batch_size,seed=args.seed,rank=0,world_size=1)
     envs={s:CityNavBatch(s,args,batch_size=args.batch_size,seed=args.seed,rank=0,world_size=1) for s in cfg['evaluation_splits']}
     dump(out/'data.json',{'load_seconds':time.time()-start,'train_count':len(train.data),'validation_counts':{s:len(e.data) for s,e in envs.items()},
@@ -167,9 +187,10 @@ def main():
     for s,e in envs.items():dump(out/'episode_ids'/f'{s}.json',[list(x.id) for x in e.data])
     if opt.smoke:
         for e in envs.values():e.data=e.data[:8]
-        for batch in (2,8):
+        smoke_batches = cfg.get("smoke_batches", [2, 8])
+        for batch_index, batch in enumerate(smoke_batches):
             # Fresh weights/optimizer for each disposable GPU smoke configuration.
-            if batch!=2:
+            if batch_index > 0:
                 del agent
                 import gc
                 gc.collect();torch.cuda.empty_cache();agent,loadreport=new_agent(args,cfg)
@@ -194,6 +215,19 @@ def main():
     (out/'checkpoints').mkdir(exist_ok=True)
     agent.save(-1,str(out/'checkpoints'/'initial.pt'))
     allrows=[]
+    if cfg.get('initial_quick_eval', False):
+        full_data = {s: e.data for s, e in envs.items()}
+        try:
+            for e in envs.values(): e.data = e.data[:cfg['quick_eval_episodes']]
+            init_cfg = cfg if cfg.get('quick_initial_all_variants') else dict(cfg, variants={cfg['first_epoch_gate']['variant']: cfg['variants'][cfg['first_epoch_gate']['variant']]})
+            initial_rows = evaluate(agent, envs, init_cfg, out/'initial_quick', 0)
+            dump(out/'initial_quick'/'results.json', initial_rows)
+        finally:
+            for s, e in envs.items(): e.data = full_data[s]
+    if cfg.get('initial_full_eval', False):
+        initial_cfg = dict(cfg, variants={cfg['first_epoch_gate']['variant']: cfg['variants'][cfg['first_epoch_gate']['variant']]})
+        initial_rows = evaluate(agent, envs, initial_cfg, out/'initial_full', 0)
+        dump(out/'initial_full'/'results.json', initial_rows)
     epochs_completed=0
     first_epoch_passed=False
     for epoch in range(1,cfg['epochs']+1):
@@ -226,6 +260,14 @@ def main():
         epochs_completed=epoch
         if (epoch == 1 or epoch == cfg['epochs'] or
                 epoch % max(1, int(cfg.get('evaluate_every', cfg['epochs']))) == 0):
+            if cfg.get('quick_eval_episodes'):
+                full_data = {s: e.data for s, e in envs.items()}
+                try:
+                    for e in envs.values(): e.data = e.data[:cfg['quick_eval_episodes']]
+                    quick_rows = evaluate(agent, envs, cfg, out/'quick', epoch)
+                    dump(out/'quick'/'results.json', quick_rows)
+                finally:
+                    for s, e in envs.items(): e.data = full_data[s]
             rows=evaluate(agent,envs,cfg,out,epoch)
             allrows.extend(rows);dump(out/'results.json',allrows)
             subprocess.run([sys.executable,str(ROOT/'scripts/report_joint_goal_trajectory.py'),str(out)],check=True,cwd=ROOT)

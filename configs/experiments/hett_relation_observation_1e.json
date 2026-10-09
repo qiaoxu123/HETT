@@ -1,0 +1,76 @@
+{
+  "seed": 0,
+  "epochs": 1,
+  "batch_size": 16,
+  "initial_checkpoint": "../hett-compact-goal-path-soft/artifacts/compact_runs/b16_lr2e-4_9d88f2a/checkpoints/epoch01.pt",
+  "base_arguments": "../hett-compact-goal-path-soft/artifacts/compact_runs/base_args_lr2e-4.json",
+  "evaluation_splits": [
+    "val_seen",
+    "val_unseen"
+  ],
+  "evaluate_every": 1,
+  "selection_policy": "one_epoch_fixed_budget_relation_observation",
+  "first_epoch_gate": {
+    "split": "val_seen",
+    "variant": "relations_no_stop",
+    "minimum_sr": 0
+  },
+  "trajectory_goal_k": 20,
+  "trajectory_modes": 3,
+  "trajectory_waypoints": 8,
+  "trajectory_compact_mode": true,
+  "trajectory_compact_enable_path": false,
+  "trajectory_goal_soft_temperature_m": 20,
+  "trajectory_path_soft_temperature_m": 5,
+  "trajectory_ranking_loss_weight": 1,
+  "trajectory_candidate_loss_weight": 0,
+  "trajectory_loss_weight": 0,
+  "trajectory_stop_weight": 0.05,
+  "trajectory_sequential_backward": true,
+  "trajectory_train_diagnostics": false,
+  "profile_rollout": false,
+  "fast_eval": true,
+  "variants": {
+    "relations_no_stop": {
+      "trajectory_compact_mode": true,
+      "trajectory_compact_enable_path": false,
+      "trajectory_use_for_control": false,
+      "trajectory_selector_mode": "joint",
+      "trajectory_disable_learned_stop": true,
+      "heatmap_execution": "waypoint",
+      "trajectory_compact_refine_goal": true,
+      "trajectory_relation_observation": true
+    },
+    "relations_stop95": {
+      "trajectory_compact_mode": true,
+      "trajectory_compact_enable_path": false,
+      "trajectory_use_for_control": false,
+      "trajectory_selector_mode": "joint",
+      "trajectory_disable_learned_stop": false,
+      "heatmap_execution": "waypoint",
+      "trajectory_compact_refine_goal": true,
+      "trajectory_relation_observation": true,
+      "trajectory_stop_threshold": 0.95
+    },
+    "relations_disabled": {
+      "trajectory_compact_mode": true,
+      "trajectory_compact_enable_path": false,
+      "trajectory_use_for_control": false,
+      "trajectory_selector_mode": "joint",
+      "trajectory_disable_learned_stop": true,
+      "heatmap_execution": "waypoint",
+      "trajectory_compact_refine_goal": true,
+      "trajectory_relation_observation": false
+    }
+  },
+  "heatmap_waypoint_step_m": 50,
+  "max_action_len": 20,
+  "trajectory_relation_observation": true,
+  "quick_eval_episodes": 128,
+  "initial_quick_eval": true,
+  "smoke_batches": [
+    16
+  ],
+  "expected_initial_sha256": "0edcd106923d5050c504c2361cb89b51bfd4321d209f89b05e2874e516649e03",
+  "initial_full_eval": true
+}

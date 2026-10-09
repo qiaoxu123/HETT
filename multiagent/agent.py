@@ -27,6 +27,7 @@ from multiagent.models.CLIP import CLIP
 from multiagent.models.goal_predictor import GoalPredictor, MapEncoder
 from multiagent.models.spatial_belief import metric_gaussian_target, greedy_nms_topk, local_soft_argmax_xy
 from multiagent.models.multi_landmark import build_landmark_batch
+from multiagent.static_observation import build_uav_landmark_observation
 from multiagent.models.heatmap_trajectory import (
     TrajectoryProposals, resample_teacher_suffix,
     trajectory_imitation_loss, stop_supervision_loss,
@@ -345,8 +346,7 @@ class NavCMTAgent:
                     and not name.startswith(('trajectory_head.residual.',
                                              'trajectory_head.stop.'))
                 )
-                if not active_selector:
-                    parameter.requires_grad_(False)
+                parameter.requires_grad_(active_selector)
             # Disable dropout in the frozen ET backbone, retain dropout in
             # the trainable candidate selector.
             for name, module in self.vln_model_without_ddp.named_children():
@@ -498,6 +498,12 @@ class NavCMTAgent:
         if getattr(self,'_arrival_semantic_hook',None) is not None:
             self.arrival_instruction_features=lexical_instruction_features(
                 self.lang_model,input_ids,attention_mask)
+        relation_language_tokens = None
+        if getattr(self.args, 'trajectory_relation_observation', False):
+            # Frozen lexical tokens retain word/landmark identities. Positional
+            # context still comes from the original contextual selector.
+            with torch.no_grad():
+                relation_language_tokens = self.lang_model_without_ddp.bert.embeddings.word_embeddings(input_ids).detach()
         # Compute static landmark/text alignment ONCE per episode batch.
         # Dynamic UAV pose still updates at every rollout step.
         multi_landmarks = None
@@ -727,6 +733,8 @@ class NavCMTAgent:
                 maps=input['maps'],
                 lang=input['lang'],
                 lang_mask=input['lang_mask'],
+                **({'relation_language_tokens': relation_language_tokens}
+                   if relation_language_tokens is not None else {}),
                 trajectory_history_xy=input['trajectory_history_xy'],
                 candidates=input['candidates'],
                 centroids=input['centroids'],
@@ -1037,6 +1045,24 @@ class NavCMTAgent:
                             local_step_m=self.args.heatmap_waypoint_step_m,
                             active=valid_trajectory)
                         trajectory_candidate_loss += path_loss * path_valid_count
+                    if getattr(self.args, 'trajectory_relation_observation', False):
+                        # The legacy compact path skips heatmap supervision.
+                        # Only the new residual field receives this dense label;
+                        # the original belief backbone remains frozen.
+                        dense_target = metric_gaussian_target(
+                            target_xy, field_size=self.args.heatmap_grid_size,
+                            sigma_m=self.args.heatmap_sigma_m,
+                            map_meters=self.args.map_meters).flatten(1)
+                        heatmap_loss += (-(dense_target * F.log_softmax(pred_logits, dim=1)).sum(1)
+                                         * valid_trajectory).sum()
+                        stop_target = arrival_stop_targets(
+                            current_pos, target_xy, map_meters=self.args.map_meters,
+                            success_radius_m=self.args.success_dist)
+                        trajectory_stop_loss += stop_supervision_loss(
+                            trajectory_predictions.stop_logits, stop_target,
+                            active=valid_trajectory, pos_weight=1.) * active_count
+                        trajectory_stop_positive_sum += (stop_target.detach() * valid_trajectory).sum()
+                        trajectory_stop_active_sum += active_count
                     trajectory_supervision_count += active_count
                 elif train_ml is not None and teacher_trajectory_predictions is not None:
                     trajectory_loss = trajectory_loss + trajectory_imitation_loss(
@@ -1200,6 +1226,9 @@ class NavCMTAgent:
             # print(cpu_goal)
 
             # Interact with the simulator with actions
+            if (getattr(self.args, 'trajectory_relation_observation', False)
+                    and trajectory_predictions is not None):
+                selected_stop_probs = torch.sigmoid(trajectory_predictions.stop_logits).detach().cpu().numpy()
             # Lightweight observable logging stays enabled in fast_eval;
             # it never requests teacher suffixes or supervised model inputs.
             record_navigation = (train_ml is None and self.feedback == 'student'
@@ -1241,6 +1270,10 @@ class NavCMTAgent:
                             selector_probabilities=navigation_probabilities[i, finite],
                             selector_probability=float(navigation_probabilities[i, chosen_cell]),
                             previous=traj[i]['navigation_steps'], map_meters=self.args.map_meters)
+                        if getattr(self.args, 'trajectory_relation_observation', False):
+                            record['uav_landmark_relations'] = obs[i]['uav_landmark_relations']
+                            record['candidate_landmark_relations'] = build_uav_landmark_observation(
+                                obs[i]['reference_landmarks'], cpu_goal[i], 0., self.args.map_meters)
                         if getattr(self, '_arrival_semantic_hook', None) is not None:
                             if self.arrival_semantic_features is None:
                                 raise RuntimeError('Current instruction/RGB observer did not run')
@@ -1248,7 +1281,8 @@ class NavCMTAgent:
                         traj[i]['navigation_steps'].append(record)
                         policy = getattr(self, 'arrival_policy', None)
                         stop, probability = policy(arrival_inputs(record, policy)) if policy is not None else (False, None)
-                        record['stop_probability'] = probability
+                        record['stop_probability'] = (float(selected_stop_probs[i])
+                            if getattr(self.args, 'trajectory_relation_observation', False) else probability)
                         if stop:
                             # Check at the CURRENT observed pose, before the
                             # next action. Stopping adds no travel or future state.
@@ -1257,6 +1291,18 @@ class NavCMTAgent:
                             record.update(next_pose=list(poses[i]), action_xy=[0., 0.],
                                           action='stop', termination='policy_stop', ended=True)
                             continue
+                    if (getattr(self.args, 'trajectory_relation_observation', False)
+                            and not getattr(self.args, 'trajectory_disable_learned_stop', True)
+                            and selected_stop_probs[i] >= self.args.trajectory_stop_threshold):
+                        # Decision at the observed pose, before the next action.
+                        ended[i] = True
+                        traj[i]['stop_reason'].append('policy_stop')
+                        trajectory_stop_decisions += 1
+                        if record_navigation:
+                            record.update(next_pose=list(poses[i]), action_xy=[0., 0.],
+                                          action='stop', termination='policy_stop', ended=True,
+                                          stop_probability=float(selected_stop_probs[i]))
+                        continue
                     old_pose = poses[i]
                     # The compact path head supplies a LOCAL waypoint. Keep
                     # bounded execution and the original global goal separate.
@@ -1519,6 +1565,9 @@ class NavCMTAgent:
                 # and unrelated legacy auxiliary heads are held fixed.
                 ml_loss = (self.args.trajectory_ranking_loss_weight * trajectory_ranking_loss
                            + self.args.trajectory_candidate_loss_weight * trajectory_candidate_loss)
+                if getattr(self.args, 'trajectory_relation_observation', False):
+                    ml_loss = (ml_loss + self.args.heatmap_loss_weight * heatmap_loss
+                               + self.args.trajectory_stop_weight * trajectory_stop_loss)
             else:
                 ml_loss = (direction_loss + 0.1 * progress_loss + 2 * goal_predict_loss
                        + self.args.heatmap_loss_weight * heatmap_loss

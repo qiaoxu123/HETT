@@ -1,0 +1,37 @@
+{
+  "selection_split": "val_seen",
+  "threshold": 1.01,
+  "status": "no_safe_seen_threshold_disable_stop",
+  "constraints": {
+    "stop_precision_min": 0.95,
+    "false_stop_episode_rate_max": 0.005,
+    "seen_sr_and_spl_no_decrease": true
+  },
+  "seen_baseline": {
+    "threshold": 1.01,
+    "episodes": 2470,
+    "sr": 30.121457489878544,
+    "spl": 24.480444297335346,
+    "stop_TP": 0,
+    "stop_FP": 0,
+    "stops": 0,
+    "precision": null,
+    "false_stop_episode_rate": 0.0
+  },
+  "seen_chosen": {
+    "threshold": 1.01,
+    "episodes": 2470,
+    "sr": 30.121457489878544,
+    "spl": 24.480444297335346,
+    "stop_TP": 0,
+    "stop_FP": 0,
+    "stops": 0,
+    "precision": null,
+    "false_stop_episode_rate": 0.0,
+    "accepted": false
+  },
+  "seen_score_range": [
+    0.0030877948738634586,
+    0.7929805517196655
+  ]
+}
