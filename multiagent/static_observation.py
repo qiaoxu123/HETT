@@ -5,6 +5,8 @@ RGB crops and UAV poses must always be refreshed by the environment.
 """
 import numpy as np
 
+from multiagent.space import Point2D
+
 
 def build_static_landmark_observation(nav_map, map_name, map_meters, normalize_position):
     """Match the old per-step normalization, once when an episode resets."""
@@ -12,7 +14,7 @@ def build_static_landmark_observation(nav_map, map_name, map_meters, normalize_p
     centroids = [np.asarray(contour, dtype=np.float64).mean(axis=0)
                  for contour in contours]
     normalized_centroids = [
-        normalize_position((float(c[0]), float(c[1])), map_name, map_meters)
+        normalize_position(Point2D(float(c[0]), float(c[1])), map_name, map_meters)
         for c in centroids
     ]
     refs = []
