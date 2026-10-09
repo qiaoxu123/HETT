@@ -113,6 +113,93 @@ def _gather_heatmap_features(features, xy):
     return samples.squeeze(-1).transpose(1, 2)
 
 
+
+def fixed_local_anchor_paths(current_xy, goal_xy, *, modes=3, waypoints=8,
+                             local_step_norm=20.0 / 410.0):
+    """GT-free CoverNet-like fixed local path anchors, [B,K,M,T,2].
+
+    All anchors start at the current position. Endpoints differ laterally,
+    giving the path selector a meaningful choice under bounded waypoint
+    execution. No learned heading, residual or stop prediction is involved.
+    """
+    if modes != 3 or waypoints < 2 or local_step_norm <= 0:
+        raise ValueError("compact controller requires 3 modes, >=2 waypoints and a positive step")
+    if current_xy.ndim != 2 or goal_xy.ndim != 3 or current_xy.shape[0] != goal_xy.shape[0]:
+        raise ValueError("expected current [B,2] and goals [B,K,2]")
+    delta = goal_xy - current_xy[:, None]
+    distance = delta.norm(dim=-1, keepdim=True)
+    direction = delta / distance.clamp_min(1e-6)
+    travel = distance.clamp(max=local_step_norm)
+    straight = direction * travel
+    lateral = torch.stack((-direction[..., 1], direction[..., 0]), dim=-1)
+    offsets = torch.tensor((-0.30, 0.0, 0.30), dtype=goal_xy.dtype, device=goal_xy.device)
+    t = torch.linspace(1 / waypoints, 1., waypoints,
+                       device=goal_xy.device, dtype=goal_xy.dtype)
+    # Ramp up the lateral displacement gradually, avoiding a discontinuity
+    # in the first control step. Coordinates remain in normalized map units.
+    base = current_xy[:, None, None, None] + straight[:, :, None, None] * t[None, None, :, None]
+    side = lateral[:, :, None, None] * (travel[:, :, None, None] * offsets[None, None, :, None])
+    side = side.unsqueeze(-2) * torch.sin(t * (math.pi / 2))[None, None, None, :, None]
+    return (base[:, :, None] + side).clamp(0., 1.)
+
+
+def goal_distance_soft_ranking_loss(proposals, target_xy, *, map_meters,
+                                    temperature_m=20.0, active=None):
+    """SBF-inspired distance-label CE over all proposed goals.
+
+    The goal soft labels are supervision ONLY. Model scores/inputs do not
+    receive GT. Even an all-far candidate pool contributes a relative label.
+    """
+    if map_meters <= 0 or temperature_m <= 0:
+        raise ValueError("map_meters and temperature_m must be positive")
+    if target_xy.shape != (proposals.goal_xy.shape[0], 2):
+        raise ValueError("target_xy must be [B,2]")
+    d_m = (proposals.goal_xy.detach() - target_xy[:, None]).norm(dim=-1) * map_meters
+    target_probs = F.softmax(-d_m / temperature_m, dim=-1).detach()
+    log_probs = torch.logsumexp(proposals.joint_logits, dim=-1)
+    sample_loss = -(target_probs * log_probs).sum(-1)
+    if active is None:
+        return sample_loss.mean()
+    mask = active.to(sample_loss.dtype)
+    return (sample_loss * mask).sum() / mask.sum().clamp_min(1)
+
+
+def local_path_soft_ranking_loss(proposals, target_xy, current_xy,
+                                teacher_next_xy, *, map_meters,
+                                temperature_m=5.0, positive_radius_m=20.0,
+                                local_step_m=20.0, active=None):
+    """Soft path classification for GT-near GOALS, not full GT-conditioned paths.
+
+    Fixed anchors are scored by their local endpoint proximity to a causal
+    human-route label and by remaining distance to the selected goal. Goal
+    probabilities do not enter this loss, and no GT enters inference.
+    """
+    if min(map_meters, temperature_m, positive_radius_m, local_step_m) <= 0:
+        raise ValueError("all distances/temperatures must be positive")
+    if any(x.shape != current_xy.shape for x in (target_xy, teacher_next_xy)):
+        raise ValueError("target, current and teacher local xy must all be [B,2]")
+    d_m = (proposals.goal_xy.detach() - target_xy[:, None]).norm(dim=-1) * map_meters
+    nearest_distance, nearest_id = d_m.min(-1)
+    mask = nearest_distance <= positive_radius_m
+    if active is not None:
+        mask = mask & active.bool()
+    batch = torch.arange(current_xy.shape[0], device=current_xy.device)
+    waypoints = proposals.trajectories[batch, nearest_id, :, -1, :].detach()
+    modes = proposals.mode_logits[batch, nearest_id]
+    # Project a future human waypoint to the same local horizon. This label
+    # is not fed into the scorer, and must never guide inference/control.
+    human_delta = teacher_next_xy - current_xy
+    human_norm = human_delta.norm(dim=-1, keepdim=True)
+    human_local = current_xy + human_delta * (local_step_m / map_meters / human_norm.clamp_min(1e-6)).clamp(max=1.)
+    human_error = (waypoints - human_local[:, None]).norm(dim=-1) * map_meters
+    progress_error = (waypoints - proposals.goal_xy.detach()[batch, nearest_id, None]).norm(dim=-1) * map_meters
+    costs = 0.7 * human_error + 0.3 * progress_error
+    labels = F.softmax(-costs / temperature_m, dim=-1).detach()
+    sample_loss = -(labels * F.log_softmax(modes, dim=-1)).sum(-1)
+    weights = mask.to(sample_loss.dtype)
+    return (sample_loss * weights).sum() / weights.sum().clamp_min(1), mask.sum()
+
+
 class HeatmapTrajectoryHead(nn.Module):
     def __init__(self, *, feature_dim=256, hidden_dim=128, modes=3, waypoints=8,
                  curve_scale=0.25, language_dim=768):
@@ -189,12 +276,29 @@ class HeatmapTrajectoryHead(nn.Module):
             -1, -1, self.modes, 1, -1)), dim=-2)
         return paths, mode_logits, context
 
+    def _generate_compact(self, features, current_xy, heading_sc, goal_xy, goal_features,
+                          *, local_step_norm):
+        batch, k, _ = goal_xy.shape
+        pose = torch.cat((current_xy, heading_sc), dim=-1)
+        context = self.context(torch.cat((
+            goal_features, goal_xy - current_xy[:, None],
+            pose[:, None, :].expand(-1, k, -1)
+        ), dim=-1))
+        modes = torch.arange(self.modes, device=goal_xy.device)
+        mode_features = context[:, :, None] + self.mode_embedding(modes)[None, None]
+        logits = self.mode_score(mode_features).squeeze(-1)
+        paths = fixed_local_anchor_paths(
+            current_xy, goal_xy, modes=self.modes,
+            waypoints=self.waypoints, local_step_norm=local_step_norm)
+        return paths, logits, context
+
     def forward(self, features, goal_probabilities, current_xy, heading_sc,
                 *, top_k=5, nms_kernel=3, teacher_goal=None,
                 language_tokens=None, language_mask=None, landmark_xy=None,
                 landmark_extent=None, landmark_valid=None,
                 landmark_text_mask=None, history_xy=None,
-                relation_enabled=True, selector_mode='joint'):
+                relation_enabled=True, selector_mode='joint', compact=False,
+                local_step_m=20.0, map_meters=410.0):
         if current_xy.ndim != 2 or current_xy.shape[-1] != 2:
             raise ValueError("current_xy must be [B,2]")
         if heading_sc.shape != current_xy.shape:
@@ -203,8 +307,13 @@ class HeatmapTrajectoryHead(nn.Module):
         # Reuse one differentiable spatial sampling for trajectory generation
         # and candidate-language relation scoring (previously two grid_samples).
         goal_features = _gather_heatmap_features(features, goals)
-        paths, logits, context = self._generate(
-            features, current_xy, heading_sc, goals, goal_features=goal_features)
+        if compact:
+            paths, logits, context = self._generate_compact(
+                features, current_xy, heading_sc, goals, goal_features,
+                local_step_norm=local_step_m / map_meters)
+        else:
+            paths, logits, context = self._generate(
+                features, current_xy, heading_sc, goals, goal_features=goal_features)
         log_goal = torch.log(goal_probabilities.flatten(1).gather(1, ids).clamp_min(1e-8))
         relative_xy = goals - current_xy[:, None, :]
         candidate_logits = self.goal_scorer(
@@ -247,10 +356,13 @@ class HeatmapTrajectoryHead(nn.Module):
         chosen_goal = goals[torch.arange(goals.shape[0], device=goals.device),
                             stop_goal_scores.argmax(-1)]
         near_goal = (chosen_goal - current_xy).norm(dim=-1, keepdim=True)
-        stop = self.stop(torch.cat((here, current_confidence, near_goal,
-                                    heading_sc[:, :1]), dim=-1)).squeeze(-1)
+        if compact:
+            stop = logits.new_zeros(logits.shape[0])
+        else:
+            stop = self.stop(torch.cat((here, current_confidence, near_goal,
+                                        heading_sc[:, :1]), dim=-1)).squeeze(-1)
         result = TrajectoryProposals(paths, logits, joint, goals, ids, stop, candidate_logits)
-        if teacher_goal is None:
+        if compact or teacher_goal is None:
             return result, None
         if teacher_goal.shape != current_xy.shape:
             raise ValueError("teacher_goal must have shape [B,2]")
