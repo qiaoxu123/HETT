@@ -1,6 +1,8 @@
 """Minimal CPU regressions for Goal/Path soft ranking and fixed waypoints."""
 import unittest
 import torch
+from multiagent.heatmap_execution import bounded_heatmap_step
+from multiagent.space import Pose4D
 from multiagent.models.heatmap_trajectory import (
     HeatmapTrajectoryHead,
     fixed_local_anchor_paths,
@@ -18,13 +20,65 @@ class CompactGoalPathTests(unittest.TestCase):
         goals = torch.tensor([[[0.75, 0.30], [0.20, 0.60]],
                               [[0.50, 0.80], [0.95, 0.35]]])
         paths = fixed_local_anchor_paths(
-            current, goals, modes=3, waypoints=8, local_step_norm=20/410)
+            current, goals, modes=3, waypoints=8, local_step_norm=50/410)
         self.assertEqual(tuple(paths.shape), (2, 2, 3, 8, 2))
         self.assertTrue(torch.isfinite(paths).all())
         self.assertTrue(torch.all((paths >= 0) & (paths <= 1)))
         self.assertGreater((paths[:, :, 0, -1] - paths[:, :, 2, -1]).abs().sum().item(), 0)
-        self.assertLessEqual(
-            ((paths[..., -1, :] - current[:, None, None, :]).norm(dim=-1) * 410).max().item(), 21.0)
+        step_lengths_m = ((paths[..., -1, :] -
+                           current[:, None, None, :]).norm(dim=-1) * 410)
+        self.assertLessEqual(step_lengths_m.max().item(), 50.001)
+        # Every mode must have the same step length when the goal is far
+        # and the endpoint is away from map boundaries.
+        self.assertTrue(torch.allclose(
+            step_lengths_m[0, 0], torch.full((3,), 50.), atol=1e-3))
+
+    def test_close_goal_has_no_lateral_detour(self):
+        current = torch.tensor([[.40, .40]])
+        goals = torch.tensor([[[.42, .42], [.45, .40]]])
+        paths = fixed_local_anchor_paths(
+            current, goals, modes=3, waypoints=8, local_step_norm=50/410)
+        # At distances below 50m all paths directly reach the same goal.
+        self.assertTrue(torch.allclose(
+            paths[..., -1, :], goals[:, :, None, :].expand(-1, -1, 3, -1), atol=1e-6))
+
+    def test_long_distance_reachable_with_same_twenty_step_budget(self):
+        # ~402m initial distance: previously impossible under 20x20m cap.
+        goal = torch.tensor([[[.99, .50]]])
+        origin = torch.tensor([[.01, .50]])
+        pos = origin.clone()
+        steps = []
+        for _ in range(20):
+            anchors = fixed_local_anchor_paths(
+                pos, goal, modes=3, waypoints=8, local_step_norm=50/410)
+            # Even repeatedly choosing the left anchor does not impose a
+            # shorter travel budget: each displacement may be up to 50m.
+            target = anchors[0, 0, 0, -1] * 410
+            pose = Pose4D(float(pos[0, 0] * 410), float(pos[0, 1] * 410), 50., 0.)
+            next_pose = bounded_heatmap_step(pose, target.tolist(), max_step_m=50.)
+            moved_m = pose.xy.dist_to(next_pose.xy)
+            steps.append(moved_m)
+            self.assertLessEqual(moved_m, 50.001)
+            pos = torch.tensor([[next_pose.x / 410, next_pose.y / 410]])
+            if torch.linalg.vector_norm(pos - goal[:, 0]).item() * 410 <= 20:
+                break
+        self.assertGreater(float(torch.linalg.vector_norm(origin - goal[:, 0]) * 410), 380.)
+        self.assertLessEqual(len(steps), 20)
+        self.assertLessEqual(float(torch.linalg.vector_norm(pos - goal[:, 0]) * 410), 20.)
+        self.assertGreater(max(steps), 49.0)
+
+    def test_local_path_scores_depend_on_current_state(self):
+        head = HeatmapTrajectoryHead(feature_dim=16, hidden_dim=32, modes=3, waypoints=8)
+        feature = torch.randn(2, 16, 9, 9)
+        prob = torch.ones(2, 9, 9) / 81
+        here = torch.tensor([[.20, .20], [.70, .60]])
+        heading = torch.tensor([[0., 1.], [1., 0.]])
+        pred, _ = head(feature, prob, here, heading,
+                       compact=True, top_k=5, local_step_m=50)
+        diff = pred.mode_logits[:, :, 0] - pred.mode_logits[:, :, 1]
+        # Old additive mode embeddings with a linear score made the
+        # difference invariant to candidate features and pose.
+        self.assertGreater(float((diff[0] - diff[1]).abs().max()), 1e-6)
 
     def test_compact_no_oracle_dependency_no_learned_stop(self):
         head = HeatmapTrajectoryHead(feature_dim=16, hidden_dim=32, modes=3, waypoints=8)
@@ -32,7 +86,7 @@ class CompactGoalPathTests(unittest.TestCase):
         prob = torch.ones(2, 9, 9) / 81
         current = torch.tensor([[0.15, 0.20], [0.70, 0.80]])
         heading = torch.tensor([[0., 1.], [0., 1.]])
-        kwargs = dict(top_k=4, compact=True, map_meters=410, local_step_m=20)
+        kwargs = dict(top_k=4, compact=True, map_meters=410, local_step_m=50)
         output, teacher = head(features, prob, current, heading, **kwargs)
         output_with_gt, teacher_with_gt = head(
             features, prob, current, heading, teacher_goal=torch.ones_like(current), **kwargs)
