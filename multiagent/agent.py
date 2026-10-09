@@ -333,7 +333,12 @@ class NavCMTAgent:
                     parameter.requires_grad_(False)
                 model.eval()
             for name, parameter in self.vln_model_without_ddp.named_parameters():
-                if not name.startswith('trajectory_head.'):
+                active_selector = (
+                    name.startswith('trajectory_head.')
+                    and not name.startswith(('trajectory_head.residual.',
+                                             'trajectory_head.stop.'))
+                )
+                if not active_selector:
                     parameter.requires_grad_(False)
             # Disable dropout in the frozen ET backbone, retain dropout in
             # the trainable candidate selector.
