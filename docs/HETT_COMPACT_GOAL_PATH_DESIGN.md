@@ -10,11 +10,11 @@ Branch: `2027-CVPR/hett-compact-goal-path-soft`.
 **One shared candidate selector** (reuse existing `trajectory_head.context`, `goal_scorer`, `candidate_relation`, `mode_score`; checkpoint keys remain compatible):
 
 - **Goal:** rank the 20 heatmap candidates using the current heatmap prior plus learned semantic/geometric evidence. Train soft cross-entropy over target distances to all candidates, temperature 20 m. Ranking gradients do **not** enter the spatial belief/heatmap. Only train-time labels use GT.
-- **Path:** for each candidate, form three fixed local anchors (left/straight/right) with a 20 m metric horizon; no learned trajectory residual and no learned terminal heading. For the *nearest GT-covered candidate* only, train a soft cross-entropy over mode logits using (0.7 × human-local-waypoint error + 0.3 × remaining goal distance), temperature 5 m. All distances are measured in meters. Path supervision is ignored when the candidate pool has no goal inside the 20 m success radius; goal-soft supervision still applies.
+- **Path:** for each candidate, form three fixed local anchors (left/straight/right) with the SAME 50 m metric horizon as all bounded waypoint variants; no learned trajectory residual and no learned terminal heading. For the *nearest GT-covered candidate* only, train a soft cross-entropy over mode logits using (0.7 × human-local-waypoint error + 0.3 × remaining goal distance), temperature 5 m. All distances are measured in meters. Path supervision is ignored when the candidate pool has no goal inside the 20 m success radius; goal-soft supervision still applies.
 - Goal-first choice: select goal by `logsumexp(joint_logits, modes)`, then select a mode conditional on that goal. Never flatten goal×mode and use mode peak to choose the global goal.
-- **Fixed waypoint control:** drive to the selected **local anchor endpoint** using `bounded_heatmap_step` (no direct rollout of a learned 8-point trajectory). Replan after every observation. Learned stop, learned path residual and human terminal-yaw supervision are disabled in compact mode. The legacy controller/trajectory/head remain available when compact mode is false.
+- **Fixed waypoint control:** drive to the selected **local anchor endpoint** using `bounded_heatmap_step` (no direct rollout of a learned 8-point trajectory). Replan after every observation. A/B/C share the **same 50 m maximum XY displacement and 20 macro-step horizon**; C cannot be disadvantaged by a smaller step cap. Path modes differ by ±0.30 rad / straight while the chosen goal is more than 50 m away, and collapse to the exact goal when within 50 m. Learned stop, learned path residual and human terminal-yaw supervision are disabled in compact mode. The legacy controller/trajectory/head remain available when compact mode is false.
 
-**Important limitation:** waypoint controller bounds XY displacement but is not a full collision-aware dynamic UAV simulator; no obstacle feasibility is asserted. The sampled human suffix supplies a *local training label* and is not guaranteed to be a valid recovery route when a student has strayed from a demonstrated path. This first-stage version does not fix this automatically. Path shape is a fixed candidate bank; the controller executes its local endpoint rather than tracing all intermediate samples.
+**Important limitation:** waypoint controller bounds XY displacement but is not a full collision-aware dynamic UAV simulator; no obstacle feasibility is asserted. The sampled human suffix supplies a *local training label* and is not guaranteed to be a valid recovery route when a student has strayed from a demonstrated path. This first-stage version does not fix this automatically. Path shape is a fixed candidate bank; the controller executes its local endpoint rather than tracing all intermediate samples. Near map edges, clipping to map coordinates may still shorten a proposed move: compare actual per-step displacement and boundary cases, not only theoretical range.
 
 ## Trainable parameters and performance protection
 
@@ -26,6 +26,16 @@ L = goal_soft * 1.0 + path_soft * 0.5
 ```
 Legacy directional/progress/goal regression, full teacher-conditioned trajectory WTA, learned stop and candidate imitation loss are not included when compact mode is on. No GT target or human suffix enters model inference.
 
+### Fair action-budget correction
+
+The original implementation accidentally limited C to a 20 m local anchor, while B moved up to 50 m per step. At `max_action_len=20` that imposed a 400 m straight-line upper bound on C, versus 1000 m on B (upper bounds only, not guaranteed reachable distances). This is a structural confound, particularly for episodes >380 m away at initialization.
+
+The corrected implementation has a **single source of truth**: `heatmap_waypoint_step_m: 50`; `trajectory_local_step_m` was removed entirely. The experiment config also explicitly fixes `max_action_len:20`, and the experiment runner applies these values before constructing the agent. Fixed local anchors use metric **50 m** endpoints, not 20 m; left/straight/right differ in heading rather than travel allowance. They merge at goals within 50 m, avoiding near-goal detours. A separate regression test simulates a >380 m goal over 20 controller updates.
+
+An additional selector bug was corrected: a linear score applied to `context + mode_embedding` makes relative mode scores independent of current candidate/pose (context cancels under softmax). Compact scoring now uses elementwise mode–context interaction. The legacy trajectory forward remains unchanged.
+
+This correction makes action budgets comparable, but **does not establish equal path lengths or comparable success rates**. Turns, replanning, map edges and stopping behavior still affect realized travel. An actual GPU rollout and full Seen/Unseen evaluation are required. Old B/C results with 20 m/50 m mismatch must not be used as valid path-selector comparisons.
+
 ### Controlled experiment
 
 `configs/experiments/hett_compact_goal_path_1e.json` defines exactly **three inference variants** from the same trained checkpoint:
@@ -34,7 +44,7 @@ Legacy directional/progress/goal regression, full teacher-conditioned trajectory
 |---|---|---|
 | A_heatmap_waypoint | HETT Heatmap Top-1 | Bounded Top-1 NMS-cell waypoint |
 | B_goal_soft | Shared goal-soft selector | Bounded global-goal waypoint |
-| C_goal_path_soft | Same goal-soft selector | Selected 20 m local anchor via bounded waypoint |
+| C_goal_path_soft | Same goal-soft selector | Selected 50 m local anchor via bounded waypoint |
 
 For a training ablation that isolates the path-loss contribution, **train a second checkpoint** with `trajectory_candidate_loss_weight:0.0` using exactly the same initial checkpoint, seed and training budget. Switching B and C inference flags on a single checkpoint is *not* a path-loss training ablation. Evaluate on both full `val_seen` and `val_unseen`, compare SR/SPL/OSR/NE against A and prior SBFNav checkpoint results. Do not claim a gain from 8-episode smoke.
 
