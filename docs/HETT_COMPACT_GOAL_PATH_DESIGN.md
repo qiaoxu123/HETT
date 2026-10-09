@@ -32,8 +32,8 @@ Legacy directional/progress/goal regression, full teacher-conditioned trajectory
 
 | Variant | Goal choice | Controller |
 |---|---|---|
-| A_heatmap_waypoint | HETT Heatmap Top-1 | Original bounded heatmap waypoint |
-| B_goal_soft | Shared goal-soft selector | Original bounded global-goal waypoint |
+| A_heatmap_waypoint | HETT Heatmap Top-1 | Bounded Top-1 NMS-cell waypoint |
+| B_goal_soft | Shared goal-soft selector | Bounded global-goal waypoint |
 | C_goal_path_soft | Same goal-soft selector | Selected 20 m local anchor via bounded waypoint |
 
 For a training ablation that isolates the path-loss contribution, **train a second checkpoint** with `trajectory_candidate_loss_weight:0.0` using exactly the same initial checkpoint, seed and training budget. Switching B and C inference flags on a single checkpoint is *not* a path-loss training ablation. Evaluate on both full `val_seen` and `val_unseen`, compare SR/SPL/OSR/NE against A and prior SBFNav checkpoint results. Do not claim a gain from 8-episode smoke.
