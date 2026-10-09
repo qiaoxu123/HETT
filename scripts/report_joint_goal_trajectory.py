@@ -89,7 +89,7 @@ def main():
         '|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|']
     def fmt(v):return 'N/A' if v is None else f'{v:.3f}'
     for r in current:
-        values=[r['split'],r['variant'],str(r['episodes'])]+[fmt(r[k]) for k in ['sr','spl','oracle_sr','ne']]+[fmt(r['heatmap_top5_hit20']*100)]+[fmt(r[k]) for k in ['selected_plan_ADE_m','selected_plan_FDE_m','stop_precision','goal_switch_rate','path_length_m','seconds']]
+        values=[r['split'],r['variant'],str(r['episodes'])]+[fmt(r[k]) for k in ['sr','spl','oracle_sr','ne']]+[fmt(r['heatmap_top5_hit20']*100 if r['heatmap_top5_hit20'] is not None else None)]+[fmt(r[k]) for k in ['selected_plan_ADE_m','selected_plan_FDE_m','stop_precision','goal_switch_rate','path_length_m','seconds']]
         lines.append('| '+' | '.join(values)+' |')
     lines+=['','## 配对分析（以 episode 为单位 bootstrap 10,000 次）','']
     for split,c in comparisons.items():
