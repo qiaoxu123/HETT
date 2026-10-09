@@ -9,21 +9,21 @@
     "val_unseen"
   ],
   "evaluate_every": 1,
-  "selection_policy": "epoch1_val_seen_sr_gate_then_fixed_five_more_epochs",
+  "selection_policy": "one_epoch_goal_soft_then_explicit_seen_unseen_review",
   "first_epoch_gate": {
     "split": "val_seen",
-    "variant": "C_goal_path_soft",
+    "variant": "B_goal_soft",
     "minimum_sr": 30
   },
   "trajectory_goal_k": 20,
   "trajectory_modes": 3,
   "trajectory_waypoints": 8,
   "trajectory_compact_mode": true,
-  "trajectory_compact_enable_path": true,
+  "trajectory_compact_enable_path": false,
   "trajectory_goal_soft_temperature_m": 20,
   "trajectory_path_soft_temperature_m": 5,
   "trajectory_ranking_loss_weight": 1,
-  "trajectory_candidate_loss_weight": 0.5,
+  "trajectory_candidate_loss_weight": 0,
   "trajectory_loss_weight": 0,
   "trajectory_stop_weight": 0,
   "trajectory_sequential_backward": true,
@@ -31,7 +31,15 @@
   "profile_rollout": false,
   "fast_eval": true,
   "variants": {
-    "A_heatmap_waypoint": {
+    "A_refined_waypoint": {
+      "trajectory_compact_mode": false,
+      "trajectory_compact_enable_path": false,
+      "trajectory_use_for_control": false,
+      "trajectory_selector_mode": "prior",
+      "trajectory_disable_learned_stop": true,
+      "heatmap_execution": "waypoint"
+    },
+    "A_nms_waypoint": {
       "trajectory_compact_mode": true,
       "trajectory_compact_enable_path": false,
       "trajectory_use_for_control": false,
@@ -42,14 +50,6 @@
     "B_goal_soft": {
       "trajectory_compact_mode": true,
       "trajectory_compact_enable_path": false,
-      "trajectory_use_for_control": false,
-      "trajectory_selector_mode": "joint",
-      "trajectory_disable_learned_stop": true,
-      "heatmap_execution": "waypoint"
-    },
-    "C_goal_path_soft": {
-      "trajectory_compact_mode": true,
-      "trajectory_compact_enable_path": true,
       "trajectory_use_for_control": false,
       "trajectory_selector_mode": "joint",
       "trajectory_disable_learned_stop": true,
