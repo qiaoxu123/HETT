@@ -46,8 +46,17 @@ This script already runs two optimizer steps at B=2 and B=8, checks parameter up
 
 4. For phase attribution, copy the JSON experiment config and set `profile_rollout=true`; run the same smoke test in another clean directory. The output `gpu_batch*.json` includes `profile_seconds`. **Do not compare its wall-time to the non-profiled run** because profiling synchronizes the GPU after each stage.
 5. For a throughput comparison, compare non-profiled B=8 `seconds_per_batch`, peak VRAM and real `train_seconds` against the original fix-branch commit under identical data, seed, checkpoint, hardware, PyTorch version and rollout length. Record the chosen commit SHA from `manifest.json`.
-6. Run full Seen/Unseen validation with default `fast_eval=false` before claiming metric equivalence. For quicker official-metric-only checks, set `fast_eval=true` (the rank/ADE/FDE observer metrics will be missing on purpose).
-7. Do not run another 6 epochs or claim SBFNav-equivalent training speed until equivalence, run time, and VRAM have been measured.
+6. Compare old and new non-profiled smoke directories with the included safety-checked script:
+```bash
+python scripts/compare_layered_fastpath.py \
+  --before artifacts/ancestor_smoke \
+  --after artifacts/layered_fastpath_smoke \
+  --output artifacts/LAYERED_FASTPATH_COMPARISON.md
+```
+The tool requires the **same initial checkpoint SHA-256** and identical optimizer-step counts. The ancestor must be the pre-fastpath fixes commit; using only the optimized branch on both sides proves nothing.
+
+7. Run full Seen/Unseen validation with default `fast_eval=false` before claiming metric equivalence. For quicker official-metric-only checks, set `fast_eval=true` (the rank/ADE/FDE observer metrics will be missing on purpose).
+8. Do not run another 6 epochs or claim SBFNav-equivalent training speed until equivalence, run time, and VRAM have been measured.
 
 ## Rollback / ablation
 
