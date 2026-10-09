@@ -35,6 +35,7 @@ from multiagent.models.heatmap_trajectory import (
 )
 from multiagent.heatmap_execution import bounded_heatmap_step
 from multiagent.trajectory_rollout_utils import should_record_pose
+from multiagent.rollout_backward import backward_rollout_pair
 from multiagent.mapdata import MAP_BOUNDS
 from multiagent.observation import cropclient
 from multiagent.space import Pose4D, Point2D, Point3D
@@ -341,33 +342,53 @@ class NavCMTAgent:
                 self.et_optimizer.zero_grad(set_to_none=True)
                 self.loss = 0
 
-                if feedback == 'teacher':
-                    self.feedback = 'teacher'
-                    self.rollout(train_ml=self.args.teacher_weight)
-                elif feedback == 'student':  # agents in teacher and student separately
-
-                    self.feedback = 'teacher'
-                    self.rollout(train_ml=self.args.ml_weight)  # self.args.nss_w*nss_w_weighting, **kwargs)
-                    # if epoch_train > 10000:
-                    self.feedback = 'student'
-                    self.rollout(train_ml=self.args.ml_weight)
-                else:
-                    assert False
-
-                # print("--- One rollout takes %s seconds ---" % (time.time() - train_loop_start_time))
-
-                # print(self.rank, epoch, self.loss)
-                # torch.autograd.set_detect_anomaly(True)
-
                 profile_backward = bool(getattr(self.args, 'profile_rollout', False))
-                if profile_backward:
-                    torch.cuda.synchronize()
-                    backward_started = time.perf_counter()
-                self.loss.backward()
-                if profile_backward:
-                    torch.cuda.synchronize()
-                    self.logs['profile_backward_seconds'].append(
-                        time.perf_counter() - backward_started)
+                sequential = (feedback == 'student' and
+                              bool(getattr(self.args, 'trajectory_sequential_backward', False)))
+
+                def apply_backward(loss):
+                    if profile_backward:
+                        torch.cuda.synchronize()
+                        backward_started = time.perf_counter()
+                    loss.backward()
+                    if profile_backward:
+                        torch.cuda.synchronize()
+                        self.logs['profile_backward_seconds'].append(
+                            time.perf_counter() - backward_started)
+
+                if sequential:
+                    # The teacher and student rollouts construct independent
+                    # graphs, so there is no reason to retain both until the
+                    # last backward. We preserve both losses/gradients and
+                    # perform exactly ONE optimizer step afterwards.
+                    def teacher_forward():
+                        self.feedback = 'teacher'
+                        self.loss = 0
+                        self.rollout(train_ml=self.args.ml_weight)
+                        return self.loss
+
+                    def student_forward():
+                        self.feedback = 'student'
+                        self.loss = 0
+                        self.rollout(train_ml=self.args.ml_weight)
+                        return self.loss
+
+                    self.loss = backward_rollout_pair(
+                        teacher_forward, student_forward,
+                        backward=apply_backward,
+                    )
+                else:
+                    if feedback == 'teacher':
+                        self.feedback = 'teacher'
+                        self.rollout(train_ml=self.args.teacher_weight)
+                    elif feedback == 'student':
+                        self.feedback = 'teacher'
+                        self.rollout(train_ml=self.args.ml_weight)
+                        self.feedback = 'student'
+                        self.rollout(train_ml=self.args.ml_weight)
+                    else:
+                        raise ValueError(f'Unsupported feedback: {feedback}')
+                    apply_backward(self.loss)
                 if hasattr(self, 'experiment_gradient_callback') and self.experiment_gradient_callback:
                     self.experiment_gradient_callback(self, idx)
                 # print('suc')
