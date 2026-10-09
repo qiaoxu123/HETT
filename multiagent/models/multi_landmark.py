@@ -6,10 +6,18 @@ current map features; it NEVER sees target coordinates or labels.
 from __future__ import annotations
 
 import math
+from functools import lru_cache
 
 import torch
 import torch.nn.functional as F
 from torch import nn
+
+
+@lru_cache(maxsize=8192)
+def _cached_landmark_token_ids(tokenizer, name):
+    # Repeated teacher/student rollouts process the same landmark names.
+    # Tokenizer vocabulary/normalization must be fixed during an experiment.
+    return tuple(tokenizer.encode(name, add_special_tokens=False))
 
 
 def build_landmark_batch(observations, tokenizer, instruction_ids, *, max_landmarks=16):
@@ -33,7 +41,7 @@ def build_landmark_batch(observations, tokenizer, instruction_ids, *, max_landma
         sequence = ids_cpu[row]
         for item in obs.get("reference_landmarks", ()):
             name = str(item["name"])
-            name_ids = tokenizer.encode(name, add_special_tokens=False)
+            name_ids = _cached_landmark_token_ids(tokenizer, name)
             start = -1
             if name_ids and len(name_ids) <= seq_len:
                 start = next(
