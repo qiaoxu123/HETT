@@ -359,7 +359,15 @@ class NavCMTAgent:
                 # print(self.rank, epoch, self.loss)
                 # torch.autograd.set_detect_anomaly(True)
 
+                profile_backward = bool(getattr(self.args, 'profile_rollout', False))
+                if profile_backward:
+                    torch.cuda.synchronize()
+                    backward_started = time.perf_counter()
                 self.loss.backward()
+                if profile_backward:
+                    torch.cuda.synchronize()
+                    self.logs['profile_backward_seconds'].append(
+                        time.perf_counter() - backward_started)
                 if hasattr(self, 'experiment_gradient_callback') and self.experiment_gradient_callback:
                     self.experiment_gradient_callback(self, idx)
                 # print('suc')
@@ -394,8 +402,17 @@ class NavCMTAgent:
 
     def rollout(self, train_ml=None, visualize=False):
 
-        # rollout_start_time = time.time()
+        # Profiling is opt-in: synchronizing CUDA on each boundary would
+        # otherwise make the normal training path significantly slower.
+        profile_enabled = bool(getattr(self.args, 'profile_rollout', False))
+        phase_seconds = defaultdict(float)
+        def phase_clock():
+            if profile_enabled:
+                torch.cuda.synchronize()
+                return time.perf_counter()
+            return 0.0
 
+        start_reset = phase_clock()
         if (getattr(self.args, 'trajectory_use_for_control', False)
                 and not getattr(self.args, 'heatmap_trajectory_enabled', False)):
             raise ValueError("trajectory control requires an enabled trajectory head")
@@ -406,6 +423,7 @@ class NavCMTAgent:
                 "are mutually exclusive: waypoint execution otherwise "
                 "silently bypasses the trajectory planner")
         obs = self.env._get_obs(random_direction=(self.feedback == 'teacher'))
+        phase_seconds['observation_reset'] += phase_clock() - start_reset if profile_enabled else 0.0
         batch_size = len(obs)
 
         # Language input
@@ -564,6 +582,7 @@ class NavCMTAgent:
             or (train_ml is not None and getattr(self.args, 'trajectory_train_diagnostics', False))
         )
         for t in range(self.args.max_action_len):
+            step_start = phase_clock()
 
             # print("- action rollingout takes %s seconds ---" % (time.time() - rollingout_action_start_time))
             # rollingout_action_start_time = time.time()
@@ -576,6 +595,9 @@ class NavCMTAgent:
             images /= self.rgb_std
             im_feature = self.vision_model(torch.from_numpy(images).cuda())
             im_feature = im_feature.view(im_feature.size(0), im_feature.size(1), -1)
+            after_vision = phase_clock()
+            if profile_enabled:
+                phase_seconds['visual_preprocess_and_darknet'] += after_vision - step_start
 
 
 
@@ -646,6 +668,9 @@ class NavCMTAgent:
                 **({'trajectory_teacher_goal': teacher_goal_tensor}
                    if teacher_goal_tensor is not None else {})
             )
+            after_model = phase_clock()
+            if profile_enabled:
+                phase_seconds['et_belief_and_planning'] += after_model - after_vision
             trajectory_predictions = None
             teacher_trajectory_predictions = None
             if len(model_outputs) == 6:
@@ -1221,7 +1246,12 @@ class NavCMTAgent:
                     traj[i]['trajectory'].append(poses[i])
             # Refresh the environment first, then use the resulting pose/state
             # as the spatial input for the next navigation step.
+            before_obs = phase_clock()
+            if profile_enabled:
+                phase_seconds['loss_diagnostics_and_control'] += before_obs - after_model
             obs = self.env._get_obs(poses, random_direction=(self.feedback == 'teacher'))
+            if profile_enabled:
+                phase_seconds['dynamic_observation'] += phase_clock() - before_obs
             current_directions = [np.array(ob['pose'].yaw, dtype=np.float32) for ob in obs]
             current_positions = [np.array(ob['position'], dtype=np.float32) for ob in obs]
             direction_t = torch.from_numpy(np.array(current_directions, dtype=np.float32))
@@ -1231,6 +1261,9 @@ class NavCMTAgent:
             # Early exit if all ended
             if ended.all():
                 break
+        if profile_enabled:
+            for phase, seconds in phase_seconds.items():
+                self.logs[f'profile_{phase}_seconds'].append(float(seconds))
         # print(visualize)
         if visualize:
             for i, ob in enumerate(obs):
