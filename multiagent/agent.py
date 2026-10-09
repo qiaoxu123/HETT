@@ -32,6 +32,7 @@ from multiagent.models.heatmap_trajectory import (
     trajectory_imitation_loss, stop_supervision_loss,
     candidate_ranking_loss, candidate_trajectory_imitation_loss,
     select_goal_mode_indices, arrival_stop_targets,
+    goal_distance_soft_ranking_loss, local_path_soft_ranking_loss,
 )
 from multiagent.heatmap_execution import bounded_heatmap_step
 from multiagent.trajectory_rollout_utils import should_record_pose
@@ -324,6 +325,21 @@ class NavCMTAgent:
         self.lang_model.train()
         self.vln_model.train()
         self.vision_model.train()
+        if getattr(self.args, 'trajectory_compact_mode', False):
+            # One trainable selector. Frozen upstream weights stay in the
+            # loaded checkpoint; their optimizer steps see no gradients.
+            for model in (self.lang_model, self.vision_model):
+                for parameter in model.parameters():
+                    parameter.requires_grad_(False)
+                model.eval()
+            for name, parameter in self.vln_model_without_ddp.named_parameters():
+                if not name.startswith('trajectory_head.'):
+                    parameter.requires_grad_(False)
+            # Disable dropout in the frozen ET backbone, retain dropout in
+            # the trainable candidate selector.
+            for name, module in self.vln_model_without_ddp.named_children():
+                if name != 'trajectory_head':
+                    module.eval()
 
         self.losses = []
         for epoch in range(1, n_epochs + 1):
@@ -458,7 +474,11 @@ class NavCMTAgent:
         encoding = self.tokenizer(lang_inputs, padding=True, return_tensors="pt")
         input_ids = encoding['input_ids'].cuda()
         attention_mask = encoding['attention_mask'].cuda()
-        lang_features, linear_cls, cls_hidden = self.lang_model(input_ids, attention_mask)
+        if train_ml is not None and getattr(self.args, 'trajectory_compact_mode', False):
+            with torch.no_grad():
+                lang_features, linear_cls, cls_hidden = self.lang_model(input_ids, attention_mask)
+        else:
+            lang_features, linear_cls, cls_hidden = self.lang_model(input_ids, attention_mask)
         # Compute static landmark/text alignment ONCE per episode batch.
         # Dynamic UAV pose still updates at every rollout step.
         multi_landmarks = None
@@ -599,6 +619,7 @@ class NavCMTAgent:
         # ADE/FDE/oracle statistics are diagnostics, not training losses.
         # Their old per-step .item() calls serialized the GPU. Keep them for
         # full validation or explicit train-diagnostics runs only.
+        compact_mode = bool(getattr(self.args, 'trajectory_compact_mode', False))
         collect_traj_diagnostics = (
             (train_ml is None and not getattr(self.args, 'trajectory_fast_eval', False))
             or (train_ml is not None and getattr(self.args, 'trajectory_train_diagnostics', False))
@@ -615,7 +636,11 @@ class NavCMTAgent:
             images = np.ascontiguousarray(images, dtype=np.float32)
             images -= self.rgb_mean
             images /= self.rgb_std
-            im_feature = self.vision_model(torch.from_numpy(images).cuda())
+            if compact_mode and train_ml is not None:
+                with torch.no_grad():
+                    im_feature = self.vision_model(torch.from_numpy(images).cuda())
+            else:
+                im_feature = self.vision_model(torch.from_numpy(images).cuda())
             im_feature = im_feature.view(im_feature.size(0), im_feature.size(1), -1)
             after_vision = phase_clock()
             if profile_enabled:
@@ -755,6 +780,25 @@ class NavCMTAgent:
             ), dim=1).detach().cpu().numpy()
             selected_trajectory_paths = None
             selected_trajectory_goals = None
+            compact_local_waypoints = None
+            if (compact_mode and trajectory_predictions is not None and
+                    self.feedback == 'student'):
+                # Goal-first selection. The mode probability must never
+                # change which geographic goal wins the ranking.
+                goal_scores = torch.logsumexp(
+                    trajectory_predictions.joint_logits, dim=-1)
+                if getattr(self.args, 'trajectory_selector_mode', 'joint') == 'prior':
+                    goal_scores = heatmap_probs.gather(
+                        1, trajectory_predictions.goal_ids).clamp_min(1e-8).log()
+                goal_index = goal_scores.argmax(-1)
+                rows = torch.arange(batch_size, device=goal_index.device)
+                selected_trajectory_goals = trajectory_predictions.goal_xy[
+                    rows, goal_index].detach().cpu().numpy()
+                if getattr(self.args, 'trajectory_compact_enable_path', False):
+                    mode_index = trajectory_predictions.mode_logits[
+                        rows, goal_index].argmax(-1)
+                    compact_local_waypoints = trajectory_predictions.trajectories[
+                        rows, goal_index, mode_index, -1, :].detach().cpu().numpy()
             selected_stop_probs = None
             selected_plan_goal_ids = None
             if (trajectory_predictions is not None and self.feedback == 'student'
@@ -806,6 +850,7 @@ class NavCMTAgent:
             gt_target = torch.from_numpy(np.array([ob['grid_goal'] for ob in obs], dtype=np.int64))
             # there is no ground truth in unseen_test set
             if (not 'test' in self.env_name and
+                    (train_ml is None or not compact_mode) and
                     (train_ml is not None or not getattr(self.args, 'trajectory_fast_eval', False))):
                 # Expensive supervised heatmap diagnostics are unnecessary
                 # for official-metric-only fast evaluation.
@@ -920,7 +965,30 @@ class NavCMTAgent:
                         goal_xy=ob['normalized_goal'],
                     ) for ob in obs
                 ]).to(device=pred_logits.device)
-                if train_ml is not None and teacher_trajectory_predictions is not None:
+                if train_ml is not None and compact_mode:
+                    target_xy = torch.as_tensor(
+                        gt_goal_np, dtype=pred_logits.dtype, device=pred_logits.device)
+                    active_count = valid_trajectory.sum()
+                    trajectory_ranking_loss += goal_distance_soft_ranking_loss(
+                        trajectory_predictions, target_xy,
+                        map_meters=self.args.map_meters,
+                        temperature_m=self.args.trajectory_goal_soft_temperature_m,
+                        active=valid_trajectory) * active_count
+                    nearest_goal_distance_m = (
+                        trajectory_predictions.goal_xy.detach() - target_xy[:, None]
+                    ).norm(dim=-1).min(-1).values * self.args.map_meters
+                    rank_mask = (nearest_goal_distance_m <= self.args.success_dist) & valid_trajectory
+                    trajectory_ranking_valid_count += rank_mask.sum()
+                    path_loss, path_valid_count = local_path_soft_ranking_loss(
+                        trajectory_predictions, target_xy, current_pos, targets[:, 0],
+                        map_meters=self.args.map_meters,
+                        temperature_m=self.args.trajectory_path_soft_temperature_m,
+                        positive_radius_m=self.args.success_dist,
+                        local_step_m=self.args.trajectory_local_step_m,
+                        active=valid_trajectory)
+                    trajectory_candidate_loss += path_loss * path_valid_count
+                    trajectory_supervision_count += active_count
+                elif train_ml is not None and teacher_trajectory_predictions is not None:
                     trajectory_loss = trajectory_loss + trajectory_imitation_loss(
                         teacher_trajectory_predictions, targets,
                         active=valid_trajectory
@@ -1078,9 +1146,17 @@ class NavCMTAgent:
                 if (self.feedback == 'student'
                         and getattr(self.args, 'heatmap_execution', 'two_stage') == 'waypoint'):
                     old_pose = poses[i]
+                    # The compact path head supplies a LOCAL waypoint. Keep
+                    # bounded execution and the original global goal separate.
+                    action_waypoint = (self.env.unnormalize_position(
+                        compact_local_waypoints[i], obs[i]['map_name'],
+                        self.args.map_meters)
+                        if compact_local_waypoints is not None else dst)
                     poses[i] = bounded_heatmap_step(
-                        poses[i], dst,
-                        max_step_m=getattr(self.args, 'heatmap_waypoint_step_m', 50.0),
+                        poses[i], action_waypoint,
+                        max_step_m=(self.args.trajectory_local_step_m
+                                    if compact_local_waypoints is not None
+                                    else getattr(self.args, 'heatmap_waypoint_step_m', 50.0)),
                     )
                     moved = poses[i].xy.dist_to(old_pose.xy)
                     waypoint_stagnant_steps[i] = (
@@ -1314,7 +1390,13 @@ class NavCMTAgent:
         if train_ml is not None:
             # print(ml_loss)
             # ml_loss = direction_loss + progress_loss
-            ml_loss = (direction_loss + 0.1 * progress_loss + 2 * goal_predict_loss
+            if compact_mode:
+                # Only the shared goal/path selector is trained. The heatmap
+                # and unrelated legacy auxiliary heads are held fixed.
+                ml_loss = (self.args.trajectory_ranking_loss_weight * trajectory_ranking_loss
+                           + self.args.trajectory_candidate_loss_weight * trajectory_candidate_loss)
+            else:
+                ml_loss = (direction_loss + 0.1 * progress_loss + 2 * goal_predict_loss
                        + self.args.heatmap_loss_weight * heatmap_loss
                        + self.args.trajectory_loss_weight * trajectory_loss
                        + self.args.trajectory_stop_weight * trajectory_stop_loss
