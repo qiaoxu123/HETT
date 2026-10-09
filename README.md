@@ -1,5 +1,9 @@
 # HETT
 
+## Navigation Failure Diagnosis (2026-10)
+
+Diagnosis on branch `diagnosis/navigation-failure-501f25af`, based on `2027-CVPR/hett-sequential-backward` commit `501f25af`: full validation A/D found bounded waypoint execution ahead of the current trajectory controller by 12.79 pp SR on Seen and 9.16 pp on Unseen. Fixed-sample A–F points to both candidate selection and trajectory execution; Stop did not fire. The reported 3–4% OSR was not reproduced with the available trajectory checkpoint. See [the diagnosis report](docs/NAVIGATION_FAILURE_DIAGNOSIS.md) for the checkpoint limitation, source audit, per-episode data, and reproduction steps.
+
 ## Introduction
 
 The official repository for AAAI 2026 oral paper [History-Enhanced Two-Stage Transformer for Aerial Vision-and-Language Navigation](https://arxiv.org/abs/2512.14222).

@@ -34,7 +34,7 @@ from multiagent.models.heatmap_trajectory import (
     select_goal_mode_indices, arrival_stop_targets,
 )
 from multiagent.heatmap_execution import bounded_heatmap_step
-from multiagent.trajectory_rollout_utils import should_record_pose
+from multiagent.trajectory_rollout_utils import should_record_pose, wrapped_yaw_delta_rad
 from multiagent.rollout_backward import backward_rollout_pair
 from multiagent.mapdata import MAP_BOUNDS
 from multiagent.observation import cropclient
@@ -308,7 +308,17 @@ class NavCMTAgent:
         start = time.time()
         for l in loader:
             idx += 1
-            for traj in self.rollout(visualize=False):  # loop for #batch times
+            profile_each = bool(getattr(self.args, 'profile_inference', False))
+            if profile_each:
+                torch.cuda.synchronize()
+                rollout_started = time.perf_counter()
+            rollout_results = self.rollout(visualize=False)
+            if profile_each:
+                torch.cuda.synchronize()
+                per_episode_seconds = (time.perf_counter() - rollout_started) / max(1, len(rollout_results))
+                for traj in rollout_results:
+                    traj['inference_seconds'] = per_episode_seconds
+            for traj in rollout_results:  # loop for #batch times
                 self.loss = 0
                 self.results[traj['instr_id']] = traj
                 # print(traj)
@@ -529,6 +539,8 @@ class NavCMTAgent:
         trajectory_ranking_loss = torch.tensor(0.).cuda()
         trajectory_candidate_loss = torch.tensor(0.).cuda()
         trajectory_ranking_valid_count = torch.zeros((), device='cuda')
+        trajectory_ranking_active_count = torch.zeros((), device='cuda')
+        trajectory_candidate_goal_error_sum_m = torch.zeros((), device='cuda')
         trajectory_candidate_eval_count = torch.zeros((), device='cuda')
         trajectory_prior_goal_hits = torch.zeros((), device='cuda')
         trajectory_joint_goal_hits = torch.zeros((), device='cuda')
@@ -757,8 +769,11 @@ class NavCMTAgent:
             selected_trajectory_goals = None
             selected_stop_probs = None
             selected_plan_goal_ids = None
+            diag_control = (getattr(self.args, 'trajectory_use_for_control', False)
+                            or getattr(self.args, 'diagnosis_bounded_waypoint', False)
+                            or getattr(self.args, 'diagnosis_oracle_selector', False))
             if (trajectory_predictions is not None and self.feedback == 'student'
-                    and getattr(self.args, 'trajectory_use_for_control', False)):
+                    and diag_control):
                 if getattr(self.args, 'trajectory_selector_mode', 'prior') == 'joint':
                     scores = trajectory_predictions.joint_logits.flatten(1)
                 else:
@@ -769,7 +784,22 @@ class NavCMTAgent:
                     scores = (candidate_prior[:, :, None] + F.log_softmax(
                         trajectory_predictions.mode_logits, dim=-1
                     )).flatten(1)
-                selected_ids = select_goal_mode_indices(scores.view(batch_size, *trajectory_predictions.mode_logits.shape[1:]))
+                score_grid = scores.view(batch_size, *trajectory_predictions.mode_logits.shape[1:])
+                selected_ids = select_goal_mode_indices(score_grid)
+                if getattr(self.args, 'diagnosis_heatmap_prior', False):
+                    # Candidate endpoints are already ordered by heatmap mass;
+                    # select the top heatmap endpoint and its best path mode.
+                    selected_ids = trajectory_predictions.mode_logits[:, 0].argmax(-1)
+                if getattr(self.args, 'diagnosis_oracle_selector', False):
+                    if train_ml is not None or self.env_name not in ('val_seen', 'val_unseen'):
+                        raise RuntimeError('Oracle candidate selection is restricted to validation diagnostics')
+                    gt_xy = torch.as_tensor(
+                        np.stack([o['normalized_goal'] for o in obs]),
+                        device=trajectory_predictions.goal_xy.device,
+                        dtype=trajectory_predictions.goal_xy.dtype)
+                    d2 = ((trajectory_predictions.goal_xy - gt_xy[:, None]) ** 2).sum(-1)
+                    oracle_goal_idx = d2.argmin(-1)
+                    selected_ids = oracle_goal_idx * trajectory_predictions.mode_logits.shape[-1]
                 plans = trajectory_predictions.trajectories.flatten(1, 2)
                 chosen = plans[torch.arange(batch_size, device=plans.device), selected_ids]
                 selected_trajectory_paths = chosen.detach().cpu().numpy()
@@ -961,6 +991,9 @@ class NavCMTAgent:
                     ).norm(dim=-1).min(dim=-1).values * self.args.map_meters
                     rank_valid = (nearest_candidate_m <= self.args.success_dist) & valid_trajectory
                     rank_count = rank_valid.sum()
+                    trajectory_ranking_active_count += valid_trajectory.sum()
+                    trajectory_candidate_goal_error_sum_m += (
+                        nearest_candidate_m * valid_trajectory).sum()
                     trajectory_ranking_valid_count += rank_count
                     trajectory_ranking_loss = trajectory_ranking_loss + candidate_ranking_loss(
                         trajectory_predictions, target_xy,
@@ -1076,6 +1109,20 @@ class NavCMTAgent:
                     continue
 
                 if (self.feedback == 'student'
+                        and getattr(self.args, 'diagnosis_bounded_waypoint', False)):
+                    old_pose = poses[i]
+                    poses[i] = bounded_heatmap_step(
+                        poses[i], dst,
+                        max_step_m=getattr(self.args, 'heatmap_waypoint_step_m', 50.0))
+                    traj[i]['pred_goal'].append(dst)
+                    traj[i]['stage1_trajectory'].append(poses[i])
+                    stage1_step += 1
+                    if t >= self.args.max_action_len - 1:
+                        ended[i] = True
+                        traj[i]['stop_reason'].append('horizon')
+                    continue
+
+                if (self.feedback == 'student'
                         and getattr(self.args, 'heatmap_execution', 'two_stage') == 'waypoint'):
                     old_pose = poses[i]
                     poses[i] = bounded_heatmap_step(
@@ -1142,9 +1189,7 @@ class NavCMTAgent:
                     old_xy = old_pose.xy
                     poses[i] = self.move(poses[i], local_dst, steps)
                     moved_m = old_xy.dist_to(poses[i].xy)
-                    rotated_rad = abs(np.arctan2(
-                        np.sin(poses[i].yaw - old_pose.yaw),
-                        np.cos(poses[i].yaw - old_pose.y)))
+                    rotated_rad = wrapped_yaw_delta_rad(poses[i].yaw, old_pose.yaw)
                     trajectory_travel_distance_m += moved_m
                     # Rotation-only actions are genuine controller progress
                     # and must not count as a frozen simulator.
@@ -1361,6 +1406,8 @@ class NavCMTAgent:
         self.logs['trajectory_eval_count'].append(float(trajectory_eval_count))
         self.logs['trajectory_teacher_samples'].append(float(trajectory_supervision_count))
         self.logs['trajectory_ranking_valid_count'].append(float(trajectory_ranking_valid_count))
+        self.logs['trajectory_ranking_active_count'].append(float(trajectory_ranking_active_count))
+        self.logs['trajectory_candidate_goal_error_sum_m'].append(float(trajectory_candidate_goal_error_sum_m))
         self.logs['trajectory_candidate_eval_count'].append(float(trajectory_candidate_eval_count))
         self.logs['trajectory_prior_goal_hits'].append(float(trajectory_prior_goal_hits))
         self.logs['trajectory_joint_goal_hits'].append(float(trajectory_joint_goal_hits))

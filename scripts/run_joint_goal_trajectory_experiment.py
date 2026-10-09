@@ -88,6 +88,9 @@ def evaluate(agent,envs,cfg,out,epoch):
     for split,env in envs.items():
         for variant,flags in cfg['variants'].items():
             seed(cfg['seed'])
+            agent.args.diagnosis_bounded_waypoint = False
+            agent.args.diagnosis_oracle_selector = False
+            agent.args.diagnosis_heatmap_prior = False
             runtime_flags = dict(flags)
             for k,v in runtime_flags.items():setattr(agent.args,k,v)
             agent.env=env;agent.logs=defaultdict(list)

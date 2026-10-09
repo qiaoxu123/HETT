@@ -1,0 +1,33 @@
+{
+  "seed": 0,
+  "epochs": 1,
+  "batch_size": 1,
+  "initial_checkpoint": "/home/rental/20260922_1/Workspace/hett-heatmap-sbf-relative-geometry-top20/checkpoints/heatmap_relative_geometry_top20_688e981_b8_s0_2e_20261008/best_val_unseen",
+  "base_arguments": "/home/rental/20260922_1/Workspace/hett-heatmap-sbf-relative-geometry-top20/checkpoints/heatmap_relative_geometry_top20_688e981_b8_s0_2e_20261008/training_args.json",
+  "evaluation_splits": [
+    "val_seen",
+    "val_unseen"
+  ],
+  "trajectory_goal_k": 20,
+  "trajectory_modes": 3,
+  "trajectory_waypoints": 8,
+  "trajectory_ranking_loss_weight": 0.2,
+  "trajectory_candidate_loss_weight": 0.3,
+  "trajectory_loss_weight": 0.5,
+  "trajectory_stop_weight": 0.05,
+  "trajectory_stop_threshold": 0.8,
+  "fast_eval": true,
+  "variants": {
+    "D": {
+      "trajectory_use_for_control": true,
+      "trajectory_selector_mode": "joint",
+      "trajectory_disable_learned_stop": true,
+      "diagnosis_bounded_waypoint": false
+    }
+  },
+  "first_epoch_gate": {
+    "variant": "D",
+    "metric": "epoch1_diagnostic_only"
+  },
+  "profile_inference": true
+}

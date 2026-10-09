@@ -1,14 +1,19 @@
 """CPU regressions for terminal movement and episode observer accounting."""
+import math
 import types
 import unittest
 
 import torch
 
-from multiagent.trajectory_rollout_utils import should_record_pose
+from multiagent.trajectory_rollout_utils import should_record_pose, wrapped_yaw_delta_rad
 from scripts.joint_experiment_metrics import observe
 
 
 class JointRolloutAccountingTest(unittest.TestCase):
+    def test_yaw_delta_uses_angles_and_wraps(self):
+        self.assertAlmostEqual(wrapped_yaw_delta_rad(0.4, 0.4), 0.0)
+        self.assertAlmostEqual(wrapped_yaw_delta_rad(-math.pi + 0.1, math.pi - 0.1), 0.2)
+
     def test_terminal_movement_must_be_scored(self):
         start = (0., 0., 20., 0.)
         moved = (5., 0., 20., 0.)

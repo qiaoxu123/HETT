@@ -27,6 +27,8 @@ def main():
     ap.add_argument("--output", type=Path, required=True)
     ap.add_argument("--variants", nargs="+", default=None)
     ap.add_argument("--splits", nargs="+", default=None)
+    ap.add_argument("--limit", type=int, default=None,
+                    help="evaluate the first N deterministically ordered episodes per split")
     opt = ap.parse_args()
     config_path = opt.config if opt.config.is_absolute() else START_DIR / opt.config
     output_path = opt.output if opt.output.is_absolute() else START_DIR / opt.output
@@ -55,6 +57,10 @@ def main():
     args.epochs = cfg["epochs"]
     args.heatmap_trajectory_enabled = True
     args.trajectory_use_for_control = False
+    args.trajectory_relation_selector = False
+    args.trajectory_goal_k = 20
+    args.max_action_len = 20
+    args.profile_inference = bool(cfg.get('profile_inference', False))
     for key, value in cfg.items():
         if key.startswith("trajectory_"):
             setattr(args, key, value)
@@ -74,6 +80,14 @@ def main():
                             seed=args.seed, rank=0, world_size=1)
         for split in selected_splits
     }
+    if opt.limit is not None:
+        if opt.limit <= 0:
+            raise ValueError('--limit must be positive')
+        for offset, env in enumerate(envs.values()):
+            rng = np.random.RandomState(args.seed + offset)
+            count = min(opt.limit, len(env.data))
+            indices = rng.choice(len(env.data), size=count, replace=False)
+            env.data = [env.data[int(i)] for i in indices]
     retry_cfg = dict(cfg)
     selected_variants = opt.variants or list(cfg["variants"])
     retry_cfg["variants"] = {v: cfg["variants"][v] for v in selected_variants}
@@ -83,6 +97,7 @@ def main():
         "checkpoint": str(checkpoint_path.resolve()),
         "checkpoint_epoch": checkpoint_epoch,
         "splits": {s: len(e.data) for s, e in envs.items()},
+        "episode_ids": {s: [list(x.id) for x in e.data] for s, e in envs.items()},
         "variants": selected_variants,
         "config": retry_cfg,
         "started_unix": time.time(),

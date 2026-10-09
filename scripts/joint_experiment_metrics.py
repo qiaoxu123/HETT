@@ -28,8 +28,13 @@ def observe(agent, obs, poses, trajectories, ended, t, goals, heatmap_ids,
         pre=ob['pose'].xy.dist_to(ob['goal'])
         reason=trajectories[i].get('stop_reason', [])
         stop=bool(ended[i] and reason and reason[-1] in ('learned_stop','progress_stop')); near=bool(pre<=radius)
-        idx=int(ji[i] if agent.args.trajectory_selector_mode=='joint' else pi[i])
-        plan_control=agent.args.trajectory_use_for_control
+        if getattr(agent.args,'diagnosis_heatmap_prior',False):
+            idx=int(agent.args.trajectory_modes and proposals.mode_logits[i,0].argmax().item())
+        else:
+            idx=int(ji[i] if agent.args.trajectory_selector_mode=='joint' else pi[i])
+        plan_control=(agent.args.trajectory_use_for_control
+                      or getattr(agent.args,'diagnosis_bounded_waypoint',False)
+                      or getattr(agent.args,'diagnosis_oracle_selector',False))
         selected_goal_id=(int(proposals.goal_ids[i,idx//modes]) if plan_control
                           else int(selected_ids[i]))
         macro_moved_m=float(np.linalg.norm(
@@ -71,6 +76,7 @@ def summarize(env,predictions,variant,epoch,seconds):
             entered_then_left=bool(min(d)<=env.args.success_dist and d[-1]>env.args.success_dist),
             path_length_m=float(sum(a.dist_to(b) for a,b in zip(path[:-1],path[1:]))),
             termination=termination,initial_distance_m=float(d[0]),
+            inference_seconds=p.get('inference_seconds'),
             progress_m=float(d[0]-d[-1]),
             success_from_outside=bool(d[0]>env.args.success_dist and d[-1]<=env.args.success_dist),
             reached_from_outside=bool(d[0]>env.args.success_dist and min(d)<=env.args.success_dist)))
