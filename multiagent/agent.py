@@ -989,7 +989,7 @@ class NavCMTAgent:
                         map_meters=self.args.map_meters,
                         temperature_m=self.args.trajectory_path_soft_temperature_m,
                         positive_radius_m=self.args.success_dist,
-                        local_step_m=self.args.trajectory_local_step_m,
+                        local_step_m=self.args.heatmap_waypoint_step_m,
                         active=valid_trajectory)
                     trajectory_candidate_loss += path_loss * path_valid_count
                     trajectory_supervision_count += active_count
@@ -1159,9 +1159,9 @@ class NavCMTAgent:
                         if compact_local_waypoints is not None else dst)
                     poses[i] = bounded_heatmap_step(
                         poses[i], action_waypoint,
-                        max_step_m=(self.args.trajectory_local_step_m
-                                    if compact_local_waypoints is not None
-                                    else getattr(self.args, 'heatmap_waypoint_step_m', 50.0)),
+                        # ONE action budget for A/B/C. Compact paths only
+                        # change heading, never impose a 20m-only cap.
+                        max_step_m=self.args.heatmap_waypoint_step_m,
                     )
                     moved = poses[i].xy.dist_to(old_pose.xy)
                     waypoint_stagnant_steps[i] = (
