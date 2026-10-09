@@ -124,9 +124,11 @@ class CandidateRelationSelector(nn.Module):
         pose_geometry = candidate_pose_history_features(
             goal_xy, current_xy, heading_sc, history_xy)
         query = self.query_proj(torch.cat((goal_features, pose_geometry), dim=-1))
+        # Same projected tokens serve as keys and values. Avoid running the
+        # identical learned projection twice per candidate-selection step.
+        projected_tokens = self.token_proj(language_tokens)
         attended, _ = self.text_attention(
-            query, self.token_proj(language_tokens),
-            self.token_proj(language_tokens),
+            query, projected_tokens, projected_tokens,
             key_padding_mask=~lang_valid, need_weights=False)
 
         mention_mask = landmark_text_mask.bool() & language_mask[:, None].bool()
