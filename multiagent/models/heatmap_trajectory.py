@@ -154,9 +154,10 @@ class HeatmapTrajectoryHead(nn.Module):
         nn.init.zeros_(self.residual[-1].weight)
         nn.init.zeros_(self.residual[-1].bias)
 
-    def _generate(self, features, current_xy, heading_sc, goal_xy):
+    def _generate(self, features, current_xy, heading_sc, goal_xy, goal_features=None):
         batch, k, _ = goal_xy.shape
-        goal_features = _gather_heatmap_features(features, goal_xy)
+        if goal_features is None:
+            goal_features = _gather_heatmap_features(features, goal_xy)
         pose = torch.cat((current_xy, heading_sc), dim=-1)
         context = self.context(torch.cat((
             goal_features, goal_xy - current_xy[:, None, :],
@@ -199,7 +200,11 @@ class HeatmapTrajectoryHead(nn.Module):
         if heading_sc.shape != current_xy.shape:
             raise ValueError("heading sin/cos must be [B,2]")
         goals, ids = heatmap_endpoints(goal_probabilities, top_k, nms_kernel=nms_kernel)
-        paths, logits, context = self._generate(features, current_xy, heading_sc, goals)
+        # Reuse one differentiable spatial sampling for trajectory generation
+        # and candidate-language relation scoring (previously two grid_samples).
+        goal_features = _gather_heatmap_features(features, goals)
+        paths, logits, context = self._generate(
+            features, current_xy, heading_sc, goals, goal_features=goal_features)
         log_goal = torch.log(goal_probabilities.flatten(1).gather(1, ids).clamp_min(1e-8))
         relative_xy = goals - current_xy[:, None, :]
         candidate_logits = self.goal_scorer(
@@ -214,7 +219,7 @@ class HeatmapTrajectoryHead(nn.Module):
                 raise ValueError("relation selector needs language + complete named-landmark inputs")
             evidence = self.candidate_relation(
                 goal_xy=goals,
-                goal_features=_gather_heatmap_features(features, goals),
+                goal_features=goal_features,
                 current_xy=current_xy,
                 heading_sc=heading_sc,
                 language_tokens=language_tokens,
