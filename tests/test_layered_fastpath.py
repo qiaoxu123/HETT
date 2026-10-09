@@ -27,7 +27,7 @@ class StaticObservationTests(unittest.TestCase):
             calls.append((map_name, meters))
             return ((position.x - 0.) / meters, (100. - position.y) / meters)
         output = build_static_landmark_observation(nav_map, 'city', 100., normalize)
-        self.assertEqual(len(calls), 6)
+        self.assertEqual(len(calls), 4)
         self.assertEqual(len(output['reference_landmarks']), 1)
         self.assertEqual(output['reference_landmarks'][0]['name'], 'building')
         np.testing.assert_allclose(
