@@ -1,0 +1,39 @@
+{
+  "seed": 0,
+  "epochs": 6,
+  "batch_size": 8,
+  "initial_checkpoint": "${HETT_INITIAL_CHECKPOINT}",
+  "base_arguments": "${HETT_BASE_ARGUMENTS}",
+  "evaluation_splits": [
+    "val_seen",
+    "val_unseen"
+  ],
+  "evaluate_every": 1,
+  "selection_policy": "epoch1_val_seen_sr_gate_then_fixed_five_more_epochs",
+  "first_epoch_gate": {
+    "split": "val_seen",
+    "variant": "joint_relation_trajectory",
+    "minimum_sr": 30
+  },
+  "trajectory_goal_k": 20,
+  "trajectory_modes": 3,
+  "trajectory_waypoints": 8,
+  "trajectory_ranking_loss_weight": 0.2,
+  "trajectory_candidate_loss_weight": 0.3,
+  "trajectory_loss_weight": 0.5,
+  "trajectory_stop_weight": 0.05,
+  "trajectory_stop_threshold": 0.8,
+  "training_control": "legacy_default_as_documented",
+  "variants": {
+    "joint_relation_trajectory": {
+      "trajectory_use_for_control": true,
+      "trajectory_selector_mode": "joint",
+      "trajectory_disable_learned_stop": false,
+      "heatmap_execution": "two_stage"
+    }
+  },
+  "profile_rollout": false,
+  "fast_eval": false,
+  "trajectory_train_diagnostics": false,
+  "trajectory_sequential_backward": true
+}
