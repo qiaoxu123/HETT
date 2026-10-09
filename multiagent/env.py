@@ -15,6 +15,7 @@ from multiagent.dataset.generate import generate_episodes_from_mturk_trajectorie
 from multiagent.dataset.mturk_trajectory import load_mturk_trajectories
 from multiagent.mapdata import MAP_BOUNDS
 from multiagent.maps.landmark_nav_map import LandmarkNavMap
+from multiagent.static_observation import build_static_landmark_observation
 from multiagent.observation import cropclient
 from multiagent.space import Pose4D, modulo_radians, Point2D
 from typing import List, Dict, Callable, Tuple
@@ -193,12 +194,19 @@ class CityNavBatch(torch.utils.data.IterableDataset):
 
         if poses is None:
             poses = [episode.start_pose for episode in self.batch]
-            # poses = [episode.trajectory[max(0, len(episode.trajectory) - 20)] for episode in self.batch]
+            # Static names/contours are immutable inside an episode: build
+            # their normalized descriptors once instead of every action step.
             self.nav_maps = [
                 LandmarkNavMap(
                     episode.map_name, self.args.map_shape, self.args.map_pixels_per_meter,
                     episode.description_landmarks)
                 for episode in self.batch]
+            self._static_landmark_obs = [
+                build_static_landmark_observation(
+                    nav_map, episode.map_name, self.args.map_meters,
+                    self.normalize_position)
+                for episode, nav_map in zip(self.batch, self.nav_maps)
+            ]
 
         for i in range(self.batch_size):
             episode = self.batch[i]
@@ -264,40 +272,11 @@ class CityNavBatch(torch.utils.data.IterableDataset):
             # update map
             self.nav_maps[i].update_observations(poses[i])
 
-            landmarks = self.nav_maps[i].landmark_map.get_contours()
-            centroids = _convert_contours_to_centroids(landmarks)
-
-            normalized_position = self.normalize_position(poses[i].xy, episode.map_name, self.args.map_meters)
-
-            normalized_centroids = [self.normalize_position(Point2D(centroid[0], centroid[1]),
-                                                            episode.map_name,
-                                                            self.args.map_meters) for centroid in centroids]
-            # normalized_centroids
-            # print(landmarks, centroids)
-            # Keep each instruction-referenced landmark separate, retaining
-            # the processed-description name <-> matched map contour pairing.
-            # These are map annotations available at inference, not GT targets.
-            reference_landmarks = []
-            referenced = self.nav_maps[i].referenced_landmark_map.landmarks
-            names = self.nav_maps[i].referenced_landmark_map.landmark_names
-            for name, landmark in zip(names, referenced):
-                if not landmark.contour:
-                    continue
-                norm_contour = np.asarray([
-                    self.normalize_position(point, episode.map_name, self.args.map_meters)
-                    for point in landmark.contour
-                ], dtype=np.float32)
-                if norm_contour.ndim != 2 or norm_contour.shape[1] != 2:
-                    continue
-                if not np.isfinite(norm_contour).all():
-                    continue
-                reference_landmarks.append({
-                    'name': name,
-                    'center_xy': norm_contour.mean(axis=0).tolist(),
-                    'extent_xy': np.ptp(norm_contour, axis=0).tolist(),
-                })
-
-            pred_goal_xy = np.mean(centroids, axis=0) if centroids else np.array([0, 0])
+            # The static descriptor is cached for the current episode batch.
+            # Only current pose, explored/view areas and RGB change per step.
+            static_landmarks = self._static_landmark_obs[i]
+            normalized_position = self.normalize_position(
+                poses[i].xy, episode.map_name, self.args.map_meters)
 
             rgb = cropclient.crop_image(episode.map_name, poses[i], (224, 224), 'rgb')
             progress = np.clip(
@@ -317,9 +296,9 @@ class CityNavBatch(torch.utils.data.IterableDataset):
                 'cur_grid': normalized_pos_id,
                 'trajectory': episode.trajectory,
                 'progress': progress,
-                'reference_landmarks': reference_landmarks,
-                'centroids': np.mean(normalized_centroids, axis=0) if normalized_centroids else np.array([0, 0]),
-                'centroid_goal': pred_goal_xy,
+                'reference_landmarks': static_landmarks['reference_landmarks'],
+                'centroids': static_landmarks['centroids'],
+                'centroid_goal': static_landmarks['centroid_goal'],
                 'normalized_goal': normalized_goal_xys,
                 'grid_goal': normalized_goal_id
             })
