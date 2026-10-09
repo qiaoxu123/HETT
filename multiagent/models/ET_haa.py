@@ -353,7 +353,8 @@ class ET(nn.Module):
                 relation_enabled=getattr(self.args, 'trajectory_relation_selector', True),
                 selector_mode=getattr(self.args, 'trajectory_selector_mode', 'prior'),
                 compact=getattr(self.args, 'trajectory_compact_mode', False),
-                local_step_m=getattr(self.args, 'trajectory_local_step_m', 20.0),
+                # Same step-length setting used by ALL waypoint variants.
+                local_step_m=self.args.heatmap_waypoint_step_m,
                 map_meters=self.args.map_meters,
             )
             generated, supervision = proposals
