@@ -33,7 +33,7 @@
   "fast_eval": true,
   "variants": {
     "A_heatmap_waypoint": {
-      "trajectory_compact_mode": false,
+      "trajectory_compact_mode": true,
       "trajectory_compact_enable_path": false,
       "trajectory_use_for_control": false,
       "trajectory_selector_mode": "prior",
