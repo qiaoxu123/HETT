@@ -43,7 +43,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
-          python -m pip install pytest numpy
+          python -m pip install pytest numpy shapely
       - name: Compile modified Python files
         run: |
           python -m py_compile multiagent/models/candidate_relation_selector.py multiagent/models/heatmap_trajectory.py multiagent/models/multi_landmark.py multiagent/models/relative_geometry.py multiagent/models/spatial_belief.py multiagent/models/ET_haa.py multiagent/agent.py multiagent/env.py multiagent/main.py multiagent/parser.py multiagent/trajectory_rollout_utils.py multiagent/static_observation.py multiagent/maps/landmark_nav_map.py scripts/joint_experiment_metrics.py scripts/run_joint_goal_trajectory_experiment.py scripts/continue_joint_goal_trajectory_run.py scripts/evaluate_joint_goal_trajectory_checkpoint.py
