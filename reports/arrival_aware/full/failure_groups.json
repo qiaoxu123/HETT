@@ -1,0 +1,28 @@
+{
+  "val_seen": {
+    "success": 727,
+    "never_entered": 1358,
+    "entered_then_left": 385,
+    "exit_goal_switches": 612,
+    "exit_wrong_predicted_goals": 851,
+    "exit_large_actions": 71,
+    "exit_full_50m_actions": 32,
+    "skipped_success_circle_crossings": 81,
+    "reentries": 466,
+    "never_entered_no_correct_goal": 1280,
+    "never_entered_despite_correct_goal": 78
+  },
+  "val_unseen": {
+    "success": 680,
+    "never_entered": 1618,
+    "entered_then_left": 399,
+    "exit_goal_switches": 604,
+    "exit_wrong_predicted_goals": 874,
+    "exit_large_actions": 77,
+    "exit_full_50m_actions": 41,
+    "skipped_success_circle_crossings": 90,
+    "reentries": 475,
+    "never_entered_no_correct_goal": 1543,
+    "never_entered_despite_correct_goal": 75
+  }
+}

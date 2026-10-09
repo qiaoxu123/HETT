@@ -1,0 +1,12 @@
+{
+  "split": "val_seen",
+  "episodes": 128,
+  "states": 2560,
+  "seconds": 27.939044666010886,
+  "peak_vram_allocated_bytes": 1604504064,
+  "peak_vram_reserved_bytes": 2036334592,
+  "all_backbones_frozen": true,
+  "baseline_sha256": "0f373312a39aa737fc2df4d28e6ca916719deb04ea991a9b4784eb5e992fdc27",
+  "navigation_recomputed": false,
+  "maximum_live_feature_difference": 0.0
+}

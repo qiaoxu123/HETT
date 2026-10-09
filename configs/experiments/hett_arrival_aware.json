@@ -1,0 +1,33 @@
+{
+  "source_commit": "d249e5e",
+  "source_run": "b16_lr2e-4_9d88f2a",
+  "checkpoint_sha256": "0edcd106923d5050c504c2361cb89b51bfd4321d209f89b05e2874e516649e03",
+  "variant": "B_goal_soft_refined",
+  "seed": 0,
+  "batch_size": 16,
+  "max_action_len": 20,
+  "max_step_m": 50,
+  "success_radius_m": 20,
+  "history_window": 5,
+  "quick_episodes_per_split": 128,
+  "head": "logistic_regression",
+  "logistic_C": 1.0,
+  "joint_arrival_head": {
+    "head": "mlp16",
+    "features": 1297,
+    "trainable_parameters": 20785,
+    "hidden_units": 16,
+    "epochs": 5,
+    "batch_size": 1024,
+    "learning_rate": 0.001,
+    "weight_decay": 0.0001,
+    "diagnostic_threshold": 0.5,
+    "modalities": ["current_instruction", "current_rgb", "belief_pose_history"],
+    "semantic_features": "masked mean frozen BERT raw word embeddings768 and current Darknet spatial mean RGB embeddings512",
+    "extra_encoder_forward_passes": 0
+  },
+  "minimum_stop_precision": 0.95,
+  "maximum_false_stop_episode_rate": 0.005,
+  "calibration_split": "val_seen",
+  "independent_validation_split": "val_unseen"
+}

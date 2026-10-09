@@ -35,6 +35,9 @@ from multiagent.models.heatmap_trajectory import (
     goal_distance_soft_ranking_loss, local_path_soft_ranking_loss,
 )
 from multiagent.heatmap_execution import bounded_heatmap_step
+from multiagent.arrival import (navigation_record, LogisticArrivalPolicy,
+                               install_semantic_observer, arrival_inputs,
+                               lexical_instruction_features)
 from multiagent.goal_stabilizer import stabilize_goals
 from multiagent.trajectory_rollout_utils import should_record_pose
 from multiagent.rollout_backward import backward_rollout_pair
@@ -165,6 +168,9 @@ class NavCMTAgent:
         self.args = args
         self.env = []
         self.env_name = ''
+        arrival_checkpoint = getattr(args, 'arrival_head_checkpoint', None)
+        self.arrival_policy = (LogisticArrivalPolicy.load(arrival_checkpoint)
+                               if arrival_checkpoint else None)
         random.seed(1)
 
         # RGB normalization values
@@ -457,6 +463,8 @@ class NavCMTAgent:
             return 0.0
 
         start_reset = phase_clock()
+        if self.arrival_policy is not None and getattr(self.args, 'heatmap_execution', 'two_stage') != 'waypoint':
+            raise ValueError('Arrival head is supported only with the unchanged waypoint controller')
         if (getattr(self.args, 'trajectory_use_for_control', False)
                 and not getattr(self.args, 'heatmap_trajectory_enabled', False)):
             raise ValueError("trajectory control requires an enabled trajectory head")
@@ -485,6 +493,11 @@ class NavCMTAgent:
                 lang_features, linear_cls, cls_hidden = self.lang_model(input_ids, attention_mask)
         else:
             lang_features, linear_cls, cls_hidden = self.lang_model(input_ids, attention_mask)
+        if getattr(self.arrival_policy,'requires_semantic',False):
+            install_semantic_observer(self)
+        if getattr(self,'_arrival_semantic_hook',None) is not None:
+            self.arrival_instruction_features=lexical_instruction_features(
+                self.lang_model,input_ids,attention_mask)
         # Compute static landmark/text alignment ONCE per episode batch.
         # Dynamic UAV pose still updates at every rollout step.
         multi_landmarks = None
@@ -644,6 +657,8 @@ class NavCMTAgent:
             images = np.ascontiguousarray(images, dtype=np.float32)
             images -= self.rgb_mean
             images /= self.rgb_std
+            if getattr(self,'_arrival_semantic_hook',None) is not None:
+                self.arrival_semantic_features=None
             if compact_mode and train_ml is not None:
                 with torch.no_grad():
                     im_feature = self.vision_model(torch.from_numpy(images).cuda())
@@ -1185,6 +1200,19 @@ class NavCMTAgent:
             # print(cpu_goal)
 
             # Interact with the simulator with actions
+            # Lightweight observable logging stays enabled in fast_eval;
+            # it never requests teacher suffixes or supervised model inputs.
+            record_navigation = (train_ml is None and self.feedback == 'student'
+                                 and getattr(self.args, 'heatmap_execution', 'two_stage') == 'waypoint')
+            if record_navigation:
+                navigation_heatmaps = heatmap_probs.detach().cpu().numpy()
+                if compact_score_map is not None:
+                    navigation_scores = compact_score_map
+                else:
+                    navigation_scores = np.log(np.maximum(navigation_heatmaps, 1e-12))
+                navigation_probabilities = np.exp(
+                    navigation_scores - navigation_scores.max(axis=1, keepdims=True))
+                navigation_probabilities /= navigation_probabilities.sum(axis=1, keepdims=True)
             for i in range(len(obs)):
 
                 dst = self.env.unnormalize_position(cpu_goal[i], obs[i]['map_name'],
@@ -1198,6 +1226,37 @@ class NavCMTAgent:
 
                 if (self.feedback == 'student'
                         and getattr(self.args, 'heatmap_execution', 'two_stage') == 'waypoint'):
+                    record = None
+                    if record_navigation:
+                        chosen_cell = int(stab_prev_cell[i] if (lock_m > 0 or margin > 0)
+                                          else compact_selected_cells[i] if compact_selected_cells is not None
+                                          else host_predictions[i, 4])
+                        finite = np.isfinite(navigation_scores[i])
+                        record = navigation_record(
+                            t=t, path_index=len(traj[i]['trajectory']) - 1,
+                            pose=poses[i], normalized_pose=self.env.normalize_position(
+                                poses[i].xy, obs[i]['map_name'], self.args.map_meters),
+                            predicted_goal=dst, goal_id=chosen_cell,
+                            heatmap=navigation_heatmaps[i],
+                            selector_probabilities=navigation_probabilities[i, finite],
+                            selector_probability=float(navigation_probabilities[i, chosen_cell]),
+                            previous=traj[i]['navigation_steps'], map_meters=self.args.map_meters)
+                        if getattr(self, '_arrival_semantic_hook', None) is not None:
+                            if self.arrival_semantic_features is None:
+                                raise RuntimeError('Current instruction/RGB observer did not run')
+                            record['semantic_features'] = self.arrival_semantic_features[i].copy()
+                        traj[i]['navigation_steps'].append(record)
+                        policy = getattr(self, 'arrival_policy', None)
+                        stop, probability = policy(arrival_inputs(record, policy)) if policy is not None else (False, None)
+                        record['stop_probability'] = probability
+                        if stop:
+                            # Check at the CURRENT observed pose, before the
+                            # next action. Stopping adds no travel or future state.
+                            ended[i] = True
+                            traj[i]['stop_reason'].append('policy_stop')
+                            record.update(next_pose=list(poses[i]), action_xy=[0., 0.],
+                                          action='stop', termination='policy_stop', ended=True)
+                            continue
                     old_pose = poses[i]
                     # The compact path head supplies a LOCAL waypoint. Keep
                     # bounded execution and the original global goal separate.
@@ -1205,6 +1264,8 @@ class NavCMTAgent:
                         compact_local_waypoints[i], obs[i]['map_name'],
                         self.args.map_meters)
                         if compact_local_waypoints is not None else dst)
+                    if record is not None:
+                        record['executed_waypoint_xy'] = list(action_waypoint)
                     poses[i] = bounded_heatmap_step(
                         poses[i], action_waypoint,
                         # ONE action budget for A/B/C. Compact paths only
@@ -1225,6 +1286,13 @@ class NavCMTAgent:
                             self.args, 'heatmap_waypoint_stagnation_steps', 5):
                         ended[i] = True
                         traj[i]['stop_reason'].append('waypoint_stagnation')
+                    if record is not None:
+                        record.update(next_pose=list(poses[i]), action_xy=[
+                            float(poses[i].x - old_pose.x), float(poses[i].y - old_pose.y)],
+                            action_yaw_delta_rad=float(np.arctan2(
+                                np.sin(poses[i].yaw-old_pose.yaw), np.cos(poses[i].yaw-old_pose.yaw))),
+                            action='move', ended=bool(ended[i]),
+                            termination=traj[i]['stop_reason'][-1] if ended[i] else None)
                     continue
 
                 if selected_trajectory_paths is not None:
@@ -1389,7 +1457,10 @@ class NavCMTAgent:
                     selected_trajectory_goals if selected_trajectory_goals is not None else heatmap_goals,
                     heatmap_topk_ids, trajectory_predictions, ade, fde,
                     prior_indices, joint_indices, selected_stop_probs,
-                    selected_goal_ids=heatmap_goal_ids,
+                    selected_goal_ids=(np.asarray([
+                        traj[i]['navigation_steps'][-1]['goal_id'] if traj[i]['navigation_steps']
+                        else int(host_predictions[i,4]) for i in range(batch_size)])
+                        if record_navigation else heatmap_goal_ids),
                 )
 
             # Save every executed displacement, including a terminal action.

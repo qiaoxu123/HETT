@@ -201,6 +201,10 @@ cython_debug/
 .cursorignore
 .cursorindexingignore
 
+# Local arrival rollouts and frozen backbone artifacts; aggregate reports and
+# the portable logistic head are versioned under reports/arrival_aware/.
+artifacts/arrival/
+
 # Marimo
 marimo/_static/
 marimo/_lsp/

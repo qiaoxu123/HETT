@@ -1,0 +1,16 @@
+{
+  "val_seen": {
+    "sr": 29.4331983805668,
+    "spl": 23.330562740670867,
+    "maximum_NE_difference": 0.0,
+    "success_mismatches": 0,
+    "episode_id_sets_equal": true
+  },
+  "val_unseen": {
+    "sr": 25.213199851687058,
+    "spl": 20.20241392295586,
+    "maximum_NE_difference": 0.0,
+    "success_mismatches": 0,
+    "episode_id_sets_equal": true
+  }
+}

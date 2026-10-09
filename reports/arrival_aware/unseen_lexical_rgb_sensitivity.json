@@ -1,0 +1,8 @@
+{
+  "diagnostic_only": true,
+  "first_batch_split": "val_unseen",
+  "instruction_swap_max_change": 0.04317310452461243,
+  "rgb_swap_max_change": 1.3171045780181885,
+  "semantic_source": "frozen BERT raw lexical embeddings and current Darknet RGB",
+  "extra_encoder_forwards": 0
+}

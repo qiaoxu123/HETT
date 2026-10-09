@@ -1,0 +1,7 @@
+{
+  "tests": 88,
+  "seconds": 1.126,
+  "status": "passed",
+  "command": "OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 python -m unittest discover -s tests",
+  "log_sha256": "3177a895e7cdc924510342a294a51ec9254820176a7e92a85e804ac4f7e38ffd"
+}

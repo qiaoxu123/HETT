@@ -1,0 +1,12 @@
+{
+  "val_seen": {
+    "episodes": 2470,
+    "mismatches": [],
+    "maximum_coordinate_difference_m": 0.0
+  },
+  "val_unseen": {
+    "episodes": 2697,
+    "mismatches": [],
+    "maximum_coordinate_difference_m": 0.0
+  }
+}

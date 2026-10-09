@@ -1,0 +1,9 @@
+{
+  "diagnostic_only": true,
+  "first_batch_split": "val_seen",
+  "instruction_swap_max_change": 3.6954879760742188e-06,
+  "rgb_swap_max_change": 3.599468231201172,
+  "legacy_instruction_projection_max_change": 1.7881393432617188e-07,
+  "head_semantic_source": "existing current EncoderVL visual token",
+  "extra_diagnostic_forwards": 3
+}

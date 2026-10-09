@@ -1,0 +1,7 @@
+{
+  "seconds": 86.54456883203238,
+  "head_fit_seconds": 0.8760022479109466,
+  "head_sha256": "7a008bb987d45c0b9e6197792c44aafd864b83795bae5a8c8af5ce4c3059c1d4",
+  "calibration_status": "no_safe_seen_threshold_disable_stop",
+  "independent_unseen_threshold": 1.01
+}

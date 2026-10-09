@@ -150,6 +150,8 @@ def parse_args():
                         help='Freeze the executed goal once the UAV is within this distance (0 = off)')
     parser.add_argument('--waypoint_switch_margin', type=float, default=0.0,
                         help='Switch goal cell only if its log-score beats the previous cell by this margin (0 = off)')
+    parser.add_argument('--arrival_head_checkpoint', type=str, default=None,
+                        help='Opt-in observable-only logistic arrival JSON checkpoint; checked before each waypoint action')
     parser.add_argument('--trajectory_goal_soft_temperature_m', type=float, default=20.0)
     parser.add_argument('--trajectory_path_soft_temperature_m', type=float, default=5.0)
     parser.add_argument('--trajectory_sequential_backward', action='store_true',

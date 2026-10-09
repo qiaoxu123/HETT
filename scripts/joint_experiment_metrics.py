@@ -1,6 +1,7 @@
 """Read-only, per-episode diagnostics for the fixed joint-trajectory experiment."""
 import numpy as np
 import torch
+from scripts.arrival_analysis import episode_diagnostics
 
 
 def observe(agent, obs, poses, trajectories, ended, t, goals, heatmap_ids,
@@ -10,8 +11,8 @@ def observe(agent, obs, poses, trajectories, ended, t, goals, heatmap_ids,
         raise RuntimeError('Read-only observer only supports validation student rollouts')
     scale=agent.args.map_meters;radius=agent.args.success_dist
     ids=heatmap_ids.cpu().numpy();g=agent.args.heatmap_grid_size
-    selected_ids=(selected_goal_ids.cpu().numpy() if selected_goal_ids is not None
-                  else ids[:, 0])
+    selected_ids=(selected_goal_ids.detach().cpu().numpy() if isinstance(selected_goal_ids,torch.Tensor)
+                  else np.asarray(selected_goal_ids) if selected_goal_ids is not None else ids[:, 0])
     cand=np.stack(((ids%g+.5)/g,(ids//g+.5)/g),-1)
     pool=proposals.goal_xy.cpu().numpy()
     ade=ade.cpu().numpy()*scale;fde=fde.cpu().numpy()*scale
@@ -74,6 +75,9 @@ def summarize(env,predictions,variant,epoch,seconds):
             progress_m=float(d[0]-d[-1]),
             success_from_outside=bool(d[0]>env.args.success_dist and d[-1]<=env.args.success_dist),
             reached_from_outside=bool(d[0]>env.args.success_dist and min(d)<=env.args.success_dist)))
+        episodes[-1]['initial_pose'] = list(p['trajectory'][0])
+        episodes[-1]['navigation_steps'] = p.get('navigation_steps', [])
+        episodes[-1]['arrival_diagnostics'] = episode_diagnostics(episodes[-1], env.args.success_dist)
     steps=[s for e in episodes for s in e['steps']]
     action_count=max(1, sum(max(0, len(e['path_xy'])-1) for e in episodes))
     def mean(key):
@@ -101,10 +105,33 @@ def summarize(env,predictions,variant,epoch,seconds):
         goal_switch_count=sum(s['goal_switch'] for s in steps),
         goal_switch_rate=sum(s['goal_switch'] for s in steps)/max(1,len(steps)-len(episodes)),
         rank_eligible_rate=mean('trajectory_pool_hit'),
-        policy_stops=sum(e['termination'] in ('learned_stop','progress_stop') for e in episodes),
+        policy_stops=sum(e['termination'] in ('learned_stop','progress_stop','policy_stop') for e in episodes),
         horizon_timeouts=sum(e['termination']=='horizon' for e in episodes),
         trajectory_stagnations=sum(e['termination']=='trajectory_stagnation' for e in episodes),
         unreported_terminations=sum(e['termination']=='unreported' for e in episodes))
+    navigation_steps = [s for e in episodes for s in e['navigation_steps']]
+    if navigation_steps:
+        switch_count = sum(s['goal_switch'] for s in navigation_steps)
+        comparisons = sum(max(0, len(e['navigation_steps'])-1) for e in episodes)
+        decisions = [(s, np.linalg.norm(np.asarray(s['pose'][:2])-e['goal_xy'])<=env.args.success_dist)
+                     for e in episodes for s in e['navigation_steps']]
+        nav_tp = sum(s['action']=='stop' and near for s,near in decisions)
+        nav_fp = sum(s['action']=='stop' and not near for s,near in decisions)
+        nav_fn = sum(s['action']!='stop' and near for s,near in decisions)
+        nav_tn = len(decisions)-nav_tp-nav_fp-nav_fn
+        summary.update(goal_switch_count=switch_count,
+                       goal_switch_rate=switch_count/max(1, comparisons),
+                       navigation_states=len(navigation_steps), active_steps=len(navigation_steps),
+                       stop_TP=nav_tp, stop_FP=nav_fp, stop_FN=nav_fn, stop_TN=nav_tn,
+                       stop_precision=nav_tp/(nav_tp+nav_fp) if nav_tp+nav_fp else None,
+                       stop_recall=nav_tp/(nav_tp+nav_fn) if nav_tp+nav_fn else None,
+                       stop_accuracy=(nav_tp+nav_tn)/len(decisions),
+                       macro_zero_translation_rate=float(np.mean([
+                           np.linalg.norm(s['action_xy'])<1e-4 for s in navigation_steps if s['action']!='stop'
+                       ])) if any(s['action']!='stop' for s in navigation_steps) else None)
+    summary.update(waypoint_stagnations=sum(e['termination']=='waypoint_stagnation' for e in episodes),
+        episodes_with_exit=sum(bool(e['arrival_diagnostics']['exits']) for e in episodes),
+        episodes_with_reentry=sum(bool(e['arrival_diagnostics']['reentries']) for e in episodes))
     for k in (1,5,16,20):
         summary[f'heatmap_top{k}_hit20']=(
             float(np.mean([s['heatmap_hits'][str(k)] for s in steps])) if steps else None
