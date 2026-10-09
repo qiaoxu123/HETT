@@ -77,7 +77,13 @@ def new_agent(args,cfg):
     return agent,report
 
 def evaluate(agent,envs,cfg,out,epoch):
-    rows=[];agent.experiment_step_callback=observe
+    rows=[]
+    # Fast validation intentionally keeps official metrics but omits
+    # expensive per-step teacher-path/Oracle diagnostics.
+    fast_eval = bool(cfg.get('fast_eval', False))
+    old_fast_eval = getattr(agent.args, 'trajectory_fast_eval', False)
+    agent.args.trajectory_fast_eval = fast_eval
+    agent.experiment_step_callback = None if fast_eval else observe
     saved=(random.getstate(),np.random.get_state(),torch.get_rng_state(),torch.cuda.get_rng_state_all())
     for split,env in envs.items():
         for variant,flags in cfg['variants'].items():
@@ -97,6 +103,7 @@ def evaluate(agent,envs,cfg,out,epoch):
             dump(out/f'epoch{epoch:02d}'/f'{split}_{variant}.json',r)
             rows.append(r['summary']);print('EVAL_COMPLETE',json.dumps(clean(r['summary'])),flush=True)
     agent.experiment_step_callback=None
+    agent.args.trajectory_fast_eval = old_fast_eval
     random.setstate(saved[0]);np.random.set_state(saved[1]);torch.set_rng_state(saved[2]);torch.cuda.set_rng_state_all(saved[3])
     # Preserve the declared training policy across epoch evaluations.
     policy_flags = cfg['variants'][cfg['first_epoch_gate']['variant']]
