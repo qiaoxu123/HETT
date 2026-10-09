@@ -1,69 +1,75 @@
-# HETT Compact Goal–Path Soft Ranking (experimental)
+# HETT 精简版：Goal Soft First，Path Optional
 
-Base: `2027-CVPR/hett-sequential-backward` @ `501f25af9991dd8f2d30fb588622f77357de1589`.
-Branch: `2027-CVPR/hett-compact-goal-path-soft`.
+分支：`2027-CVPR/hett-compact-goal-path-soft`；从 `2027-CVPR/hett-sequential-backward` (`501f25af`) 派生。
 
-## Design: two learning objectives; keep a fixed waypoint controller
+## 当前结论与优先级
 
-**Inputs:** existing BERT language token encoding, landmark geometry, RGB/map features, current pose and causal trajectory history. Frozen pretrained BERT/visual/ET backbone for this selector-only experimental config. The existing HETT Spatial Belief supplies a 28×28 heatmap, NMS selects Top-20 goals.
+1. **主线仅训练 Goal Soft Selector**：冻结已有 HETT Spatial Belief (Top-20) 与 BERT / Darknet / ET 主干，保留共享候选网络的目标排序分数。训练目标为 SBF 风格距离软标签交叉熵；对应 `trajectory_candidate_loss_weight=0`，轨迹模式不参与训练目标。
+2. **路径选择降级为独立探索分支**：现有三条 Anchor 只是 ±0.30 rad/直行的 50m 转向选择；50m 内三条全部直达同一目标，C 与 B 天然非常相似。**没有障碍物、候选区域 RGB 或其他可行性证据时，轨迹选择没有充分理由超越直达 Waypoint**。不应把它视为已验证的贡献。
+3. **不再把人类局部路线当成强制最优控制目标**：可选 Path Loss 仍用 `0.7×human-local-error + 0.3×goal-distance`，只是待验证的研究原型，容易被人类轨迹绕行（用户报告平均路径约为直线距离 2 倍）影响 SPL；当前主线**关闭**该损失。
+4. **RGB 口径**：ET 的传统视觉编码支路使用了 Darknet 处理的图像，但当前 `Spatial Belief` 的热图主要来自地图、语言和地标几何，`CandidateRelationSelector` 直接读取的是 Heatmap 空间特征、语言 token、地标几何、位姿/历史；**没有候选位置对应的 RGB 裁剪/语义特征输入**。不能把这个 Selector 宣称为直接 RGB-aware。要真正测试 RGB 增益，须另做严格对照。
+5. **历史疑似停滞错误**：检查此分支 `multiagent/agent.py`，旧轨迹执行分支采用 `old_xy.dist_to(poses[i].xy)` 和 `poses[i].yaw - old_pose.yaw`；并未找到 `old_pose.y` 被误当航向的写法。若本地出现须核对 `git rev-parse HEAD`，不要混淆旧分支。
+6. **Checkpoint 未指定**：不会默认为任何权重。用户需提供已核实来源的 `HETT_INITIAL_CHECKPOINT`（绝对路径）和匹配的 `HETT_BASE_ARGUMENTS`。Runner 会记录 checkpoint SHA-256，并进行模型权重兼容检查，无法读取则失败退出。
 
-**One shared candidate selector** (reuse existing `trajectory_head.context`, `goal_scorer`, `candidate_relation`, `mode_score`; checkpoint keys remain compatible):
+## 模型信息流
 
-- **Goal:** rank the 20 heatmap candidates using the current heatmap prior plus learned semantic/geometric evidence. Train soft cross-entropy over target distances to all candidates, temperature 20 m. Ranking gradients do **not** enter the spatial belief/heatmap. Only train-time labels use GT.
-- **Path:** for each candidate, form three fixed local anchors (left/straight/right) with the SAME 50 m metric horizon as all bounded waypoint variants; no learned trajectory residual and no learned terminal heading. For the *nearest GT-covered candidate* only, train a soft cross-entropy over mode logits using (0.7 × human-local-waypoint error + 0.3 × remaining goal distance), temperature 5 m. All distances are measured in meters. Path supervision is ignored when the candidate pool has no goal inside the 20 m success radius; goal-soft supervision still applies.
-- Goal-first choice: select goal by `logsumexp(joint_logits, modes)`, then select a mode conditional on that goal. Never flatten goal×mode and use mode peak to choose the global goal.
-- **Fixed waypoint control:** drive to the selected **local anchor endpoint** using `bounded_heatmap_step` (no direct rollout of a learned 8-point trajectory). Replan after every observation. A/B/C share the **same 50 m maximum XY displacement and 20 macro-step horizon**; C cannot be disadvantaged by a smaller step cap. Path modes differ by ±0.30 rad / straight while the chosen goal is more than 50 m away, and collapse to the exact goal when within 50 m. Learned stop, learned path residual and human terminal-yaw supervision are disabled in compact mode. The legacy controller/trajectory/head remain available when compact mode is false.
-
-**Important limitation:** waypoint controller bounds XY displacement but is not a full collision-aware dynamic UAV simulator; no obstacle feasibility is asserted. The sampled human suffix supplies a *local training label* and is not guaranteed to be a valid recovery route when a student has strayed from a demonstrated path. This first-stage version does not fix this automatically. Path shape is a fixed candidate bank; the controller executes its local endpoint rather than tracing all intermediate samples. Near map edges, clipping to map coordinates may still shorten a proposed move: compare actual per-step displacement and boundary cases, not only theoretical range.
-
-## Trainable parameters and performance protection
-
-`trajectory_compact_mode=true` freezes BERT, Darknet and **all ET parameters except the current `trajectory_head`**. Head submodules not used in compact mode (learned stop and residual) receive no gradients. Heatmap candidate features and prior are explicitly detached before candidate scoring. Existing optimizers are retained for checkpoint compatibility; frozen groups have no gradient updates. Sequential teacher/student backward remains enabled.
-
-**Losses:**
 ```text
-L = goal_soft * 1.0 + path_soft * 0.5
+语言 + 地标 + 当前/历史地图 + 位姿
+      |
+      v
+[冻结 HETT Spatial Belief] -> Top-20 Goals
+      |
+      v
+[轻量 Goal Soft Selector] -> Goal*
+      |
+      v
+[原有 bounded_heatmap_step，统一 50m / 20步] -> 更新观测 -> 重规划
 ```
-Legacy directional/progress/goal regression, full teacher-conditioned trajectory WTA, learned stop and candidate imitation loss are not included when compact mode is on. No GT target or human suffix enters model inference.
 
-### Fair action-budget correction
+Goal Loss：`L_goal=-sum softmax(-distance(G_i,GT)/20m) * log P(G_i)`。
 
-The original implementation accidentally limited C to a 20 m local anchor, while B moved up to 50 m per step. At `max_action_len=20` that imposed a 400 m straight-line upper bound on C, versus 1000 m on B (upper bounds only, not guaranteed reachable distances). This is a structural confound, particularly for episodes >380 m away at initialization.
+选 Goal 后，使用固定有界 Waypoint 控制器。暂不训练独立 Stop、不预测人类末端方向、不让学习轨迹接管动作。
 
-The corrected implementation has a **single source of truth**: `heatmap_waypoint_step_m: 50`; `trajectory_local_step_m` was removed entirely. The experiment config also explicitly fixes `max_action_len:20`, and the experiment runner applies these values before constructing the agent. Fixed local anchors use metric **50 m** endpoints, not 20 m; left/straight/right differ in heading rather than travel allowance. They merge at goals within 50 m, avoiding near-goal detours. A separate regression test simulates a >380 m goal over 20 controller updates.
+**可选探索**：`configs/experiments/hett_compact_optional_path_1e.json` 使用 Goal + Path 两种软标签，Path Loss 权重 0.5 并增加 C 路径模式评估。它不是默认模型，也不是已验证性能提升。
 
-An additional selector bug was corrected: a linear score applied to `context + mode_embedding` makes relative mode scores independent of current candidate/pose (context cancels under softmax). Compact scoring now uses elementwise mode–context interaction. The legacy trajectory forward remains unchanged.
+## 公平对照
 
-This correction makes action budgets comparable, but **does not establish equal path lengths or comparable success rates**. Turns, replanning, map edges and stopping behavior still affect realized travel. An actual GPU rollout and full Seen/Unseen evaluation are required. Old B/C results with 20 m/50 m mismatch must not be used as valid path-selector comparisons.
+主实验：`configs/experiments/hett_compact_goal_path_1e.json`，1 epoch，三个验证变体：
 
-### Controlled experiment
+| 变体 | Goal 选择 | 执行 | 用途 |
+| --- | --- | --- | --- |
+| `A_refined_waypoint` | HETT Heatmap Top-1 **local soft-argmax** | 50m bounded | 对齐历史精细坐标基线 |
+| `A_nms_waypoint` | HETT Heatmap Top-1 **NMS cell center** | 50m bounded | 与 B 的候选坐标一致 |
+| `B_goal_soft` | 共享 Selector 在同一 NMS Top-20 内选最优 | 50m bounded | 只比较候选排序的价值 |
 
-`configs/experiments/hett_compact_goal_path_1e.json` defines exactly **three inference variants** from the same trained checkpoint:
+这里 A_refined 对齐的是**执行坐标提取方法**，并不等于先前报告的某个 SR 数字；权重与 Episode ID 仍必须一致。B−A_nms 才是更直接的候选重排差异；B−A_refined 同时含精细坐标提取差异。
 
-| Variant | Goal choice | Controller |
-|---|---|---|
-| A_heatmap_waypoint | HETT Heatmap Top-1 | Bounded Top-1 NMS-cell waypoint |
-| B_goal_soft | Shared goal-soft selector | Bounded global-goal waypoint |
-| C_goal_path_soft | Same goal-soft selector | Selected 50 m local anchor via bounded waypoint |
+可选的 C 使用与 B 相同的 Goal Selector、动作上限（每次 50m）、horizon（20 个决策步），但因为仅有 ±17.2° 的动作偏角而没有障碍证据，可能更差。把它当作否定性对照，不要误将 B/C 当成不同网络训练目标的单一消融：独立验证 Path Loss 的贡献还需同 seed、同初始化、同训练预算分别训练 Path weight 0 与 0.5 的 checkpoint。
 
-For a training ablation that isolates the path-loss contribution, **train a second checkpoint** with `trajectory_candidate_loss_weight:0.0` using exactly the same initial checkpoint, seed and training budget. Switching B and C inference flags on a single checkpoint is *not* a path-loss training ablation. Evaluate on both full `val_seen` and `val_unseen`, compare SR/SPL/OSR/NE against A and prior SBFNav checkpoint results. Do not claim a gain from 8-episode smoke.
+对所有实验记录 val_seen / val_unseen 的 SR、OSR、SPL、NE、实际航程、目标距离分桶、进入成功区后的再次离开率。主判据：Seen 进步不能以 Unseen SR/SPL 明显退化为代价。
 
-Known prior result: under one earlier joint-trained checkpoint, traditional Top-1 execution achieved 29.47%/18.54% SR on seen/unseen full splits, while prior + learned trajectory controller fell to 4.90%/5.67%. This is **previous checkpoint evidence**, not a result of this new branch.
+## 运行
 
-## Smoke command
-
-```sh
+```bash
 git fetch origin
 git switch 2027-CVPR/hett-compact-goal-path-soft
 git pull
-export HETT_INITIAL_CHECKPOINT=/absolute/path/to/initial.pt
-export HETT_BASE_ARGUMENTS=/absolute/path/to/base_arguments.json
+export HETT_INITIAL_CHECKPOINT=/absolute/path/to/verified_initial_checkpoint.pt
+export HETT_BASE_ARGUMENTS=/absolute/path/to/matching_base_arguments.json
+test -f "$HETT_INITIAL_CHECKPOINT" && test -f "$HETT_BASE_ARGUMENTS"
+
+# 先两次更新的 smoke，再 1 epoch 训练与 full validation
+CUDA_VISIBLE_DEVICES=0 python scripts/run_joint_goal_trajectory_experiment.py \
+  --config configs/experiments/hett_compact_goal_path_1e.json \
+  --output artifacts/compact_goal_soft_smoke --smoke
 
 CUDA_VISIBLE_DEVICES=0 python scripts/run_joint_goal_trajectory_experiment.py \
- --config configs/experiments/hett_compact_goal_path_1e.json \
- --output artifacts/compact_goal_path_smoke --smoke
+  --config configs/experiments/hett_compact_goal_path_1e.json \
+  --output artifacts/compact_goal_soft_epoch1
 ```
 
-The smoke runs 2 optimizer steps at batch 2 and 8, then an 8-episode diagnostic validation. Check finite loss, gradient and head update audit, memory, no GT inputs to inference, both splits. Next, run **one epoch**, using a fresh output directory and remove `--smoke`.
+沿用 Sequential Backward。不同运行使用不同输出目录。执行结果尚待本地 GPU 验证；当前 CI 是 CPU 回归/静态检查，不等于 CityNav 实验成功。
 
-The existing experiment runner uses a 30% seen-SR first-epoch gate and can stop after epoch 1. This file explicitly sets `epochs=1`; do not interpret the gate as a proven performance target or auto-resume long training. The project is an *experiment* until GPU smoke and full-split validation are reported.
+## 再进一步的研究门槛
+
+只有当 Goal Soft Selector 在 Seen/Unseen 上都通过验证，才考虑直接为候选加入**可观察的 RGB 局部特征**，再考虑 Path Ranking。没有额外路径信息时，不建议继续增加 Anchor 数、轨迹残差、复杂 Stop Head 或调整 Human Loss 权重，避免扩大调试变量。
