@@ -783,7 +783,10 @@ class NavCMTAgent:
             gt_progress = torch.from_numpy(gt_progress_np)
             gt_target = torch.from_numpy(np.array([ob['grid_goal'] for ob in obs], dtype=np.int64))
             # there is no ground truth in unseen_test set
-            if not 'test' in self.env_name:
+            if (not 'test' in self.env_name and
+                    (train_ml is not None or not getattr(self.args, 'trajectory_fast_eval', False))):
+                # Expensive supervised heatmap diagnostics are unnecessary
+                # for official-metric-only fast evaluation.
                 # Get ground truth
                 # print(t, target, gt_progress)
 
