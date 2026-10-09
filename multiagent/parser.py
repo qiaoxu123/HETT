@@ -140,6 +140,12 @@ def parse_args():
                         help='Weight for training goal ranking when a predicted proposal covers the GT')
     parser.add_argument('--trajectory_candidate_loss_weight', type=float, default=0.3,
                         help='Weight for imitating teacher suffix through predicted (non-oracle) goals')
+    parser.add_argument('--trajectory_train_diagnostics', action='store_true',
+                        help='Compute expensive oracle ADE/FDE statistics in every training step (profiling only)')
+    parser.add_argument('--trajectory_fast_eval', action='store_true',
+                        help='Run official SR/SPL/OSR/NE evaluation without expensive per-step diagnostic observer')
+    parser.add_argument('--profile_rollout', action='store_true',
+                        help='Measure synchronized per-stage times (extra synchronization: benchmarking only)')
     parser.add_argument('--heatmap_execution', choices=['two_stage', 'waypoint'],
                         default='two_stage',
                         help='Use legacy two-stage actions or direct bounded execution of the selected heatmap waypoint')
