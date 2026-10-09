@@ -146,6 +146,10 @@ def parse_args():
                         help='Use the highest-ranked fixed local anchor as a bounded waypoint')
     parser.add_argument('--trajectory_compact_refine_goal', action='store_true',
                         help='Refine the selected compact goal cell with local soft-argmax before execution')
+    parser.add_argument('--waypoint_arrival_lock_m', type=float, default=0.0,
+                        help='Freeze the executed goal once the UAV is within this distance (0 = off)')
+    parser.add_argument('--waypoint_switch_margin', type=float, default=0.0,
+                        help='Switch goal cell only if its log-score beats the previous cell by this margin (0 = off)')
     parser.add_argument('--trajectory_goal_soft_temperature_m', type=float, default=20.0)
     parser.add_argument('--trajectory_path_soft_temperature_m', type=float, default=5.0)
     parser.add_argument('--trajectory_sequential_backward', action='store_true',

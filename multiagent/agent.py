@@ -35,6 +35,7 @@ from multiagent.models.heatmap_trajectory import (
     goal_distance_soft_ranking_loss, local_path_soft_ranking_loss,
 )
 from multiagent.heatmap_execution import bounded_heatmap_step
+from multiagent.goal_stabilizer import stabilize_goals
 from multiagent.trajectory_rollout_utils import should_record_pose
 from multiagent.rollout_backward import backward_rollout_pair
 from multiagent.mapdata import MAP_BOUNDS
@@ -569,6 +570,8 @@ class NavCMTAgent:
         trajectory_goal_switches = 0
         trajectory_travel_distance_m = 0.0
         previous_plan_goal_id = np.full(batch_size, -1, dtype=np.int64)
+        stab_prev_xy = np.zeros((batch_size, 2), dtype=np.float32)
+        stab_prev_cell = np.full(batch_size, -1, dtype=np.int64)
         trajectory_supervision_count = torch.zeros((), device='cuda')
         trajectory_minade_sum = torch.zeros((), device='cuda')
         trajectory_minfde_sum = torch.zeros((), device='cuda')
@@ -786,6 +789,8 @@ class NavCMTAgent:
             selected_trajectory_paths = None
             selected_trajectory_goals = None
             compact_local_waypoints = None
+            compact_selected_cells = None
+            compact_score_map = None
             if (compact_mode and trajectory_predictions is not None and
                     self.feedback == 'student'):
                 # Goal-first selection. The mode probability must never
@@ -797,6 +802,11 @@ class NavCMTAgent:
                         1, trajectory_predictions.goal_ids).clamp_min(1e-8).log()
                 goal_index = goal_scores.argmax(-1)
                 rows = torch.arange(batch_size, device=goal_index.device)
+                compact_selected_cells = trajectory_predictions.goal_ids[
+                    rows, goal_index].detach().cpu().numpy()
+                compact_score_map = torch.full_like(heatmap_probs, -float('inf')).scatter(
+                    1, trajectory_predictions.goal_ids,
+                    goal_scores.to(heatmap_probs.dtype)).detach().cpu().numpy()
                 if getattr(self.args, 'trajectory_compact_refine_goal', False):
                     # Execute the SELECTED candidate with the same local
                     # soft-argmax refinement as the historical baseline:
@@ -1146,6 +1156,24 @@ class NavCMTAgent:
                 cpu_goal = (selected_trajectory_goals
                             if selected_trajectory_goals is not None
                             else host_predictions[:, 2:4])
+                lock_m = float(getattr(self.args, 'waypoint_arrival_lock_m', 0.0))
+                margin = float(getattr(self.args, 'waypoint_switch_margin', 0.0))
+                if (getattr(self.args, 'heatmap_execution', 'two_stage') == 'waypoint'
+                        and (lock_m > 0 or margin > 0)
+                        and selected_trajectory_paths is None):
+                    if compact_selected_cells is not None:
+                        new_cells, score_map = compact_selected_cells, compact_score_map
+                    else:
+                        new_cells = host_predictions[:, 4].astype(np.int64)
+                        score_map = heatmap_probs.clamp_min(1e-12).log().detach().cpu().numpy()
+                    dist_prev = np.array([
+                        self.env.unnormalize_position(
+                            stab_prev_xy[i], obs[i]['map_name'], self.args.map_meters
+                        ).dist_to(poses[i].xy) for i in range(batch_size)])
+                    cpu_goal, stab_prev_cell = stabilize_goals(
+                        stab_prev_xy, stab_prev_cell, np.asarray(cpu_goal), new_cells,
+                        score_map, dist_prev, lock_m=lock_m, margin=margin)
+                    stab_prev_xy = cpu_goal.copy()
 
                 # _, at_goal = pred_logits.max(1)
                 # at_goal = at_goal.squeeze(1)
