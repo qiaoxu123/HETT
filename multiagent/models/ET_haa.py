@@ -331,12 +331,18 @@ class ET(nn.Module):
 
         if getattr(self.args, 'heatmap_trajectory_enabled', False):
             pose = inputs['directions'][:, -1]
+            # Compact ranking only learns its own shared head; the ranking
+            # loss must not backpropagate through the upstream heatmap.
+            compact_mode = getattr(self.args, 'trajectory_compact_mode', False)
+            proposal_features = belief.spatial_features.detach() if compact_mode else belief.spatial_features
+            proposal_probs = belief.probabilities.detach() if compact_mode else belief.probabilities
             proposals = self.trajectory_head(
-                belief.spatial_features, belief.probabilities,
+                proposal_features, proposal_probs,
                 pose[:, 2:4], pose[:, :2],
                 top_k=getattr(self.args, 'trajectory_goal_k', 5),
                 nms_kernel=self.args.heatmap_nms_kernel,
-                teacher_goal=inputs.get('trajectory_teacher_goal'),
+                teacher_goal=(None if getattr(self.args, 'trajectory_compact_mode', False)
+                              else inputs.get('trajectory_teacher_goal')),
                 language_tokens=emb_lang,
                 language_mask=inputs.get('lang_mask'),
                 landmark_xy=inputs.get('landmark_xy'),
@@ -346,6 +352,9 @@ class ET(nn.Module):
                 history_xy=inputs.get('trajectory_history_xy'),
                 relation_enabled=getattr(self.args, 'trajectory_relation_selector', True),
                 selector_mode=getattr(self.args, 'trajectory_selector_mode', 'prior'),
+                compact=getattr(self.args, 'trajectory_compact_mode', False),
+                local_step_m=getattr(self.args, 'trajectory_local_step_m', 20.0),
+                map_meters=self.args.map_meters,
             )
             generated, supervision = proposals
             # Return plain nested tensors for torch DDP graph discovery.
