@@ -1,5 +1,7 @@
 """Minimal CPU regressions for Goal/Path soft ranking and fixed waypoints."""
 import unittest
+import json
+from pathlib import Path
 import torch
 from multiagent.heatmap_execution import bounded_heatmap_step
 from multiagent.space import Pose4D
@@ -136,6 +138,32 @@ class CompactGoalPathTests(unittest.TestCase):
             positive_radius_m=0.01)
         self.assertEqual(int(count), 0)
         self.assertEqual(float(absent), 0.0)
+
+    def test_primary_ablation_keeps_historical_baseline_and_path_optional(self):
+        root = Path(__file__).resolve().parents[1]
+        primary = json.loads((
+            root / "configs/experiments/hett_compact_goal_path_1e.json").read_text())
+        path_study = json.loads((
+            root / "configs/experiments/hett_compact_optional_path_1e.json").read_text())
+        self.assertEqual(primary["trajectory_candidate_loss_weight"], 0.0)
+        self.assertEqual(primary["first_epoch_gate"]["variant"], "B_goal_soft")
+        self.assertEqual(set(primary["variants"]), {
+            "A_refined_waypoint", "A_nms_waypoint", "B_goal_soft"})
+        self.assertFalse(primary["variants"]["A_refined_waypoint"]["trajectory_compact_mode"])
+        self.assertTrue(primary["variants"]["A_nms_waypoint"]["trajectory_compact_mode"])
+        self.assertEqual(primary["variants"]["A_nms_waypoint"]["trajectory_selector_mode"], "prior")
+        self.assertEqual(primary["variants"]["B_goal_soft"]["trajectory_selector_mode"], "joint")
+        self.assertGreater(path_study["trajectory_candidate_loss_weight"], 0.0)
+        self.assertIn("C_goal_path_soft", path_study["variants"])
+        for config in (primary, path_study):
+            self.assertEqual(config["heatmap_waypoint_step_m"], 50)
+            self.assertEqual(config["max_action_len"], 20)
+            self.assertEqual(config["epochs"], 1)
+            self.assertEqual(config["initial_checkpoint"], "${HETT_INITIAL_CHECKPOINT}")
+            self.assertEqual(config["base_arguments"], "${HETT_BASE_ARGUMENTS}")
+            for values in config["variants"].values():
+                self.assertEqual(values["heatmap_execution"], "waypoint")
+                self.assertFalse(values["trajectory_use_for_control"])
 
     def test_invalid_soft_temperature(self):
         head = HeatmapTrajectoryHead(feature_dim=16, hidden_dim=32)
